@@ -82,6 +82,63 @@ export type Database = {
           },
         ]
       }
+      contatos: {
+        Row: {
+          cep: string | null
+          cidade: string | null
+          cpf_cnpj: string | null
+          created_at: string
+          data_nascimento: string | null
+          email: string | null
+          endereco: string | null
+          estado: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          origem: string | null
+          sexo: string | null
+          telefone: string | null
+          telefone2: string | null
+          updated_at: string
+        }
+        Insert: {
+          cep?: string | null
+          cidade?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          origem?: string | null
+          sexo?: string | null
+          telefone?: string | null
+          telefone2?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cep?: string | null
+          cidade?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          origem?: string | null
+          sexo?: string | null
+          telefone?: string | null
+          telefone2?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       deal_activities: {
         Row: {
           created_at: string
@@ -117,9 +174,46 @@ export type Database = {
           },
         ]
       }
+      deal_tags: {
+        Row: {
+          created_at: string
+          deal_id: string
+          id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          id?: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_tags_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deals: {
         Row: {
           contato_email: string | null
+          contato_id: string | null
           contato_nome: string | null
           contato_telefone: string | null
           created_at: string
@@ -137,6 +231,7 @@ export type Database = {
         }
         Insert: {
           contato_email?: string | null
+          contato_id?: string | null
           contato_nome?: string | null
           contato_telefone?: string | null
           created_at?: string
@@ -154,6 +249,7 @@ export type Database = {
         }
         Update: {
           contato_email?: string | null
+          contato_id?: string | null
           contato_nome?: string | null
           contato_telefone?: string | null
           created_at?: string
@@ -168,6 +264,93 @@ export type Database = {
           titulo?: string
           updated_at?: string
           valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_contato_id_fkey"
+            columns: ["contato_id"]
+            isOneToOne: false
+            referencedRelation: "contatos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_form_submissions: {
+        Row: {
+          contato_id: string | null
+          created_at: string
+          dados: Json
+          deal_id: string | null
+          form_id: string
+          id: string
+        }
+        Insert: {
+          contato_id?: string | null
+          created_at?: string
+          dados?: Json
+          deal_id?: string | null
+          form_id: string
+          id?: string
+        }
+        Update: {
+          contato_id?: string | null
+          created_at?: string
+          dados?: Json
+          deal_id?: string | null
+          form_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_form_submissions_contato_id_fkey"
+            columns: ["contato_id"]
+            isOneToOne: false
+            referencedRelation: "contatos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_form_submissions_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_form_submissions_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "lead_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_forms: {
+        Row: {
+          ativo: boolean
+          campos: Json
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          campos?: Json
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          campos?: Json
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -217,6 +400,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      metas_vendedor: {
+        Row: {
+          created_at: string
+          id: string
+          meta_quantidade: number
+          meta_valor: number
+          periodo: string
+          realizado_quantidade: number
+          realizado_valor: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meta_quantidade?: number
+          meta_valor?: number
+          periodo: string
+          realizado_quantidade?: number
+          realizado_valor?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meta_quantidade?: number
+          meta_valor?: number
+          periodo?: string
+          realizado_quantidade?: number
+          realizado_valor?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       planos: {
         Row: {
@@ -280,6 +499,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      propostas: {
+        Row: {
+          created_at: string
+          deal_id: string
+          descricao: string | null
+          id: string
+          itens: Json | null
+          status: string
+          titulo: string
+          updated_at: string
+          validade: string | null
+          valor_total: number
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          descricao?: string | null
+          id?: string
+          itens?: Json | null
+          status?: string
+          titulo: string
+          updated_at?: string
+          validade?: string | null
+          valor_total?: number
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          descricao?: string | null
+          id?: string
+          itens?: Json | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+          validade?: string | null
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propostas_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sinistros: {
         Row: {
@@ -346,6 +612,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tags: {
+        Row: {
+          cor: string
+          created_at: string
+          grupo: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          grupo?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          grupo?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
       }
       veiculos: {
         Row: {
