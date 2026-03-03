@@ -82,6 +82,95 @@ export type Database = {
           },
         ]
       }
+      deal_activities: {
+        Row: {
+          created_at: string
+          deal_id: string
+          descricao: string
+          id: string
+          tipo: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          descricao: string
+          id?: string
+          tipo?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          descricao?: string
+          id?: string
+          tipo?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_activities_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deals: {
+        Row: {
+          contato_email: string | null
+          contato_nome: string | null
+          contato_telefone: string | null
+          created_at: string
+          data_previsao: string | null
+          id: string
+          observacoes: string | null
+          origem: string | null
+          posicao: number
+          responsavel_id: string | null
+          stage: Database["public"]["Enums"]["deal_stage"]
+          status: Database["public"]["Enums"]["deal_status"]
+          titulo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          contato_email?: string | null
+          contato_nome?: string | null
+          contato_telefone?: string | null
+          created_at?: string
+          data_previsao?: string | null
+          id?: string
+          observacoes?: string | null
+          origem?: string | null
+          posicao?: number
+          responsavel_id?: string | null
+          stage?: Database["public"]["Enums"]["deal_stage"]
+          status?: Database["public"]["Enums"]["deal_status"]
+          titulo: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          contato_email?: string | null
+          contato_nome?: string | null
+          contato_telefone?: string | null
+          created_at?: string
+          data_previsao?: string | null
+          id?: string
+          observacoes?: string | null
+          origem?: string | null
+          posicao?: number
+          responsavel_id?: string | null
+          stage?: Database["public"]["Enums"]["deal_stage"]
+          status?: Database["public"]["Enums"]["deal_status"]
+          titulo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       mensalidades: {
         Row: {
           associado_id: string
@@ -320,6 +409,13 @@ export type Database = {
     }
     Enums: {
       associado_status: "ativo" | "inativo" | "suspenso" | "cancelado"
+      deal_stage:
+        | "prospeccao"
+        | "qualificacao"
+        | "proposta"
+        | "negociacao"
+        | "fechamento"
+      deal_status: "aberto" | "ganho" | "perdido"
       mensalidade_status: "pendente" | "pago" | "atrasado" | "cancelado"
       sinistro_status:
         | "aberto"
@@ -462,6 +558,14 @@ export const Constants = {
   public: {
     Enums: {
       associado_status: ["ativo", "inativo", "suspenso", "cancelado"],
+      deal_stage: [
+        "prospeccao",
+        "qualificacao",
+        "proposta",
+        "negociacao",
+        "fechamento",
+      ],
+      deal_status: ["aberto", "ganho", "perdido"],
       mensalidade_status: ["pendente", "pago", "atrasado", "cancelado"],
       sinistro_status: [
         "aberto",
