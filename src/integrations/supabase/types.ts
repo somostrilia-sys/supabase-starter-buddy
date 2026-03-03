@@ -14,7 +14,303 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      associados: {
+        Row: {
+          cep: string | null
+          cidade: string | null
+          cpf: string
+          created_at: string
+          data_adesao: string
+          data_nascimento: string | null
+          email: string | null
+          endereco: string | null
+          estado: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          plano_id: string | null
+          rg: string | null
+          status: Database["public"]["Enums"]["associado_status"]
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          cep?: string | null
+          cidade?: string | null
+          cpf: string
+          created_at?: string
+          data_adesao?: string
+          data_nascimento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          plano_id?: string | null
+          rg?: string | null
+          status?: Database["public"]["Enums"]["associado_status"]
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cep?: string | null
+          cidade?: string | null
+          cpf?: string
+          created_at?: string
+          data_adesao?: string
+          data_nascimento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          plano_id?: string | null
+          rg?: string | null
+          status?: Database["public"]["Enums"]["associado_status"]
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "associados_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mensalidades: {
+        Row: {
+          associado_id: string
+          created_at: string
+          data_pagamento: string | null
+          data_vencimento: string
+          id: string
+          observacoes: string | null
+          referencia: string | null
+          status: Database["public"]["Enums"]["mensalidade_status"]
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          associado_id: string
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento: string
+          id?: string
+          observacoes?: string | null
+          referencia?: string | null
+          status?: Database["public"]["Enums"]["mensalidade_status"]
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          associado_id?: string
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string
+          id?: string
+          observacoes?: string | null
+          referencia?: string | null
+          status?: Database["public"]["Enums"]["mensalidade_status"]
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mensalidades_associado_id_fkey"
+            columns: ["associado_id"]
+            isOneToOne: false
+            referencedRelation: "associados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planos: {
+        Row: {
+          ativo: boolean
+          cobertura: Json | null
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string
+          valor_mensal: number
+        }
+        Insert: {
+          ativo?: boolean
+          cobertura?: Json | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+          valor_mensal?: number
+        }
+        Update: {
+          ativo?: boolean
+          cobertura?: Json | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+          valor_mensal?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sinistros: {
+        Row: {
+          associado_id: string
+          boletim_ocorrencia: string | null
+          created_at: string
+          data_ocorrencia: string
+          descricao: string
+          id: string
+          local_ocorrencia: string | null
+          observacoes: string | null
+          status: Database["public"]["Enums"]["sinistro_status"]
+          tipo: Database["public"]["Enums"]["sinistro_tipo"]
+          updated_at: string
+          valor_aprovado: number | null
+          valor_estimado: number | null
+          veiculo_id: string | null
+        }
+        Insert: {
+          associado_id: string
+          boletim_ocorrencia?: string | null
+          created_at?: string
+          data_ocorrencia: string
+          descricao: string
+          id?: string
+          local_ocorrencia?: string | null
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["sinistro_status"]
+          tipo: Database["public"]["Enums"]["sinistro_tipo"]
+          updated_at?: string
+          valor_aprovado?: number | null
+          valor_estimado?: number | null
+          veiculo_id?: string | null
+        }
+        Update: {
+          associado_id?: string
+          boletim_ocorrencia?: string | null
+          created_at?: string
+          data_ocorrencia?: string
+          descricao?: string
+          id?: string
+          local_ocorrencia?: string | null
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["sinistro_status"]
+          tipo?: Database["public"]["Enums"]["sinistro_tipo"]
+          updated_at?: string
+          valor_aprovado?: number | null
+          valor_estimado?: number | null
+          veiculo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sinistros_associado_id_fkey"
+            columns: ["associado_id"]
+            isOneToOne: false
+            referencedRelation: "associados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sinistros_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      veiculos: {
+        Row: {
+          ano: number | null
+          associado_id: string
+          chassi: string | null
+          cor: string | null
+          created_at: string
+          id: string
+          marca: string
+          modelo: string
+          placa: string
+          renavam: string | null
+          updated_at: string
+          valor_fipe: number | null
+        }
+        Insert: {
+          ano?: number | null
+          associado_id: string
+          chassi?: string | null
+          cor?: string | null
+          created_at?: string
+          id?: string
+          marca: string
+          modelo: string
+          placa: string
+          renavam?: string | null
+          updated_at?: string
+          valor_fipe?: number | null
+        }
+        Update: {
+          ano?: number | null
+          associado_id?: string
+          chassi?: string | null
+          cor?: string | null
+          created_at?: string
+          id?: string
+          marca?: string
+          modelo?: string
+          placa?: string
+          renavam?: string | null
+          updated_at?: string
+          valor_fipe?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "veiculos_associado_id_fkey"
+            columns: ["associado_id"]
+            isOneToOne: false
+            referencedRelation: "associados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +319,21 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      associado_status: "ativo" | "inativo" | "suspenso" | "cancelado"
+      mensalidade_status: "pendente" | "pago" | "atrasado" | "cancelado"
+      sinistro_status:
+        | "aberto"
+        | "em_analise"
+        | "aprovado"
+        | "negado"
+        | "finalizado"
+      sinistro_tipo:
+        | "roubo"
+        | "furto"
+        | "colisao"
+        | "incendio"
+        | "alagamento"
+        | "outros"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +460,24 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      associado_status: ["ativo", "inativo", "suspenso", "cancelado"],
+      mensalidade_status: ["pendente", "pago", "atrasado", "cancelado"],
+      sinistro_status: [
+        "aberto",
+        "em_analise",
+        "aprovado",
+        "negado",
+        "finalizado",
+      ],
+      sinistro_tipo: [
+        "roubo",
+        "furto",
+        "colisao",
+        "incendio",
+        "alagamento",
+        "outros",
+      ],
+    },
   },
 } as const
