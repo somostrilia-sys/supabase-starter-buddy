@@ -1,0 +1,145 @@
+import { ReactNode } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { NavLink } from "@/components/NavLink";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  Shield, Users, Car, MapPin, Building2, AlertTriangle, FileText,
+  ClipboardCheck, Package, UserCog, SlidersHorizontal,
+  DollarSign, Wallet, Receipt, ArrowLeftRight, BarChart3,
+  Target, Kanban, Contact, Activity, CalendarDays, Crosshair,
+  Tag, FileSpreadsheet, Upload, UsersRound,
+  LayoutDashboard, LogOut, ChevronLeft,
+} from "lucide-react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+
+const gestaoItems = [
+  { title: "Associados", url: "/associados", icon: Users },
+  { title: "Veículos", url: "/veiculos", icon: Car },
+  { title: "Regionais", url: "/regionais", icon: MapPin },
+  { title: "Cooperativas", url: "/cooperativas", icon: Building2 },
+  { title: "Eventos/Sinistros", url: "/sinistros", icon: AlertTriangle },
+  { title: "Documentação", url: "/documentacao", icon: FileText },
+  { title: "Vistorias", url: "/vistorias", icon: ClipboardCheck },
+  { title: "Produtos", url: "/produtos", icon: Package },
+  { title: "Usuários", url: "/usuarios", icon: UserCog },
+  { title: "Parâmetros", url: "/parametros", icon: SlidersHorizontal },
+];
+
+const financeiroItems = [
+  { title: "Fluxo Diário", url: "/financeiro/fluxo-diario", icon: Wallet },
+  { title: "Boletos", url: "/financeiro/boletos", icon: Receipt },
+  { title: "Conciliação", url: "/financeiro/conciliacao", icon: ArrowLeftRight },
+  { title: "Relatórios", url: "/financeiro/relatorios", icon: BarChart3 },
+];
+
+const vendasItems = [
+  { title: "Pipeline", url: "/vendas/pipeline", icon: Kanban },
+  { title: "Contatos", url: "/vendas/contatos", icon: Contact },
+  { title: "Atividades", url: "/vendas/atividades", icon: Activity },
+  { title: "Calendário", url: "/vendas/calendario", icon: CalendarDays },
+  { title: "Metas", url: "/vendas/metas", icon: Crosshair },
+  { title: "Tags", url: "/vendas/tags", icon: Tag },
+  { title: "Formulários", url: "/vendas/formularios", icon: FileSpreadsheet },
+  { title: "Importar Leads", url: "/vendas/importar", icon: Upload },
+  { title: "Afiliados", url: "/vendas/afiliados", icon: UsersRound },
+  { title: "Relatórios", url: "/vendas/relatorios", icon: BarChart3 },
+];
+
+const moduleConfigs = [
+  {
+    prefix: ["/associados", "/veiculos", "/regionais", "/cooperativas", "/sinistros", "/documentacao", "/vistorias", "/produtos", "/usuarios", "/parametros"],
+    label: "Gestão",
+    icon: Shield,
+    color: "text-primary",
+    items: gestaoItems,
+  },
+  {
+    prefix: ["/financeiro"],
+    label: "Financeiro",
+    icon: DollarSign,
+    color: "text-accent",
+    items: financeiroItems,
+  },
+  {
+    prefix: ["/vendas"],
+    label: "Vendas",
+    icon: Target,
+    color: "text-warning",
+    items: vendasItems,
+  },
+];
+
+function getActiveModule(pathname: string) {
+  for (const mod of moduleConfigs) {
+    if (mod.prefix.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
+      return mod;
+    }
+  }
+  return null;
+}
+
+export function ModuleLayout({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { signOut, user } = useAuth();
+  const activeMod = getActiveModule(location.pathname);
+
+  if (!activeMod) return <>{children}</>;
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* Top header bar */}
+      <header className="h-14 border-b bg-card flex items-center px-4 gap-3 shrink-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/")}
+          className="gap-1.5 text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          <LayoutDashboard className="h-4 w-4" />
+        </Button>
+
+        <div className="h-6 w-px bg-border" />
+
+        <div className="flex items-center gap-2">
+          <activeMod.icon className={`h-5 w-5 ${activeMod.color}`} />
+          <span className="font-semibold text-sm tracking-wide">{activeMod.label}</span>
+        </div>
+
+        <div className="ml-auto flex items-center gap-3">
+          <span className="text-xs text-muted-foreground hidden sm:block">{user?.email}</span>
+          <Button variant="ghost" size="icon" onClick={signOut} className="text-muted-foreground hover:text-foreground h-8 w-8">
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
+      </header>
+
+      {/* Module navigation - horizontal scrollable */}
+      <nav className="border-b bg-card/80 backdrop-blur-sm shrink-0">
+        <ScrollArea className="w-full">
+          <div className="flex items-center gap-1 px-4 py-1.5">
+            {activeMod.items.map((item) => (
+              <NavLink
+                key={item.url}
+                to={item.url}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors whitespace-nowrap"
+                activeClassName="bg-primary/10 text-primary font-medium"
+              >
+                <item.icon className="h-4 w-4" />
+                <span>{item.title}</span>
+              </NavLink>
+            ))}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </nav>
+
+      {/* Content */}
+      <main className="flex-1 overflow-auto p-6">
+        {children}
+      </main>
+    </div>
+  );
+}
