@@ -32,10 +32,15 @@ import RelatoriosFinanceiro from "./pages/financeiro/RelatoriosFinanceiro";
 // Vendas
 import Pipeline from "./pages/vendas/Pipeline";
 import Contatos from "./pages/vendas/Contatos";
+import DealDetail from "./pages/vendas/DealDetail";
 import Atividades from "./pages/vendas/Atividades";
 import Calendario from "./pages/vendas/Calendario";
 import Afiliados from "./pages/vendas/Afiliados";
 import RelatoriosVendas from "./pages/vendas/RelatoriosVendas";
+import Metas from "./pages/vendas/Metas";
+import Tags from "./pages/vendas/Tags";
+import Formularios from "./pages/vendas/Formularios";
+import ImportarLeads from "./pages/vendas/ImportarLeads";
 
 const queryClient = new QueryClient();
 
@@ -74,9 +79,14 @@ const App = () => (
 
             {/* Vendas */}
             <Route path="/vendas/pipeline" element={<P><Pipeline /></P>} />
+            <Route path="/vendas/negociacao/:id" element={<P><DealDetail /></P>} />
             <Route path="/vendas/contatos" element={<P><Contatos /></P>} />
             <Route path="/vendas/atividades" element={<P><Atividades /></P>} />
             <Route path="/vendas/calendario" element={<P><Calendario /></P>} />
+            <Route path="/vendas/metas" element={<P><Metas /></P>} />
+            <Route path="/vendas/tags" element={<P><Tags /></P>} />
+            <Route path="/vendas/formularios" element={<P><Formularios /></P>} />
+            <Route path="/vendas/importar" element={<P><ImportarLeads /></P>} />
             <Route path="/vendas/afiliados" element={<P><Afiliados /></P>} />
             <Route path="/vendas/relatorios" element={<P><RelatoriosVendas /></P>} />
 
