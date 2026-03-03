@@ -42,6 +42,7 @@ export default function Dashboard() {
       assocRes, veicRes, sinRes,
       pagoHojeRes, totalMensRes, atrasoRes,
       sinTipoRes, recentRes, mensRecRes,
+      dealsAbertosRes, dealsGanhosRes, dealsTotalRes,
     ] = await Promise.all([
       supabase.from("associados").select("id", { count: "exact", head: true }).eq("status", "ativo"),
       supabase.from("veiculos").select("id", { count: "exact", head: true }),
@@ -52,22 +53,28 @@ export default function Dashboard() {
       supabase.from("sinistros").select("tipo"),
       supabase.from("associados").select("id, nome, status, data_adesao").order("created_at", { ascending: false }).limit(5),
       supabase.from("mensalidades").select("*, associados(nome)").order("created_at", { ascending: false }).limit(5),
+      supabase.from("deals").select("id", { count: "exact", head: true }).eq("status", "aberto").in("stage", ["negociacao", "proposta"]),
+      supabase.from("deals").select("id", { count: "exact", head: true }).eq("status", "ganho").gte("updated_at", monthStartStr),
+      supabase.from("deals").select("id", { count: "exact", head: true }).gte("created_at", monthStartStr),
     ]);
 
     const recebidoHoje = pagoHojeRes.data?.reduce((s, m) => s + Number(m.valor), 0) ?? 0;
     const totalMens = totalMensRes.count ?? 0;
     const atraso = atrasoRes.count ?? 0;
     const inadimplencia = totalMens > 0 ? Math.round((atraso / totalMens) * 100) : 0;
+    const ganhosMes = dealsGanhosRes.count ?? 0;
+    const totalDeals = dealsTotalRes.count ?? 0;
+    const conversao = totalDeals > 0 ? Math.round((ganhosMes / totalDeals) * 100) : 0;
 
     setStats({
       associadosAtivos: assocRes.count ?? 0,
       veiculos: veicRes.count ?? 0,
       eventosAbertos: sinRes.count ?? 0,
       recebidoHoje: recebidoHoje,
-      negociacoesAtivas: 0,
-      vendasMes: 0,
+      negociacoesAtivas: dealsAbertosRes.count ?? 0,
+      vendasMes: ganhosMes,
       inadimplencia,
-      conversao: 0,
+      conversao,
     });
 
     if (sinTipoRes.data) {
