@@ -51,21 +51,21 @@ const moduleConfigs = [
     prefix: ["/associados", "/veiculos", "/regionais", "/cooperativas", "/sinistros", "/documentacao", "/vistorias", "/produtos", "/usuarios", "/parametros"],
     label: "Gestão",
     icon: Shield,
-    color: "text-primary",
+    gradient: "from-primary to-primary/70",
     items: gestaoItems,
   },
   {
     prefix: ["/financeiro"],
     label: "Financeiro",
     icon: DollarSign,
-    color: "text-accent",
+    gradient: "from-accent to-accent/70",
     items: financeiroItems,
   },
   {
     prefix: ["/vendas"],
     label: "Vendas",
     icon: Target,
-    color: "text-warning",
+    gradient: "from-warning to-warning/70",
     items: vendasItems,
   },
 ];
@@ -89,48 +89,62 @@ export function ModuleLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Top header bar */}
-      <header className="h-14 border-b bg-card flex items-center px-4 gap-3 shrink-0">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/")}
-          className="gap-1.5 text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          <LayoutDashboard className="h-4 w-4" />
-        </Button>
-
-        <div className="h-6 w-px bg-border" />
-
-        <div className="flex items-center gap-2">
-          <activeMod.icon className={`h-5 w-5 ${activeMod.color}`} />
-          <span className="font-semibold text-sm tracking-wide">{activeMod.label}</span>
-        </div>
-
-        <div className="ml-auto flex items-center gap-3">
-          <span className="text-xs text-muted-foreground hidden sm:block">{user?.email}</span>
-          <Button variant="ghost" size="icon" onClick={signOut} className="text-muted-foreground hover:text-foreground h-8 w-8">
-            <LogOut className="h-4 w-4" />
+      {/* Top header bar with gradient accent */}
+      <header className="border-b bg-card shadow-sm shrink-0">
+        <div className="flex items-center h-14 px-4 gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/")}
+            className="gap-1.5 text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <LayoutDashboard className="h-4 w-4" />
           </Button>
+
+          <div className="h-6 w-px bg-border" />
+
+          <div className="flex items-center gap-2.5">
+            <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${activeMod.gradient} flex items-center justify-center`}>
+              <activeMod.icon className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <span className="font-bold text-sm tracking-wide">{activeMod.label}</span>
+          </div>
+
+          <div className="ml-auto flex items-center gap-3">
+            <span className="text-xs text-muted-foreground hidden sm:block">{user?.email}</span>
+            <Button variant="ghost" size="icon" onClick={signOut} className="text-muted-foreground hover:text-foreground h-8 w-8">
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </header>
 
-      {/* Module navigation - horizontal scrollable */}
-      <nav className="border-b bg-card/80 backdrop-blur-sm shrink-0">
+      {/* Module navigation - horizontal scrollable with accent line */}
+      <nav className="border-b bg-card/60 backdrop-blur-sm shrink-0">
         <ScrollArea className="w-full">
-          <div className="flex items-center gap-1 px-4 py-1.5">
-            {activeMod.items.map((item) => (
-              <NavLink
-                key={item.url}
-                to={item.url}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors whitespace-nowrap"
-                activeClassName="bg-primary/10 text-primary font-medium"
-              >
-                <item.icon className="h-4 w-4" />
-                <span>{item.title}</span>
-              </NavLink>
-            ))}
+          <div className="flex items-center gap-0.5 px-4 py-1">
+            {activeMod.items.map((item) => {
+              const isActive = location.pathname === item.url || location.pathname.startsWith(item.url + "/");
+              return (
+                <NavLink
+                  key={item.url}
+                  to={item.url}
+                  className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm transition-colors whitespace-nowrap rounded-t-md ${
+                    isActive
+                      ? "text-primary font-semibold"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  }`}
+                  activeClassName=""
+                >
+                  <item.icon className="h-3.5 w-3.5" />
+                  <span>{item.title}</span>
+                  {isActive && (
+                    <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full" />
+                  )}
+                </NavLink>
+              );
+            })}
           </div>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
