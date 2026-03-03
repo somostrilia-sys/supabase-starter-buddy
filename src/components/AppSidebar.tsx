@@ -13,6 +13,17 @@ import {
   LogOut,
   ChevronDown,
   LayoutDashboard,
+  DollarSign,
+  Target,
+  CalendarDays,
+  BarChart3,
+  Receipt,
+  ArrowLeftRight,
+  Wallet,
+  Kanban,
+  Contact,
+  Activity,
+  UsersRound,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -32,7 +43,6 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { cn } from "@/lib/utils";
 
 const gestaoItems = [
   { title: "Associados", url: "/associados", icon: Users },
@@ -47,13 +57,78 @@ const gestaoItems = [
   { title: "Parâmetros", url: "/parametros", icon: SlidersHorizontal },
 ];
 
+const financeiroItems = [
+  { title: "Fluxo Diário", url: "/financeiro/fluxo-diario", icon: Wallet },
+  { title: "Boletos Recebidos", url: "/financeiro/boletos", icon: Receipt },
+  { title: "Conciliação Bancária", url: "/financeiro/conciliacao", icon: ArrowLeftRight },
+  { title: "Relatórios", url: "/financeiro/relatorios", icon: BarChart3 },
+];
+
+const vendasItems = [
+  { title: "Pipeline", url: "/vendas/pipeline", icon: Kanban },
+  { title: "Contatos", url: "/vendas/contatos", icon: Contact },
+  { title: "Atividades", url: "/vendas/atividades", icon: Activity },
+  { title: "Calendário", url: "/vendas/calendario", icon: CalendarDays },
+  { title: "Afiliados", url: "/vendas/afiliados", icon: UsersRound },
+  { title: "Relatórios", url: "/vendas/relatorios", icon: BarChart3 },
+];
+
+interface ModuleGroupProps {
+  label: string;
+  icon: React.ElementType;
+  iconColor: string;
+  items: { title: string; url: string; icon: React.ElementType }[];
+  collapsed: boolean;
+  pathname: string;
+}
+
+function ModuleGroup({ label, icon: ModIcon, iconColor, items, collapsed, pathname }: ModuleGroupProps) {
+  const isActive = items.some((i) => pathname === i.url || pathname.startsWith(i.url + "/"));
+
+  return (
+    <Collapsible defaultOpen={isActive} className="mt-1">
+      <SidebarGroup className="p-0">
+        <CollapsibleTrigger className="w-full group">
+          <SidebarGroupLabel className="flex items-center justify-between w-full cursor-pointer text-sidebar-foreground/50 hover:text-sidebar-foreground/80 text-[10px] uppercase tracking-widest px-3 py-2">
+            <span className="flex items-center gap-2">
+              <ModIcon className={`h-3.5 w-3.5 ${iconColor}`} />
+              {!collapsed && label}
+            </span>
+            {!collapsed && (
+              <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            )}
+          </SidebarGroupLabel>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items.map((item) => (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className="hover:bg-sidebar-accent/60 text-sidebar-foreground/70 text-[13px]"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                    >
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </CollapsibleContent>
+      </SidebarGroup>
+    </Collapsible>
+  );
+}
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { signOut, user } = useAuth();
   const location = useLocation();
-
-  const gestaoActive = gestaoItems.some((i) => location.pathname === i.url || location.pathname.startsWith(i.url + "/"));
 
   return (
     <Sidebar collapsible="icon">
@@ -75,8 +150,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-3">
-        {/* Dashboard link */}
+      <SidebarContent className="px-2 py-3 overflow-y-auto">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
@@ -93,41 +167,32 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
 
-        {/* Módulo Gestão */}
-        <Collapsible defaultOpen={gestaoActive || true} className="mt-2">
-          <SidebarGroup className="p-0">
-            <CollapsibleTrigger className="w-full">
-              <SidebarGroupLabel className="flex items-center justify-between w-full cursor-pointer text-sidebar-foreground/50 hover:text-sidebar-foreground/80 text-[10px] uppercase tracking-widest px-3 py-2">
-                <span className="flex items-center gap-2">
-                  <Shield className="h-3.5 w-3.5 text-sidebar-primary" />
-                  {!collapsed && "Gestão"}
-                </span>
-                {!collapsed && <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200 group-data-[state=open]:rotate-180" />}
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
+        <ModuleGroup
+          label="Gestão"
+          icon={Shield}
+          iconColor="text-sidebar-primary"
+          items={gestaoItems}
+          collapsed={collapsed}
+          pathname={location.pathname}
+        />
 
-            <CollapsibleContent>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {gestaoItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.url}
-                          className="hover:bg-sidebar-accent/60 text-sidebar-foreground/70 text-[13px]"
-                          activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                        >
-                          <item.icon className="mr-2 h-4 w-4" />
-                          {!collapsed && <span>{item.title}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
-        </Collapsible>
+        <ModuleGroup
+          label="Financeiro"
+          icon={DollarSign}
+          iconColor="text-emerald-400"
+          items={financeiroItems}
+          collapsed={collapsed}
+          pathname={location.pathname}
+        />
+
+        <ModuleGroup
+          label="Vendas"
+          icon={Target}
+          iconColor="text-orange-400"
+          items={vendasItems}
+          collapsed={collapsed}
+          pathname={location.pathname}
+        />
       </SidebarContent>
 
       <SidebarFooter className="p-3 border-t border-sidebar-border">

@@ -6,11 +6,14 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/AppLayout";
+
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import NotFound from "./pages/NotFound";
+
+// Gestão
 import Associados from "./pages/Associados";
 import Veiculos from "./pages/Veiculos";
-import Financeiro from "./pages/Financeiro";
 import Sinistros from "./pages/Sinistros";
 import Regionais from "./pages/Regionais";
 import Cooperativas from "./pages/Cooperativas";
@@ -19,7 +22,20 @@ import Vistorias from "./pages/Vistorias";
 import Produtos from "./pages/Produtos";
 import Usuarios from "./pages/Usuarios";
 import Parametros from "./pages/Parametros";
-import NotFound from "./pages/NotFound";
+
+// Financeiro
+import FluxoDiario from "./pages/financeiro/FluxoDiario";
+import Boletos from "./pages/financeiro/Boletos";
+import Conciliacao from "./pages/financeiro/Conciliacao";
+import RelatoriosFinanceiro from "./pages/financeiro/RelatoriosFinanceiro";
+
+// Vendas
+import Pipeline from "./pages/vendas/Pipeline";
+import Contatos from "./pages/vendas/Contatos";
+import Atividades from "./pages/vendas/Atividades";
+import Calendario from "./pages/vendas/Calendario";
+import Afiliados from "./pages/vendas/Afiliados";
+import RelatoriosVendas from "./pages/vendas/RelatoriosVendas";
 
 const queryClient = new QueryClient();
 
@@ -37,9 +53,10 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<P><Dashboard /></P>} />
+
+            {/* Gestão */}
             <Route path="/associados" element={<P><Associados /></P>} />
             <Route path="/veiculos" element={<P><Veiculos /></P>} />
-            <Route path="/financeiro" element={<P><Financeiro /></P>} />
             <Route path="/sinistros" element={<P><Sinistros /></P>} />
             <Route path="/regionais" element={<P><Regionais /></P>} />
             <Route path="/cooperativas" element={<P><Cooperativas /></P>} />
@@ -48,6 +65,21 @@ const App = () => (
             <Route path="/produtos" element={<P><Produtos /></P>} />
             <Route path="/usuarios" element={<P><Usuarios /></P>} />
             <Route path="/parametros" element={<P><Parametros /></P>} />
+
+            {/* Financeiro */}
+            <Route path="/financeiro/fluxo-diario" element={<P><FluxoDiario /></P>} />
+            <Route path="/financeiro/boletos" element={<P><Boletos /></P>} />
+            <Route path="/financeiro/conciliacao" element={<P><Conciliacao /></P>} />
+            <Route path="/financeiro/relatorios" element={<P><RelatoriosFinanceiro /></P>} />
+
+            {/* Vendas */}
+            <Route path="/vendas/pipeline" element={<P><Pipeline /></P>} />
+            <Route path="/vendas/contatos" element={<P><Contatos /></P>} />
+            <Route path="/vendas/atividades" element={<P><Atividades /></P>} />
+            <Route path="/vendas/calendario" element={<P><Calendario /></P>} />
+            <Route path="/vendas/afiliados" element={<P><Afiliados /></P>} />
+            <Route path="/vendas/relatorios" element={<P><RelatoriosVendas /></P>} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
