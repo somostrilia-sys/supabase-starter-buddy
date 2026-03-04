@@ -356,7 +356,7 @@ export default function Pipeline() {
                         key={deal.id}
                         draggable
                         onDragStart={(e) => handleDragStart(e, deal.id)}
-                        onClick={() => !deal.id.startsWith("m") && navigate(`/vendas/negociacao/${deal.id}`)}
+                        onClick={() => navigate(`/vendas/negociacao/${deal.id}`)}
                         className={`group relative bg-card rounded-lg border border-border/50 cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-lg hover:scale-[1.02] hover:border-border ${draggedId === deal.id ? "opacity-40 scale-95" : ""}`}
                         style={{ borderLeft: `3px solid ${col.borderColor}` }}
                       >
@@ -455,7 +455,7 @@ export default function Pipeline() {
               </tr></thead>
               <tbody>
                 {filteredDeals.map(deal => (
-                  <tr key={deal.id} className="border-b hover:bg-muted/20 cursor-pointer" onClick={() => !deal.id.startsWith("m") && navigate(`/vendas/negociacao/${deal.id}`)}>
+                  <tr key={deal.id} className="border-b hover:bg-muted/20 cursor-pointer" onClick={() => navigate(`/vendas/negociacao/${deal.id}`)}>
                     <td className="p-3 font-medium">
                       <div className="flex items-center gap-2">
                         <Car className="h-3.5 w-3.5 text-muted-foreground" />
