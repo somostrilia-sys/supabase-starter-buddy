@@ -1,148 +1,252 @@
-import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { toast } from "@/hooks/use-toast";
-import { Plus, Search, Phone, Mail, User, MapPin, Edit, Trash2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Search, Filter, Download, MessageSquare, Phone, Mail, User,
+  ChevronLeft, ChevronRight, ExternalLink, Plus, Calendar, MapPin,
+} from "lucide-react";
 
-const emptyForm = { nome: "", cpf_cnpj: "", email: "", telefone: "", telefone2: "", cidade: "", estado: "", origem: "", observacoes: "" };
+const ufs = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
+
+interface Contato {
+  id: string; nome: string; cpf: string; telefone: string; email: string;
+  cidade: string; estado: string; dataCadastro: string; ultimaInteracao: string;
+  nascimento: string; negociacoes: number; sexo: string;
+}
+
+function gerarCPF(i: number) {
+  const n = String(11122233344 + i * 11111111).slice(0, 11);
+  return `${n.slice(0,3)}.${n.slice(3,6)}.${n.slice(6,9)}-${n.slice(9,11)}`;
+}
+
+const nomes = [
+  "Ana Beatriz Silva","Bruno Costa","Camila Oliveira","Daniel Santos","Elisa Ferreira",
+  "Fernando Almeida","Gabriela Lima","Henrique Souza","Isabela Rocha","João Pedro Nunes",
+  "Karla Mendes","Leonardo Barbosa","Mariana Dias","Nicolas Ribeiro","Patrícia Cardoso",
+  "Rafael Martins","Sabrina Pereira","Thiago Araújo","Vanessa Castro","William Gomes",
+  "Yasmin Teixeira","Arthur Correia","Bianca Pinto","Caio Monteiro","Débora Nascimento",
+];
+
+const cidades = [
+  ["São Paulo","SP"],["Rio de Janeiro","RJ"],["Belo Horizonte","MG"],["Campinas","SP"],
+  ["Guarulhos","SP"],["Niterói","RJ"],["Uberlândia","MG"],["Santos","SP"],
+  ["São Bernardo","SP"],["Juiz de Fora","MG"],["Osasco","SP"],["Volta Redonda","RJ"],
+  ["Ribeirão Preto","SP"],["Petrópolis","RJ"],["Contagem","MG"],["Sorocaba","SP"],
+  ["Duque de Caxias","RJ"],["Uberaba","MG"],["Jundiaí","SP"],["Nova Iguaçu","RJ"],
+  ["Bauru","SP"],["Campos","RJ"],["Betim","MG"],["Piracicaba","SP"],["Macaé","RJ"],
+];
+
+const now = Date.now();
+const day = 86400000;
+
+const mockContatos: Contato[] = nomes.map((nome, i) => ({
+  id: `c${i}`,
+  nome,
+  cpf: gerarCPF(i),
+  telefone: `(11) 9${String(8000 + i * 37).slice(0,4)}-${String(1000 + i * 53).slice(0,4)}`,
+  email: nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").split(" ").slice(0,2).join(".") + "@email.com",
+  cidade: cidades[i][0],
+  estado: cidades[i][1],
+  dataCadastro: new Date(now - (i * 5 + 1) * day).toISOString(),
+  ultimaInteracao: new Date(now - (i * 3) * day).toISOString(),
+  nascimento: `${1980 + (i % 20)}-${String(((new Date().getMonth() + 1) % 12) + 1).padStart(2,"0")}-${String((i % 28) + 1).padStart(2,"0")}`,
+  negociacoes: i % 5 === 0 ? 0 : (i % 3) + 1,
+  sexo: i % 2 === 0 ? "F" : "M",
+}));
+
+function timeAgo(d: string) {
+  const diff = now - new Date(d).getTime();
+  const days = Math.floor(diff / day);
+  if (days === 0) return "hoje";
+  if (days === 1) return "ontem";
+  if (days < 30) return `${days}d atrás`;
+  return `${Math.floor(days / 30)}m atrás`;
+}
 
 export default function Contatos() {
-  const [contatos, setContatos] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [form, setForm] = useState(emptyForm);
   const [search, setSearch] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState("todos");
+  const [page, setPage] = useState(0);
+  const [perPage, setPerPage] = useState(10);
+  const [selected, setSelected] = useState<Contato | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
 
-  const load = useCallback(async () => {
-    const { data } = await supabase.from("contatos").select("*").order("created_at", { ascending: false });
-    if (data) setContatos(data);
-    setLoading(false);
-  }, []);
+  const currentMonth = new Date().getMonth() + 1;
 
-  useEffect(() => { load(); }, [load]);
+  const filtered = useMemo(() => {
+    let list = mockContatos;
+    if (search) {
+      const s = search.toLowerCase();
+      list = list.filter(c =>
+        c.nome.toLowerCase().includes(s) || c.cpf.includes(s) ||
+        c.telefone.includes(s) || c.email.toLowerCase().includes(s)
+      );
+    }
+    if (tab === "novos") list = list.filter(c => (now - new Date(c.dataCadastro).getTime()) < 7 * day);
+    if (tab === "antigos") list = list.filter(c => (now - new Date(c.ultimaInteracao).getTime()) > 90 * day);
+    if (tab === "sem-dados") list = list.filter(c => !c.email || !c.telefone);
+    if (tab === "aniversariantes") list = list.filter(c => parseInt(c.nascimento.split("-")[1]) === currentMonth);
+    return list;
+  }, [search, tab, currentMonth]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      if (editing) {
-        const { error } = await supabase.from("contatos").update(form).eq("id", editing);
-        if (error) throw error;
-        toast({ title: "Contato atualizado!" });
-      } else {
-        const { error } = await supabase.from("contatos").insert([form]);
-        if (error) throw error;
-        toast({ title: "Contato criado!" });
-      }
-      closeForm(); load();
-    } catch (err: any) { toast({ title: "Erro", description: err.message, variant: "destructive" }); }
-    finally { setSaving(false); }
-  }
-
-  function closeForm() { setFormOpen(false); setEditing(null); setForm(emptyForm); }
-
-  function openEdit(c: any) {
-    setEditing(c.id);
-    setForm({ nome: c.nome, cpf_cnpj: c.cpf_cnpj || "", email: c.email || "", telefone: c.telefone || "", telefone2: c.telefone2 || "", cidade: c.cidade || "", estado: c.estado || "", origem: c.origem || "", observacoes: c.observacoes || "" });
-    setFormOpen(true);
-  }
-
-  async function handleDelete(id: string) {
-    if (!confirm("Excluir contato?")) return;
-    await supabase.from("contatos").delete().eq("id", id);
-    toast({ title: "Excluído" }); load();
-  }
-
-  const filtered = contatos.filter(c =>
-    !search || c.nome?.toLowerCase().includes(search.toLowerCase()) ||
-    c.email?.toLowerCase().includes(search.toLowerCase()) ||
-    c.telefone?.includes(search) || c.cpf_cnpj?.includes(search)
-  );
-
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+  const totalPages = Math.ceil(filtered.length / perPage);
+  const pageData = filtered.slice(page * perPage, (page + 1) * perPage);
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Contatos</h1>
-          <p className="text-muted-foreground text-sm">{filtered.length} contatos cadastrados</p>
+          <p className="text-sm text-muted-foreground">{filtered.length} contatos encontrados</p>
         </div>
         <div className="flex gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-56" />
-          </div>
-          <Dialog open={formOpen} onOpenChange={(o) => { if (!o) closeForm(); else setFormOpen(true); }}>
-            <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" /> Novo Contato</Button></DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>{editing ? "Editar Contato" : "Novo Contato"}</DialogTitle></DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <div className="space-y-1.5"><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required /></div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5"><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })} /></div>
-                  <div className="space-y-1.5"><Label>E-mail</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5"><Label>Telefone</Label><Input value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} /></div>
-                  <div className="space-y-1.5"><Label>Telefone 2</Label><Input value={form.telefone2} onChange={(e) => setForm({ ...form, telefone2: e.target.value })} /></div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5"><Label>Cidade</Label><Input value={form.cidade} onChange={(e) => setForm({ ...form, cidade: e.target.value })} /></div>
-                  <div className="space-y-1.5"><Label>Estado</Label><Input value={form.estado} onChange={(e) => setForm({ ...form, estado: e.target.value })} /></div>
-                </div>
-                <div className="space-y-1.5"><Label>Origem</Label><Input value={form.origem} onChange={(e) => setForm({ ...form, origem: e.target.value })} placeholder="Facebook, indicação..." /></div>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={closeForm}>Cancelar</Button>
-                  <Button type="submit" disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1" /> Exportar CSV</Button>
+          <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Novo Contato</Button>
         </div>
       </div>
 
-      <Card className="border-0 shadow-sm">
+      <Tabs value={tab} onValueChange={v => { setTab(v); setPage(0); }}>
+        <TabsList className="bg-muted/50">
+          <TabsTrigger value="todos" className="text-xs">Todos</TabsTrigger>
+          <TabsTrigger value="novos" className="text-xs">Novos (7d)</TabsTrigger>
+          <TabsTrigger value="antigos" className="text-xs">Antigos (+90d)</TabsTrigger>
+          <TabsTrigger value="sem-dados" className="text-xs">Sem Dados</TabsTrigger>
+          <TabsTrigger value="aniversariantes" className="text-xs">🎂 Aniversariantes</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar por nome, CPF, telefone ou email..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} className="pl-9" />
+        </div>
+        <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon"><Filter className="h-4 w-4" /></Button>
+          </SheetTrigger>
+          <SheetContent>
+            <SheetHeader><SheetTitle>Filtros</SheetTitle></SheetHeader>
+            <div className="space-y-4 mt-4">
+              <div className="space-y-1"><Label className="text-xs">Período de Cadastro</Label>
+                <div className="grid grid-cols-2 gap-2"><Input type="date" className="text-xs h-9" /><Input type="date" className="text-xs h-9" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Estado</Label>
+                <Select><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>{ufs.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Cidade</Label><Input className="h-9 text-xs" placeholder="Digite a cidade..." /></div>
+              <div className="space-y-1"><Label className="text-xs">Tem negociação ativa?</Label>
+                <Select><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent><SelectItem value="todos">Todos</SelectItem><SelectItem value="sim">Sim</SelectItem><SelectItem value="nao">Não</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <Button className="w-full" onClick={() => setFilterOpen(false)}>Aplicar Filtros</Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      <Card className="border border-border/50">
         <CardContent className="p-0">
           <table className="w-full text-sm">
             <thead><tr className="border-b bg-muted/30">
-              <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">Nome</th>
-              <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">CPF/CNPJ</th>
-              <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">Telefone</th>
-              <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">E-mail</th>
-              <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">Cidade/UF</th>
-              <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase">Origem</th>
-              <th className="p-3"></th>
+              <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">Nome</th>
+              <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">CPF</th>
+              <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">Telefone</th>
+              <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">Email</th>
+              <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">Cidade/UF</th>
+              <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">Cadastro</th>
+              <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">Últ. Interação</th>
+              <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">Negoc.</th>
             </tr></thead>
             <tbody>
-              {filtered.map(c => (
-                <tr key={c.id} className="border-b hover:bg-muted/20">
-                  <td className="p-3 font-medium">{c.nome}</td>
-                  <td className="p-3 text-muted-foreground font-mono text-xs">{c.cpf_cnpj || "—"}</td>
-                  <td className="p-3 text-muted-foreground">{c.telefone || "—"}</td>
-                  <td className="p-3 text-muted-foreground">{c.email || "—"}</td>
-                  <td className="p-3 text-muted-foreground">{[c.cidade, c.estado].filter(Boolean).join("/") || "—"}</td>
-                  <td className="p-3">{c.origem ? <Badge variant="outline" className="text-[10px]">{c.origem}</Badge> : "—"}</td>
+              {pageData.map(c => (
+                <tr key={c.id} className="border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-colors" onClick={() => setSelected(c)}>
                   <td className="p-3">
-                    <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(c)}><Edit className="h-3.5 w-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDelete(c.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-7 w-7"><AvatarFallback className="text-[10px] bg-primary/20 text-primary">{c.nome.split(" ").map(n=>n[0]).slice(0,2).join("")}</AvatarFallback></Avatar>
+                      <span className="font-medium text-xs">{c.nome}</span>
                     </div>
                   </td>
+                  <td className="p-3 text-xs font-mono text-muted-foreground">{c.cpf}</td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs">{c.telefone}</span>
+                      <MessageSquare className="h-3.5 w-3.5 text-[#25D366] cursor-pointer" />
+                    </div>
+                  </td>
+                  <td className="p-3 text-xs text-muted-foreground">{c.email}</td>
+                  <td className="p-3 text-xs">{c.cidade}/{c.estado}</td>
+                  <td className="p-3 text-xs text-muted-foreground">{new Date(c.dataCadastro).toLocaleDateString("pt-BR")}</td>
+                  <td className="p-3 text-xs text-muted-foreground">{timeAgo(c.ultimaInteracao)}</td>
+                  <td className="p-3"><Badge variant={c.negociacoes > 0 ? "default" : "secondary"} className="text-[10px]">{c.negociacoes}</Badge></td>
                 </tr>
               ))}
-              {filtered.length === 0 && <tr><td colSpan={7} className="text-center py-12 text-muted-foreground">Nenhum contato encontrado</td></tr>}
             </tbody>
           </table>
         </CardContent>
       </Card>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Por página:</span>
+          <Select value={String(perPage)} onValueChange={v => { setPerPage(Number(v)); setPage(0); }}>
+            <SelectTrigger className="h-8 w-20 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="10">10</SelectItem><SelectItem value="25">25</SelectItem><SelectItem value="50">50</SelectItem></SelectContent>
+          </Select>
+          <span className="text-xs text-muted-foreground">{page * perPage + 1}-{Math.min((page+1)*perPage, filtered.length)} de {filtered.length}</span>
+        </div>
+        <div className="flex gap-1">
+          <Button variant="outline" size="icon" className="h-8 w-8" disabled={page === 0} onClick={() => setPage(p => p-1)}><ChevronLeft className="h-4 w-4" /></Button>
+          <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages - 1} onClick={() => setPage(p => p+1)}><ChevronRight className="h-4 w-4" /></Button>
+        </div>
+      </div>
+
+      <Sheet open={!!selected} onOpenChange={o => !o && setSelected(null)}>
+        <SheetContent className="w-96">
+          {selected && (
+            <div className="space-y-4 mt-4">
+              <div className="flex flex-col items-center text-center gap-2">
+                <Avatar className="h-16 w-16"><AvatarFallback className="text-lg bg-primary text-primary-foreground">{selected.nome.split(" ").map(n=>n[0]).slice(0,2).join("")}</AvatarFallback></Avatar>
+                <h3 className="font-bold text-lg">{selected.nome}</h3>
+                <p className="text-xs text-muted-foreground">{selected.cpf}</p>
+              </div>
+              <Separator />
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" />{selected.telefone}<MessageSquare className="h-4 w-4 text-[#25D366] ml-auto cursor-pointer" /></div>
+                <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" />{selected.email}</div>
+                <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" />{selected.cidade}/{selected.estado}</div>
+                <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" />Cadastro: {new Date(selected.dataCadastro).toLocaleDateString("pt-BR")}</div>
+              </div>
+              <Separator />
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Negociações ({selected.negociacoes})</p>
+                {selected.negociacoes > 0 ? (
+                  Array.from({length: selected.negociacoes}).map((_,i) => (
+                    <div key={i} className="flex items-center justify-between p-2 rounded-lg border border-border/40 bg-card text-xs">
+                      <div>
+                        <p className="font-medium">Proteção Veicular #{i+1}</p>
+                        <Badge className="text-[9px] mt-0.5 bg-[#F59E0B]/20 text-[#F59E0B] border-0">Em andamento</Badge>
+                      </div>
+                      <Button variant="ghost" size="sm" className="h-7 text-[10px]"><ExternalLink className="h-3 w-3 mr-1" /> Ver</Button>
+                    </div>
+                  ))
+                ) : <p className="text-xs text-muted-foreground">Nenhuma negociação</p>}
+              </div>
+              <Button className="w-full" size="sm"><Plus className="h-4 w-4 mr-1" /> Nova Negociação</Button>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
