@@ -1,175 +1,286 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useMemo } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "@/hooks/use-toast";
-import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Search, Filter, Download, Plus, ChevronLeft, ChevronRight, Car, Bike, Truck,
+  User, ExternalLink, Trash2, Calendar,
+} from "lucide-react";
 
-const emptyForm = {
-  associado_id: "", marca: "", modelo: "", ano: "",
-  cor: "", placa: "", chassi: "", renavam: "", valor_fipe: "",
+const statusMap: Record<string, { label: string; class: string }> = {
+  ativo: { label: "Ativo", class: "bg-emerald-500/15 text-emerald-400 border-0" },
+  cancelado: { label: "Cancelado", class: "bg-destructive/15 text-destructive border-0" },
+  vistoria: { label: "Em Vistoria", class: "bg-amber-500/15 text-amber-400 border-0" },
 };
+const tipoIcon: Record<string, any> = { "Automóvel": Car, "Moto": Bike, "Caminhão": Truck };
+
+interface Veiculo {
+  id: string; placa: string; marca: string; modelo: string; ano: number; cor: string;
+  valorFipe: number; associado: string; associadoId: string; status: string; tipo: string;
+  dataInclusao: string; chassi: string; renavam: string; motor: string; cambio: string;
+  combustivel: string; km: number; estadoCirc: string; cidadeCirc: string;
+}
+
+const marcas = ["Chevrolet","Hyundai","VW","Fiat","Toyota","Honda","Renault","Jeep","Nissan","Ford"];
+const modelos: Record<string, string[]> = {
+  Chevrolet: ["Onix","Tracker","S10","Spin","Cruze"], Hyundai: ["HB20","Creta","Tucson","i30","Santa Fe"],
+  VW: ["Gol","T-Cross","Polo","Virtus","Amarok"], Fiat: ["Argo","Mobi","Toro","Pulse","Strada"],
+  Toyota: ["Corolla","Hilux","SW4","Yaris","RAV4"], Honda: ["Civic","HR-V","City","Fit","WR-V"],
+  Renault: ["Kwid","Duster","Sandero","Captur","Oroch"], Jeep: ["Compass","Renegade","Commander","Gladiator"],
+  Nissan: ["Kicks","Versa","Frontier","Sentra"], Ford: ["Ranger","Territory","Bronco","Maverick"],
+};
+const cores = ["Branco","Prata","Preto","Cinza","Vermelho","Azul","Marrom"];
+const assocNomes = [
+  "Carlos Silva","Maria Souza","José Santos","Ana Oliveira","Francisco Lima","Antônia Ferreira","João Costa",
+  "Rita Pereira","Pedro Almeida","Lúcia Ribeiro","Paulo Cardoso","Sandra Martins","Marcos Dias","Rosângela Nunes",
+  "Sebastião Barbosa","Teresa Gomes","Raimundo Araújo","Cláudia Teixeira","Antônio Monteiro","Márcia Castro",
+  "Luiz Correia","Sônia Pinto","Fernando Nascimento","Aparecida Mendes","Manoel Rocha","Eliane Moreira",
+  "Roberto Vieira","Adriana Campos","Wellington Borges","Patrícia Lopes","Bruno Costa","Camila Rocha",
+  "Daniel Santos","Fernanda Alves","Lucas Pereira",
+];
+
+const now = Date.now();
+const day = 86400000;
+
+function genPlaca(i: number) {
+  const l = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  return `${l[i%26]}${l[(i*3)%26]}${l[(i*7)%26]}${i%10}${l[(i*11)%26]}${(i*37)%10}${(i*53)%10}`;
+}
+
+const mockVeiculos: Veiculo[] = Array.from({ length: 35 }).map((_, i) => {
+  const marca = marcas[i % 10];
+  const modelo = modelos[marca][i % modelos[marca].length];
+  return {
+    id: `v${i}`, placa: genPlaca(i), marca, modelo, ano: 2020 + (i % 5), cor: cores[i % 7],
+    valorFipe: 45000 + i * 3500, associado: assocNomes[i], associadoId: `a${i}`,
+    status: i < 28 ? "ativo" : i < 32 ? "vistoria" : "cancelado",
+    tipo: i % 8 === 7 ? "Moto" : i % 12 === 11 ? "Caminhão" : "Automóvel",
+    dataInclusao: new Date(now - (i * 15 + 5) * day).toISOString().slice(0, 10),
+    chassi: `9BR${String(53000000 + i * 111111).slice(0, 8)}${i}`, renavam: `${String(10000000000 + i * 111111111).slice(0, 11)}`,
+    motor: `${["1.0","1.3","1.5","1.8","2.0"][i%5]} ${["Flex","Diesel","Elétrico"][i%3]}`,
+    cambio: i % 3 === 0 ? "Manual" : "Automático", combustivel: ["Flex","Gasolina","Diesel","Elétrico"][i%4],
+    km: 5000 + i * 3200, estadoCirc: ["SP","RJ","MG"][i%3], cidadeCirc: ["São Paulo","Rio de Janeiro","Belo Horizonte"][i%3],
+  };
+});
+
+const condutoresMock = [
+  { nome: "João Silva", cpf: "123.456.789-00", cnh: "04512345678", parentesco: "Titular" },
+  { nome: "Maria Silva", cpf: "987.654.321-00", cnh: "04598765432", parentesco: "Cônjuge" },
+];
 
 export default function Veiculos() {
-  const [veiculos, setVeiculos] = useState<any[]>([]);
-  const [associados, setAssociados] = useState<any[]>([]);
   const [search, setSearch] = useState("");
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [form, setForm] = useState(emptyForm);
-  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [perPage, setPerPage] = useState(10);
+  const [selected, setSelected] = useState<Veiculo | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
 
-  useEffect(() => { load(); loadAssociados(); }, []);
+  const filtered = useMemo(() => {
+    if (!search) return mockVeiculos;
+    const s = search.toLowerCase();
+    return mockVeiculos.filter(v =>
+      v.placa.toLowerCase().includes(s) || v.marca.toLowerCase().includes(s) ||
+      v.modelo.toLowerCase().includes(s) || v.associado.toLowerCase().includes(s)
+    );
+  }, [search]);
 
-  async function load() {
-    const { data } = await supabase
-      .from("veiculos")
-      .select("*, associados(nome)")
-      .order("marca");
-    if (data) setVeiculos(data);
-  }
-
-  async function loadAssociados() {
-    const { data } = await supabase.from("associados").select("id, nome").eq("status", "ativo").order("nome");
-    if (data) setAssociados(data);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    const payload = {
-      ...form,
-      ano: form.ano ? parseInt(form.ano) : null,
-      valor_fipe: form.valor_fipe ? parseFloat(form.valor_fipe) : null,
-    };
-
-    try {
-      if (editing) {
-        const { error } = await supabase.from("veiculos").update(payload).eq("id", editing);
-        if (error) throw error;
-        toast({ title: "Veículo atualizado!" });
-      } else {
-        const { error } = await supabase.from("veiculos").insert(payload);
-        if (error) throw error;
-        toast({ title: "Veículo cadastrado!" });
-      }
-      setOpen(false);
-      setEditing(null);
-      setForm(emptyForm);
-      load();
-    } catch (error: any) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleDelete(id: string) {
-    if (!confirm("Deseja excluir este veículo?")) return;
-    const { error } = await supabase.from("veiculos").delete().eq("id", id);
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
-    else { toast({ title: "Veículo excluído" }); load(); }
-  }
-
-  const filtered = veiculos.filter((v) =>
-    v.placa?.toLowerCase().includes(search.toLowerCase()) ||
-    v.modelo?.toLowerCase().includes(search.toLowerCase()) ||
-    v.marca?.toLowerCase().includes(search.toLowerCase())
-  );
+  const totalPages = Math.ceil(filtered.length / perPage);
+  const pageData = filtered.slice(page * perPage, (page + 1) * perPage);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Veículos</h1>
-          <p className="text-muted-foreground text-sm">{veiculos.length} registros</p>
+          <p className="text-sm text-muted-foreground">{filtered.length} veículos cadastrados</p>
         </div>
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditing(null); setForm(emptyForm); } }}>
-          <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" /> Novo Veículo</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editing ? "Editar Veículo" : "Novo Veículo"}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label>Associado *</Label>
-                <Select value={form.associado_id} onValueChange={(v) => setForm({ ...form, associado_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Selecione o associado" /></SelectTrigger>
-                  <SelectContent>
-                    {associados.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5"><Label>Marca *</Label><Input value={form.marca} onChange={(e) => setForm({ ...form, marca: e.target.value })} required /></div>
-              <div className="space-y-1.5"><Label>Modelo *</Label><Input value={form.modelo} onChange={(e) => setForm({ ...form, modelo: e.target.value })} required /></div>
-              <div className="space-y-1.5"><Label>Ano</Label><Input type="number" value={form.ano} onChange={(e) => setForm({ ...form, ano: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>Cor</Label><Input value={form.cor} onChange={(e) => setForm({ ...form, cor: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>Placa *</Label><Input value={form.placa} onChange={(e) => setForm({ ...form, placa: e.target.value })} required /></div>
-              <div className="space-y-1.5"><Label>Chassi</Label><Input value={form.chassi} onChange={(e) => setForm({ ...form, chassi: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>Renavam</Label><Input value={form.renavam} onChange={(e) => setForm({ ...form, renavam: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>Valor FIPE</Label><Input type="number" step="0.01" value={form.valor_fipe} onChange={(e) => setForm({ ...form, valor_fipe: e.target.value })} /></div>
-              <div className="sm:col-span-2 flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button type="submit" disabled={loading}>{loading ? "Salvando..." : "Salvar"}</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1" /> CSV</Button>
+          <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Novo Veículo</Button>
+        </div>
       </div>
 
-      <Card className="border-0 shadow-sm">
-        <CardContent className="p-4">
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por placa, marca ou modelo..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar por placa, marca, modelo ou associado..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} className="pl-9" />
+        </div>
+        <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
+          <SheetTrigger asChild><Button variant="outline" size="icon"><Filter className="h-4 w-4" /></Button></SheetTrigger>
+          <SheetContent>
+            <SheetHeader><SheetTitle>Filtros</SheetTitle></SheetHeader>
+            <div className="space-y-4 mt-4">
+              <div className="space-y-1"><Label className="text-xs">Tipo</Label>
+                <Select><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>{["Automóvel","Moto","Caminhão"].map(t=><SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Status</Label>
+                <Select><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>{Object.entries(statusMap).map(([k,v])=><SelectItem key={k} value={k}>{v.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Marca</Label>
+                <Select><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Todas" /></SelectTrigger>
+                  <SelectContent>{marcas.map(m=><SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Ano</Label>
+                <div className="grid grid-cols-2 gap-2"><Input type="number" className="h-9 text-xs" placeholder="Min" /><Input type="number" className="h-9 text-xs" placeholder="Max" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Valor FIPE (R$)</Label>
+                <div className="grid grid-cols-2 gap-2"><Input type="number" className="h-9 text-xs" placeholder="Min" /><Input type="number" className="h-9 text-xs" placeholder="Max" /></div>
+              </div>
+              <Button className="w-full" onClick={() => setFilterOpen(false)}>Aplicar</Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      <Card className="border border-border/50">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b bg-muted/30">
+                {["Placa","Tipo","Marca/Modelo","Ano","Cor","Valor FIPE","Associado","Status","Inclusão"].map(h => (
+                  <th key={h} className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase whitespace-nowrap">{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {pageData.map(v => {
+                  const Icon = tipoIcon[v.tipo] || Car;
+                  return (
+                    <tr key={v.id} className="border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-colors" onClick={() => setSelected(v)}>
+                      <td className="p-3"><Badge variant="secondary" className="text-[10px] font-mono">{v.placa}</Badge></td>
+                      <td className="p-3"><Icon className="h-4 w-4 text-muted-foreground" /></td>
+                      <td className="p-3 text-xs font-medium">{v.marca} {v.modelo}</td>
+                      <td className="p-3 text-xs">{v.ano}</td>
+                      <td className="p-3 text-xs">{v.cor}</td>
+                      <td className="p-3 text-xs font-mono text-emerald-400">R$ {v.valorFipe.toLocaleString("pt-BR")}</td>
+                      <td className="p-3 text-xs text-primary cursor-pointer">{v.associado}</td>
+                      <td className="p-3"><Badge className={`text-[9px] ${statusMap[v.status].class}`}>{statusMap[v.status].label}</Badge></td>
+                      <td className="p-3 text-xs text-muted-foreground">{new Date(v.dataInclusao).toLocaleDateString("pt-BR")}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Associado</TableHead>
-                <TableHead>Marca/Modelo</TableHead>
-                <TableHead>Ano</TableHead>
-                <TableHead>Placa</TableHead>
-                <TableHead className="hidden md:table-cell">Cor</TableHead>
-                <TableHead className="w-[100px]">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((v) => (
-                <TableRow key={v.id}>
-                  <TableCell>{(v.associados as any)?.nome}</TableCell>
-                  <TableCell className="font-medium">{v.marca} {v.modelo}</TableCell>
-                  <TableCell>{v.ano}</TableCell>
-                  <TableCell className="uppercase font-mono">{v.placa}</TableCell>
-                  <TableCell className="hidden md:table-cell">{v.cor}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => { setEditing(v.id); setForm({ associado_id: v.associado_id, marca: v.marca, modelo: v.modelo, ano: v.ano?.toString() || "", cor: v.cor || "", placa: v.placa, chassi: v.chassi || "", renavam: v.renavam || "", valor_fipe: v.valor_fipe?.toString() || "" }); setOpen(true); }}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(v.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhum veículo encontrado</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
         </CardContent>
       </Card>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Por página:</span>
+          <Select value={String(perPage)} onValueChange={v => { setPerPage(Number(v)); setPage(0); }}>
+            <SelectTrigger className="h-8 w-20 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="10">10</SelectItem><SelectItem value="25">25</SelectItem><SelectItem value="50">50</SelectItem></SelectContent>
+          </Select>
+          <span className="text-xs text-muted-foreground">{page*perPage+1}-{Math.min((page+1)*perPage,filtered.length)} de {filtered.length}</span>
+        </div>
+        <div className="flex gap-1">
+          <Button variant="outline" size="icon" className="h-8 w-8" disabled={page===0} onClick={()=>setPage(p=>p-1)}><ChevronLeft className="h-4 w-4" /></Button>
+          <Button variant="outline" size="icon" className="h-8 w-8" disabled={page>=totalPages-1} onClick={()=>setPage(p=>p+1)}><ChevronRight className="h-4 w-4" /></Button>
+        </div>
+      </div>
+
+      <Sheet open={!!selected} onOpenChange={o => !o && setSelected(null)}>
+        <SheetContent className="w-[460px] overflow-y-auto">
+          {selected && (
+            <div className="space-y-4 mt-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-primary/10">
+                  {(() => { const I = tipoIcon[selected.tipo] || Car; return <I className="h-8 w-8 text-primary" />; })()}
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">{selected.marca} {selected.modelo} {selected.ano}</h3>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="font-mono text-xs">{selected.placa}</Badge>
+                    <Badge className={`text-[9px] ${statusMap[selected.status].class}`}>{statusMap[selected.status].label}</Badge>
+                  </div>
+                </div>
+              </div>
+              <Separator />
+
+              <Tabs defaultValue="dados">
+                <TabsList className="bg-muted/50 w-full">
+                  <TabsTrigger value="dados" className="text-xs flex-1">Dados</TabsTrigger>
+                  <TabsTrigger value="condutores" className="text-xs flex-1">Condutores</TabsTrigger>
+                  <TabsTrigger value="historico" className="text-xs flex-1">Histórico</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="dados" className="space-y-3 mt-3">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div><span className="text-muted-foreground">Chassi:</span> <span className="font-mono">{selected.chassi}</span></div>
+                    <div><span className="text-muted-foreground">Renavam:</span> <span className="font-mono">{selected.renavam}</span></div>
+                    <div><span className="text-muted-foreground">Motor:</span> {selected.motor}</div>
+                    <div><span className="text-muted-foreground">Câmbio:</span> {selected.cambio}</div>
+                    <div><span className="text-muted-foreground">Combustível:</span> {selected.combustivel}</div>
+                    <div><span className="text-muted-foreground">KM:</span> {selected.km.toLocaleString("pt-BR")}</div>
+                    <div><span className="text-muted-foreground">Cor:</span> {selected.cor}</div>
+                    <div><span className="text-muted-foreground">Valor FIPE:</span> <span className="font-mono text-emerald-400">R$ {selected.valorFipe.toLocaleString("pt-BR")}</span></div>
+                    <div><span className="text-muted-foreground">Circulação:</span> {selected.cidadeCirc}/{selected.estadoCirc}</div>
+                    <div><span className="text-muted-foreground">Inclusão:</span> {new Date(selected.dataInclusao).toLocaleDateString("pt-BR")}</div>
+                  </div>
+                  <Separator />
+                  <div>
+                    <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-1">Associado</p>
+                    <div className="flex items-center gap-2 p-2 rounded-lg border border-border/40 bg-card text-xs">
+                      <User className="h-4 w-4 text-primary" />
+                      <span className="font-medium">{selected.associado}</span>
+                      <Button variant="ghost" size="sm" className="h-6 text-[10px] ml-auto"><ExternalLink className="h-3 w-3" /></Button>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="condutores" className="space-y-3 mt-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold">{condutoresMock.length} condutores</p>
+                    <Button size="sm" variant="outline" className="text-xs h-7"><Plus className="h-3 w-3 mr-1" /> Adicionar</Button>
+                  </div>
+                  {condutoresMock.map((c, i) => (
+                    <div key={i} className="p-3 rounded-lg border border-border/40 bg-card space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">{c.nome}</span>
+                        <div className="flex gap-1">
+                          <Badge variant="outline" className="text-[8px]">{c.parentesco}</Badge>
+                          <Button variant="ghost" size="icon" className="h-6 w-6"><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">
+                        <span>CPF: {c.cpf}</span>
+                        <span>CNH: {c.cnh}</span>
+                      </div>
+                    </div>
+                  ))}
+                </TabsContent>
+
+                <TabsContent value="historico" className="space-y-2 mt-3">
+                  {[
+                    { data: "01/03/2026", desc: "Vistoria aprovada", tipo: "vistoria" },
+                    { data: "15/02/2026", desc: "Vistoria agendada", tipo: "vistoria" },
+                    { data: "10/01/2026", desc: "Veículo incluído no sistema", tipo: "sistema" },
+                  ].map((h, i) => (
+                    <div key={i} className="flex items-start gap-2 p-2 text-xs border-l-2 border-primary/30 pl-3">
+                      <Calendar className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="font-medium">{h.desc}</p>
+                        <p className="text-[10px] text-muted-foreground">{h.data}</p>
+                      </div>
+                    </div>
+                  ))}
+                </TabsContent>
+              </Tabs>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
