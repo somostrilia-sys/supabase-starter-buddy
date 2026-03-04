@@ -1,120 +1,205 @@
-import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { toast } from "@/hooks/use-toast";
-import { Plus, FileText, Trash2, Edit, Copy, ExternalLink } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import {
+  Plus, ExternalLink, Copy, FileText, GripVertical, X, Eye, ArrowLeft,
+} from "lucide-react";
+
+interface Campo {
+  id: string; label: string; obrigatorio: boolean; placeholder: string;
+}
+
+interface Formulario {
+  id: string; nome: string; url: string; ativo: boolean; leads: number; criadoEm: string; campos: Campo[];
+}
+
+const mockForms: Formulario[] = [
+  {
+    id: "f1", nome: "Captação Site Principal", url: "https://gia.com.br/f/captacao-site",
+    ativo: true, leads: 142, criadoEm: "2026-01-15",
+    campos: [
+      { id: "c1", label: "Nome Completo", obrigatorio: true, placeholder: "Seu nome" },
+      { id: "c2", label: "Telefone", obrigatorio: true, placeholder: "(11) 99999-9999" },
+      { id: "c3", label: "Veículo", obrigatorio: false, placeholder: "Marca e modelo" },
+    ],
+  },
+  {
+    id: "f2", nome: "Landing Page Facebook", url: "https://gia.com.br/f/facebook-lp",
+    ativo: true, leads: 87, criadoEm: "2026-02-01",
+    campos: [
+      { id: "c4", label: "Nome", obrigatorio: true, placeholder: "Nome" },
+      { id: "c5", label: "Email", obrigatorio: true, placeholder: "email@exemplo.com" },
+      { id: "c6", label: "Telefone", obrigatorio: true, placeholder: "Telefone" },
+    ],
+  },
+  {
+    id: "f3", nome: "Indicação de Amigos", url: "https://gia.com.br/f/indicacao",
+    ativo: false, leads: 23, criadoEm: "2026-02-20",
+    campos: [
+      { id: "c7", label: "Seu Nome", obrigatorio: true, placeholder: "Quem indica" },
+      { id: "c8", label: "Nome do Amigo", obrigatorio: true, placeholder: "Nome" },
+      { id: "c9", label: "Telefone do Amigo", obrigatorio: true, placeholder: "Telefone" },
+    ],
+  },
+];
+
+const camposDisponiveis = ["Nome","Email","Telefone","CPF","Veículo Marca","Modelo","Placa","Mensagem"];
 
 export default function Formularios() {
-  const [forms, setForms] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [form, setForm] = useState({ nome: "", descricao: "", ativo: true });
+  const [forms, setForms] = useState(mockForms);
+  const [editing, setEditing] = useState<Formulario | null>(null);
+  const [formName, setFormName] = useState("");
+  const [formCampos, setFormCampos] = useState<Campo[]>([]);
 
-  const load = useCallback(async () => {
-    const { data } = await supabase.from("lead_forms").select("*").order("created_at", { ascending: false });
-    if (data) setForms(data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    try {
-      const payload = { nome: form.nome, descricao: form.descricao || null, ativo: form.ativo };
-      if (editing) {
-        const { error } = await supabase.from("lead_forms").update(payload).eq("id", editing);
-        if (error) throw error;
-        toast({ title: "Formulário atualizado!" });
-      } else {
-        const { error } = await supabase.from("lead_forms").insert([{
-          ...payload,
-          campos: [
-            { nome: "nome", tipo: "text", obrigatorio: true, label: "Nome completo" },
-            { nome: "telefone", tipo: "tel", obrigatorio: true, label: "Telefone" },
-            { nome: "email", tipo: "email", obrigatorio: false, label: "E-mail" },
-            { nome: "veiculo", tipo: "text", obrigatorio: false, label: "Veículo" },
-          ],
-        }]);
-        if (error) throw error;
-        toast({ title: "Formulário criado!" });
-      }
-      setFormOpen(false); setEditing(null); setForm({ nome: "", descricao: "", ativo: true }); load();
-    } catch (err: any) { toast({ title: "Erro", description: err.message, variant: "destructive" }); }
+  function startNew() {
+    setFormName("Novo Formulário");
+    setFormCampos([]);
+    setEditing({id: "new", nome: "", url: "", ativo: true, leads: 0, criadoEm: new Date().toISOString().slice(0,10), campos: []});
   }
 
-  async function toggleAtivo(id: string, ativo: boolean) {
-    await supabase.from("lead_forms").update({ ativo: !ativo }).eq("id", id);
-    load();
+  function addCampo(label: string) {
+    setFormCampos(prev => [...prev, { id: `c${Date.now()}`, label, obrigatorio: false, placeholder: `Digite ${label.toLowerCase()}...` }]);
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Excluir formulário?")) return;
-    await supabase.from("lead_forms").delete().eq("id", id);
-    toast({ title: "Excluído" }); load();
+  function removeCampo(id: string) {
+    setFormCampos(prev => prev.filter(c => c.id !== id));
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+  function toggleFormActive(id: string) {
+    setForms(prev => prev.map(f => f.id === id ? {...f, ativo: !f.ativo} : f));
+  }
+
+  if (editing) {
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => setEditing(null)}><ArrowLeft className="h-5 w-5" /></Button>
+          <h1 className="text-2xl font-bold tracking-tight">Editor de Formulário</h1>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="space-y-4">
+            <Card className="border border-border/50">
+              <CardContent className="p-4 space-y-4">
+                <div className="space-y-1"><Label className="text-xs">Nome do Formulário</Label>
+                  <Input value={formName} onChange={e => setFormName(e.target.value)} className="h-9 text-xs" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Cooperativa Destino</Label>
+                  <Select><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="central-sp">Cooperativa Central SP</SelectItem>
+                      <SelectItem value="central-rj">Cooperativa Central RJ</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Responsável Padrão</Label>
+                  <Select><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="maria">Maria Santos</SelectItem>
+                      <SelectItem value="joao">João Pedro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Label className="text-xs">Campos Disponíveis</Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {camposDisponiveis.map(c => (
+                      <Button key={c} variant="outline" size="sm" className="text-[10px] h-7" onClick={() => addCampo(c)}>
+                        <Plus className="h-3 w-3 mr-0.5" />{c}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Label className="text-xs">Campos Adicionados ({formCampos.length})</Label>
+                  {formCampos.map(campo => (
+                    <div key={campo.id} className="flex items-center gap-2 p-2 rounded-lg border border-border/40 bg-card">
+                      <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 cursor-grab" />
+                      <Input value={campo.label} onChange={e => setFormCampos(prev => prev.map(c => c.id === campo.id ? {...c, label: e.target.value} : c))} className="h-7 text-xs flex-1" />
+                      <div className="flex items-center gap-1">
+                        <Label className="text-[9px] text-muted-foreground">Obrig.</Label>
+                        <Switch checked={campo.obrigatorio} onCheckedChange={v => setFormCampos(prev => prev.map(c => c.id === campo.id ? {...c, obrigatorio: v} : c))} className="scale-75" />
+                      </div>
+                      <button onClick={() => removeCampo(campo.id)} className="p-1 rounded hover:bg-destructive/20"><X className="h-3 w-3 text-destructive" /></button>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-2 rounded-lg bg-muted/40 text-xs text-muted-foreground">
+                  <span className="font-medium">URL:</span> https://gia.com.br/f/{formName.toLowerCase().replace(/\s+/g, "-").normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="border border-border/50 h-fit sticky top-4">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2"><Eye className="h-4 w-4 text-muted-foreground" /><CardTitle className="text-sm">Preview</CardTitle></div>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-xl border border-border/50 bg-background p-6 space-y-4">
+                <h3 className="text-lg font-bold text-center">{formName || "Nome do Formulário"}</h3>
+                <p className="text-xs text-muted-foreground text-center">Preencha os dados abaixo</p>
+                {formCampos.map(campo => (
+                  <div key={campo.id} className="space-y-1">
+                    <Label className="text-xs">{campo.label} {campo.obrigatorio && <span className="text-destructive">*</span>}</Label>
+                    <Input className="h-9 text-xs" placeholder={campo.placeholder} disabled />
+                  </div>
+                ))}
+                {formCampos.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">Adicione campos ao formulário</p>}
+                <Button className="w-full" disabled>Enviar</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Formulários de Captação</h1>
-          <p className="text-muted-foreground text-sm">Crie formulários para capturar leads</p>
+          <h1 className="text-2xl font-bold tracking-tight">Formulários de Captura</h1>
+          <p className="text-sm text-muted-foreground">{forms.length} formulários criados</p>
         </div>
-        <Dialog open={formOpen} onOpenChange={(o) => { if (!o) { setFormOpen(false); setEditing(null); } else setFormOpen(true); }}>
-          <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" /> Novo Formulário</Button></DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{editing ? "Editar" : "Novo Formulário"}</DialogTitle></DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="space-y-1.5"><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required /></div>
-              <div className="space-y-1.5"><Label>Descrição</Label><Input value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} /></div>
-              <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setFormOpen(false)}>Cancelar</Button><Button type="submit">Salvar</Button></div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button size="sm" onClick={startNew}><Plus className="h-4 w-4 mr-1" /> Criar Formulário</Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {forms.map(f => (
-          <Card key={f.id} className="border-0 shadow-sm">
-            <CardContent className="p-5 space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-medium text-sm">{f.nome}</p>
-                  {f.descricao && <p className="text-xs text-muted-foreground mt-0.5">{f.descricao}</p>}
+          <Card key={f.id} className="border border-border/50 hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setEditing(f); setFormName(f.nome); setFormCampos(f.campos); }}>
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold">{f.nome}</span>
                 </div>
-                <Badge variant={f.ativo ? "default" : "secondary"} className="text-[10px]">{f.ativo ? "Ativo" : "Inativo"}</Badge>
+                <Switch checked={f.ativo} onCheckedChange={() => toggleFormActive(f.id)} onClick={e => e.stopPropagation()} />
               </div>
-              <p className="text-xs text-muted-foreground">{(f.campos as any[])?.length || 0} campos</p>
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => toggleAtivo(f.id, f.ativo)}>
-                  {f.ativo ? "Desativar" : "Ativar"}
-                </Button>
-                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDelete(f.id)}>
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <ExternalLink className="h-3 w-3" />
+                <span className="truncate">{f.url}</span>
+                <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0" onClick={e => e.stopPropagation()}><Copy className="h-3 w-3" /></Button>
               </div>
+              <Separator />
+              <div className="flex items-center justify-between text-xs">
+                <Badge variant={f.ativo ? "default" : "secondary"} className="text-[9px]">{f.ativo ? "Ativo" : "Inativo"}</Badge>
+                <span className="text-muted-foreground">{f.leads} leads capturados</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground">Criado em {new Date(f.criadoEm).toLocaleDateString("pt-BR")}</p>
             </CardContent>
           </Card>
         ))}
-        {forms.length === 0 && (
-          <Card className="border-0 shadow-sm col-span-full">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-              <FileText className="h-12 w-12 mb-4 opacity-30" />
-              <p className="text-lg font-medium">Nenhum formulário</p>
-              <p className="text-sm">Crie formulários para captar leads automaticamente</p>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );
