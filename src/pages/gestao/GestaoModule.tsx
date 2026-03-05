@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import AssociadoTab from "./associado/AssociadoTab";
 import VeiculoTab from "./veiculo/VeiculoTab";
+import CadastroTab from "./cadastro/CadastroTab";
 
 const gestaoTabs = [
   { id: "associado", label: "Associado", icon: Users },
@@ -36,6 +37,8 @@ export default function GestaoModule() {
         return <AssociadoTab />;
       case "veiculo":
         return <VeiculoTab />;
+      case "cadastro":
+        return <CadastroTab />;
       default:
         return (
           <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
