@@ -42,6 +42,8 @@ import Atividades from "./pages/vendas/Atividades";
 import Calendario from "./pages/vendas/Calendario";
 import Afiliados from "./pages/vendas/Afiliados";
 import RelatoriosVendas from "./pages/vendas/RelatoriosVendas";
+import FinanceiroVendas from "./pages/vendas/Financeiro";
+import FerramentasVendas from "./pages/vendas/FerramentasVendas";
 import Metas from "./pages/vendas/Metas";
 import Tags from "./pages/vendas/Tags";
 import Formularios from "./pages/vendas/Formularios";
@@ -111,6 +113,8 @@ const App = () => (
             <Route path="/vendas/importar" element={<M><ImportarLeads /></M>} />
             <Route path="/vendas/afiliados" element={<M><Afiliados /></M>} />
             <Route path="/vendas/relatorios" element={<M><RelatoriosVendas /></M>} />
+            <Route path="/vendas/financeiro" element={<M><FinanceiroVendas /></M>} />
+            <Route path="/vendas/ferramentas" element={<M><FerramentasVendas /></M>} />
             <Route path="/vendas/minha-empresa" element={<M><MinhaEmpresa /></M>} />
 
             <Route path="*" element={<NotFound />} />
