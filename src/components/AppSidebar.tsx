@@ -56,6 +56,8 @@ const vendasItems = [
   { title: "Importar Leads", url: "/vendas/importar", icon: Upload },
   { title: "Afiliados", url: "/vendas/afiliados", icon: UsersRound },
   { title: "Relatórios", url: "/vendas/relatorios", icon: BarChart3 },
+  { title: "Financeiro", url: "/vendas/financeiro", icon: DollarSign },
+  { title: "Ferramentas", url: "/vendas/ferramentas", icon: FileSpreadsheet },
   { title: "Minha Empresa", url: "/vendas/minha-empresa", icon: Building },
 ];
 
