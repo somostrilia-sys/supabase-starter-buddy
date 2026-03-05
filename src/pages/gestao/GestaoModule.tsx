@@ -9,6 +9,7 @@ import {
   Globe, ChevronLeft, LayoutDashboard, LogOut, Shield,
 } from "lucide-react";
 import AssociadoTab from "./associado/AssociadoTab";
+import VeiculoTab from "./veiculo/VeiculoTab";
 
 const gestaoTabs = [
   { id: "associado", label: "Associado", icon: Users },
@@ -33,6 +34,8 @@ export default function GestaoModule() {
     switch (activeTab) {
       case "associado":
         return <AssociadoTab />;
+      case "veiculo":
+        return <VeiculoTab />;
       default:
         return (
           <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
