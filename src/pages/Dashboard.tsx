@@ -23,7 +23,7 @@ const modules = [
     description: "Associados, veículos, sinistros e documentação",
     icon: Shield,
     gradient: "from-primary to-primary/70",
-    route: "/associados",
+    route: "/gestao",
   },
   {
     title: "Financeiro",

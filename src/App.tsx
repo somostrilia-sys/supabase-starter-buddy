@@ -11,7 +11,10 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
-// Gestão
+// Gestão - New module
+import GestaoModule from "./pages/gestao/GestaoModule";
+
+// Gestão (legacy)
 import Associados from "./pages/Associados";
 import Veiculos from "./pages/Veiculos";
 import Sinistros from "./pages/Sinistros";
@@ -72,7 +75,10 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<D><Dashboard /></D>} />
 
-            {/* Gestão */}
+            {/* Gestão - New */}
+            <Route path="/gestao/*" element={<ProtectedRoute><GestaoModule /></ProtectedRoute>} />
+
+            {/* Gestão (legacy) */}
             <Route path="/associados" element={<M><Associados /></M>} />
             <Route path="/veiculos" element={<M><Veiculos /></M>} />
             <Route path="/sinistros" element={<M><Sinistros /></M>} />
