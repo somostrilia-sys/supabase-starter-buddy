@@ -14,6 +14,8 @@ import CadastroTab from "./cadastro/CadastroTab";
 import FerramentasTab from "./ferramentas/FerramentasTab";
 import ParametrosTab from "./parametros/ParametrosTab";
 import FinanceiroTab from "./financeiro/FinanceiroTab";
+import FornecedorTab from "./fornecedor/FornecedorTab";
+import EventoTab from "./evento/EventoTab";
 
 const gestaoTabs = [
   { id: "associado", label: "Associado", icon: Users },
@@ -48,6 +50,10 @@ export default function GestaoModule() {
         return <ParametrosTab />;
       case "financeiro":
         return <FinanceiroTab />;
+      case "fornecedor":
+        return <FornecedorTab />;
+      case "evento":
+        return <EventoTab />;
       default:
         return (
           <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
