@@ -13,7 +13,7 @@ type AssociadoView = "menu" | "cadastrar" | "alterar" | "vincular" | "relatorio"
 
 const actions = [
   { id: "cadastrar" as const, title: "Cadastrar Novo Associado", desc: "Formulário completo com dados pessoais, contato, endereço e plano", icon: UserPlus, color: "from-emerald-500 to-emerald-600" },
-  { id: "alterar" as const, title: "Alterar Associado", desc: "Buscar e editar cadastro existente com histórico de alterações", icon: UserCog, color: "from-blue-500 to-blue-600" },
+  { id: "alterar" as const, title: "Consultar / Alterar Associado", desc: "Buscar, visualizar e editar cadastros com histórico completo", icon: UserCog, color: "from-blue-500 to-blue-600" },
   { id: "vincular" as const, title: "Vincular Associado a Veículo", desc: "Vincular associado existente a um veículo já cadastrado", icon: Link2, color: "from-amber-500 to-amber-600" },
   { id: "relatorio" as const, title: "Relatório de Alterações", desc: "Histórico de alterações de beneficiários com filtros e exportação", icon: FileBarChart, color: "from-purple-500 to-purple-600" },
 ];
