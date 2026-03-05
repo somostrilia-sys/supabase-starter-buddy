@@ -34,6 +34,7 @@ import RelatoriosFinanceiro from "./pages/financeiro/RelatoriosFinanceiro";
 
 // Vendas
 import Pipeline from "./pages/vendas/Pipeline";
+import VendasLista from "./pages/vendas/VendasLista";
 import Contatos from "./pages/vendas/Contatos";
 import DealDetail from "./pages/vendas/DealDetail";
 import NegociacaoDetalhe from "./pages/vendas/NegociacaoDetalhe";
@@ -99,6 +100,7 @@ const App = () => (
 
             {/* Vendas */}
             <Route path="/vendas/pipeline" element={<M><Pipeline /></M>} />
+            <Route path="/vendas/negociacoes" element={<M><VendasLista /></M>} />
             <Route path="/vendas/negociacao/:id" element={<M><NegociacaoDetalhe /></M>} />
             <Route path="/vendas/contatos" element={<M><Contatos /></M>} />
             <Route path="/vendas/atividades" element={<M><Atividades /></M>} />

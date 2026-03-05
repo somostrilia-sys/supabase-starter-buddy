@@ -2,214 +2,315 @@ import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 import {
-  Phone, Mail, MessageCircle, Users, MapPin, Calendar, Clock,
-  LayoutGrid, List, CalendarDays, AlertTriangle, ExternalLink,
-  ChevronLeft, ChevronRight,
+  Plus, Phone, Mail, MessageCircle, Users, MapPin, Clock,
+  CheckCircle, AlertTriangle, CalendarIcon, Filter, X,
+  MoreVertical, Pencil, Trash2,
 } from "lucide-react";
-
-const tipoIcons: Record<string, any> = { Ligar: Phone, Email: Mail, WhatsApp: MessageCircle, Reunião: Users, Visita: MapPin };
-const statusColors: Record<string, string> = {
-  Pendente: "bg-[#F59E0B]/20 text-[#F59E0B]",
-  "Em Andamento": "bg-[#3B82F6]/20 text-[#3B82F6]",
-  "Concluída": "bg-[#22C55E]/20 text-[#22C55E]",
-  Atrasada: "bg-destructive/20 text-destructive",
-};
-
-const responsaveis = ["Maria Santos","João Pedro","Ana Costa","Carlos Lima","Fernanda Alves"];
-const tipos = ["Ligar","Email","WhatsApp","Reunião","Visita"];
-const statuses = ["Pendente","Em Andamento","Concluída","Atrasada"];
-const now = Date.now();
-const day = 86400000;
+import { consultores, cooperativas, regionais } from "./pipeline/mockData";
 
 interface Atividade {
-  id: string; tipo: string; titulo: string; responsavel: string;
-  data: string; negociacao: string; status: string;
+  id: string;
+  tipo: string;
+  descricao: string;
+  lead_vinculado: string | null;
+  responsavel: string;
+  data: string;
+  hora: string;
+  status: "Pendente" | "Concluída" | "Atrasada";
 }
 
-const mockAtividades: Atividade[] = Array.from({length: 20}).map((_, i) => ({
-  id: `at${i}`,
-  tipo: tipos[i % 5],
-  titulo: [
-    "Ligar para apresentar planos","Enviar proposta por email","Responder mensagem WhatsApp",
-    "Reunião de fechamento","Visita para vistoria","Follow-up cotação","Enviar contrato",
-    "Confirmar dados","Agendar vistoria","Negociar desconto","Enviar boleto adesão",
-    "Retorno cliente","Apresentar coberturas","Coletar documentos","Verificar FIPE",
-    "Enviar link vistoria","Confirmar pagamento","Reenviar proposta","Atualizar cadastro","Fechar contrato"
-  ][i],
-  responsavel: responsaveis[i % 5],
-  data: new Date(now - (i - 5) * day + (i % 3) * 3600000).toISOString(),
-  negociacao: `NEG-2026-${String(40 + i).padStart(4, "0")}`,
-  status: i < 3 ? "Atrasada" : i < 8 ? "Pendente" : i < 14 ? "Concluída" : "Em Andamento",
-}));
+const tipoIcons: Record<string, React.ElementType> = {
+  "Ligação": Phone, "Visita": MapPin, "Email": Mail, "WhatsApp": MessageCircle, "Reunião": Users,
+};
+const tipos = ["Ligação", "Visita", "Email", "WhatsApp", "Reunião"];
+const statusColors: Record<string, string> = {
+  "Pendente": "bg-amber-500/15 text-amber-700 border-amber-300",
+  "Concluída": "bg-green-500/15 text-green-700 border-green-300",
+  "Atrasada": "bg-red-500/15 text-red-700 border-red-300",
+};
 
-function fmtDateTime(d: string) { return new Date(d).toLocaleString("pt-BR", {day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}); }
+const day = 86400000;
+const now = Date.now();
+
+const mockAtividades: Atividade[] = [
+  { id: "at1", tipo: "Ligação", descricao: "Ligar para apresentar planos de proteção veicular Premium", lead_vinculado: "João Pereira", responsavel: "Ana Silva", data: new Date(now - 2 * day).toISOString().split("T")[0], hora: "09:00", status: "Atrasada" },
+  { id: "at2", tipo: "WhatsApp", descricao: "Enviar proposta atualizada com valores de adesão e mensalidade", lead_vinculado: "Maria Santos", responsavel: "Carlos Souza", data: new Date(now - 1 * day).toISOString().split("T")[0], hora: "10:30", status: "Atrasada" },
+  { id: "at3", tipo: "Email", descricao: "Encaminhar documentação para análise do contrato", lead_vinculado: "Carlos Oliveira", responsavel: "Maria Lima", data: new Date(now).toISOString().split("T")[0], hora: "08:00", status: "Pendente" },
+  { id: "at4", tipo: "Reunião", descricao: "Reunião presencial para fechamento de contrato frota", lead_vinculado: "Ana Costa", responsavel: "Ana Silva", data: new Date(now).toISOString().split("T")[0], hora: "14:00", status: "Pendente" },
+  { id: "at5", tipo: "Visita", descricao: "Visita para vistoria do veículo no local do cliente", lead_vinculado: "Roberto Lima", responsavel: "Carlos Souza", data: new Date(now).toISOString().split("T")[0], hora: "16:00", status: "Pendente" },
+  { id: "at6", tipo: "Ligação", descricao: "Follow-up sobre cotação enviada na semana passada", lead_vinculado: "Fernanda Alves", responsavel: "Maria Lima", data: new Date(now + 1 * day).toISOString().split("T")[0], hora: "09:30", status: "Pendente" },
+  { id: "at7", tipo: "WhatsApp", descricao: "Enviar boleto de adesão e confirmar pagamento", lead_vinculado: "Pedro Souza", responsavel: "Ana Silva", data: new Date(now - 3 * day).toISOString().split("T")[0], hora: "11:00", status: "Concluída" },
+  { id: "at8", tipo: "Email", descricao: "Solicitar documentos pessoais para cadastro no sistema", lead_vinculado: "Juliana Mendes", responsavel: "Carlos Souza", data: new Date(now - 4 * day).toISOString().split("T")[0], hora: "15:00", status: "Concluída" },
+  { id: "at9", tipo: "Reunião", descricao: "Apresentação comercial para empresa com frota de 15 veículos", lead_vinculado: null, responsavel: "Maria Lima", data: new Date(now - 2 * day).toISOString().split("T")[0], hora: "10:00", status: "Concluída" },
+  { id: "at10", tipo: "Visita", descricao: "Retirar documentação assinada na sede da cooperativa", lead_vinculado: "Camila Rodrigues", responsavel: "Ana Silva", data: new Date(now + 2 * day).toISOString().split("T")[0], hora: "13:00", status: "Pendente" },
+];
 
 export default function Atividades() {
-  const [viewMode, setViewMode] = useState<"lista"|"kanban"|"calendario">("lista");
-  const [filterStatus, setFilterStatus] = useState("todos");
-  const [filterTipo, setFilterTipo] = useState("todos");
-  const [calMonth, setCalMonth] = useState(new Date().getMonth());
-  const [calYear, setCalYear] = useState(new Date().getFullYear());
-  const [selectedDay, setSelectedDay] = useState<number|null>(null);
-
-  const atrasadas = mockAtividades.filter(a => a.status === "Atrasada").length;
+  const [atividades, setAtividades] = useState(mockAtividades);
+  const [fStatus, setFStatus] = useState("all");
+  const [fTipo, setFTipo] = useState("all");
+  const [fConsultor, setFConsultor] = useState("all");
+  const [fCoop, setFCoop] = useState("all");
+  const [fRegional, setFRegional] = useState("all");
+  const [fDateStart, setFDateStart] = useState<Date | undefined>();
+  const [fDateEnd, setFDateEnd] = useState<Date | undefined>();
+  const [showFilters, setShowFilters] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [newOpen, setNewOpen] = useState(false);
+  const [newForm, setNewForm] = useState({ tipo: "", data: "", hora: "", descricao: "", responsavel: "", lead: "", lembrete: false });
 
   const filtered = useMemo(() => {
-    let list = mockAtividades;
-    if (filterStatus !== "todos") list = list.filter(a => a.status === filterStatus);
-    if (filterTipo !== "todos") list = list.filter(a => a.tipo === filterTipo);
-    return list;
-  }, [filterStatus, filterTipo]);
-
-  const kanbanCols = ["Pendente","Em Andamento","Concluída","Atrasada"];
-
-  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-  const firstDayOfWeek = new Date(calYear, calMonth, 1).getDay();
-  const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-
-  const actsByDay = useMemo(() => {
-    const map: Record<number, Atividade[]> = {};
-    mockAtividades.forEach(a => {
-      const d = new Date(a.data);
-      if (d.getMonth() === calMonth && d.getFullYear() === calYear) {
-        const dayNum = d.getDate();
-        if (!map[dayNum]) map[dayNum] = [];
-        map[dayNum].push(a);
-      }
+    return atividades.filter(a => {
+      if (fStatus !== "all" && a.status !== fStatus) return false;
+      if (fTipo !== "all" && a.tipo !== fTipo) return false;
+      if (fConsultor !== "all" && a.responsavel !== fConsultor) return false;
+      if (fDateStart && a.data < format(fDateStart, "yyyy-MM-dd")) return false;
+      if (fDateEnd && a.data > format(fDateEnd, "yyyy-MM-dd")) return false;
+      return true;
     });
-    return map;
-  }, [calMonth, calYear]);
+  }, [atividades, fStatus, fTipo, fConsultor, fDateStart, fDateEnd]);
 
-  function ActivityCard({ act }: { act: Atividade }) {
-    const Icon = tipoIcons[act.tipo] || Clock;
-    return (
-      <div className="p-3 rounded-lg border border-border/40 bg-card hover:bg-muted/30 transition-colors space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-md bg-primary/10"><Icon className="h-3.5 w-3.5 text-primary" /></div>
-            <span className="text-xs font-semibold">{act.titulo}</span>
-          </div>
-          <Badge className={`text-[9px] border-0 ${statusColors[act.status]}`}>{act.status}</Badge>
-        </div>
-        <div className="flex items-center gap-3 text-[10px] text-muted-foreground flex-wrap">
-          <div className="flex items-center gap-1">
-            <Avatar className="h-4 w-4"><AvatarFallback className="text-[7px] bg-primary/20 text-primary">{act.responsavel.charAt(0)}</AvatarFallback></Avatar>
-            {act.responsavel}
-          </div>
-          <div className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmtDateTime(act.data)}</div>
-          <div className="flex items-center gap-1 text-primary cursor-pointer"><ExternalLink className="h-3 w-3" />{act.negociacao}</div>
-        </div>
-      </div>
-    );
+  const pendentes = filtered.filter(a => a.status === "Pendente").length;
+  const concluidasHoje = filtered.filter(a => a.status === "Concluída" && a.data === new Date().toISOString().split("T")[0]).length;
+  const atrasadas = filtered.filter(a => a.status === "Atrasada").length;
+
+  function toggleSelect(id: string) {
+    setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+  function toggleAll() {
+    if (selected.size === filtered.length) setSelected(new Set());
+    else setSelected(new Set(filtered.map(a => a.id)));
   }
 
+  function concluirSelecionados() {
+    setAtividades(prev => prev.map(a => selected.has(a.id) ? { ...a, status: "Concluída" as const } : a));
+    toast({ title: `${selected.size} atividades concluídas` });
+    setSelected(new Set());
+  }
+  function excluirSelecionados() {
+    setAtividades(prev => prev.filter(a => !selected.has(a.id)));
+    toast({ title: `${selected.size} atividades excluídas` });
+    setSelected(new Set());
+  }
+  function concluir(id: string) {
+    setAtividades(prev => prev.map(a => a.id === id ? { ...a, status: "Concluída" as const } : a));
+    toast({ title: "Atividade concluída" });
+  }
+  function excluir(id: string) {
+    setAtividades(prev => prev.filter(a => a.id !== id));
+    toast({ title: "Atividade excluída" });
+  }
+
+  function clearFilters() { setFStatus("all"); setFTipo("all"); setFConsultor("all"); setFCoop("all"); setFRegional("all"); setFDateStart(undefined); setFDateEnd(undefined); }
+  const activeFilters = [fStatus !== "all", fTipo !== "all", fConsultor !== "all", fCoop !== "all", fRegional !== "all", !!fDateStart, !!fDateEnd].filter(Boolean).length;
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Atividades</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <p className="text-sm text-muted-foreground">{filtered.length} atividades</p>
-            {atrasadas > 0 && (
-              <Badge className="bg-destructive/20 text-destructive border-0 text-[10px] gap-1">
-                <AlertTriangle className="h-3 w-3" />{atrasadas} atrasada(s)
-              </Badge>
-            )}
-          </div>
+          <p className="text-sm text-muted-foreground">Central de tarefas e compromissos da equipe comercial</p>
         </div>
-        <div className="flex gap-2">
-          <Select value={filterTipo} onValueChange={setFilterTipo}>
-            <SelectTrigger className="h-9 w-32 text-xs"><SelectValue placeholder="Tipo" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos os tipos</SelectItem>
-              {tipos.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="h-9 w-36 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos status</SelectItem>
-              {statuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <div className="flex border rounded-lg overflow-hidden">
-            <Button size="icon" variant={viewMode==="lista"?"default":"ghost"} className="rounded-none h-9 w-9" onClick={()=>setViewMode("lista")}><List className="h-4 w-4" /></Button>
-            <Button size="icon" variant={viewMode==="kanban"?"default":"ghost"} className="rounded-none h-9 w-9" onClick={()=>setViewMode("kanban")}><LayoutGrid className="h-4 w-4" /></Button>
-            <Button size="icon" variant={viewMode==="calendario"?"default":"ghost"} className="rounded-none h-9 w-9" onClick={()=>setViewMode("calendario")}><CalendarDays className="h-4 w-4" /></Button>
-          </div>
+        <div className="flex items-center gap-2">
+          <Button variant={showFilters ? "default" : "outline"} size="sm" onClick={() => setShowFilters(!showFilters)}>
+            <Filter className="h-3.5 w-3.5 mr-1" />Filtros
+            {activeFilters > 0 && <Badge className="ml-1.5 h-5 w-5 p-0 flex items-center justify-center text-[10px] rounded-full">{activeFilters}</Badge>}
+          </Button>
+          <Button onClick={() => setNewOpen(true)}><Plus className="h-4 w-4 mr-1" />Nova Atividade</Button>
         </div>
       </div>
 
-      {viewMode === "lista" && (
-        <div className="space-y-2">
-          {filtered.map(act => <ActivityCard key={act.id} act={act} />)}
-          {filtered.length === 0 && <p className="text-sm text-muted-foreground text-center py-12">Nenhuma atividade encontrada</p>}
-        </div>
-      )}
+      {/* Stat cards */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center"><Clock className="h-5 w-5 text-amber-600" /></div>
+            <div><p className="text-2xl font-bold">{pendentes}</p><p className="text-xs text-muted-foreground">Pendentes</p></div>
+          </CardContent>
+        </Card>
+        <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20 dark:border-green-800">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center"><CheckCircle className="h-5 w-5 text-green-600" /></div>
+            <div><p className="text-2xl font-bold">{concluidasHoje}</p><p className="text-xs text-muted-foreground">Concluídas Hoje</p></div>
+          </CardContent>
+        </Card>
+        <Card className="border-red-200 bg-red-50/50 dark:bg-red-950/20 dark:border-red-800">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center"><AlertTriangle className="h-5 w-5 text-red-600" /></div>
+            <div><p className="text-2xl font-bold">{atrasadas}</p><p className="text-xs text-muted-foreground">Atrasadas</p></div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {viewMode === "kanban" && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 min-h-[60vh]">
-          {kanbanCols.map(col => {
-            const colActs = filtered.filter(a => a.status === col);
-            return (
-              <div key={col} className="flex flex-col rounded-xl border border-border/40 bg-muted/20 overflow-hidden">
-                <div className="px-3 py-2 border-b border-border/30 flex items-center justify-between">
-                  <Badge className={`text-[9px] border-0 ${statusColors[col]}`}>{col}</Badge>
-                  <span className="text-[10px] font-bold text-muted-foreground">{colActs.length}</span>
-                </div>
-                <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[55vh]">
-                  {colActs.map(act => <ActivityCard key={act.id} act={act} />)}
-                </div>
+      {/* Filters */}
+      {showFilters && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Status</Label>
+                <Select value={fStatus} onValueChange={setFStatus}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">Todos</SelectItem><SelectItem value="Pendente">Pendente</SelectItem><SelectItem value="Concluída">Concluída</SelectItem><SelectItem value="Atrasada">Atrasada</SelectItem></SelectContent>
+                </Select>
               </div>
-            );
-          })}
+              <div className="space-y-1"><Label className="text-xs">Tipo</Label>
+                <Select value={fTipo} onValueChange={setFTipo}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">Todos</SelectItem>{tipos.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Data Início</Label>
+                <Popover><PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("h-8 w-full text-xs justify-start", !fDateStart && "text-muted-foreground")}>
+                    <CalendarIcon className="h-3.5 w-3.5 mr-1" />{fDateStart ? format(fDateStart, "dd/MM/yyyy") : "Selecione"}
+                  </Button>
+                </PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={fDateStart} onSelect={setFDateStart} className="p-3 pointer-events-auto" /></PopoverContent></Popover>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Data Fim</Label>
+                <Popover><PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("h-8 w-full text-xs justify-start", !fDateEnd && "text-muted-foreground")}>
+                    <CalendarIcon className="h-3.5 w-3.5 mr-1" />{fDateEnd ? format(fDateEnd, "dd/MM/yyyy") : "Selecione"}
+                  </Button>
+                </PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={fDateEnd} onSelect={setFDateEnd} className="p-3 pointer-events-auto" /></PopoverContent></Popover>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Consultor</Label>
+                <Select value={fConsultor} onValueChange={setFConsultor}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">Todos</SelectItem>{consultores.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Cooperativa</Label>
+                <Select value={fCoop} onValueChange={setFCoop}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">Todas</SelectItem>{cooperativas.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Regional</Label>
+                <Select value={fRegional} onValueChange={setFRegional}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">Todas</SelectItem>{regionais.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end"><Button size="sm" variant="outline" onClick={clearFilters}><X className="h-3 w-3 mr-1" />Limpar</Button></div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bulk actions */}
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border">
+          <span className="text-sm font-medium">{selected.size} selecionado(s)</span>
+          <Button size="sm" onClick={concluirSelecionados} className="bg-green-600 hover:bg-green-700 text-white"><CheckCircle className="h-3.5 w-3.5 mr-1" />Concluir Selecionados</Button>
+          <Button size="sm" variant="destructive" onClick={excluirSelecionados}><Trash2 className="h-3.5 w-3.5 mr-1" />Excluir Selecionados</Button>
         </div>
       )}
 
-      {viewMode === "calendario" && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" size="icon" onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y-1); } else setCalMonth(m => m-1); }}><ChevronLeft className="h-4 w-4" /></Button>
-            <span className="font-semibold">{monthNames[calMonth]} {calYear}</span>
-            <Button variant="ghost" size="icon" onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y+1); } else setCalMonth(m => m+1); }}><ChevronRight className="h-4 w-4" /></Button>
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10"><Checkbox checked={selected.size === filtered.length && filtered.length > 0} onCheckedChange={toggleAll} /></TableHead>
+                  <TableHead className="text-xs">Tipo</TableHead>
+                  <TableHead className="text-xs">Descrição</TableHead>
+                  <TableHead className="text-xs">Lead Vinculado</TableHead>
+                  <TableHead className="text-xs">Responsável</TableHead>
+                  <TableHead className="text-xs">Data/Hora</TableHead>
+                  <TableHead className="text-xs">Status</TableHead>
+                  <TableHead className="text-xs">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map(a => {
+                  const Icon = tipoIcons[a.tipo] || Phone;
+                  return (
+                    <TableRow key={a.id} className="hover:bg-muted/30">
+                      <TableCell><Checkbox checked={selected.has(a.id)} onCheckedChange={() => toggleSelect(a.id)} /></TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4 text-muted-foreground" /><span className="text-xs">{a.tipo}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm max-w-[250px] truncate">{a.descricao}</TableCell>
+                      <TableCell className="text-xs">{a.lead_vinculado ? <span className="text-primary cursor-pointer hover:underline">{a.lead_vinculado}</span> : "—"}</TableCell>
+                      <TableCell className="text-xs">{a.responsavel}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">{new Date(a.data + "T00:00:00").toLocaleDateString("pt-BR")} {a.hora}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn("text-[10px]", statusColors[a.status], a.status === "Atrasada" && "animate-pulse")}>
+                          {a.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical className="h-3.5 w-3.5" /></Button></DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {a.status !== "Concluída" && <DropdownMenuItem onClick={() => concluir(a.id)}><CheckCircle className="h-3.5 w-3.5 mr-2" />Concluir</DropdownMenuItem>}
+                            <DropdownMenuItem><Pencil className="h-3.5 w-3.5 mr-2" />Editar</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => excluir(a.id)} className="text-destructive"><Trash2 className="h-3.5 w-3.5 mr-2" />Excluir</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
-          <div className="grid grid-cols-7 gap-1">
-            {["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].map(d => (
-              <div key={d} className="text-center text-[10px] font-medium text-muted-foreground py-1">{d}</div>
-            ))}
-            {Array.from({length: firstDayOfWeek}).map((_, i) => <div key={`e${i}`} />)}
-            {Array.from({length: daysInMonth}).map((_, i) => {
-              const d = i + 1;
-              const acts = actsByDay[d] || [];
-              const isSelected = selectedDay === d;
-              return (
-                <div key={d} onClick={() => setSelectedDay(isSelected ? null : d)}
-                  className={`p-1 rounded-lg border cursor-pointer transition-colors min-h-[60px] ${isSelected ? "border-primary bg-primary/5" : "border-border/30 hover:bg-muted/30"}`}>
-                  <span className="text-xs font-medium">{d}</span>
-                  <div className="flex gap-0.5 mt-0.5 flex-wrap">
-                    {acts.slice(0,3).map((a,j) => (
-                      <div key={j} className="w-1.5 h-1.5 rounded-full" style={{
-                        backgroundColor: a.status === "Atrasada" ? "#EF4444" : a.status === "Concluída" ? "#22C55E" : a.status === "Em Andamento" ? "#3B82F6" : "#F59E0B"
-                      }} />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+        </CardContent>
+      </Card>
+
+      {/* New Activity Modal */}
+      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Nova Atividade</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5"><Label>Tipo</Label>
+              <Select value={newForm.tipo} onValueChange={v => setNewForm({ ...newForm, tipo: v })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>{tipos.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label>Data</Label>
+                <Popover><PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start", !newForm.data && "text-muted-foreground")}>
+                    <CalendarIcon className="h-4 w-4 mr-2" />{newForm.data || "Selecione"}
+                  </Button>
+                </PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={newForm.data ? new Date(newForm.data + "T00:00:00") : undefined} onSelect={d => setNewForm({ ...newForm, data: d ? format(d, "yyyy-MM-dd") : "" })} className="p-3 pointer-events-auto" /></PopoverContent></Popover>
+              </div>
+              <div className="space-y-1.5"><Label>Hora</Label>
+                <Select value={newForm.hora} onValueChange={v => setNewForm({ ...newForm, hora: v })}><SelectTrigger><SelectValue placeholder="Horário" /></SelectTrigger>
+                  <SelectContent>{Array.from({ length: 24 }, (_, i) => { const h = `${String(i).padStart(2, "0")}:00`; return <SelectItem key={h} value={h}>{h}</SelectItem>; })}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5"><Label>Descrição Detalhada</Label><Textarea value={newForm.descricao} onChange={e => setNewForm({ ...newForm, descricao: e.target.value })} rows={3} /></div>
+            <div className="space-y-1.5"><Label>Consultor Responsável</Label>
+              <Select value={newForm.responsavel} onValueChange={v => setNewForm({ ...newForm, responsavel: v })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>{consultores.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"><Label>Vincular Negociação (opcional)</Label><Input value={newForm.lead} onChange={e => setNewForm({ ...newForm, lead: e.target.value })} placeholder="Buscar por nome ou ID" /></div>
+            <div className="flex items-center gap-2"><Switch checked={newForm.lembrete} onCheckedChange={v => setNewForm({ ...newForm, lembrete: v })} /><span className="text-sm">Enviar lembrete ao responsável</span></div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setNewOpen(false)}>Cancelar</Button>
+              <Button disabled={!newForm.tipo || !newForm.descricao}>Salvar Atividade</Button>
+            </div>
           </div>
-          {selectedDay && actsByDay[selectedDay] && (
-            <Card className="border border-border/50">
-              <CardContent className="p-3 space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground">{selectedDay}/{String(calMonth+1).padStart(2,"0")}/{calYear}</p>
-                {actsByDay[selectedDay].map(act => <ActivityCard key={act.id} act={act} />)}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
