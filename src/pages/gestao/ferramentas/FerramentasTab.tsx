@@ -19,7 +19,7 @@ export default function FerramentasTab() {
   if (view === "integracoes") return <Integracoes onBack={() => setView(null)} />;
 
   return (
-    <div className="p-6">
+    <div className="p-6 flex flex-col h-full">
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
           <Wrench className="h-5 w-5 text-primary" />
@@ -29,21 +29,21 @@ export default function FerramentasTab() {
           <p className="text-sm text-muted-foreground">Utilitários operacionais para gestão em massa e integrações</p>
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="flex flex-col gap-3 flex-1">
         {actions.map((a) => (
           <button
             key={a.id}
             onClick={() => setView(a.id)}
-            className="group relative flex flex-col items-center gap-4 rounded-xl border bg-card p-8 text-center shadow-sm hover:shadow-lg hover:border-primary/40 transition-all duration-200"
+            className="group relative flex items-center gap-5 rounded-xl border bg-card px-6 flex-1 text-left shadow-sm hover:shadow-lg hover:border-primary/40 transition-all duration-200"
           >
-            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${a.color} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}>
-              <a.icon className="h-8 w-8 text-white" />
+            <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${a.color} flex items-center justify-center shrink-0 shadow-md group-hover:scale-110 transition-transform`}>
+              <a.icon className="h-7 w-7 text-white" />
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-base mb-1">{a.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{a.desc}</p>
             </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground/40 group-hover:text-primary transition-all absolute right-4 top-1/2 -translate-y-1/2" />
+            <ChevronRight className="h-5 w-5 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0" />
           </button>
         ))}
       </div>

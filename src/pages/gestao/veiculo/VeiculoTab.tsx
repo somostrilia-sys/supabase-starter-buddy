@@ -25,7 +25,7 @@ export default function VeiculoTab() {
 
   if (view === "menu") {
     return (
-      <div className="p-6">
+      <div className="p-6 flex flex-col h-full">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
             <Car className="h-5 w-5 text-primary" />
@@ -35,12 +35,12 @@ export default function VeiculoTab() {
             <p className="text-sm text-muted-foreground">Selecione a ação desejada</p>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="flex flex-col gap-3 flex-1">
           {actions.map((a) => (
             <button
               key={a.id}
               onClick={() => setView(a.id)}
-              className="group relative flex items-center gap-5 rounded-xl border bg-card p-6 text-left shadow-sm hover:shadow-lg hover:border-primary/40 transition-all duration-200"
+              className="group relative flex items-center gap-5 rounded-xl border bg-card px-6 flex-1 text-left shadow-sm hover:shadow-lg hover:border-primary/40 transition-all duration-200"
             >
               <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${a.color} flex items-center justify-center shrink-0 shadow-md group-hover:scale-110 transition-transform`}>
                 <a.icon className="h-7 w-7 text-white" />
