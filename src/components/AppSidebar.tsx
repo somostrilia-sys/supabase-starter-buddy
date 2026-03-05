@@ -2,7 +2,7 @@ import {
   Shield, Users, Car, MapPin, Building2, AlertTriangle, FileText,
   ClipboardCheck, Package, UserCog, SlidersHorizontal, LogOut,
   ChevronDown, LayoutDashboard, DollarSign, Target, CalendarDays,
-  BarChart3, Receipt, ArrowLeftRight, Wallet, Kanban, Contact,
+  BarChart3, Receipt, ArrowLeftRight, Wallet, Kanban, Contact, Building,
   Activity, UsersRound, Tag, FileSpreadsheet, Upload, Crosshair,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
@@ -55,6 +55,7 @@ const vendasItems = [
   { title: "Importar Leads", url: "/vendas/importar", icon: Upload },
   { title: "Afiliados", url: "/vendas/afiliados", icon: UsersRound },
   { title: "Relatórios", url: "/vendas/relatorios", icon: BarChart3 },
+  { title: "Minha Empresa", url: "/vendas/minha-empresa", icon: Building },
 ];
 
 interface ModuleGroupProps {

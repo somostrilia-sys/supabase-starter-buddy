@@ -8,7 +8,7 @@ import {
   ClipboardCheck, Package, UserCog, SlidersHorizontal,
   DollarSign, Wallet, Receipt, ArrowLeftRight, BarChart3,
   Target, Kanban, Contact, Activity, CalendarDays, Crosshair,
-  Tag, FileSpreadsheet, Upload, UsersRound,
+  Tag, FileSpreadsheet, Upload, UsersRound, Building,
   LayoutDashboard, LogOut, ChevronLeft,
 } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -44,6 +44,7 @@ const vendasItems = [
   { title: "Importar Leads", url: "/vendas/importar", icon: Upload },
   { title: "Afiliados", url: "/vendas/afiliados", icon: UsersRound },
   { title: "Relatórios", url: "/vendas/relatorios", icon: BarChart3 },
+  { title: "Minha Empresa", url: "/vendas/minha-empresa", icon: Building },
 ];
 
 const moduleConfigs = [
