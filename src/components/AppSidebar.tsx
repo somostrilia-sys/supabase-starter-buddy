@@ -46,6 +46,7 @@ const financeiroItems = [
 
 const vendasItems = [
   { title: "Pipeline", url: "/vendas/pipeline", icon: Kanban },
+  { title: "Negociações", url: "/vendas/negociacoes", icon: Target },
   { title: "Contatos", url: "/vendas/contatos", icon: Contact },
   { title: "Atividades", url: "/vendas/atividades", icon: Activity },
   { title: "Calendário", url: "/vendas/calendario", icon: CalendarDays },
