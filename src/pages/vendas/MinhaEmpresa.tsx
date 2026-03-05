@@ -5,6 +5,8 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import GrupoPermissoes from "./minha-empresa/GrupoPermissoes";
+import UsuariosTab from "./minha-empresa/UsuariosTab";
 
 type MainTab = "cotacao-fipe" | "cooperativas" | "permissoes" | "usuarios";
 type FipeSubMenu = null | "regionais" | "servicos" | "planos" | "tabela-precos" | "implementos";
@@ -31,21 +33,6 @@ const mockCooperativas = [
   { nome: "Cooperativa Norte", cnpj: "11.222.333/0001-00", cidade: "Manaus", status: "inativa" },
 ];
 
-const mockPermissoes = [
-  { nome: "Administrador", descricao: "Acesso total ao sistema", usuarios: 3 },
-  { nome: "Gerente", descricao: "Gestão de equipe e relatórios", usuarios: 5 },
-  { nome: "Vendedor", descricao: "Pipeline e contatos", usuarios: 12 },
-  { nome: "Financeiro", descricao: "Boletos, conciliação e fluxo", usuarios: 4 },
-  { nome: "Visualizador", descricao: "Somente leitura", usuarios: 8 },
-];
-
-const mockUsuarios = [
-  { nome: "Carlos Silva", email: "carlos@empresa.com", perfil: "Administrador", status: "ativo" },
-  { nome: "Ana Oliveira", email: "ana@empresa.com", perfil: "Gerente", status: "ativo" },
-  { nome: "Pedro Santos", email: "pedro@empresa.com", perfil: "Vendedor", status: "ativo" },
-  { nome: "Maria Costa", email: "maria@empresa.com", perfil: "Financeiro", status: "inativo" },
-  { nome: "Lucas Ferreira", email: "lucas@empresa.com", perfil: "Vendedor", status: "ativo" },
-];
 
 const mockRegionais = [
   { nome: "Regional São Paulo", responsavel: "João Mendes", cidades: 12, status: "ativa" },
@@ -269,31 +256,9 @@ export default function MinhaEmpresa() {
         />
       )}
 
-      {activeTab === "permissoes" && (
-        <CrudTable
-          title="Grupo de Permissões"
-          description="Defina perfis de acesso ao sistema"
-          headers={["Nome do Grupo", "Descrição", "Usuários"]}
-          rows={mockPermissoes.map(p => [
-            p.nome,
-            <span className="text-muted-foreground">{p.descricao}</span>,
-            <Badge variant="outline">{p.usuarios}</Badge>
-          ])}
-        />
-      )}
+      {activeTab === "permissoes" && <GrupoPermissoes />}
 
-      {activeTab === "usuarios" && (
-        <CrudTable
-          title="Usuários"
-          description="Gerencie os usuários do sistema"
-          headers={["Nome", "E-mail", "Perfil", "Status"]}
-          rows={mockUsuarios.map(u => [
-            u.nome, u.email,
-            <Badge variant="outline">{u.perfil}</Badge>,
-            <Badge variant={u.status === "ativo" ? "default" : "secondary"}>{u.status}</Badge>
-          ])}
-        />
-      )}
+      {activeTab === "usuarios" && <UsuariosTab />}
     </div>
   );
 }
