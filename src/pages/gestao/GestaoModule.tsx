@@ -8,6 +8,7 @@ import {
   DollarSign, Truck, AlertTriangle, BarChart3, FileText,
   Globe, ChevronLeft, LayoutDashboard, LogOut, Shield,
 } from "lucide-react";
+import DashboardTab from "./dashboard/DashboardTab";
 import AssociadoTab from "./associado/AssociadoTab";
 import VeiculoTab from "./veiculo/VeiculoTab";
 import CadastroTab from "./cadastro/CadastroTab";
@@ -21,6 +22,7 @@ import DocumentacaoTab from "./documentacao/DocumentacaoTab";
 import AreaClienteTab from "./area-cliente/AreaClienteTab";
 
 const gestaoTabs = [
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "associado", label: "Associado", icon: Users },
   { id: "veiculo", label: "Veículo", icon: Car },
   { id: "cadastro", label: "Cadastro", icon: ClipboardList },
@@ -35,12 +37,14 @@ const gestaoTabs = [
 ];
 
 export default function GestaoModule() {
-  const [activeTab, setActiveTab] = useState("associado");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
 
   const renderContent = () => {
     switch (activeTab) {
+      case "dashboard":
+        return <DashboardTab />;
       case "associado":
         return <AssociadoTab />;
       case "veiculo":
