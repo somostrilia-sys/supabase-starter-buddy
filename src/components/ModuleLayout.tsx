@@ -48,7 +48,7 @@ const vendasItems = [
 
 const moduleConfigs = [
   {
-    prefix: ["/associados", "/veiculos", "/regionais", "/cooperativas", "/sinistros", "/documentacao", "/vistorias", "/produtos", "/usuarios", "/parametros"],
+    prefix: ["/gestao", "/associados", "/veiculos", "/regionais", "/cooperativas", "/sinistros", "/documentacao", "/vistorias", "/produtos", "/usuarios", "/parametros"],
     label: "Gestão",
     icon: Shield,
     gradient: "from-primary to-primary/70",
