@@ -37,7 +37,11 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   const [brand, setBrand] = useState<BrandConfig>(() => {
     try {
       const saved = localStorage.getItem("brand-config");
-      if (saved) return { ...defaultBrand, ...JSON.parse(saved) };
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Always use the latest logoUrl from defaults
+        return { ...defaultBrand, ...parsed, logoUrl: defaultBrand.logoUrl };
+      }
     } catch {}
     return defaultBrand;
   });
