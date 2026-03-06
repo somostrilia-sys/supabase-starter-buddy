@@ -4,101 +4,106 @@
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 220 25% 10%;
+    --background: 220 16% 96%;
+    --foreground: 220 30% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 10%;
+    --card-foreground: 220 30% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 10%;
+    --popover-foreground: 220 30% 12%;
 
-    --primary: 217 91% 40%;
+    --primary: 215 65% 28%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 92%;
-    --secondary-foreground: 220 25% 10%;
+    --secondary-foreground: 220 30% 12%;
 
-    --muted: 220 14% 95%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 10% 50%;
 
-    --accent: 168 72% 36%;
+    --accent: 200 60% 32%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 60% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --warning: 38 80% 48%;
     --warning-foreground: 0 0% 100%;
 
-    --success: 152 69% 38%;
+    --success: 152 55% 34%;
     --success-foreground: 0 0% 100%;
 
-    --border: 220 13% 89%;
-    --input: 220 13% 89%;
-    --ring: 217 91% 40%;
+    --border: 220 13% 88%;
+    --input: 220 13% 88%;
+    --ring: 215 65% 28%;
 
-    --radius: 0.625rem;
+    --radius: 0.5rem;
 
-    --sidebar-background: 220 25% 12%;
-    --sidebar-foreground: 220 14% 80%;
-    --sidebar-primary: 217 91% 55%;
+    --sidebar-background: 220 28% 14%;
+    --sidebar-foreground: 220 14% 78%;
+    --sidebar-primary: 210 60% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 20% 18%;
+    --sidebar-accent: 220 22% 20%;
     --sidebar-accent-foreground: 220 14% 92%;
-    --sidebar-border: 220 20% 20%;
-    --sidebar-ring: 217 91% 55%;
+    --sidebar-border: 220 22% 22%;
+    --sidebar-ring: 210 60% 55%;
 
-    --chart-1: 217 91% 40%;
-    --chart-2: 168 72% 36%;
-    --chart-3: 38 92% 50%;
-    --chart-4: 0 72% 51%;
-    --chart-5: 262 60% 55%;
+    --chart-1: 215 65% 28%;
+    --chart-2: 200 60% 32%;
+    --chart-3: 38 80% 48%;
+    --chart-4: 0 60% 48%;
+    --chart-5: 152 55% 34%;
+
+    /* Module accent colors */
+    --gestao: 215 65% 28%;
+    --financeiro: 200 60% 32%;
+    --vendas: 152 55% 34%;
   }
 
   .dark {
-    --background: 220 25% 8%;
+    --background: 220 28% 8%;
     --foreground: 220 14% 92%;
 
-    --card: 220 25% 12%;
+    --card: 220 28% 12%;
     --card-foreground: 220 14% 92%;
 
-    --popover: 220 25% 12%;
+    --popover: 220 28% 12%;
     --popover-foreground: 220 14% 92%;
 
-    --primary: 217 91% 55%;
+    --primary: 215 60% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 20% 18%;
+    --secondary: 220 22% 18%;
     --secondary-foreground: 220 14% 92%;
 
-    --muted: 220 20% 18%;
+    --muted: 220 22% 18%;
     --muted-foreground: 220 10% 55%;
 
-    --accent: 168 72% 40%;
+    --accent: 200 55% 42%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62% 40%;
+    --destructive: 0 55% 42%;
     --destructive-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --warning: 38 80% 48%;
     --warning-foreground: 0 0% 100%;
 
-    --success: 152 69% 42%;
+    --success: 152 55% 38%;
     --success-foreground: 0 0% 100%;
 
-    --border: 220 20% 20%;
-    --input: 220 20% 20%;
-    --ring: 217 91% 55%;
+    --border: 220 22% 20%;
+    --input: 220 22% 20%;
+    --ring: 215 60% 50%;
 
-    --sidebar-background: 220 30% 6%;
-    --sidebar-foreground: 220 14% 80%;
-    --sidebar-primary: 217 91% 55%;
+    --sidebar-background: 220 32% 6%;
+    --sidebar-foreground: 220 14% 78%;
+    --sidebar-primary: 210 60% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 25% 12%;
+    --sidebar-accent: 220 28% 12%;
     --sidebar-accent-foreground: 220 14% 92%;
-    --sidebar-border: 220 25% 12%;
-    --sidebar-ring: 217 91% 55%;
+    --sidebar-border: 220 28% 12%;
+    --sidebar-ring: 210 60% 55%;
   }
 }
 
@@ -108,11 +113,15 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-weight: 600;
   }
 }
