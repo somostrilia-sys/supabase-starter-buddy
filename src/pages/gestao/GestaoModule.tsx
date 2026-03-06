@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
+import { useBrand } from "@/hooks/useBrand";
 import {
   Users, Car, ClipboardList, Wrench, SlidersHorizontal,
   DollarSign, Truck, AlertTriangle, BarChart3, FileText,
@@ -40,6 +41,7 @@ export default function GestaoModule() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const { brand } = useBrand();
 
   const renderContent = () => {
     switch (activeTab) {
@@ -80,7 +82,7 @@ export default function GestaoModule() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="border-b bg-[hsl(212_35%_18%)] shrink-0">
+      <header className="border-b shrink-0" style={{ backgroundColor: `hsl(${brand.headerBg})` }}>
         <div className="flex items-center h-14 px-6 lg:px-8 gap-4">
           <Button
             variant="ghost"
@@ -95,9 +97,13 @@ export default function GestaoModule() {
           <div className="h-5 w-px bg-white/20" />
 
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-white/10 flex items-center justify-center">
-              <Shield className="h-4 w-4 text-[hsl(210_55%_70%)]" />
-            </div>
+            {brand.logoUrl ? (
+              <img src={brand.logoUrl} alt={brand.name} className="w-8 h-8 object-contain" />
+            ) : (
+              <div className="w-8 h-8 bg-white/10 flex items-center justify-center">
+                <Shield className="h-4 w-4" style={{ color: `hsl(${brand.headerAccent})` }} />
+              </div>
+            )}
             <span className="font-semibold text-sm text-white">Gestão</span>
           </div>
 
@@ -117,7 +123,7 @@ export default function GestaoModule() {
       </header>
 
       {/* Tab Navigation */}
-      <nav className="border-b bg-[hsl(210_30%_94%)] shrink-0">
+      <nav className="border-b shrink-0" style={{ backgroundColor: `hsl(${brand.tabBg})` }}>
         <div className="px-6 lg:px-8">
           <ScrollArea className="w-full">
             <div className="flex items-center gap-0">
@@ -129,9 +135,10 @@ export default function GestaoModule() {
                     onClick={() => setActiveTab(tab.id)}
                     className={`relative flex items-center gap-2 px-4 py-3 text-[13px] whitespace-nowrap transition-colors font-medium ${
                       isActive
-                        ? "text-white bg-[hsl(212_35%_30%)]"
-                        : "text-[hsl(210_20%_45%)] hover:text-[hsl(210_30%_30%)] hover:bg-[hsl(210_25%_90%)]"
+                        ? ""
+                        : "text-[hsl(210_20%_45%)] hover:text-[hsl(210_30%_30%)] hover:bg-white/40"
                     }`}
+                    style={isActive ? { backgroundColor: `hsl(${brand.tabActiveBg})`, color: brand.tabActiveText } : undefined}
                   >
                     <tab.icon className="h-4 w-4" />
                     <span>{tab.label}</span>
