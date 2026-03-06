@@ -234,6 +234,7 @@ export default function Dashboard() {
       <header className="border-b sticky top-0 z-20" style={{ backgroundColor: `hsl(${brand.headerBg})` }}>
         <div className="px-6 lg:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="h-8 object-contain" />}
             <div>
               <span className="font-bold text-sm tracking-tight text-white">{brand.name}</span>
               <span className="text-xs text-white/50 ml-2 hidden sm:inline">{brand.subtitle}</span>
