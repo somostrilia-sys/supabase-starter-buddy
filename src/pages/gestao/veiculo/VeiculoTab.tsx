@@ -41,7 +41,7 @@ export default function VeiculoTab() {
           <h1 className="text-lg font-semibold">Veículo</h1>
           <span className="text-sm text-muted-foreground ml-1">— Selecione a ação desejada</span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {actions.map((a) => (
             <button
               key={a.id}
