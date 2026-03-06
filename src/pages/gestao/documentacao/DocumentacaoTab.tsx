@@ -7,9 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   FileText, Download, Printer, Eye, Plus, Edit, Copy,
+  Loader2, Mail, FileDown,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -30,6 +30,7 @@ export default function DocumentacaoTab() {
   const [editNome, setEditNome] = useState("");
   const [editTipo, setEditTipo] = useState("Adesão");
   const [filtroTipo, setFiltroTipo] = useState("todos");
+  const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
   const filtered = mockModelos.filter(m => filtroTipo === "todos" || m.tipo === filtroTipo);
 
@@ -60,6 +61,11 @@ export default function DocumentacaoTab() {
       .replace(/{{LOCAL_VISTORIA}}/g, "Sede Central SP");
   };
 
+  const handleAction = (action: string, fn: () => void) => {
+    setLoadingAction(action);
+    setTimeout(() => { fn(); setLoadingAction(null); }, 1000);
+  };
+
   const handleNovoModelo = () => {
     setEditNome(""); setEditTipo("Adesão"); setEditConteudo(""); setShowEditor(true);
   };
@@ -68,11 +74,14 @@ export default function DocumentacaoTab() {
     setEditNome(m.nome); setEditTipo(m.tipo); setEditConteudo(m.conteudo); setShowEditor(true);
   };
 
+  // Check if it's the "Termo de Adesão" card to show enhanced buttons
+  const isTermoAdesao = (m: typeof mockModelos[0]) => m.tipo === "Adesão";
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div><h2 className="text-xl font-bold">Documentação</h2><p className="text-sm text-muted-foreground">Modelos de documentos, termos e recibos com preenchimento automático</p></div>
-        <Button size="sm" onClick={handleNovoModelo}><Plus className="h-4 w-4" />Novo Modelo</Button>
+        <Button size="sm" onClick={handleNovoModelo} className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white gap-1.5"><Plus className="h-4 w-4" />Novo Modelo</Button>
       </div>
 
       <div className="flex gap-3 items-end">
@@ -83,21 +92,56 @@ export default function DocumentacaoTab() {
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map(m => (
-          <Card key={m.id} className="hover:border-primary/50 transition-colors">
+          <Card key={m.id} className="hover:border-primary/50 transition-colors border-[hsl(210_30%_88%)]">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary" /><CardTitle className="text-base">{m.nome}</CardTitle></div>
-                <Badge variant="outline">{m.tipo}</Badge>
+                <div className="flex items-center gap-2"><FileText className="h-5 w-5 text-[hsl(212_55%_40%)]" /><CardTitle className="text-base">{m.nome}</CardTitle></div>
+                <Badge variant="outline" className="border-[hsl(210_35%_70%)] text-[hsl(212_35%_30%)] bg-[hsl(210_40%_95%)]">{m.tipo}</Badge>
               </div>
               <CardDescription>Atualizado em {new Date(m.atualizado).toLocaleDateString("pt-BR")}</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-xs text-muted-foreground line-clamp-3 mb-3">{m.conteudo.substring(0, 150)}...</p>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setShowPreview(m)}><Eye className="h-3 w-3" />Preview</Button>
-                <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => handleEditar(m)}><Edit className="h-3 w-3" />Editar</Button>
-                <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => toast.success("Documento duplicado")}><Copy className="h-3 w-3" />Duplicar</Button>
-              </div>
+              <p className="text-xs text-muted-foreground line-clamp-3 mb-4">{m.conteudo.substring(0, 150)}...</p>
+
+              {isTermoAdesao(m) ? (
+                <div className="space-y-2">
+                  <Button
+                    size="sm"
+                    className="w-full gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white justify-start h-9"
+                    disabled={loadingAction === `gerar-${m.id}`}
+                    onClick={() => handleAction(`gerar-${m.id}`, () => { setShowPreview(m); toast.success("Termo gerado com sucesso"); })}
+                  >
+                    {loadingAction === `gerar-${m.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                    <div className="text-left"><span className="text-xs font-medium">Gerar Termo</span><span className="text-[10px] text-white/60 block">Preencher com dados do associado</span></div>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-2 justify-start h-9 border-[hsl(210_30%_85%)]"
+                    disabled={loadingAction === `pdf-${m.id}`}
+                    onClick={() => handleAction(`pdf-${m.id}`, () => toast.success("PDF baixado com sucesso"))}
+                  >
+                    {loadingAction === `pdf-${m.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                    <div className="text-left"><span className="text-xs font-medium">Baixar PDF</span><span className="text-[10px] text-muted-foreground block">Download do documento</span></div>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-2 justify-start h-9 border-[hsl(210_30%_85%)]"
+                    disabled={loadingAction === `email-${m.id}`}
+                    onClick={() => handleAction(`email-${m.id}`, () => toast.success("E-mail enviado com sucesso"))}
+                  >
+                    {loadingAction === `email-${m.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                    <div className="text-left"><span className="text-xs font-medium">Enviar por E-mail</span><span className="text-[10px] text-muted-foreground block">Enviar para o associado</span></div>
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-[hsl(210_30%_85%)]" onClick={() => setShowPreview(m)}><Eye className="h-3 w-3" />Preview</Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-[hsl(210_30%_85%)]" onClick={() => handleEditar(m)}><Edit className="h-3 w-3" />Editar</Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-[hsl(210_30%_85%)]" onClick={() => toast.success("Documento duplicado")}><Copy className="h-3 w-3" />Duplicar</Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -114,8 +158,21 @@ export default function DocumentacaoTab() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPreview(null)}>Fechar</Button>
-            <Button variant="outline" onClick={() => toast.success("Download iniciado")}><Download className="h-4 w-4" />Baixar PDF</Button>
-            <Button onClick={() => toast.success("Enviado para impressão")}><Printer className="h-4 w-4" />Imprimir</Button>
+            <Button
+              variant="outline"
+              disabled={loadingAction === "preview-pdf"}
+              onClick={() => handleAction("preview-pdf", () => toast.success("Download iniciado"))}
+            >
+              {loadingAction === "preview-pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Baixar PDF
+            </Button>
+            <Button
+              disabled={loadingAction === "preview-print"}
+              onClick={() => handleAction("preview-print", () => { window.print(); toast.success("Enviado para impressão"); })}
+            >
+              {loadingAction === "preview-print" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+              Imprimir
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -132,7 +189,7 @@ export default function DocumentacaoTab() {
             <div><Label className="text-xs">Conteúdo (use {"{{CAMPO}}"} para campos dinâmicos)</Label><Textarea className="min-h-[300px] font-mono text-sm" value={editConteudo} onChange={e => setEditConteudo(e.target.value)} /></div>
             <div className="p-3 bg-muted rounded-lg"><p className="text-xs font-semibold mb-1">Campos disponíveis:</p><p className="text-xs text-muted-foreground">{"{{NOME}}, {{CPF}}, {{ENDERECO}}, {{VALOR_MENSAL}}, {{MODELO}}, {{PLACA}}, {{ANO}}, {{COTA}}, {{COOPERATIVA}}, {{DATA}}, {{VALOR}}, {{REFERENCIA}}, {{DATA_PAGAMENTO}}, {{MOTIVO}}, {{TIPO_SINISTRO}}, {{DATA_SINISTRO}}, {{LOCAL}}, {{DESCRICAO}}, {{VALOR_ESTIMADO}}, {{BO}}"}</p></div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setShowEditor(false)}>Cancelar</Button><Button onClick={() => { toast.success("Modelo salvo"); setShowEditor(false); }}>Salvar Modelo</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setShowEditor(false)}>Cancelar</Button><Button className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={() => { toast.success("Modelo salvo"); setShowEditor(false); }}>Salvar Modelo</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

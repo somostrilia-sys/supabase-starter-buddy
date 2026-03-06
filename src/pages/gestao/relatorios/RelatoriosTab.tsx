@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Download, Search, Users, Car, FileText, BarChart3, Eye,
   DollarSign, UserCog, TrendingUp, Shield, Truck, AlertTriangle, Printer,
+  Monitor, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -64,36 +65,16 @@ const categoriasVeiculo = [
 
 // ── Reusable filter section component ──
 function FilterSection({
-  title,
-  items,
-  selected,
-  onToggle,
-  columns = 4,
-  color = "primary",
+  title, items, selected, onToggle, columns = 4, color = "primary",
 }: {
-  title: string;
-  items: string[];
-  selected: Set<string>;
-  onToggle: (item: string) => void;
-  columns?: number;
-  color?: "primary" | "success" | "warning" | "destructive";
+  title: string; items: string[]; selected: Set<string>; onToggle: (item: string) => void; columns?: number; color?: "primary" | "success" | "warning" | "destructive";
 }) {
   const allSelected = items.every(i => selected.has(i));
   const toggleAll = () => {
-    if (allSelected) {
-      items.forEach(i => { if (selected.has(i)) onToggle(i); });
-    } else {
-      items.forEach(i => { if (!selected.has(i)) onToggle(i); });
-    }
+    if (allSelected) items.forEach(i => { if (selected.has(i)) onToggle(i); });
+    else items.forEach(i => { if (!selected.has(i)) onToggle(i); });
   };
-
-  const bgMap = {
-    primary: "bg-primary",
-    success: "bg-success",
-    warning: "bg-warning",
-    destructive: "bg-destructive",
-  };
-
+  const bgMap = { primary: "bg-primary", success: "bg-success", warning: "bg-warning", destructive: "bg-destructive" };
   return (
     <div className="border border-border">
       <div className={`${bgMap[color]} px-4 py-2`}>
@@ -102,31 +83,81 @@ function FilterSection({
       <div className="px-4 py-3 bg-card">
         <div className="mb-2">
           <label className="inline-flex items-center gap-2 cursor-pointer">
-            <Checkbox
-              checked={allSelected}
-              onCheckedChange={toggleAll}
-              className="h-4 w-4"
-            />
+            <Checkbox checked={allSelected} onCheckedChange={toggleAll} className="h-4 w-4" />
             <span className="text-sm font-bold uppercase">TODOS</span>
           </label>
         </div>
-        <div className={`grid gap-x-6 gap-y-1.5`} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+        <div className="grid gap-x-6 gap-y-1.5" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
           {items.map(item => {
             const isChecked = selected.has(item);
             return (
               <label key={item} className="inline-flex items-center gap-2 cursor-pointer py-0.5">
-                <Checkbox
-                  checked={isChecked}
-                  onCheckedChange={() => onToggle(item)}
-                  className="h-4 w-4"
-                />
-                <span className={`text-xs font-listing ${isChecked ? "text-primary font-medium" : "text-muted-foreground"}`}>
-                  {item}
-                </span>
+                <Checkbox checked={isChecked} onCheckedChange={() => onToggle(item)} className="h-4 w-4" />
+                <span className={`text-xs font-listing ${isChecked ? "text-primary font-medium" : "text-muted-foreground"}`}>{item}</span>
               </label>
             );
           })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Action bar with View/Print/Excel/PDF ──
+function ReportActionBar({
+  busca, setBusca, onGenerate, onExport, placeholder = "Busca rápida...",
+}: {
+  busca: string; setBusca: (v: string) => void; onGenerate: () => void; onExport: () => void; placeholder?: string;
+}) {
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const handleAction = (action: string, fn: () => void) => {
+    setLoading(action);
+    setTimeout(() => { fn(); setLoading(null); }, 800);
+  };
+
+  return (
+    <div className="flex items-center gap-3 bg-muted/50 border border-border p-4 flex-wrap">
+      <div className="relative flex-1 min-w-[200px] max-w-md">
+        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input className="pl-9" placeholder={placeholder} value={busca} onChange={e => setBusca(e.target.value)} />
+      </div>
+      <Button onClick={() => handleAction("tela", onGenerate)} disabled={loading === "tela"}>
+        {loading === "tela" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Monitor className="h-4 w-4" />}
+        Visualizar Tela
+      </Button>
+      <Button variant="outline" onClick={() => handleAction("print", () => { window.print(); toast.success("Enviado para impressão"); })} disabled={loading === "print"}>
+        {loading === "print" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+        Imprimir
+      </Button>
+      <Button variant="outline" onClick={() => handleAction("excel", () => { onExport(); toast.success("Excel exportado"); })} disabled={loading === "excel"}>
+        {loading === "excel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+        Excel
+      </Button>
+      <Button variant="outline" onClick={() => handleAction("pdf", () => toast.success("PDF gerado"))} disabled={loading === "pdf"}>
+        {loading === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+        PDF
+      </Button>
+    </div>
+  );
+}
+
+// ── Pagination ──
+function Pagination({ page, totalPages, onPageChange }: { page: number; totalPages: number; onPageChange: (p: number) => void }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between px-4 py-3 bg-[hsl(210_30%_97%)] border-t border-[hsl(210_30%_90%)]">
+      <span className="text-xs text-muted-foreground">Página {page} de {totalPages}</span>
+      <div className="flex gap-1">
+        <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)} className="h-7 px-2">
+          <ChevronLeft className="h-3.5 w-3.5" />
+        </Button>
+        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(p => (
+          <Button key={p} variant={p === page ? "default" : "outline"} size="sm" className="h-7 w-7 p-0 text-xs" onClick={() => onPageChange(p)}>{p}</Button>
+        ))}
+        <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)} className="h-7 px-2">
+          <ChevronRight className="h-3.5 w-3.5" />
+        </Button>
       </div>
     </div>
   );
@@ -185,13 +216,20 @@ const allColumns = [
   { key: "regional", label: "Regional" }, { key: "dataCadastro", label: "Data Cadastro" }, { key: "situacao", label: "Situação" },
 ];
 
+const PAGE_SIZE = 10;
+
 export default function RelatoriosTab() {
   const [busca, setBusca] = useState("");
+  const [buscaVeic, setBuscaVeic] = useState("");
+  const [buscaBol, setBuscaBol] = useState("");
   const [detalhe, setDetalhe] = useState<typeof mockAssociados[0] | null>(null);
   const [selectedCols, setSelectedCols] = useState<string[]>(["nome", "cpf", "telefone", "placa", "cooperativa", "situacao"]);
   const [outroAtivo, setOutroAtivo] = useState<string | null>(null);
+  const [showResults, setShowResults] = useState(true);
+  const [pageAssoc, setPageAssoc] = useState(1);
+  const [pageVeic, setPageVeic] = useState(1);
+  const [pageBol, setPageBol] = useState(1);
 
-  // Filter state as Sets for checkbox sections
   const [selSitVeiculo, setSelSitVeiculo] = useState<Set<string>>(new Set(situacoesVeiculo));
   const [selRegional, setSelRegional] = useState<Set<string>>(new Set(regionaisLista));
   const [selCooperativa, setSelCooperativa] = useState<Set<string>>(new Set());
@@ -201,15 +239,16 @@ export default function RelatoriosTab() {
   const [selCategoria, setSelCategoria] = useState<Set<string>>(new Set(categoriasVeiculo));
 
   const toggleInSet = (set: Set<string>, setFn: React.Dispatch<React.SetStateAction<Set<string>>>, item: string) => {
-    setFn(prev => {
-      const next = new Set(prev);
-      if (next.has(item)) next.delete(item); else next.add(item);
-      return next;
-    });
+    setFn(prev => { const next = new Set(prev); if (next.has(item)) next.delete(item); else next.add(item); return next; });
   };
 
   const filteredAssoc = mockAssociados.filter(a => {
     if (busca && !a.nome.toLowerCase().includes(busca.toLowerCase()) && !a.cpf.includes(busca) && !a.placa.includes(busca.toUpperCase())) return false;
+    return true;
+  });
+
+  const filteredBoletos = mockBoletos.filter(b => {
+    if (buscaBol && !b.associado.toLowerCase().includes(buscaBol.toLowerCase()) && !b.id.toLowerCase().includes(buscaBol.toLowerCase())) return false;
     return true;
   });
 
@@ -220,21 +259,24 @@ export default function RelatoriosTab() {
     const rows = data.map(r => keys.map(k => String(r[k] ?? "")).join(";")).join("\n");
     const blob = new Blob([header + rows], { type: "text/csv" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${filename}.csv`; a.click();
-    toast.success("Relatório exportado");
   };
 
   const toggleCol = (key: string) => setSelectedCols(prev => prev.includes(key) ? prev.filter(c => c !== key) : [...prev, key]);
+
+  const totalPagesAssoc = Math.ceil(filteredAssoc.length / PAGE_SIZE);
+  const pagedAssoc = filteredAssoc.slice((pageAssoc - 1) * PAGE_SIZE, pageAssoc * PAGE_SIZE);
+
+  const totalPagesBol = Math.ceil(filteredBoletos.length / PAGE_SIZE);
+  const pagedBoletos = filteredBoletos.slice((pageBol - 1) * PAGE_SIZE, pageBol * PAGE_SIZE);
+
+  const somaBoletosTotal = filteredBoletos.reduce((s, b) => s + b.valor, 0);
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold font-listing">Central de Relatórios</h2>
-          <p className="text-sm text-muted-foreground font-listing">Relatórios completos com filtros avançados e exportação</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm"><Printer className="h-4 w-4" />Imprimir</Button>
-          <Button size="sm"><Download className="h-4 w-4" />Exportar Excel</Button>
+          <p className="text-sm text-muted-foreground font-listing">Relatórios completos com filtros avançados, visualização em tela e exportação</p>
         </div>
       </div>
 
@@ -248,13 +290,9 @@ export default function RelatoriosTab() {
 
         {/* ── ASSOCIADOS ── */}
         <TabsContent value="associados" className="space-y-0 mt-4">
-          {/* Scrollable filter sections */}
           <div className="space-y-4 mb-6">
-            {/* Date range */}
             <div className="border border-border">
-              <div className="bg-primary px-4 py-2">
-                <h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Período</h4>
-              </div>
+              <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Período</h4></div>
               <div className="px-4 py-3 bg-card grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div><Label className="text-xs font-listing font-semibold">Data Cadastro De</Label><Input type="date" /></div>
                 <div><Label className="text-xs font-listing font-semibold">Data Cadastro Até</Label><Input type="date" /></div>
@@ -262,72 +300,16 @@ export default function RelatoriosTab() {
                 <div><Label className="text-xs font-listing font-semibold">Data Contrato Até</Label><Input type="date" /></div>
               </div>
             </div>
+            <FilterSection title="Situação ATUAL do Veículo" items={situacoesVeiculo} selected={selSitVeiculo} onToggle={(item) => toggleInSet(selSitVeiculo, setSelSitVeiculo, item)} color="success" />
+            <FilterSection title="Regional do Veículo" items={regionaisLista} selected={selRegional} onToggle={(item) => toggleInSet(selRegional, setSelRegional, item)} columns={2} color="primary" />
+            <FilterSection title="Cooperativa do Veículo" items={cooperativasLista} selected={selCooperativa} onToggle={(item) => toggleInSet(selCooperativa, setSelCooperativa, item)} color="warning" />
+            <FilterSection title="Situação do Associado" items={situacoesAssociado} selected={selSitAssociado} onToggle={(item) => toggleInSet(selSitAssociado, setSelSitAssociado, item)} color="destructive" />
+            <FilterSection title="Tipo de Veículo" items={tiposVeiculo} selected={selTipoVeiculo} onToggle={(item) => toggleInSet(selTipoVeiculo, setSelTipoVeiculo, item)} columns={3} color="primary" />
+            <FilterSection title="Faixa de Cota" items={cotasVeiculo} selected={selCota} onToggle={(item) => toggleInSet(selCota, setSelCota, item)} columns={4} color="success" />
+            <FilterSection title="Categoria do Veículo" items={categoriasVeiculo} selected={selCategoria} onToggle={(item) => toggleInSet(selCategoria, setSelCategoria, item)} columns={3} color="warning" />
 
-            <FilterSection
-              title="Situação ATUAL do Veículo"
-              items={situacoesVeiculo}
-              selected={selSitVeiculo}
-              onToggle={(item) => toggleInSet(selSitVeiculo, setSelSitVeiculo, item)}
-              color="success"
-            />
-
-            <FilterSection
-              title="Regional do Veículo"
-              items={regionaisLista}
-              selected={selRegional}
-              onToggle={(item) => toggleInSet(selRegional, setSelRegional, item)}
-              columns={2}
-              color="primary"
-            />
-
-            <FilterSection
-              title="Cooperativa do Veículo"
-              items={cooperativasLista}
-              selected={selCooperativa}
-              onToggle={(item) => toggleInSet(selCooperativa, setSelCooperativa, item)}
-              color="warning"
-            />
-
-            <FilterSection
-              title="Situação do Associado"
-              items={situacoesAssociado}
-              selected={selSitAssociado}
-              onToggle={(item) => toggleInSet(selSitAssociado, setSelSitAssociado, item)}
-              color="destructive"
-            />
-
-            <FilterSection
-              title="Tipo de Veículo"
-              items={tiposVeiculo}
-              selected={selTipoVeiculo}
-              onToggle={(item) => toggleInSet(selTipoVeiculo, setSelTipoVeiculo, item)}
-              columns={3}
-              color="primary"
-            />
-
-            <FilterSection
-              title="Faixa de Cota"
-              items={cotasVeiculo}
-              selected={selCota}
-              onToggle={(item) => toggleInSet(selCota, setSelCota, item)}
-              columns={4}
-              color="success"
-            />
-
-            <FilterSection
-              title="Categoria do Veículo"
-              items={categoriasVeiculo}
-              selected={selCategoria}
-              onToggle={(item) => toggleInSet(selCategoria, setSelCategoria, item)}
-              columns={3}
-              color="warning"
-            />
-
-            {/* Columns selector */}
             <div className="border border-border">
-              <div className="bg-primary px-4 py-2">
-                <h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Colunas Visíveis no Resultado</h4>
-              </div>
+              <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Colunas Visíveis no Resultado</h4></div>
               <div className="px-4 py-3 bg-card">
                 <div className="grid grid-cols-3 md:grid-cols-5 gap-x-6 gap-y-1.5">
                   {allColumns.map(c => (
@@ -340,50 +322,49 @@ export default function RelatoriosTab() {
               </div>
             </div>
 
-            {/* Search + action bar */}
-            <div className="flex items-center gap-3 bg-muted/50 border border-border p-4">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input className="pl-9" placeholder="Busca rápida: Nome, CPF ou placa..." value={busca} onChange={e => setBusca(e.target.value)} />
-              </div>
-              <Button onClick={() => toast.success("Relatório gerado")}><Search className="h-4 w-4" />Gerar Relatório</Button>
-              <Button variant="outline" onClick={() => exportCsv(filteredAssoc as unknown as Record<string, unknown>[], "associados")}><Download className="h-4 w-4" />Exportar</Button>
-              <Button variant="outline"><Printer className="h-4 w-4" />Imprimir</Button>
-            </div>
+            <ReportActionBar
+              busca={busca}
+              setBusca={setBusca}
+              onGenerate={() => { setShowResults(true); setPageAssoc(1); toast.success("Relatório gerado"); }}
+              onExport={() => exportCsv(filteredAssoc as unknown as Record<string, unknown>[], "associados")}
+              placeholder="Busca rápida: Nome, CPF ou placa..."
+            />
           </div>
 
-          {/* Result table */}
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader><TableRow>{selectedCols.map(k => <TableHead key={k} className="font-listing font-bold text-xs uppercase">{allColumns.find(c => c.key === k)?.label}</TableHead>)}<TableHead></TableHead></TableRow></TableHeader>
-                <TableBody>
-                  {filteredAssoc.map(a => (
-                    <TableRow key={a.id} className="cursor-pointer" onClick={() => setDetalhe(a)}>
-                      {selectedCols.map(k => (
-                        <TableCell key={k} className="font-listing">
-                          {k === "situacao" ? <Badge className={situacaoColor[a.situacao]}>{a.situacao}</Badge>
-                           : k === "dataCadastro" ? new Date(a.dataCadastro).toLocaleDateString("pt-BR")
-                           : String((a as Record<string, unknown>)[k] ?? "")}
-                        </TableCell>
+          {showResults && (
+            <>
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader><TableRow>{selectedCols.map(k => <TableHead key={k} className="font-listing font-bold text-xs uppercase">{allColumns.find(c => c.key === k)?.label}</TableHead>)}<TableHead></TableHead></TableRow></TableHeader>
+                    <TableBody>
+                      {pagedAssoc.map(a => (
+                        <TableRow key={a.id} className="cursor-pointer" onClick={() => setDetalhe(a)}>
+                          {selectedCols.map(k => (
+                            <TableCell key={k} className="font-listing">
+                              {k === "situacao" ? <Badge className={situacaoColor[a.situacao]}>{a.situacao}</Badge>
+                               : k === "dataCadastro" ? new Date(a.dataCadastro).toLocaleDateString("pt-BR")
+                               : String((a as Record<string, unknown>)[k] ?? "")}
+                            </TableCell>
+                          ))}
+                          <TableCell><Button variant="ghost" size="icon" className="h-7 w-7"><Eye className="h-3.5 w-3.5" /></Button></TableCell>
+                        </TableRow>
                       ))}
-                      <TableCell><Button variant="ghost" size="icon" className="h-7 w-7"><Eye className="h-3.5 w-3.5" /></Button></TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-          <p className="text-xs text-muted-foreground font-listing mt-2">{filteredAssoc.length} registros encontrados</p>
+                    </TableBody>
+                  </Table>
+                  <Pagination page={pageAssoc} totalPages={totalPagesAssoc} onPageChange={setPageAssoc} />
+                </CardContent>
+              </Card>
+              <p className="text-xs text-muted-foreground font-listing mt-2">{filteredAssoc.length} registros encontrados</p>
+            </>
+          )}
         </TabsContent>
 
         {/* ── VEÍCULOS ── */}
         <TabsContent value="veiculos" className="space-y-0 mt-4">
           <div className="space-y-4 mb-6">
             <div className="border border-border">
-              <div className="bg-primary px-4 py-2">
-                <h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Período</h4>
-              </div>
+              <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Período</h4></div>
               <div className="px-4 py-3 bg-card grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div><Label className="text-xs font-listing font-semibold">Data Cadastro De</Label><Input type="date" /></div>
                 <div><Label className="text-xs font-listing font-semibold">Data Cadastro Até</Label><Input type="date" /></div>
@@ -391,58 +372,19 @@ export default function RelatoriosTab() {
                 <div><Label className="text-xs font-listing font-semibold">Ano Fabricação Até</Label><Input type="number" placeholder="2025" /></div>
               </div>
             </div>
+            <FilterSection title="Situação ATUAL do Veículo" items={situacoesVeiculo} selected={selSitVeiculo} onToggle={(item) => toggleInSet(selSitVeiculo, setSelSitVeiculo, item)} color="success" />
+            <FilterSection title="Tipo de Veículo" items={tiposVeiculo} selected={selTipoVeiculo} onToggle={(item) => toggleInSet(selTipoVeiculo, setSelTipoVeiculo, item)} columns={3} color="primary" />
+            <FilterSection title="Faixa de Cota" items={cotasVeiculo} selected={selCota} onToggle={(item) => toggleInSet(selCota, setSelCota, item)} columns={4} color="success" />
+            <FilterSection title="Regional do Veículo" items={regionaisLista} selected={selRegional} onToggle={(item) => toggleInSet(selRegional, setSelRegional, item)} columns={2} color="primary" />
+            <FilterSection title="Cooperativa do Veículo" items={cooperativasLista} selected={selCooperativa} onToggle={(item) => toggleInSet(selCooperativa, setSelCooperativa, item)} color="warning" />
 
-            <FilterSection
-              title="Situação ATUAL do Veículo"
-              items={situacoesVeiculo}
-              selected={selSitVeiculo}
-              onToggle={(item) => toggleInSet(selSitVeiculo, setSelSitVeiculo, item)}
-              color="success"
+            <ReportActionBar
+              busca={buscaVeic}
+              setBusca={setBuscaVeic}
+              onGenerate={() => { setPageVeic(1); toast.success("Relatório gerado"); }}
+              onExport={() => exportCsv(mockAssociados.map(a => ({ placa: a.placa, modelo: a.modelo, ano: a.ano, tipo: a.tipo, categoria: a.categoria, cota: a.cota, associado: a.nome, cooperativa: a.cooperativa })), "veiculos")}
+              placeholder="Busca por placa ou modelo..."
             />
-
-            <FilterSection
-              title="Tipo de Veículo"
-              items={tiposVeiculo}
-              selected={selTipoVeiculo}
-              onToggle={(item) => toggleInSet(selTipoVeiculo, setSelTipoVeiculo, item)}
-              columns={3}
-              color="primary"
-            />
-
-            <FilterSection
-              title="Faixa de Cota"
-              items={cotasVeiculo}
-              selected={selCota}
-              onToggle={(item) => toggleInSet(selCota, setSelCota, item)}
-              columns={4}
-              color="success"
-            />
-
-            <FilterSection
-              title="Regional do Veículo"
-              items={regionaisLista}
-              selected={selRegional}
-              onToggle={(item) => toggleInSet(selRegional, setSelRegional, item)}
-              columns={2}
-              color="primary"
-            />
-
-            <FilterSection
-              title="Cooperativa do Veículo"
-              items={cooperativasLista}
-              selected={selCooperativa}
-              onToggle={(item) => toggleInSet(selCooperativa, setSelCooperativa, item)}
-              color="warning"
-            />
-
-            <div className="flex items-center gap-3 bg-muted/50 border border-border p-4">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input className="pl-9" placeholder="Busca por placa ou modelo..." />
-              </div>
-              <Button><Search className="h-4 w-4" />Gerar Relatório</Button>
-              <Button variant="outline" onClick={() => exportCsv(mockAssociados.map(a => ({ placa: a.placa, modelo: a.modelo, ano: a.ano, tipo: a.tipo, categoria: a.categoria, cota: a.cota, associado: a.nome, cooperativa: a.cooperativa })), "veiculos")}><Download className="h-4 w-4" />Exportar</Button>
-            </div>
           </div>
 
           <Card><CardContent className="p-0">
@@ -468,33 +410,46 @@ export default function RelatoriosTab() {
 
           <div className="space-y-4">
             <div className="border border-border">
-              <div className="bg-primary px-4 py-2">
-                <h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Filtros de Boletos</h4>
-              </div>
+              <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Filtros de Boletos</h4></div>
               <div className="px-4 py-3 bg-card grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div><Label className="text-xs font-listing font-semibold">Vencimento De</Label><Input type="date" /></div>
                 <div><Label className="text-xs font-listing font-semibold">Vencimento Até</Label><Input type="date" /></div>
                 <div><Label className="text-xs font-listing font-semibold">Situação</Label>
                   <Select defaultValue="todos"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem><SelectItem value="pago_dia">Pago em dia</SelectItem><SelectItem value="pago_atraso">Pago em atraso</SelectItem><SelectItem value="pendente">Pendente</SelectItem><SelectItem value="vencido">Vencido</SelectItem></SelectContent></Select>
                 </div>
-                <div><Label className="text-xs font-listing font-semibold">Associado</Label><Input placeholder="Nome..." /></div>
-                <div className="flex items-end gap-2">
-                  <Button size="sm"><Search className="h-4 w-4" />Gerar</Button>
-                  <Button variant="outline" size="sm" onClick={() => exportCsv(mockBoletos as unknown as Record<string, unknown>[], "boletos")}><Download className="h-4 w-4" />Exportar</Button>
+                <div><Label className="text-xs font-listing font-semibold">Cooperativa</Label>
+                  <Select defaultValue="todas"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{cooperativasSimples.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+                </div>
+                <div><Label className="text-xs font-listing font-semibold">Regional</Label>
+                  <Select defaultValue="todas"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{regionaisSimples.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>
                 </div>
               </div>
             </div>
+
+            <ReportActionBar
+              busca={buscaBol}
+              setBusca={setBuscaBol}
+              onGenerate={() => { setPageBol(1); toast.success("Relatório gerado"); }}
+              onExport={() => exportCsv(mockBoletos as unknown as Record<string, unknown>[], "boletos")}
+              placeholder="Buscar por associado ou ID..."
+            />
           </div>
 
           <Card><CardContent className="p-0">
             <Table>
               <TableHeader><TableRow><TableHead className="font-listing font-bold text-xs uppercase">ID</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Associado</TableHead><TableHead className="font-listing font-bold text-xs uppercase text-right">Valor</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Gerado</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Vencimento</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Pagamento</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Situação</TableHead></TableRow></TableHeader>
               <TableBody>
-                {mockBoletos.map(b => (
+                {pagedBoletos.map(b => (
                   <TableRow key={b.id}><TableCell className="font-mono text-xs">{b.id}</TableCell><TableCell className="font-medium font-listing">{b.associado}</TableCell><TableCell className="text-right font-listing">R$ {b.valor.toFixed(2)}</TableCell><TableCell className="font-listing">{new Date(b.gerado).toLocaleDateString("pt-BR")}</TableCell><TableCell className="font-listing">{new Date(b.vencimento).toLocaleDateString("pt-BR")}</TableCell><TableCell className="font-listing">{b.pagamento ? new Date(b.pagamento).toLocaleDateString("pt-BR") : "—"}</TableCell><TableCell><Badge className={situacaoColor[b.situacao]}>{b.situacao.replace("_", " ")}</Badge></TableCell></TableRow>
                 ))}
               </TableBody>
             </Table>
+            {/* Footer sum */}
+            <div className="flex items-center justify-between px-4 py-3 bg-[hsl(210_30%_95%)] border-t border-border">
+              <span className="text-xs text-muted-foreground font-listing">{filteredBoletos.length} boleto(s)</span>
+              <span className="text-sm font-bold font-listing">Total: R$ {somaBoletosTotal.toFixed(2)}</span>
+            </div>
+            <Pagination page={pageBol} totalPages={totalPagesBol} onPageChange={setPageBol} />
           </CardContent></Card>
         </TabsContent>
 
@@ -537,32 +492,20 @@ export default function RelatoriosTab() {
                 </div>
               </div>
 
-              <FilterSection
-                title="Regional"
-                items={regionaisLista}
-                selected={selRegional}
-                onToggle={(item) => toggleInSet(selRegional, setSelRegional, item)}
-                columns={2}
-                color="primary"
-              />
+              <FilterSection title="Regional" items={regionaisLista} selected={selRegional} onToggle={(item) => toggleInSet(selRegional, setSelRegional, item)} columns={2} color="primary" />
+              <FilterSection title="Cooperativa" items={cooperativasLista} selected={selCooperativa} onToggle={(item) => toggleInSet(selCooperativa, setSelCooperativa, item)} color="warning" />
 
-              <FilterSection
-                title="Cooperativa"
-                items={cooperativasLista}
-                selected={selCooperativa}
-                onToggle={(item) => toggleInSet(selCooperativa, setSelCooperativa, item)}
-                color="warning"
+              <ReportActionBar
+                busca=""
+                setBusca={() => {}}
+                onGenerate={() => toast.success("Relatório gerado")}
+                onExport={() => toast.success("Relatório exportado")}
+                placeholder="Buscar..."
               />
-
-              <div className="flex items-center gap-3 bg-muted/50 border border-border p-4">
-                <Button><Search className="h-4 w-4" />Gerar Relatório</Button>
-                <Button variant="outline" onClick={() => toast.success("Relatório exportado")}><Download className="h-4 w-4" />Exportar Excel</Button>
-                <Button variant="outline"><Printer className="h-4 w-4" />Imprimir</Button>
-              </div>
 
               <div className="p-8 bg-muted text-center text-muted-foreground border">
                 <BarChart3 className="h-8 w-8 mx-auto mb-2" />
-                <p className="text-sm font-listing">Aplique os filtros e clique em "Gerar Relatório"</p>
+                <p className="text-sm font-listing">Aplique os filtros e clique em "Visualizar Tela"</p>
               </div>
             </div>
           )}
@@ -588,8 +531,11 @@ export default function RelatoriosTab() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Situação:</span><Badge className={situacaoColor[detalhe.situacao]}>{detalhe.situacao}</Badge></div>
               </div>
               <div className="border-t pt-3 space-y-2 text-sm font-listing">
-                <p className="font-semibold">Veículo</p>
-                {([["Placa", detalhe.placa], ["Modelo", detalhe.modelo], ["Ano", String(detalhe.ano)], ["Tipo", detalhe.tipo], ["Categoria", detalhe.categoria], ["Cota", detalhe.cota]] as [string, string][]).map(([l, v]) => (
+                <h4 className="font-bold">Veículo</h4>
+                {([
+                  ["Placa", detalhe.placa], ["Modelo", detalhe.modelo], ["Ano", String(detalhe.ano)],
+                  ["Tipo", detalhe.tipo], ["Categoria", detalhe.categoria], ["Cota", detalhe.cota],
+                ] as [string, string][]).map(([l, v]) => (
                   <div key={l} className="flex justify-between"><span className="text-muted-foreground">{l}:</span><span className="font-medium">{v}</span></div>
                 ))}
               </div>
