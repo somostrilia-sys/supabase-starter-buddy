@@ -38,10 +38,10 @@ export default function FinanceiroTab() {
           <button
             key={a.id}
             onClick={() => setView(a.id)}
-            className="group flex items-center gap-6 border-2 border-muted-foreground/30 bg-card px-8 py-8 text-left hover:bg-muted/40 hover:border-primary/40 transition-colors min-h-[130px]"
+            className="group flex items-center gap-6 border border-[hsl(210_30%_88%)] bg-[hsl(210_30%_96%)] px-8 py-8 text-left hover:bg-[hsl(210_30%_93%)] hover:border-[hsl(210_30%_80%)] transition-colors min-h-[130px]"
           >
-            <div className="w-16 h-16 bg-[hsl(210_30%_94%)] flex items-center justify-center shrink-0">
-              <a.icon className="h-7 w-7 text-[hsl(210_40%_50%)]" />
+            <div className="w-16 h-16 bg-[hsl(212_35%_18%)] flex items-center justify-center shrink-0">
+              <a.icon className="h-7 w-7 text-[hsl(210_55%_70%)]" />
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-base">{a.title}</h3>
