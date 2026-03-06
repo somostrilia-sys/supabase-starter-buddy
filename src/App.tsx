@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { AppLayout } from "@/components/AppLayout";
+import { ModuleLayout } from "@/components/ModuleLayout";
 
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -36,6 +36,7 @@ import RelatoriosFinanceiro from "./pages/financeiro/RelatoriosFinanceiro";
 import Pipeline from "./pages/vendas/Pipeline";
 import VendasLista from "./pages/vendas/VendasLista";
 import Contatos from "./pages/vendas/Contatos";
+
 import NegociacaoDetalhe from "./pages/vendas/NegociacaoDetalhe";
 import Atividades from "./pages/vendas/Atividades";
 import Calendario from "./pages/vendas/Calendario";
@@ -51,9 +52,19 @@ import MinhaEmpresa from "./pages/vendas/MinhaEmpresa";
 
 const queryClient = new QueryClient();
 
-const L = ({ children }: { children: React.ReactNode }) => (
+// Dashboard layout - simple, no sidebar
+const D = ({ children }: { children: React.ReactNode }) => (
   <ProtectedRoute>
-    <AppLayout>{children}</AppLayout>
+    <div className="min-h-screen bg-background">
+      <main className="p-6 max-w-7xl mx-auto">{children}</main>
+    </div>
+  </ProtectedRoute>
+);
+
+// Module layout - top nav bar
+const M = ({ children }: { children: React.ReactNode }) => (
+  <ProtectedRoute>
+    <ModuleLayout>{children}</ModuleLayout>
   </ProtectedRoute>
 );
 
@@ -66,45 +77,45 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<L><Dashboard /></L>} />
+            <Route path="/" element={<D><Dashboard /></D>} />
 
             {/* Gestão - New */}
-            <Route path="/gestao/*" element={<ProtectedRoute><AppLayout><GestaoModule /></AppLayout></ProtectedRoute>} />
+            <Route path="/gestao/*" element={<ProtectedRoute><GestaoModule /></ProtectedRoute>} />
 
             {/* Gestão (legacy) */}
-            <Route path="/associados" element={<L><Associados /></L>} />
-            <Route path="/veiculos" element={<L><Veiculos /></L>} />
-            <Route path="/sinistros" element={<L><Sinistros /></L>} />
-            <Route path="/regionais" element={<L><Regionais /></L>} />
-            <Route path="/cooperativas" element={<L><Cooperativas /></L>} />
-            <Route path="/documentacao" element={<L><Documentacao /></L>} />
-            <Route path="/vistorias" element={<L><Vistorias /></L>} />
-            <Route path="/produtos" element={<L><Produtos /></L>} />
-            <Route path="/usuarios" element={<L><Usuarios /></L>} />
-            <Route path="/parametros" element={<L><Parametros /></L>} />
+            <Route path="/associados" element={<M><Associados /></M>} />
+            <Route path="/veiculos" element={<M><Veiculos /></M>} />
+            <Route path="/sinistros" element={<M><Sinistros /></M>} />
+            <Route path="/regionais" element={<M><Regionais /></M>} />
+            <Route path="/cooperativas" element={<M><Cooperativas /></M>} />
+            <Route path="/documentacao" element={<M><Documentacao /></M>} />
+            <Route path="/vistorias" element={<M><Vistorias /></M>} />
+            <Route path="/produtos" element={<M><Produtos /></M>} />
+            <Route path="/usuarios" element={<M><Usuarios /></M>} />
+            <Route path="/parametros" element={<M><Parametros /></M>} />
 
             {/* Financeiro */}
-            <Route path="/financeiro/fluxo-diario" element={<L><FluxoDiario /></L>} />
-            <Route path="/financeiro/boletos" element={<L><Boletos /></L>} />
-            <Route path="/financeiro/conciliacao" element={<L><Conciliacao /></L>} />
-            <Route path="/financeiro/relatorios" element={<L><RelatoriosFinanceiro /></L>} />
+            <Route path="/financeiro/fluxo-diario" element={<M><FluxoDiario /></M>} />
+            <Route path="/financeiro/boletos" element={<M><Boletos /></M>} />
+            <Route path="/financeiro/conciliacao" element={<M><Conciliacao /></M>} />
+            <Route path="/financeiro/relatorios" element={<M><RelatoriosFinanceiro /></M>} />
 
             {/* Vendas */}
-            <Route path="/vendas/pipeline" element={<L><Pipeline /></L>} />
-            <Route path="/vendas/negociacoes" element={<L><VendasLista /></L>} />
-            <Route path="/vendas/negociacao/:id" element={<L><NegociacaoDetalhe /></L>} />
-            <Route path="/vendas/contatos" element={<L><Contatos /></L>} />
-            <Route path="/vendas/atividades" element={<L><Atividades /></L>} />
-            <Route path="/vendas/calendario" element={<L><Calendario /></L>} />
-            <Route path="/vendas/metas" element={<L><Metas /></L>} />
-            <Route path="/vendas/tags" element={<L><Tags /></L>} />
-            <Route path="/vendas/formularios" element={<L><Formularios /></L>} />
-            <Route path="/vendas/importar" element={<L><ImportarLeads /></L>} />
-            <Route path="/vendas/afiliados" element={<L><Afiliados /></L>} />
-            <Route path="/vendas/relatorios" element={<L><RelatoriosVendas /></L>} />
-            <Route path="/vendas/financeiro" element={<L><FinanceiroVendas /></L>} />
-            <Route path="/vendas/ferramentas" element={<L><FerramentasVendas /></L>} />
-            <Route path="/vendas/minha-empresa" element={<L><MinhaEmpresa /></L>} />
+            <Route path="/vendas/pipeline" element={<M><Pipeline /></M>} />
+            <Route path="/vendas/negociacoes" element={<M><VendasLista /></M>} />
+            <Route path="/vendas/negociacao/:id" element={<M><NegociacaoDetalhe /></M>} />
+            <Route path="/vendas/contatos" element={<M><Contatos /></M>} />
+            <Route path="/vendas/atividades" element={<M><Atividades /></M>} />
+            <Route path="/vendas/calendario" element={<M><Calendario /></M>} />
+            <Route path="/vendas/metas" element={<M><Metas /></M>} />
+            <Route path="/vendas/tags" element={<M><Tags /></M>} />
+            <Route path="/vendas/formularios" element={<M><Formularios /></M>} />
+            <Route path="/vendas/importar" element={<M><ImportarLeads /></M>} />
+            <Route path="/vendas/afiliados" element={<M><Afiliados /></M>} />
+            <Route path="/vendas/relatorios" element={<M><RelatoriosVendas /></M>} />
+            <Route path="/vendas/financeiro" element={<M><FinanceiroVendas /></M>} />
+            <Route path="/vendas/ferramentas" element={<M><FerramentasVendas /></M>} />
+            <Route path="/vendas/minha-empresa" element={<M><MinhaEmpresa /></M>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
