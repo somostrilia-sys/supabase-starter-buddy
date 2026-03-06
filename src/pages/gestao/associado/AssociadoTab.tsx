@@ -23,27 +23,27 @@ export default function AssociadoTab() {
 
   if (view === "menu") {
     return (
-      <div className="p-6 flex flex-col h-full">
-        <div className="flex items-center gap-2.5 mb-5">
+      <div className="p-6 lg:px-8 flex flex-col min-h-[calc(100vh-7.5rem)]">
+        <div className="flex items-center gap-2.5 mb-6">
           <Users className="h-5 w-5 text-primary" />
           <h1 className="text-lg font-semibold">Associado</h1>
           <span className="text-sm text-muted-foreground ml-1">— Selecione a ação desejada</span>
         </div>
-        <div className="flex flex-col gap-1.5 flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1">
           {actions.map((a) => (
             <button
               key={a.id}
               onClick={() => setView(a.id)}
-              className="group flex items-center gap-4 rounded-md border bg-card px-4 py-3 text-left hover:bg-muted/50 hover:border-primary/30 transition-colors"
+              className="group flex items-center gap-5 border bg-card px-6 py-6 text-left hover:bg-muted/40 hover:border-primary/30 transition-colors min-h-[100px]"
             >
-              <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center shrink-0">
-                <a.icon className="h-4 w-4 text-foreground" />
+              <div className="w-12 h-12 bg-muted flex items-center justify-center shrink-0">
+                <a.icon className="h-5 w-5 text-muted-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-sm">{a.title}</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">{a.desc}</p>
+                <h3 className="font-semibold text-sm">{a.title}</h3>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{a.desc}</p>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground shrink-0" />
+              <ChevronRight className="h-5 w-5 text-border group-hover:text-foreground shrink-0" />
             </button>
           ))}
         </div>
@@ -52,7 +52,7 @@ export default function AssociadoTab() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 lg:px-8">
       <Button variant="ghost" size="sm" onClick={() => setView("menu")} className="gap-1.5 mb-4 text-muted-foreground">
         <ArrowLeft className="h-4 w-4" /> Voltar ao menu
       </Button>
