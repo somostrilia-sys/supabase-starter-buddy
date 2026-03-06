@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import {
   Users, Car, AlertTriangle, Wallet, Handshake, TrendingUp,
   PercentCircle, Target, Shield, DollarSign, ArrowRight,
-  BarChart3, PieChart, Activity, ChevronRight,
+  BarChart3, PieChart, Activity, ChevronRight, LogOut,
+  Receipt, FileText, CircleDot,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,38 +18,41 @@ import {
   PieChart as RPieChart, Pie, Cell, AreaChart, Area,
 } from "recharts";
 
+/* ─── Module definitions ─── */
 const modules = [
   {
     title: "Gestão",
-    description: "Associados, veículos, sinistros e documentação",
+    subtitle: "Associados, veículos, sinistros e documentação",
     icon: Shield,
     route: "/gestao",
+    color: "hsl(var(--gestao))",
   },
   {
     title: "Financeiro",
-    description: "Fluxo diário, boletos e conciliação",
+    subtitle: "Fluxo diário, boletos e conciliação",
     icon: DollarSign,
     route: "/financeiro/fluxo-diario",
+    color: "hsl(var(--financeiro))",
   },
   {
     title: "Vendas",
-    description: "Pipeline, contatos, metas e afiliados",
+    subtitle: "Pipeline, contatos, metas e afiliados",
     icon: Target,
     route: "/vendas/pipeline",
+    color: "hsl(var(--vendas))",
   },
 ];
 
+/* ─── Chart configs ─── */
 const monthlyChartConfig = {
   associados: { label: "Associados", color: "hsl(var(--chart-1))" },
   veiculos: { label: "Veículos", color: "hsl(var(--chart-2))" },
 };
-
 const pieChartConfig = {
   ativo: { label: "Ativos", color: "hsl(var(--chart-1))" },
   inativo: { label: "Inativos", color: "hsl(var(--chart-4))" },
   suspenso: { label: "Suspensos", color: "hsl(var(--chart-3))" },
 };
-
 const areaChartConfig = {
   valor: { label: "Recebido", color: "hsl(var(--chart-2))" },
 };
@@ -61,7 +65,6 @@ const fakeMonthly = [
   { mes: "Mai", associados: 42, veiculos: 51 },
   { mes: "Jun", associados: 48, veiculos: 58 },
 ];
-
 const fakeArea = [
   { dia: "Seg", valor: 1200 },
   { dia: "Ter", valor: 850 },
@@ -72,34 +75,77 @@ const fakeArea = [
   { dia: "Dom", valor: 400 },
 ];
 
-function SectionHeader({ icon: Icon, title, action, onAction }: { icon: React.ElementType; title: string; action?: string; onAction?: () => void }) {
+/* ─── Components ─── */
+function ModuleSection({
+  icon: Icon,
+  title,
+  color,
+  action,
+  onAction,
+  children,
+}: {
+  icon: React.ElementType;
+  title: string;
+  color: string;
+  action?: string;
+  onAction?: () => void;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <div className="w-1 h-5 bg-primary rounded-full" />
-        <Icon className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">{title}</h2>
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-9 h-9 rounded flex items-center justify-center"
+            style={{ backgroundColor: color }}
+          >
+            <Icon className="h-4.5 w-4.5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold tracking-tight text-foreground">{title}</h2>
+          </div>
+        </div>
+        {action && onAction && (
+          <button
+            onClick={onAction}
+            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors border border-border rounded px-3 py-1.5 hover:bg-muted"
+          >
+            {action}
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
-      {action && onAction && (
-        <button onClick={onAction} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-          {action}
-          <ChevronRight className="h-3 w-3" />
-        </button>
-      )}
-    </div>
+      <div className="pl-0">{children}</div>
+    </section>
   );
 }
 
-function KpiCard({ title, value, icon: Icon, subtitle }: { title: string; value: string | number; icon: React.ElementType; subtitle?: string }) {
+function KpiCard({
+  label,
+  value,
+  icon: Icon,
+  subtitle,
+}: {
+  label: string;
+  value: string | number;
+  icon: React.ElementType;
+  subtitle?: string;
+}) {
   return (
-    <Card className="shadow-none">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3">
-          <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider truncate">{title}</p>
-            <p className="text-lg font-bold tracking-tight leading-tight mt-0.5">{value}</p>
-            {subtitle && <p className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</p>}
+    <Card className="shadow-none border">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between">
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider leading-tight">
+              {label}
+            </p>
+            <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>
+            {subtitle && (
+              <p className="text-[11px] text-muted-foreground leading-tight">{subtitle}</p>
+            )}
+          </div>
+          <div className="w-10 h-10 rounded bg-muted flex items-center justify-center shrink-0">
+            <Icon className="w-5 h-5 text-muted-foreground" />
           </div>
         </div>
       </CardContent>
@@ -182,70 +228,99 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 h-12 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-primary" />
-            <span className="font-semibold text-sm tracking-tight">GIA</span>
-            <span className="text-xs text-muted-foreground ml-1">Proteção Veicular</span>
-          </div>
+      {/* ══════════ HEADER ══════════ */}
+      <header className="border-b bg-card sticky top-0 z-20">
+        <div className="max-w-[1280px] mx-auto px-6 lg:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground hidden sm:block">{user?.email}</span>
-            <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground text-xs h-8">
+            <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
+              <Shield className="w-4 h-4 text-primary-foreground" />
+            </div>
+            <div>
+              <span className="font-bold text-sm tracking-tight text-foreground">GIA</span>
+              <span className="text-xs text-muted-foreground ml-2 hidden sm:inline">Proteção Veicular</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-muted-foreground hidden md:block">{user?.email}</span>
+            <div className="h-4 w-px bg-border hidden md:block" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={signOut}
+              className="text-muted-foreground hover:text-foreground h-8 gap-1.5 text-xs"
+            >
+              <LogOut className="h-3.5 w-3.5" />
               Sair
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-6 space-y-8">
-        {/* Title + Module nav */}
+      <div className="max-w-[1280px] mx-auto px-6 lg:px-8 py-8 space-y-10">
+        {/* ══════════ PAGE TITLE ══════════ */}
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Painel Principal</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Visão consolidada da sua associação de proteção veicular</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Painel Principal</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Visão consolidada da sua associação de proteção veicular
+          </p>
         </div>
 
-        {/* Module nav cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* ══════════ MODULE NAVIGATION ══════════ */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {modules.map((mod) => (
             <button
               key={mod.title}
               onClick={() => navigate(mod.route)}
-              className="group flex items-center gap-4 rounded-md border bg-card p-4 text-left hover:bg-muted/50 hover:border-primary/30 transition-colors"
+              className="group relative flex items-center gap-5 rounded-lg border bg-card p-6 text-left hover:border-primary/40 transition-all duration-200"
             >
-              <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center shrink-0">
-                <mod.icon className="w-5 h-5 text-foreground" />
+              <div
+                className="w-14 h-14 rounded-lg flex items-center justify-center shrink-0"
+                style={{ backgroundColor: mod.color }}
+              >
+                <mod.icon className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="font-medium text-sm">{mod.title}</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">{mod.description}</p>
+                <h2 className="font-semibold text-base text-foreground">{mod.title}</h2>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{mod.subtitle}</p>
               </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground shrink-0" />
+              <ArrowRight className="h-5 w-5 text-border group-hover:text-primary transition-colors shrink-0" />
             </button>
           ))}
         </div>
 
-        {/* ═══ GESTÃO SECTION ═══ */}
-        <div className="space-y-3">
-          <SectionHeader icon={Shield} title="Gestão" action="Abrir módulo" onAction={() => navigate("/gestao")} />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <KpiCard title="Associados Ativos" value={stats.associadosAtivos} icon={Users} />
-            <KpiCard title="Veículos Protegidos" value={stats.veiculos} icon={Car} />
-            <KpiCard title="Eventos Abertos" value={stats.eventosAbertos} icon={AlertTriangle} subtitle={stats.eventosAbertos > 0 ? "Requer atenção" : "Nenhum pendente"} />
-            <KpiCard title="Inativos / Suspensos" value={`${stats.associadosInativos} / ${stats.associadosSuspensos}`} icon={Users} />
+        {/* ═══════════════════════════════════════ */}
+        {/* ══════════ GESTÃO SECTION ══════════ */}
+        {/* ═══════════════════════════════════════ */}
+        <ModuleSection
+          icon={Shield}
+          title="Gestão"
+          color="hsl(var(--gestao))"
+          action="Abrir módulo"
+          onAction={() => navigate("/gestao")}
+        >
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard label="Associados Ativos" value={stats.associadosAtivos} icon={Users} />
+            <KpiCard label="Veículos Protegidos" value={stats.veiculos} icon={Car} />
+            <KpiCard
+              label="Eventos Abertos"
+              value={stats.eventosAbertos}
+              icon={AlertTriangle}
+              subtitle={stats.eventosAbertos > 0 ? "Requer atenção" : "Nenhum pendente"}
+            />
+            <KpiCard
+              label="Inativos / Suspensos"
+              value={`${stats.associadosInativos} / ${stats.associadosSuspensos}`}
+              icon={Users}
+            />
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            <Card className="shadow-none">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                  <CardTitle className="text-sm font-semibold">Crescimento Mensal</CardTitle>
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+            <Card className="shadow-none border">
+              <CardHeader className="pb-2 pt-5 px-5">
+                <CardTitle className="text-sm font-semibold text-foreground">Crescimento Mensal</CardTitle>
                 <p className="text-xs text-muted-foreground">Associados e veículos cadastrados</p>
               </CardHeader>
-              <CardContent>
-                <ChartContainer config={monthlyChartConfig} className="h-[180px] w-full">
+              <CardContent className="px-3 pb-4">
+                <ChartContainer config={monthlyChartConfig} className="h-[200px] w-full">
                   <BarChart data={fakeMonthly}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="mes" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
@@ -257,94 +332,124 @@ export default function Dashboard() {
                 </ChartContainer>
               </CardContent>
             </Card>
-            <Card className="shadow-none">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <div className="flex items-center gap-2">
-                  <PieChart className="h-4 w-4 text-muted-foreground" />
-                  <CardTitle className="text-sm font-semibold">Status dos Associados</CardTitle>
-                </div>
+            <Card className="shadow-none border">
+              <CardHeader className="pb-2 pt-5 px-5">
+                <CardTitle className="text-sm font-semibold text-foreground">Status dos Associados</CardTitle>
                 <p className="text-xs text-muted-foreground">Distribuição atual da base</p>
               </CardHeader>
-              <CardContent>
-                <ChartContainer config={pieChartConfig} className="h-[180px] w-full">
+              <CardContent className="px-3 pb-4">
+                <ChartContainer config={pieChartConfig} className="h-[200px] w-full">
                   <RPieChart>
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value" nameKey="name">
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="value"
+                      nameKey="name"
+                    >
                       {pieData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                       ))}
                     </Pie>
                   </RPieChart>
                 </ChartContainer>
-                <div className="flex justify-center gap-4 mt-1">
+                <div className="flex justify-center gap-5 mt-2">
                   {pieData.map((d) => (
                     <div key={d.name} className="flex items-center gap-1.5 text-xs">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.fill }} />
-                      <span className="text-muted-foreground">{d.name}: {d.value}</span>
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.fill }} />
+                      <span className="text-muted-foreground font-medium">{d.name}: {d.value}</span>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
           </div>
-        </div>
+        </ModuleSection>
 
-        {/* ═══ FINANCEIRO SECTION ═══ */}
-        <div className="space-y-3">
-          <SectionHeader icon={DollarSign} title="Financeiro" action="Abrir módulo" onAction={() => navigate("/financeiro/fluxo-diario")} />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Divider */}
+        <div className="h-px bg-border" />
+
+        {/* ═══════════════════════════════════════ */}
+        {/* ══════════ FINANCEIRO SECTION ══════════ */}
+        {/* ═══════════════════════════════════════ */}
+        <ModuleSection
+          icon={DollarSign}
+          title="Financeiro"
+          color="hsl(var(--financeiro))"
+          action="Abrir módulo"
+          onAction={() => navigate("/financeiro/fluxo-diario")}
+        >
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard
-              title="Recebido Hoje"
+              label="Recebido Hoje"
               value={`R$ ${stats.recebidoHoje.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
               icon={Wallet}
             />
             <KpiCard
-              title="Inadimplência"
+              label="Inadimplência"
               value={`${stats.inadimplencia}%`}
               icon={PercentCircle}
               subtitle={stats.inadimplencia > 20 ? "Acima do aceitável" : "Dentro da meta"}
             />
-            <KpiCard title="Receita Semanal" value="R$ 10.350,00" icon={Activity} subtitle="Últimos 7 dias" />
-            <KpiCard title="Boletos em Aberto" value="124" icon={DollarSign} subtitle="Vencendo este mês" />
+            <KpiCard label="Receita Semanal" value="R$ 10.350,00" icon={Receipt} subtitle="Últimos 7 dias" />
+            <KpiCard label="Boletos em Aberto" value="124" icon={FileText} subtitle="Vencendo este mês" />
           </div>
-          <Card className="shadow-none">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-muted-foreground" />
-                <CardTitle className="text-sm font-semibold">Receitas da Semana</CardTitle>
-              </div>
-              <p className="text-xs text-muted-foreground">Recebimentos diários acumulados</p>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={areaChartConfig} className="h-[180px] w-full">
-                <AreaChart data={fakeArea}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="dia" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <defs>
-                    <linearGradient id="colorValor" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <Area type="monotone" dataKey="valor" stroke="hsl(var(--chart-2))" fill="url(#colorValor)" strokeWidth={2} />
-                </AreaChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        </div>
+          <div className="mt-4">
+            <Card className="shadow-none border">
+              <CardHeader className="pb-2 pt-5 px-5">
+                <CardTitle className="text-sm font-semibold text-foreground">Receitas da Semana</CardTitle>
+                <p className="text-xs text-muted-foreground">Recebimentos diários acumulados</p>
+              </CardHeader>
+              <CardContent className="px-3 pb-4">
+                <ChartContainer config={areaChartConfig} className="h-[200px] w-full">
+                  <AreaChart data={fakeArea}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="dia" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <defs>
+                      <linearGradient id="colorValor" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <Area type="monotone" dataKey="valor" stroke="hsl(var(--chart-2))" fill="url(#colorValor)" strokeWidth={2} />
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </ModuleSection>
 
-        {/* ═══ VENDAS SECTION ═══ */}
-        <div className="space-y-3 pb-8">
-          <SectionHeader icon={Target} title="Vendas" action="Abrir módulo" onAction={() => navigate("/vendas/pipeline")} />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <KpiCard title="Negociações Ativas" value={stats.negociacoesAtivas} icon={Handshake} />
-            <KpiCard title="Vendas no Mês" value={stats.vendasMes} icon={TrendingUp} />
-            <KpiCard title="Taxa de Conversão" value={`${stats.conversao}%`} icon={Target} subtitle={stats.conversao >= 30 ? "Boa performance" : "Abaixo da meta"} />
-            <KpiCard title="Leads no Pipeline" value="47" icon={Users} subtitle="Em qualificação" />
+        {/* Divider */}
+        <div className="h-px bg-border" />
+
+        {/* ═══════════════════════════════════════ */}
+        {/* ══════════ VENDAS SECTION ══════════ */}
+        {/* ═══════════════════════════════════════ */}
+        <ModuleSection
+          icon={Target}
+          title="Vendas"
+          color="hsl(var(--vendas))"
+          action="Abrir módulo"
+          onAction={() => navigate("/vendas/pipeline")}
+        >
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pb-8">
+            <KpiCard label="Negociações Ativas" value={stats.negociacoesAtivas} icon={Handshake} />
+            <KpiCard label="Vendas no Mês" value={stats.vendasMes} icon={TrendingUp} />
+            <KpiCard
+              label="Taxa de Conversão"
+              value={`${stats.conversao}%`}
+              icon={Target}
+              subtitle={stats.conversao >= 30 ? "Boa performance" : "Abaixo da meta"}
+            />
+            <KpiCard label="Leads no Pipeline" value="47" icon={CircleDot} subtitle="Em qualificação" />
           </div>
-        </div>
+        </ModuleSection>
       </div>
     </div>
   );

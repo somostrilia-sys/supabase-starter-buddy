@@ -79,61 +79,76 @@ export default function GestaoModule() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Header — clean corporate bar */}
+      {/* Header */}
       <header className="border-b bg-card shrink-0">
-        <div className="flex items-center h-12 px-4 gap-3">
+        <div className="max-w-[1280px] mx-auto flex items-center h-14 px-6 lg:px-8 gap-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate("/")}
-            className="gap-1.5 text-muted-foreground hover:text-foreground h-8 px-2"
+            className="gap-2 text-muted-foreground hover:text-foreground h-9 px-3"
           >
             <ChevronLeft className="h-4 w-4" />
-            <LayoutDashboard className="h-4 w-4" />
+            <span className="text-xs hidden sm:inline">Painel</span>
           </Button>
+
           <div className="h-5 w-px bg-border" />
-          <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4 text-primary" />
-            <span className="font-semibold text-sm">Gestão</span>
+
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded flex items-center justify-center" style={{ backgroundColor: "hsl(var(--gestao))" }}>
+              <Shield className="h-4 w-4 text-white" />
+            </div>
+            <span className="font-semibold text-sm text-foreground">Gestão</span>
           </div>
-          <div className="ml-auto flex items-center gap-3">
-            <span className="text-xs text-muted-foreground hidden sm:block">{user?.email}</span>
-            <Button variant="ghost" size="icon" onClick={signOut} className="text-muted-foreground hover:text-foreground h-8 w-8">
-              <LogOut className="h-4 w-4" />
+
+          <div className="ml-auto flex items-center gap-4">
+            <span className="text-xs text-muted-foreground hidden md:block">{user?.email}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={signOut}
+              className="text-muted-foreground hover:text-foreground h-8 gap-1.5 text-xs"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Sair</span>
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Tab Navigation — flat, no backdrop blur */}
+      {/* Tab Navigation */}
       <nav className="border-b bg-card shrink-0">
-        <ScrollArea className="w-full">
-          <div className="flex items-center gap-0 px-4">
-            {gestaoTabs.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm whitespace-nowrap border-b-2 transition-colors ${
-                    isActive
-                      ? "text-primary border-primary font-medium"
-                      : "text-muted-foreground border-transparent hover:text-foreground hover:border-muted-foreground/30"
-                  }`}
-                >
-                  <tab.icon className="h-3.5 w-3.5" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+        <div className="max-w-[1280px] mx-auto px-6 lg:px-8">
+          <ScrollArea className="w-full">
+            <div className="flex items-center gap-0">
+              {gestaoTabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`relative flex items-center gap-2 px-4 py-3 text-[13px] whitespace-nowrap border-b-2 transition-colors font-medium ${
+                      isActive
+                        ? "text-foreground border-primary"
+                        : "text-muted-foreground border-transparent hover:text-foreground hover:border-border"
+                    }`}
+                  >
+                    <tab.icon className="h-4 w-4" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+        </div>
       </nav>
 
       {/* Content */}
       <main className="flex-1 overflow-auto">
-        {renderContent()}
+        <div className="max-w-[1280px] mx-auto">
+          {renderContent()}
+        </div>
       </main>
     </div>
   );
