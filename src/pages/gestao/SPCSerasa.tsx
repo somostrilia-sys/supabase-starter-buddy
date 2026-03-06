@@ -57,10 +57,10 @@ export default function SPCSerasa({ onBack }: SPCSerasaProps) {
   const totalDivida = negativados.reduce((s, r) => s + r.valor, 0);
 
   const statCards = [
-    { label: "Total Negativados", value: stats.negativados, icon: AlertTriangle, color: "text-red-500", bg: "bg-red-500/10" },
+    { label: "Total Enviados", value: stats.negativados + mockRegistros.filter(r => r.situacao === "enviado").length, icon: AlertTriangle, color: "text-red-500", bg: "bg-red-500/10" },
     { label: "Pendentes de Envio", value: stats.pendentes, icon: Clock, color: "text-yellow-500", bg: "bg-yellow-500/10" },
-    { label: "Confirmados", value: stats.confirmados, icon: CheckCircle, color: "text-green-500", bg: "bg-green-500/10" },
-    { label: "Cancelados", value: stats.cancelados, icon: XCircle, color: "text-muted-foreground", bg: "bg-muted" },
+    { label: "Negativados Ativos", value: stats.confirmados, icon: CheckCircle, color: "text-green-500", bg: "bg-green-500/10" },
+    { label: "Baixas / Cancelados", value: stats.cancelados, icon: XCircle, color: "text-muted-foreground", bg: "bg-muted" },
   ];
 
   const renderTable = (data: typeof mockRegistros) => (
@@ -107,14 +107,14 @@ export default function SPCSerasa({ onBack }: SPCSerasaProps) {
         </div>
         <div>
           <h1 className="text-xl font-bold">SPC / Serasa</h1>
-          <p className="text-sm text-muted-foreground">Consulta e controle de associados enviados para negativação</p>
+          <p className="text-sm text-muted-foreground">Envio e controle de inadimplentes para negativação</p>
         </div>
       </div>
 
       <Tabs defaultValue="relatorio">
         <TabsList>
-          <TabsTrigger value="relatorio">Relatório SPC Serasa</TabsTrigger>
-          <TabsTrigger value="negativados">Negativados no Serasa</TabsTrigger>
+          <TabsTrigger value="relatorio">Inadimplentes Enviados</TabsTrigger>
+          <TabsTrigger value="negativados">Negativados Ativos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="relatorio" className="space-y-6 mt-4">
