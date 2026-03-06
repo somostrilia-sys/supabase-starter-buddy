@@ -15,6 +15,9 @@ import NotFound from "./pages/NotFound";
 // Gestão - New module
 import GestaoModule from "./pages/gestao/GestaoModule";
 
+// Financeiro - New module
+import FinanceiroModule from "./pages/financeiro-module/FinanceiroModule";
+
 // Gestão (legacy)
 import Associados from "./pages/Associados";
 import Veiculos from "./pages/Veiculos";
@@ -83,6 +86,7 @@ const App = () => (
 
             {/* Gestão - New */}
             <Route path="/gestao/*" element={<ProtectedRoute><GestaoModule /></ProtectedRoute>} />
+            <Route path="/financeiro/*" element={<ProtectedRoute><FinanceiroModule /></ProtectedRoute>} />
 
             {/* Gestão (legacy) */}
             <Route path="/associados" element={<M><Associados /></M>} />
