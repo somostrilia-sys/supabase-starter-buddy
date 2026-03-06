@@ -72,11 +72,23 @@ interface ModuleGroupProps {
 function ModuleGroup({ label, icon: ModIcon, items, collapsed, pathname }: ModuleGroupProps) {
   const isActive = items.some((i) => pathname === i.url || pathname.startsWith(i.url + "/"));
 
+  const labelColorMap: Record<string, string> = {
+    "Gestão": "text-[hsl(210_55%_70%)]",
+    "Financeiro": "text-[hsl(38_70%_65%)]",
+    "Vendas": "text-[hsl(152_50%_60%)]",
+  };
+
+  const activeColorMap: Record<string, string> = {
+    "Gestão": "bg-[hsl(210_40%_28%)] text-[hsl(210_55%_80%)] border-l-[3px] border-[hsl(210_55%_70%)]",
+    "Financeiro": "bg-[hsl(38_30%_22%)] text-[hsl(38_70%_75%)] border-l-[3px] border-[hsl(38_70%_65%)]",
+    "Vendas": "bg-[hsl(152_25%_22%)] text-[hsl(152_50%_70%)] border-l-[3px] border-[hsl(152_50%_60%)]",
+  };
+
   return (
     <Collapsible defaultOpen={isActive} className="mt-1">
       <SidebarGroup className="p-0">
         <CollapsibleTrigger className="w-full group">
-          <SidebarGroupLabel className="flex items-center justify-between w-full cursor-pointer text-sidebar-foreground/60 hover:text-sidebar-foreground text-[10px] uppercase tracking-widest px-3 py-2">
+          <SidebarGroupLabel className={`flex items-center justify-between w-full cursor-pointer text-[10px] uppercase tracking-widest px-3 py-2 hover:text-sidebar-foreground ${labelColorMap[label] || "text-sidebar-foreground/60"}`}>
             <span className="flex items-center gap-2">
               <ModIcon className="h-3.5 w-3.5" />
               {!collapsed && label}
@@ -95,7 +107,7 @@ function ModuleGroup({ label, icon: ModIcon, items, collapsed, pathname }: Modul
                     <NavLink
                       to={item.url}
                       className="rounded-none hover:bg-sidebar-accent text-sidebar-foreground/70 text-[13px]"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold border-l-[3px] border-sidebar-primary"
+                      activeClassName={`font-semibold ${activeColorMap[label] || "bg-sidebar-accent text-sidebar-primary border-l-[3px] border-sidebar-primary"}`}
                     >
                       <item.icon className="mr-2 h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
@@ -119,15 +131,17 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="p-4 border-b border-sidebar-border">
+      <SidebarHeader className="p-4 border-b border-sidebar-border bg-[hsl(212_40%_14%)]">
         <div className="flex items-center gap-2.5">
-          <Shield className="w-5 h-5 text-sidebar-primary shrink-0" />
+          <div className="w-8 h-8 bg-sidebar-primary/20 flex items-center justify-center shrink-0">
+            <Shield className="w-4 h-4 text-sidebar-primary" />
+          </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="font-semibold text-sm text-sidebar-primary-foreground tracking-tight">
+              <span className="font-semibold text-sm text-white tracking-tight">
                 GIA
               </span>
-              <span className="text-[10px] text-sidebar-foreground/40 leading-tight uppercase tracking-wider">
+              <span className="text-[10px] text-sidebar-foreground/50 leading-tight uppercase tracking-wider">
                 Proteção Veicular
               </span>
             </div>
@@ -142,8 +156,8 @@ export function AppSidebar() {
               <NavLink
                 to="/"
                 end
-                className="rounded-none hover:bg-sidebar-accent"
-                activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold border-l-[3px] border-sidebar-primary"
+                className="rounded-none hover:bg-sidebar-accent text-sidebar-foreground/80"
+                activeClassName="bg-[hsl(210_40%_28%)] text-[hsl(210_55%_80%)] font-semibold border-l-[3px] border-[hsl(210_55%_70%)]"
               >
                 <LayoutDashboard className="mr-2 h-4 w-4" />
                 {!collapsed && <span>Dashboard</span>}
@@ -177,7 +191,7 @@ export function AppSidebar() {
         />
       </SidebarContent>
 
-      <SidebarFooter className="p-3 border-t border-sidebar-border">
+      <SidebarFooter className="p-3 border-t border-sidebar-border bg-[hsl(212_40%_14%)]">
         {!collapsed && (
           <div className="text-[11px] text-sidebar-foreground/40 truncate mb-2 px-2">
             {user?.email}
@@ -187,7 +201,7 @@ export function AppSidebar() {
           variant="ghost"
           size="sm"
           onClick={signOut}
-          className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          className="w-full justify-start text-sidebar-foreground/60 hover:text-white hover:bg-white/10"
         >
           <LogOut className="mr-2 h-4 w-4" />
           {!collapsed && "Sair"}
