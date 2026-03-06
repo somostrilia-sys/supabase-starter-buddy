@@ -129,8 +129,8 @@ export default function GestaoModule() {
                     onClick={() => setActiveTab(tab.id)}
                     className={`relative flex items-center gap-2 px-4 py-3 text-[13px] whitespace-nowrap border-b-2 transition-colors font-medium ${
                       isActive
-                        ? "text-foreground border-primary"
-                        : "text-muted-foreground border-transparent hover:text-foreground hover:border-border"
+                        ? "text-primary border-primary bg-accent/20"
+                        : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/50"
                     }`}
                   >
                     <tab.icon className="h-4 w-4" />
