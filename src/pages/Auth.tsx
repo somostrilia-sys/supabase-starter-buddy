@@ -58,72 +58,69 @@ export default function Auth() {
   ];
 
   return (
-    <div className="min-h-screen flex">
-      {/* Banner / Propaganda - lado esquerdo */}
-      <div className="hidden lg:flex lg:w-3/5 relative bg-primary overflow-hidden">
-        {/* Padrão de fundo */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-white rounded-full translate-x-1/4 translate-y-1/4" />
-          <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-white rounded-full" />
+    <div className="min-h-screen flex bg-background">
+      {/* Left panel */}
+      <div className="hidden lg:flex lg:w-3/5 relative bg-card overflow-hidden border-r border-border">
+        {/* Decorative elements */}
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-primary/5 rounded-full -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full translate-x-1/4 translate-y-1/4" />
         </div>
 
-        <div className="relative z-10 flex flex-col justify-between p-12 w-full text-primary-foreground">
-          {/* Topo */}
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-                <Shield className="w-7 h-7" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">GIA</h1>
-                <p className="text-sm opacity-80">Gestão Integrada de Associações</p>
-              </div>
+        <div className="relative z-10 flex flex-col justify-between p-12 w-full">
+          {/* Top */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+              <Shield className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground tracking-tight">GIA</h1>
+              <p className="text-xs text-muted-foreground">Gestão Integrada de Associações</p>
             </div>
           </div>
 
-          {/* Centro - destaque */}
+          {/* Center */}
           <div className="space-y-8">
             <div>
-              <h2 className="text-4xl font-bold leading-tight max-w-md">
+              <h2 className="text-3xl font-bold leading-tight text-foreground max-w-md">
                 Tudo que sua associação precisa em um só lugar.
               </h2>
-              <p className="mt-4 text-lg opacity-80 max-w-lg">
+              <p className="mt-4 text-base text-muted-foreground max-w-lg">
                 Unifique vendas, financeiro e gestão com uma plataforma moderna e completa.
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 max-w-lg">
+            <div className="grid grid-cols-2 gap-3 max-w-lg">
               {features.map((f) => (
-                <div key={f.title} className="bg-white/10 backdrop-blur rounded-xl p-4 space-y-2">
-                  <f.icon className="w-6 h-6" />
-                  <h3 className="font-semibold text-sm">{f.title}</h3>
-                  <p className="text-xs opacity-70 leading-relaxed">{f.desc}</p>
+                <div key={f.title} className="bg-muted/50 border border-border rounded-xl p-4 space-y-2">
+                  <f.icon className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold text-sm text-foreground">{f.title}</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Rodapé */}
-          <p className="text-xs opacity-50">© 2026 GIA — Gestão Integrada de Associações</p>
+          {/* Footer */}
+          <p className="text-xs text-muted-foreground/50">© 2026 GIA — Gestão Integrada de Associações</p>
         </div>
       </div>
 
-      {/* Login - lado direito */}
-      <div className="flex-1 flex items-center justify-center bg-background p-6 sm:p-10">
+      {/* Right panel - Login */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm space-y-8">
-          {/* Logo mobile */}
+          {/* Mobile logo */}
           <div className="text-center lg:hidden space-y-2">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10">
-              <Shield className="w-7 h-7 text-primary" />
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-primary">
+              <Shield className="w-6 h-6 text-primary-foreground" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">GIA</h1>
+            <h1 className="text-xl font-bold text-foreground">GIA</h1>
             <p className="text-sm text-muted-foreground">Gestão Integrada de Associações</p>
           </div>
 
-          {/* Cabeçalho do form */}
+          {/* Form header */}
           <div className="hidden lg:block space-y-1">
-            <h2 className="text-2xl font-bold tracking-tight">
+            <h2 className="text-2xl font-bold text-foreground">
               {isLogin ? "Bem-vindo de volta" : "Criar sua conta"}
             </h2>
             <p className="text-sm text-muted-foreground">
@@ -134,7 +131,7 @@ export default function Auth() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div className="space-y-2">
-                <Label htmlFor="fullName">Nome completo</Label>
+                <Label htmlFor="fullName" className="text-sm font-medium text-foreground">Nome completo</Label>
                 <Input
                   id="fullName"
                   value={fullName}
@@ -145,7 +142,7 @@ export default function Auth() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email" className="text-sm font-medium text-foreground">E-mail</Label>
               <Input
                 id="email"
                 type="email"
@@ -156,7 +153,7 @@ export default function Auth() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password" className="text-sm font-medium text-foreground">Senha</Label>
               <Input
                 id="password"
                 type="password"
