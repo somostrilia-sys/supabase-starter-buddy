@@ -13,7 +13,7 @@ import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
 } from "@/components/ui/chart";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
   PieChart as RPieChart, Pie, Cell, AreaChart, Area,
 } from "recharts";
 
@@ -22,21 +22,18 @@ const modules = [
     title: "Gestão",
     description: "Associados, veículos, sinistros e documentação",
     icon: Shield,
-    gradient: "from-primary to-primary/70",
     route: "/gestao",
   },
   {
     title: "Financeiro",
     description: "Fluxo diário, boletos e conciliação",
     icon: DollarSign,
-    gradient: "from-accent to-accent/70",
     route: "/financeiro/fluxo-diario",
   },
   {
     title: "Vendas",
     description: "Pipeline, contatos, metas e afiliados",
     icon: Target,
-    gradient: "from-warning to-warning/70",
     route: "/vendas/pipeline",
   },
 ];
@@ -149,129 +146,124 @@ export default function Dashboard() {
   ].filter((d) => d.value > 0);
 
   const kpis = [
-    { title: "Associados Ativos", value: stats.associadosAtivos, icon: Users, color: "text-primary", bg: "bg-primary/10" },
-    { title: "Veículos Protegidos", value: stats.veiculos, icon: Car, color: "text-accent", bg: "bg-accent/10" },
-    { title: "Eventos Abertos", value: stats.eventosAbertos, icon: AlertTriangle, color: "text-warning", bg: "bg-warning/10" },
-    { title: "Recebido Hoje", value: `R$ ${stats.recebidoHoje.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: Wallet, color: "text-success", bg: "bg-success/10" },
-    { title: "Negociações", value: stats.negociacoesAtivas, icon: Handshake, color: "text-primary", bg: "bg-primary/10" },
-    { title: "Vendas/Mês", value: stats.vendasMes, icon: TrendingUp, color: "text-accent", bg: "bg-accent/10" },
-    { title: "Inadimplência", value: `${stats.inadimplencia}%`, icon: PercentCircle, color: stats.inadimplencia > 20 ? "text-destructive" : "text-warning", bg: stats.inadimplencia > 20 ? "bg-destructive/10" : "bg-warning/10" },
-    { title: "Conversão", value: `${stats.conversao}%`, icon: Target, color: "text-success", bg: "bg-success/10" },
+    { title: "Associados Ativos", value: stats.associadosAtivos, icon: Users },
+    { title: "Veículos Protegidos", value: stats.veiculos, icon: Car },
+    { title: "Eventos Abertos", value: stats.eventosAbertos, icon: AlertTriangle },
+    { title: "Recebido Hoje", value: `R$ ${stats.recebidoHoje.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: Wallet },
+    { title: "Negociações", value: stats.negociacoesAtivas, icon: Handshake },
+    { title: "Vendas/Mês", value: stats.vendasMes, icon: TrendingUp },
+    { title: "Inadimplência", value: `${stats.inadimplencia}%`, icon: PercentCircle },
+    { title: "Conversão", value: `${stats.conversao}%`, icon: Target },
   ];
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Shield className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-lg tracking-tight">GIA</span>
+      {/* Header — clean, flat */}
+      <header className="border-b bg-card sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 h-12 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-primary" />
+            <span className="font-semibold text-sm tracking-tight">GIA</span>
+            <span className="text-xs text-muted-foreground ml-1">Proteção Veicular</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground hidden sm:block">{user?.email}</span>
-            <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground text-xs">
+            <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground text-xs h-8">
               Sair
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
         {/* Welcome */}
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Painel Principal</h1>
-          <p className="text-muted-foreground text-sm mt-1">Gerencie sua associação de proteção veicular</p>
+          <h1 className="text-xl font-semibold tracking-tight">Painel Principal</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Gerencie sua associação de proteção veicular</p>
         </div>
 
-        {/* 3 Module Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {/* 3 Module Cards — flat, no gradients */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {modules.map((mod) => (
-            <Card
+            <button
               key={mod.title}
-              className="group cursor-pointer overflow-hidden border-0 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
               onClick={() => navigate(mod.route)}
+              className="group flex items-center gap-4 rounded-md border bg-card p-4 text-left hover:bg-muted/50 hover:border-primary/30 transition-colors"
             >
-              <CardContent className="p-0">
-                <div className={`bg-gradient-to-br ${mod.gradient} p-6 pb-10`}>
-                  <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4">
-                    <mod.icon className="w-6 h-6 text-primary-foreground" />
-                  </div>
-                  <h2 className="text-xl font-bold text-primary-foreground">{mod.title}</h2>
-                  <p className="text-sm text-primary-foreground/80 mt-1">{mod.description}</p>
-                </div>
-                <div className="p-4 -mt-4 mx-3 bg-card rounded-xl shadow-sm border flex items-center justify-between">
-                  <span className="text-sm font-medium">Acessar módulo</span>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
-                </div>
-              </CardContent>
-            </Card>
+              <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center shrink-0">
+                <mod.icon className="w-5 h-5 text-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="font-medium text-sm">{mod.title}</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">{mod.description}</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground shrink-0" />
+            </button>
           ))}
         </div>
 
-        {/* KPIs Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {/* Visão Geral heading */}
+        <div className="pt-2">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Visão Geral</h2>
+        </div>
+
+        {/* KPIs Row — minimal */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {kpis.map((kpi) => (
-            <Card key={kpi.title} className="border-0 shadow-sm hover:shadow-md transition-shadow">
+            <Card key={kpi.title} className="shadow-none">
               <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl ${kpi.bg} flex items-center justify-center shrink-0`}>
-                    <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider truncate">{kpi.title}</p>
-                    <p className="text-xl font-bold tracking-tight">{kpi.value}</p>
-                  </div>
+                <div className="flex items-center justify-between mb-1">
+                  <kpi.icon className="w-4 h-4 text-muted-foreground" />
                 </div>
+                <p className="text-xl font-bold tracking-tight">{kpi.value}</p>
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-1">{kpi.title}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
         {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          {/* Bar Chart - Crescimento */}
-          <Card className="lg:col-span-1 border-0 shadow-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Bar Chart */}
+          <Card className="lg:col-span-1 shadow-none">
             <CardHeader className="pb-2">
               <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-primary" />
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
                 <CardTitle className="text-sm font-semibold">Crescimento Mensal</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
               <ChartContainer config={monthlyChartConfig} className="h-[200px] w-full">
                 <BarChart data={fakeMonthly}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-                  <XAxis dataKey="mes" className="text-xs" tick={{ fontSize: 11 }} />
-                  <YAxis className="text-xs" tick={{ fontSize: 11 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="mes" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="associados" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="veiculos" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="associados" fill="hsl(var(--chart-1))" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="veiculos" fill="hsl(var(--chart-2))" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ChartContainer>
             </CardContent>
           </Card>
 
-          {/* Area Chart - Receitas da Semana */}
-          <Card className="lg:col-span-1 border-0 shadow-sm">
+          {/* Area Chart */}
+          <Card className="lg:col-span-1 shadow-none">
             <CardHeader className="pb-2">
               <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-accent" />
+                <Activity className="h-4 w-4 text-muted-foreground" />
                 <CardTitle className="text-sm font-semibold">Receitas da Semana</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
               <ChartContainer config={areaChartConfig} className="h-[200px] w-full">
                 <AreaChart data={fakeArea}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-                  <XAxis dataKey="dia" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="dia" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <defs>
                     <linearGradient id="colorValor" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.3} />
+                      <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.2} />
                       <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0} />
                     </linearGradient>
                   </defs>
@@ -281,11 +273,11 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Pie Chart - Associados */}
-          <Card className="lg:col-span-1 border-0 shadow-sm">
+          {/* Pie Chart */}
+          <Card className="lg:col-span-1 shadow-none">
             <CardHeader className="pb-2">
               <div className="flex items-center gap-2">
-                <PieChart className="h-4 w-4 text-warning" />
+                <PieChart className="h-4 w-4 text-muted-foreground" />
                 <CardTitle className="text-sm font-semibold">Status Associados</CardTitle>
               </div>
             </CardHeader>
@@ -293,16 +285,7 @@ export default function Dashboard() {
               <ChartContainer config={pieChartConfig} className="h-[200px] w-full">
                 <RPieChart>
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={75}
-                    paddingAngle={3}
-                    dataKey="value"
-                    nameKey="name"
-                  >
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value" nameKey="name">
                     {pieData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}

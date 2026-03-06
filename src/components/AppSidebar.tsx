@@ -64,13 +64,12 @@ const vendasItems = [
 interface ModuleGroupProps {
   label: string;
   icon: React.ElementType;
-  iconColor: string;
   items: { title: string; url: string; icon: React.ElementType }[];
   collapsed: boolean;
   pathname: string;
 }
 
-function ModuleGroup({ label, icon: ModIcon, iconColor, items, collapsed, pathname }: ModuleGroupProps) {
+function ModuleGroup({ label, icon: ModIcon, items, collapsed, pathname }: ModuleGroupProps) {
   const isActive = items.some((i) => pathname === i.url || pathname.startsWith(i.url + "/"));
 
   return (
@@ -79,7 +78,7 @@ function ModuleGroup({ label, icon: ModIcon, iconColor, items, collapsed, pathna
         <CollapsibleTrigger className="w-full group">
           <SidebarGroupLabel className="flex items-center justify-between w-full cursor-pointer text-sidebar-foreground/50 hover:text-sidebar-foreground/80 text-[10px] uppercase tracking-widest px-3 py-2">
             <span className="flex items-center gap-2">
-              <ModIcon className={`h-3.5 w-3.5 ${iconColor}`} />
+              <ModIcon className="h-3.5 w-3.5" />
               {!collapsed && label}
             </span>
             {!collapsed && (
@@ -121,16 +120,14 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shrink-0">
-            <Shield className="w-5 h-5" />
-          </div>
+        <div className="flex items-center gap-2.5">
+          <Shield className="w-5 h-5 text-sidebar-primary shrink-0" />
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="font-bold text-base text-sidebar-primary-foreground tracking-wide" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              <span className="font-semibold text-sm text-sidebar-primary-foreground tracking-tight">
                 GIA
               </span>
-              <span className="text-[10px] text-sidebar-foreground/50 leading-tight uppercase tracking-widest">
+              <span className="text-[10px] text-sidebar-foreground/40 leading-tight uppercase tracking-wider">
                 Proteção Veicular
               </span>
             </div>
@@ -158,7 +155,6 @@ export function AppSidebar() {
         <ModuleGroup
           label="Gestão"
           icon={Shield}
-          iconColor="text-sidebar-primary"
           items={gestaoItems}
           collapsed={collapsed}
           pathname={location.pathname}
@@ -167,7 +163,6 @@ export function AppSidebar() {
         <ModuleGroup
           label="Financeiro"
           icon={DollarSign}
-          iconColor="text-emerald-400"
           items={financeiroItems}
           collapsed={collapsed}
           pathname={location.pathname}
@@ -176,7 +171,6 @@ export function AppSidebar() {
         <ModuleGroup
           label="Vendas"
           icon={Target}
-          iconColor="text-orange-400"
           items={vendasItems}
           collapsed={collapsed}
           pathname={location.pathname}
