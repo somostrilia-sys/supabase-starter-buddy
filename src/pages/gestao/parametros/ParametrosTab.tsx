@@ -19,7 +19,7 @@ export default function ParametrosTab() {
   const [menuGestao, setMenuGestao] = useState(true);
   const [menuFinanceiro, setMenuFinanceiro] = useState(true);
   const [menuVendas, setMenuVendas] = useState(true);
-  const [datasContrato, setDatasContrato] = useState("10,20");
+  const [datasPagamento, setDatasPagamento] = useState("10,20");
   const [descontoPontualidade, setDescontoPontualidade] = useState("5");
   const [jurosAtraso, setJurosAtraso] = useState("2");
   const [exibirVencidos, setExibirVencidos] = useState(true);
@@ -101,8 +101,8 @@ export default function ParametrosTab() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">Datas de contrato (dia do mês)</Label>
-                <Input value={datasContrato} onChange={(e) => setDatasContrato(e.target.value)} placeholder="10, 20" />
+                <Label className="text-xs">Datas de pagamento (dia do mês)</Label>
+                <Input value={datasPagamento} onChange={(e) => setDatasPagamento(e.target.value)} placeholder="10, 20" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Desconto pontualidade (%)</Label>
@@ -269,19 +269,20 @@ export default function ParametrosTab() {
         {/* 5.6 SPC/Serasa */}
         <AccordionItem value="spc" className="border rounded-lg shadow-sm bg-card">
           <AccordionTrigger className="px-5 py-4 hover:no-underline">
-            <div className="flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">SPC / Serasa</span></div>
+            <div className="flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">SPC / Serasa — Envio de Inadimplentes</span></div>
           </AccordionTrigger>
           <AccordionContent className="px-5 pb-5 space-y-3">
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div>
-                <span className="text-sm">Consulta automática no cadastro</span>
-                <p className="text-xs text-muted-foreground">Consultar SPC/Serasa automaticamente ao cadastrar associado</p>
+                <span className="text-sm">Envio automático de inadimplentes</span>
+                <p className="text-xs text-muted-foreground">Enviar associados inadimplentes automaticamente para negativação SPC/Serasa</p>
               </div>
               <Switch checked={consultaAutomatica} onCheckedChange={setConsultaAutomatica} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Score mínimo para aprovação</Label>
-              <Input type="number" value={scoreMinimo} onChange={(e) => setScoreMinimo(e.target.value)} />
+              <Label className="text-xs">Dias de atraso para envio automático</Label>
+              <Input type="number" value={scoreMinimo} onChange={(e) => setScoreMinimo(e.target.value)} placeholder="90" />
+              <p className="text-[11px] text-muted-foreground">Após quantos dias de inadimplência o associado será enviado automaticamente</p>
             </div>
             <Card className="border bg-amber-50">
               <CardContent className="p-3 text-xs text-amber-700">
