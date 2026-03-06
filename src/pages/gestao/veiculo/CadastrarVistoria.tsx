@@ -2,230 +2,350 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "sonner";
-import { Search, Car, ClipboardCheck, Check, X, Upload, Calendar } from "lucide-react";
-import { mockVeiculos, checklistLabels, type MockVeiculo } from "./mockVeiculos";
+import {
+  ClipboardCheck, Search, Plus, X, Eraser, Save, Upload, Car, FileText, Trash2, Check,
+} from "lucide-react";
+import { mockVeiculos, type MockVeiculo } from "./mockVeiculos";
 
-export default function CadastrarVistoria() {
-  const [searchVeic, setSearchVeic] = useState("");
-  const [selectedVeic, setSelectedVeic] = useState<MockVeiculo | null>(null);
-  const [form, setForm] = useState({
-    tipo: "",
-    data: new Date().toISOString().split("T")[0],
-    resultado: "",
-    inspetor: "",
-    observacoes: "",
-  });
-  const [checklist, setChecklist] = useState<Record<string, boolean>>(
-    Object.fromEntries(checklistLabels.map(item => [item, true]))
-  );
-
-  const filteredVeic = searchVeic.length >= 2
-    ? mockVeiculos.filter(v =>
-        v.placa.toLowerCase().includes(searchVeic.toLowerCase()) ||
-        v.associadoNome.toLowerCase().includes(searchVeic.toLowerCase())
-      ).slice(0, 5)
-    : [];
-
-  const toggleItem = (item: string) => setChecklist(p => ({ ...p, [item]: !p[item] }));
-  const allChecked = Object.values(checklist).every(Boolean);
-  const checkedCount = Object.values(checklist).filter(Boolean).length;
-
-  const handleSubmit = () => {
-    if (!selectedVeic || !form.tipo || !form.resultado) return;
-    toast.success("Vistoria registrada com sucesso!", {
-      description: `${selectedVeic.placa} - ${form.tipo} - ${form.resultado}`,
-    });
-    setSelectedVeic(null);
-    setSearchVeic("");
-    setForm({ tipo: "", data: new Date().toISOString().split("T")[0], resultado: "", inspetor: "", observacoes: "" });
-    setChecklist(Object.fromEntries(checklistLabels.map(item => [item, true])));
-  };
-
-  const vistoriaColor = (r: string) => {
-    if (r === "Aprovada") return "bg-emerald-500/10 text-emerald-600";
-    if (r === "Reprovada") return "bg-destructive/10 text-destructive";
-    return "bg-amber-500/10 text-amber-600";
-  };
-
+const SelectWithAdd = ({ label, value, onValueChange, options, placeholder }: {
+  label: string; value: string; onValueChange: (v: string) => void;
+  options: string[]; placeholder?: string;
+}) => {
+  const [items, setItems] = useState(options);
+  const [adding, setAdding] = useState(false);
+  const [newVal, setNewVal] = useState("");
   return (
-    <div className="max-w-4xl mx-auto">
-      <h2 className="text-lg font-bold mb-6">Cadastrar Vistoria</h2>
-
-      {/* Select Vehicle */}
-      <Card className="mb-6">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Car className="h-4 w-4" /> 1. Selecionar Veículo
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={searchVeic} onChange={e => { setSearchVeic(e.target.value); setSelectedVeic(null); }} placeholder="Buscar por placa ou associado" className="pl-10" />
-          </div>
-          {selectedVeic ? (
-            <Card className="border-primary">
-              <CardContent className="p-3 flex items-center gap-3">
-                <Car className="h-5 w-5 text-primary" />
-                <div className="flex-1">
-                  <p className="font-mono font-medium text-sm">{selectedVeic.placa} - {selectedVeic.marca} {selectedVeic.modelo}</p>
-                  <p className="text-xs text-muted-foreground">{selectedVeic.associadoNome}</p>
-                </div>
-                <Check className="h-5 w-5 text-primary" />
-              </CardContent>
-            </Card>
-          ) : (
-            filteredVeic.map(v => (
-              <Card key={v.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => { setSelectedVeic(v); setSearchVeic(v.placa); }}>
-                <CardContent className="p-3 flex items-center gap-3">
-                  <Car className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium font-mono">{v.placa} - {v.marca} {v.modelo}</p>
-                    <p className="text-xs text-muted-foreground">{v.associadoNome}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </CardContent>
-      </Card>
-
-      {selectedVeic && (
-        <>
-          {/* Vistoria Form */}
-          <Card className="mb-6">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <ClipboardCheck className="h-4 w-4" /> 2. Dados da Vistoria
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <Label>Tipo *</Label>
-                  <Select value={form.tipo} onValueChange={v => setForm(p => ({ ...p, tipo: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
-                    <SelectContent>
-                      {["Admissão", "Periódica", "Transferência"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Data *</Label>
-                  <Input type="date" value={form.data} onChange={e => setForm(p => ({ ...p, data: e.target.value }))} />
-                </div>
-                <div>
-                  <Label>Resultado *</Label>
-                  <Select value={form.resultado} onValueChange={v => setForm(p => ({ ...p, resultado: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Resultado" /></SelectTrigger>
-                    <SelectContent>
-                      {["Aprovada", "Reprovada", "Pendente"].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Inspetor</Label>
-                  <Select value={form.inspetor} onValueChange={v => setForm(p => ({ ...p, inspetor: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Inspetor" /></SelectTrigger>
-                    <SelectContent>
-                      {["João Ferreira", "André Costa", "Luciana Almeida", "Roberto Dias"].map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Checklist */}
-          <Card className="mb-6">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <ClipboardCheck className="h-4 w-4" /> 3. Checklist de Itens
-                </CardTitle>
-                <Badge variant="outline" className={allChecked ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}>
-                  {checkedCount}/{checklistLabels.length} OK
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {checklistLabels.map(item => (
-                  <div
-                    key={item}
-                    className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-colors ${
-                      checklist[item] ? "bg-emerald-500/5 border-emerald-200" : "bg-destructive/5 border-destructive/20"
-                    }`}
-                    onClick={() => toggleItem(item)}
-                  >
-                    <Checkbox checked={checklist[item]} onCheckedChange={() => toggleItem(item)} />
-                    <span className="text-sm">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Observations & Photos */}
-          <Card className="mb-6">
-            <CardContent className="p-4 space-y-4">
-              <div>
-                <Label>Observações</Label>
-                <Textarea
-                  value={form.observacoes}
-                  onChange={e => setForm(p => ({ ...p, observacoes: e.target.value }))}
-                  placeholder="Observações sobre a vistoria..."
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground mb-2 block">Fotos da Vistoria</Label>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Upload className="h-3.5 w-3.5" /> Adicionar Fotos
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Historical Vistorias */}
-          {selectedVeic.vistorias.length > 0 && (
-            <Card className="mb-6">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Calendar className="h-4 w-4" /> Histórico de Vistorias
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="relative border-l-2 border-muted ml-3 space-y-4">
-                  {selectedVeic.vistorias.map(vist => (
-                    <div key={vist.id} className="ml-4 relative">
-                      <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full border-2 border-card bg-primary" />
-                      <div className="p-3 rounded-lg border bg-card">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-medium">{vist.tipo}</p>
-                          <Badge variant="outline" className={vistoriaColor(vist.resultado)}>{vist.resultado}</Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{new Date(vist.data).toLocaleDateString("pt-BR")} • {vist.inspetor}</p>
-                        {vist.observacoes && <p className="text-xs text-muted-foreground mt-1">{vist.observacoes}</p>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Button onClick={handleSubmit} disabled={!form.tipo || !form.resultado} className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
-            <ClipboardCheck className="h-4 w-4" /> Registrar Vistoria
-          </Button>
-        </>
+    <div>
+      <Label className="text-xs">{label}</Label>
+      <div className="flex gap-1">
+        <Select value={value} onValueChange={onValueChange}>
+          <SelectTrigger className="flex-1"><SelectValue placeholder={placeholder || "Selecione"} /></SelectTrigger>
+          <SelectContent>{items.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+        </Select>
+        <Button type="button" variant="outline" size="icon" className="shrink-0 h-10 w-10" onClick={() => setAdding(true)}><Plus className="h-3.5 w-3.5" /></Button>
+      </div>
+      {adding && (
+        <div className="flex gap-1 mt-1">
+          <Input value={newVal} onChange={e => setNewVal(e.target.value)} placeholder="Novo valor" className="h-8 text-xs" />
+          <Button size="sm" className="h-8 text-xs" onClick={() => { if (newVal.trim()) { setItems(p => [...p, newVal.trim()]); onValueChange(newVal.trim()); } setAdding(false); setNewVal(""); }}>OK</Button>
+          <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setAdding(false); setNewVal(""); }}><X className="h-3 w-3" /></Button>
+        </div>
       )}
     </div>
   );
+};
+
+const avariasItems = [
+  "Para-choque dianteiro", "Para-choque traseiro", "Capô", "Porta-malas",
+  "Porta dianteira esquerda", "Porta dianteira direita", "Porta traseira esquerda", "Porta traseira direita",
+  "Para-lama dianteiro esquerdo", "Para-lama dianteiro direito", "Para-lama traseiro esquerdo", "Para-lama traseiro direito",
+  "Teto", "Retrovisor esquerdo", "Retrovisor direito", "Para-brisa", "Vidro traseiro",
+];
+
+const acessoriosItems = [
+  "Ar condicionado", "Vidro elétrico", "Trava elétrica", "Alarme", "Som/Multimídia",
+  "Câmera de ré", "Sensor de estacionamento", "Airbag", "ABS", "Direção hidráulica",
+  "Direção elétrica", "Piloto automático", "Banco de couro", "Rodas de liga leve",
+  "Farol de milha", "Teto solar", "GPS integrado",
+];
+
+export default function CadastrarVistoria() {
+  const [searchPlaca, setSearchPlaca] = useState("");
+  const [searchChassi, setSearchChassi] = useState("");
+  const [zeroKm, setZeroKm] = useState(false);
+  const [selectedVeic, setSelectedVeic] = useState<MockVeiculo | null>(null);
+
+  const [form, setForm] = useState({
+    tipo: "", data: new Date().toISOString().split("T")[0], vistoriador: "",
+    situacao: "Pendente", dataRecebimento: new Date().toISOString().split("T")[0], observacoes: "",
+    tipoLocal: "",
+    marcaPneu: "", codMarca: "", medidaPneu: "", estadoPneu: "",
+    tipoDocumento: "",
+  });
+
+  const [avarias, setAvarias] = useState<string[]>([]);
+  const [acessorios, setAcessorios] = useState<string[]>([]);
+  const [showAvarias, setShowAvarias] = useState(false);
+  const [showAcessorios, setShowAcessorios] = useState(false);
+  const [fotos, setFotos] = useState<{ nome: string; tipo: string; data: string }[]>([]);
+
+  const set = (f: string, v: string) => setForm(p => ({ ...p, [f]: v }));
+
+  const buscarVeiculo = () => {
+    const found = mockVeiculos.find(v =>
+      (searchPlaca && v.placa.toLowerCase().replace("-", "").includes(searchPlaca.toLowerCase().replace("-", ""))) ||
+      (searchChassi && v.chassi.toLowerCase().includes(searchChassi.toLowerCase()))
+    );
+    if (found) { setSelectedVeic(found); toast.success("Veículo encontrado!"); }
+    else toast.error("Veículo não encontrado.");
+  };
+
+  const salvar = () => {
+    if (!selectedVeic) { toast.error("Selecione um veículo."); return; }
+    if (!form.tipo) { toast.error("Selecione o tipo de vistoria."); return; }
+    toast.success("Vistoria salva com sucesso!", { description: `${form.tipo} - ${selectedVeic.placa}` });
+  };
+
+  const limpar = () => {
+    setSelectedVeic(null); setSearchPlaca(""); setSearchChassi(""); setZeroKm(false);
+    setForm({ tipo: "", data: new Date().toISOString().split("T")[0], vistoriador: "", situacao: "Pendente", dataRecebimento: new Date().toISOString().split("T")[0], observacoes: "", tipoLocal: "", marcaPneu: "", codMarca: "", medidaPneu: "", estadoPneu: "", tipoDocumento: "" });
+    setAvarias([]); setAcessorios([]); setFotos([]);
+  };
+
+  const situacaoColor = (s: string) => {
+    switch (s) {
+      case "Pendente": return "bg-amber-100 text-amber-700";
+      case "Aprovada": return "bg-emerald-100 text-emerald-700";
+      case "Reprovada": return "bg-red-100 text-red-700";
+      default: return "bg-muted text-muted-foreground";
+    }
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-4">
+      <h2 className="text-lg font-bold flex items-center gap-2"><ClipboardCheck className="h-5 w-5" /> Cadastrar Vistoria</h2>
+
+      <Accordion type="multiple" defaultValue={["s1", "s2"]} className="space-y-2">
+        {/* Seção 1: Selecionar Veículo */}
+        <AccordionItem value="s1" className="border rounded-lg">
+          <AccordionTrigger className="px-4 py-3 text-sm font-semibold hover:no-underline">
+            <span className="flex items-center gap-2"><Car className="h-4 w-4 text-primary" /> 1. Selecionar Veículo</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4 space-y-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
+              <div>
+                <Label className="text-xs">Placa</Label>
+                <Input value={searchPlaca} onChange={e => setSearchPlaca(e.target.value.toUpperCase())} placeholder="PLACA" />
+              </div>
+              <div className="flex items-center gap-2 pb-2">
+                <Checkbox checked={zeroKm} onCheckedChange={v => setZeroKm(!!v)} id="zeroKmVist" />
+                <Label htmlFor="zeroKmVist" className="text-xs">Veículo 0 KM</Label>
+              </div>
+              <div>
+                <Label className="text-xs">Chassi</Label>
+                <Input value={searchChassi} onChange={e => setSearchChassi(e.target.value.toUpperCase())} placeholder="Chassi" />
+              </div>
+              <Button onClick={buscarVeiculo} className="gap-1"><Search className="h-4 w-4" /> Buscar</Button>
+            </div>
+            {selectedVeic && (
+              <Card className="border-primary">
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div><span className="text-muted-foreground text-xs">Cód. Veículo</span><p className="font-medium">{selectedVeic.id}</p></div>
+                    <div><span className="text-muted-foreground text-xs">Placa</span><p className="font-medium font-mono">{selectedVeic.placa}</p></div>
+                    <div><span className="text-muted-foreground text-xs">Modelo</span><p className="font-medium">{selectedVeic.marca} {selectedVeic.modelo}</p></div>
+                    <div><span className="text-muted-foreground text-xs">Associado</span><p className="font-medium">{selectedVeic.associadoNome}</p></div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Seção 2: Dados da Vistoria */}
+        <AccordionItem value="s2" className="border rounded-lg">
+          <AccordionTrigger className="px-4 py-3 text-sm font-semibold hover:no-underline">
+            <span className="flex items-center gap-2"><ClipboardCheck className="h-4 w-4 text-primary" /> 2. Dados da Vistoria</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs">Tipo de Vistoria *</Label>
+                <Select value={form.tipo} onValueChange={v => set("tipo", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Adesão">Adesão</SelectItem>
+                    <SelectItem value="Revistoria">Revistoria</SelectItem>
+                    <SelectItem value="Sinistro">Sinistro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-xs">Data da Vistoria</Label><Input type="date" value={form.data} onChange={e => set("data", e.target.value)} /></div>
+              <SelectWithAdd label="Vistoriador" value={form.vistoriador} onValueChange={v => set("vistoriador", v)} options={["João Ferreira", "André Costa", "Luciana Almeida", "Roberto Dias"]} />
+              <div>
+                <Label className="text-xs">Situação Vistoria</Label>
+                <Select value={form.situacao} onValueChange={v => set("situacao", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                    <SelectItem value="Aprovada">Aprovada</SelectItem>
+                    <SelectItem value="Reprovada">Reprovada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-xs">Data Recebimento</Label><Input type="date" value={form.dataRecebimento} onChange={e => set("dataRecebimento", e.target.value)} /></div>
+              <div className="flex items-center pt-5">
+                <Badge className={situacaoColor(form.situacao)}>{form.situacao}</Badge>
+              </div>
+            </div>
+            <div className="mt-3"><Label className="text-xs">Observações</Label><Textarea value={form.observacoes} onChange={e => set("observacoes", e.target.value)} placeholder="Observações da vistoria..." rows={3} /></div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Seção 3: Local */}
+        <AccordionItem value="s3" className="border rounded-lg">
+          <AccordionTrigger className="px-4 py-3 text-sm font-semibold hover:no-underline">
+            <span className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /> 3. Local Vistoria</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <SelectWithAdd label="Tipo Local Vistoria" value={form.tipoLocal} onValueChange={v => set("tipoLocal", v)} options={["Sede", "Domicílio", "Oficina Parceira", "Ponto de Atendimento"]} />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Seção 4: Acessórios / Avarias */}
+        <AccordionItem value="s4" className="border rounded-lg">
+          <AccordionTrigger className="px-4 py-3 text-sm font-semibold hover:no-underline">
+            <span className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> 4. Acessórios / Avarias</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4 space-y-4">
+            <div>
+              <Label className="text-xs">Imagem Vistoria</Label>
+              <Select>
+                <SelectTrigger className="w-64"><SelectValue placeholder="Tipo de imagem" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="frente">Frente</SelectItem>
+                  <SelectItem value="traseira">Traseira</SelectItem>
+                  <SelectItem value="lateral-e">Lateral Esquerda</SelectItem>
+                  <SelectItem value="lateral-d">Lateral Direita</SelectItem>
+                  <SelectItem value="motor">Motor</SelectItem>
+                  <SelectItem value="interior">Interior</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Button variant="outline" size="sm" onClick={() => setShowAvarias(!showAvarias)} className="gap-1 mb-2">
+                <Plus className="h-3.5 w-3.5" /> Avarias {avarias.length > 0 && `(${avarias.length})`}
+              </Button>
+              {showAvarias && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-3 border rounded-lg">
+                  {avariasItems.map(a => (
+                    <div key={a} className="flex items-center gap-2">
+                      <Checkbox checked={avarias.includes(a)} onCheckedChange={c => setAvarias(p => c ? [...p, a] : p.filter(x => x !== a))} />
+                      <Label className="text-xs">{a}</Label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Button variant="outline" size="sm" onClick={() => setShowAcessorios(!showAcessorios)} className="gap-1 mb-2">
+                <Plus className="h-3.5 w-3.5" /> Acessórios {acessorios.length > 0 && `(${acessorios.length})`}
+              </Button>
+              {showAcessorios && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-3 border rounded-lg">
+                  {acessoriosItems.map(a => (
+                    <div key={a} className="flex items-center gap-2">
+                      <Checkbox checked={acessorios.includes(a)} onCheckedChange={c => setAcessorios(p => c ? [...p, a] : p.filter(x => x !== a))} />
+                      <Label className="text-xs">{a}</Label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Seção 5: Pneus */}
+        <AccordionItem value="s5" className="border rounded-lg">
+          <AccordionTrigger className="px-4 py-3 text-sm font-semibold hover:no-underline">
+            <span className="flex items-center gap-2"><Settings className="h-4 w-4 text-primary" /> 5. Pneus</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="flex gap-1 items-end">
+                <div className="flex-1"><Label className="text-xs">Marca Pneu</Label><Input value={form.marcaPneu} onChange={e => set("marcaPneu", e.target.value)} placeholder="Pirelli, Goodyear..." /></div>
+                <Button variant="outline" size="icon" className="h-10 w-10"><Plus className="h-3.5 w-3.5" /></Button>
+              </div>
+              <div><Label className="text-xs">Código Marca</Label><Input value={form.codMarca} onChange={e => set("codMarca", e.target.value)} /></div>
+              <SelectWithAdd label="Medida Pneu" value={form.medidaPneu} onValueChange={v => set("medidaPneu", v)} options={["185/65 R15", "195/55 R16", "205/55 R16", "225/45 R17", "235/60 R18"]} />
+              <div>
+                <Label className="text-xs">Estado Pneu</Label>
+                <Select value={form.estadoPneu} onValueChange={v => set("estadoPneu", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Novo">Novo</SelectItem>
+                    <SelectItem value="Meia-vida">Meia-vida</SelectItem>
+                    <SelectItem value="Careca">Careca</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Seção 6: Fotos/Documentos */}
+        <AccordionItem value="s6" className="border rounded-lg">
+          <AccordionTrigger className="px-4 py-3 text-sm font-semibold hover:no-underline">
+            <span className="flex items-center gap-2"><Upload className="h-4 w-4 text-primary" /> 6. Fotos / Documentos Veículo</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4 space-y-3">
+            <div className="flex gap-3 items-end">
+              <div className="flex-1">
+                <Label className="text-xs">Tipo Documento</Label>
+                <Select value={form.tipoDocumento} onValueChange={v => set("tipoDocumento", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Foto Frente">Foto Frente</SelectItem>
+                    <SelectItem value="Foto Traseira">Foto Traseira</SelectItem>
+                    <SelectItem value="Foto Lateral">Foto Lateral</SelectItem>
+                    <SelectItem value="Foto Motor">Foto Motor</SelectItem>
+                    <SelectItem value="Foto Interior">Foto Interior</SelectItem>
+                    <SelectItem value="CRLV">CRLV</SelectItem>
+                    <SelectItem value="Laudo">Laudo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => {
+                if (form.tipoDocumento) {
+                  setFotos(f => [...f, { nome: `img_${f.length + 1}.jpg`, tipo: form.tipoDocumento, data: new Date().toLocaleDateString("pt-BR") }]);
+                  toast.success("Imagem adicionada!");
+                } else toast.error("Selecione o tipo.");
+              }}>
+                <Plus className="h-4 w-4" /> Adicionar imagens/documentos...
+              </Button>
+            </div>
+
+            {fotos.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {fotos.map((f, i) => (
+                  <Card key={i} className="overflow-hidden">
+                    <div className="aspect-video bg-muted flex items-center justify-center">
+                      <FileText className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <CardContent className="p-2">
+                      <p className="text-xs font-medium truncate">{f.nome}</p>
+                      <div className="flex items-center justify-between">
+                        <Badge variant="outline" className="text-[10px]">{f.tipo}</Badge>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setFotos(fs => fs.filter((_, j) => j !== i))}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      {/* Footer */}
+      <div className="sticky bottom-0 bg-background border-t py-3 flex justify-end gap-3 -mx-6 px-6">
+        <Button variant="outline" className="gap-1"><X className="h-4 w-4" /> Voltar</Button>
+        <Button variant="outline" onClick={limpar} className="gap-1"><Eraser className="h-4 w-4" /> Limpar</Button>
+        <Button onClick={salvar} className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"><Save className="h-4 w-4" /> Salvar Vistoria</Button>
+      </div>
+    </div>
+  );
+}
+
+function Settings(props: any) {
+  return <ClipboardCheck {...props} />;
 }
