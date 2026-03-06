@@ -59,7 +59,7 @@ export default function ParametrosTab() {
   const handleSalvar = () => toast.success("Parâmetros salvos com sucesso!");
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold tracking-tight">Parâmetros do Sistema</h2>
