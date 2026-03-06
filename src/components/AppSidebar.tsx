@@ -76,7 +76,7 @@ function ModuleGroup({ label, icon: ModIcon, items, collapsed, pathname }: Modul
     <Collapsible defaultOpen={isActive} className="mt-1">
       <SidebarGroup className="p-0">
         <CollapsibleTrigger className="w-full group">
-          <SidebarGroupLabel className="flex items-center justify-between w-full cursor-pointer text-sidebar-foreground/50 hover:text-sidebar-foreground/80 text-[10px] uppercase tracking-widest px-3 py-2">
+          <SidebarGroupLabel className="flex items-center justify-between w-full cursor-pointer text-sidebar-foreground/60 hover:text-sidebar-foreground text-[10px] uppercase tracking-widest px-3 py-2">
             <span className="flex items-center gap-2">
               <ModIcon className="h-3.5 w-3.5" />
               {!collapsed && label}
@@ -94,8 +94,8 @@ function ModuleGroup({ label, icon: ModIcon, items, collapsed, pathname }: Modul
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
-                      className="hover:bg-sidebar-accent/60 text-sidebar-foreground/70 text-[13px]"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      className="rounded-none hover:bg-sidebar-accent text-sidebar-foreground/70 text-[13px]"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold border-l-[3px] border-sidebar-primary"
                     >
                       <item.icon className="mr-2 h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
@@ -142,8 +142,8 @@ export function AppSidebar() {
               <NavLink
                 to="/"
                 end
-                className="hover:bg-sidebar-accent/60"
-                activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                className="rounded-none hover:bg-sidebar-accent"
+                activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold border-l-[3px] border-sidebar-primary"
               >
                 <LayoutDashboard className="mr-2 h-4 w-4" />
                 {!collapsed && <span>Dashboard</span>}
