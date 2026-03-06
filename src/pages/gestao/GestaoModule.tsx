@@ -43,44 +43,32 @@ export default function GestaoModule() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case "dashboard":
-        return <DashboardTab />;
-      case "associado":
-        return <AssociadoTab />;
-      case "veiculo":
-        return <VeiculoTab />;
-      case "cadastro":
-        return <CadastroTab />;
-      case "ferramentas":
-        return <FerramentasTab />;
-      case "parametros":
-        return <ParametrosTab />;
-      case "financeiro":
-        return <FinanceiroTab />;
-      case "fornecedor":
-        return <FornecedorTab />;
-      case "evento":
-        return <EventoTab />;
-      case "relatorios":
-        return <RelatoriosTab />;
-      case "documentacao":
-        return <DocumentacaoTab />;
-      case "area-cliente":
-        return <AreaClienteTab />;
+      case "dashboard": return <DashboardTab />;
+      case "associado": return <AssociadoTab />;
+      case "veiculo": return <VeiculoTab />;
+      case "cadastro": return <CadastroTab />;
+      case "ferramentas": return <FerramentasTab />;
+      case "parametros": return <ParametrosTab />;
+      case "financeiro": return <FinanceiroTab />;
+      case "fornecedor": return <FornecedorTab />;
+      case "evento": return <EventoTab />;
+      case "relatorios": return <RelatoriosTab />;
+      case "documentacao": return <DocumentacaoTab />;
+      case "area-cliente": return <AreaClienteTab />;
       default:
         return (
           <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
-            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
+            <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center">
               {(() => {
                 const tab = gestaoTabs.find(t => t.id === activeTab);
                 if (tab) {
                   const Icon = tab.icon;
-                  return <Icon className="h-8 w-8" />;
+                  return <Icon className="h-6 w-6" />;
                 }
                 return null;
               })()}
             </div>
-            <p className="text-lg font-medium">
+            <p className="text-base font-medium">
               {gestaoTabs.find(t => t.id === activeTab)?.label}
             </p>
             <p className="text-sm">Esta aba será implementada nas próximas partes.</p>
@@ -91,24 +79,22 @@ export default function GestaoModule() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="border-b bg-card shadow-sm shrink-0">
-        <div className="flex items-center h-14 px-4 gap-3">
+      {/* Header — clean corporate bar */}
+      <header className="border-b bg-card shrink-0">
+        <div className="flex items-center h-12 px-4 gap-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate("/")}
-            className="gap-1.5 text-muted-foreground hover:text-foreground"
+            className="gap-1.5 text-muted-foreground hover:text-foreground h-8 px-2"
           >
             <ChevronLeft className="h-4 w-4" />
             <LayoutDashboard className="h-4 w-4" />
           </Button>
-          <div className="h-6 w-px bg-border" />
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-              <Shield className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-sm tracking-wide">Gestão</span>
+          <div className="h-5 w-px bg-border" />
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-primary" />
+            <span className="font-semibold text-sm">Gestão</span>
           </div>
           <div className="ml-auto flex items-center gap-3">
             <span className="text-xs text-muted-foreground hidden sm:block">{user?.email}</span>
@@ -119,27 +105,24 @@ export default function GestaoModule() {
         </div>
       </header>
 
-      {/* Tab Navigation */}
-      <nav className="border-b bg-card/60 backdrop-blur-sm shrink-0">
+      {/* Tab Navigation — flat, no backdrop blur */}
+      <nav className="border-b bg-card shrink-0">
         <ScrollArea className="w-full">
-          <div className="flex items-center gap-0.5 px-4 py-1">
+          <div className="flex items-center gap-0 px-4">
             {gestaoTabs.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm transition-colors whitespace-nowrap rounded-t-md ${
+                  className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm whitespace-nowrap border-b-2 transition-colors ${
                     isActive
-                      ? "text-primary font-semibold"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      ? "text-primary border-primary font-medium"
+                      : "text-muted-foreground border-transparent hover:text-foreground hover:border-muted-foreground/30"
                   }`}
                 >
                   <tab.icon className="h-3.5 w-3.5" />
                   <span>{tab.label}</span>
-                  {isActive && (
-                    <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full" />
-                  )}
                 </button>
               );
             })}
