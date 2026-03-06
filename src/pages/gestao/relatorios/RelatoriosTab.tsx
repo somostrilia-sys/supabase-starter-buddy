@@ -11,14 +11,131 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Download, Search, Users, Car, FileText, BarChart3, Eye,
-  DollarSign, UserCog, TrendingUp, Shield, Truck, AlertTriangle,
+  DollarSign, UserCog, TrendingUp, Shield, Truck, AlertTriangle, Printer,
 } from "lucide-react";
 import { toast } from "sonner";
 
-const cooperativas = ["Central SP", "Central RJ", "Norte MG", "Oeste PR", "Sul RS"];
-const regionais = ["Grande SP", "Campinas", "Rio de Janeiro", "Triângulo Mineiro", "Curitiba", "Porto Alegre"];
+// ── Filter section data ──
+const situacoesVeiculo = [
+  "ATIVO", "INADIMPLENTE", "INATIVO", "INATIVO - COM PENDÊNCIA",
+  "INATIVO - RETIRADA RASTREADOR", "NEGADO", "PENDENTE", "PENDENTE DE REVISTORIA",
+  "ATIVO - (MIGRADO)", "INADIMPLENTE - (MIGRADO)", "INATIVO - (MIGRADO)", "PENDENTE - (MIGRADO)",
+];
+
+const situacoesAssociado = [
+  "ATIVO", "ATIVO - (MIGRADO)", "INADIMPLENTE", "INADIMPLENTE - (MIGRADO)",
+  "INATIVO", "INATIVO - COM PENDÊNCIA", "INATIVO - RETIRADA RASTREADOR", "NEGADO",
+  "PENDENTE",
+];
+
+const regionaisLista = [
+  "1 - OBJETIVO PATRIMONIAL MUTUALISTA", "2 - MATO GROSSO DO SUL", "3 - REGIONAL NORTE",
+  "4 - REGIONAL ALAGOAS", "5 - REGIONAL NORTE, MINAS E SUL", "6 - REGIONAL SP INTERIOR",
+  "7 - REGIONAL CEARÁ", "8 - REGIONAL NATAL", "9 - REGIONAL MINAS INTERIOR",
+  "10 - REGIONAL BAHIA", "11 - REGIONAL PARANÁ", "12 - REGIONAL SUL (INTERIOR)",
+];
+
+const cooperativasLista = [
+  "COOPERATIVA ALPHAVILLE", "COOPERATIVA PORTO VELHO", "FILIAL FEIRA DE SANTANA", "FILIAL GUARULHOS",
+  "FILIAL ALAGOAS", "FILIAL BARUERI", "FILIAL CAJAMAR", "FILIAL CAMAÇARI",
+  "FILIAL CAMPINAS", "FILIAL CAMPO LIMPO PAULISTA", "FILIAL CARAPICUÍBA", "FILIAL CAXIAS DO SUL",
+  "FILIAL COTIA", "FILIAL CURITIBA", "FILIAL DUQUE DE CAXIAS", "FILIAL GUARUJÁ",
+  "FILIAL ITAPETININGA", "FILIAL ITAPEVI", "FILIAL ITUPEVA", "FILIAL JACAREÍ",
+  "FILIAL JUAZEIRO", "FILIAL JUNDIAÍ", "FILIAL MATO GROSSO DO SUL", "FILIAL OSASCO",
+  "FILIAL OURINHOS", "FILIAL PALHOÇA SC", "FILIAL PALMAS", "FILIAL PARÁ DE MINAS",
+  "FILIAL PASSO FUNDO", "FILIAL PIEDADE", "FILIAL PONTA GROSSA", "FILIAL PRAIA GRANDE",
+  "FILIAL RIBEIRÃO PRETO", "FILIAL SANTA CRUZ", "FILIAL SANTANA DE PARNAÍBA", "FILIAL SANTO ANDRÉ",
+  "FILIAL SÃO BERNARDO", "FILIAL SÃO VICENTE", "FILIAL SOROCABA", "FILIAL VÁRZEA PAULISTA",
+  "FILIAL VOTORANTIM", "OBJETIVO AUTO BENEFÍCIOS", "OBJETIVO AUTO E TRUCK TIJUCAS - SC", "OBJETIVO CAPÃO REDONDO",
+];
+
+const tiposVeiculo = [
+  "AUTOMÓVEL LEVE", "UTILITÁRIO", "MOTOCICLETA", "CAMINHÃO", "VAN/FURGÃO", "ÔNIBUS/MICRO",
+];
+
+const cotasVeiculo = [
+  "R$ 20-30 MIL", "R$ 30-40 MIL", "R$ 40-50 MIL", "R$ 50-70 MIL",
+  "R$ 70-100 MIL", "R$ 100-150 MIL", "R$ 150-200 MIL", "R$ 200-300 MIL",
+];
+
+const categoriasVeiculo = [
+  "PASSEIO", "TRABALHO", "LOCAÇÃO", "APP (UBER/99)", "TÁXI",
+];
+
+// ── Reusable filter section component ──
+function FilterSection({
+  title,
+  items,
+  selected,
+  onToggle,
+  columns = 4,
+  color = "primary",
+}: {
+  title: string;
+  items: string[];
+  selected: Set<string>;
+  onToggle: (item: string) => void;
+  columns?: number;
+  color?: "primary" | "success" | "warning" | "destructive";
+}) {
+  const allSelected = items.every(i => selected.has(i));
+  const toggleAll = () => {
+    if (allSelected) {
+      items.forEach(i => { if (selected.has(i)) onToggle(i); });
+    } else {
+      items.forEach(i => { if (!selected.has(i)) onToggle(i); });
+    }
+  };
+
+  const bgMap = {
+    primary: "bg-primary",
+    success: "bg-success",
+    warning: "bg-warning",
+    destructive: "bg-destructive",
+  };
+
+  return (
+    <div className="border border-border">
+      <div className={`${bgMap[color]} px-4 py-2`}>
+        <h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">{title}</h4>
+      </div>
+      <div className="px-4 py-3 bg-card">
+        <div className="mb-2">
+          <label className="inline-flex items-center gap-2 cursor-pointer">
+            <Checkbox
+              checked={allSelected}
+              onCheckedChange={toggleAll}
+              className="h-4 w-4"
+            />
+            <span className="text-sm font-bold uppercase">TODOS</span>
+          </label>
+        </div>
+        <div className={`grid gap-x-6 gap-y-1.5`} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+          {items.map(item => {
+            const isChecked = selected.has(item);
+            return (
+              <label key={item} className="inline-flex items-center gap-2 cursor-pointer py-0.5">
+                <Checkbox
+                  checked={isChecked}
+                  onCheckedChange={() => onToggle(item)}
+                  className="h-4 w-4"
+                />
+                <span className={`text-xs font-listing ${isChecked ? "text-success font-semibold" : "text-foreground"}`}>
+                  {item}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Mock data ──
+const cooperativasSimples = ["Central SP", "Central RJ", "Norte MG", "Oeste PR", "Sul RS"];
+const regionaisSimples = ["Grande SP", "Campinas", "Rio de Janeiro", "Triângulo Mineiro", "Curitiba", "Porto Alegre"];
+
 const mockAssociados = [
   { id: 1, nome: "Carlos Eduardo Silva", cpf: "123.456.789-00", telefone: "(11) 98765-4321", email: "carlos@email.com", placa: "BRA2E19", modelo: "Onix Plus", ano: 2023, tipo: "Automóvel leve", categoria: "Passeio", cota: "R$ 50-70 mil", cooperativa: "Central SP", regional: "Grande SP", situacao: "ativo", dataCadastro: "2024-01-15", dataContrato: "2024-02-01", nascimento: "1985-03-22", endereco: "Rua das Flores, 123 - São Paulo/SP" },
   { id: 2, nome: "Maria Fernanda Oliveira", cpf: "987.654.321-00", telefone: "(21) 97654-3210", email: "maria@email.com", placa: "RIO4F56", modelo: "HB20", ano: 2022, tipo: "Automóvel leve", categoria: "Passeio", cota: "R$ 40-50 mil", cooperativa: "Central RJ", regional: "Rio de Janeiro", situacao: "ativo", dataCadastro: "2024-02-10", dataContrato: "2024-03-01", nascimento: "1990-07-14", endereco: "Av. Brasil, 456 - Rio de Janeiro/RJ" },
@@ -60,7 +177,6 @@ const outrosRelatorios = [
   { id: "fornecedores", label: "Fornecedores", icon: Truck, desc: "Relatório de fornecedores e sincronismos" },
 ];
 
-// Columns selector
 const allColumns = [
   { key: "nome", label: "Nome" }, { key: "cpf", label: "CPF" }, { key: "endereco", label: "Endereço" },
   { key: "telefone", label: "Telefone" }, { key: "email", label: "E-mail" }, { key: "placa", label: "Placa" },
@@ -71,17 +187,28 @@ const allColumns = [
 
 export default function RelatoriosTab() {
   const [busca, setBusca] = useState("");
-  const [filtroCooperativa, setFiltroCooperativa] = useState("todas");
-  const [filtroRegional, setFiltroRegional] = useState("todas");
-  const [filtroSituacao, setFiltroSituacao] = useState("todas");
   const [detalhe, setDetalhe] = useState<typeof mockAssociados[0] | null>(null);
   const [selectedCols, setSelectedCols] = useState<string[]>(["nome", "cpf", "telefone", "placa", "cooperativa", "situacao"]);
   const [outroAtivo, setOutroAtivo] = useState<string | null>(null);
 
+  // Filter state as Sets for checkbox sections
+  const [selSitVeiculo, setSelSitVeiculo] = useState<Set<string>>(new Set(situacoesVeiculo));
+  const [selRegional, setSelRegional] = useState<Set<string>>(new Set(regionaisLista));
+  const [selCooperativa, setSelCooperativa] = useState<Set<string>>(new Set());
+  const [selSitAssociado, setSelSitAssociado] = useState<Set<string>>(new Set(situacoesAssociado));
+  const [selTipoVeiculo, setSelTipoVeiculo] = useState<Set<string>>(new Set(tiposVeiculo));
+  const [selCota, setSelCota] = useState<Set<string>>(new Set(cotasVeiculo));
+  const [selCategoria, setSelCategoria] = useState<Set<string>>(new Set(categoriasVeiculo));
+
+  const toggleInSet = (set: Set<string>, setFn: React.Dispatch<React.SetStateAction<Set<string>>>, item: string) => {
+    setFn(prev => {
+      const next = new Set(prev);
+      if (next.has(item)) next.delete(item); else next.add(item);
+      return next;
+    });
+  };
+
   const filteredAssoc = mockAssociados.filter(a => {
-    if (filtroCooperativa !== "todas" && a.cooperativa !== filtroCooperativa) return false;
-    if (filtroRegional !== "todas" && a.regional !== filtroRegional) return false;
-    if (filtroSituacao !== "todas" && a.situacao !== filtroSituacao) return false;
     if (busca && !a.nome.toLowerCase().includes(busca.toLowerCase()) && !a.cpf.includes(busca) && !a.placa.includes(busca.toUpperCase())) return false;
     return true;
   });
@@ -100,7 +227,16 @@ export default function RelatoriosTab() {
 
   return (
     <div className="p-6 space-y-6">
-      <div><h2 className="text-xl font-bold">Central de Relatórios</h2><p className="text-sm text-muted-foreground">Relatórios completos com filtros avançados e exportação</p></div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold font-listing">Central de Relatórios</h2>
+          <p className="text-sm text-muted-foreground font-listing">Relatórios completos com filtros avançados e exportação</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm"><Printer className="h-4 w-4" />Imprimir</Button>
+          <Button size="sm"><Download className="h-4 w-4" />Exportar Excel</Button>
+        </div>
+      </div>
 
       <Tabs defaultValue="associados">
         <TabsList className="flex-wrap h-auto gap-1">
@@ -111,33 +247,121 @@ export default function RelatoriosTab() {
         </TabsList>
 
         {/* ── ASSOCIADOS ── */}
-        <TabsContent value="associados" className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-base">Filtros</CardTitle></CardHeader>
-            <CardContent>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                <div><Label className="text-xs">Buscar</Label><div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="pl-9" placeholder="Nome, CPF ou placa..." value={busca} onChange={e => setBusca(e.target.value)} /></div></div>
-                <div><Label className="text-xs">Cooperativa</Label><Select value={filtroCooperativa} onValueChange={setFiltroCooperativa}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{cooperativas.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
-                <div><Label className="text-xs">Regional</Label><Select value={filtroRegional} onValueChange={setFiltroRegional}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{regionais.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div>
-                <div><Label className="text-xs">Situação</Label><Select value={filtroSituacao} onValueChange={setFiltroSituacao}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem><SelectItem value="ativo">Ativo</SelectItem><SelectItem value="inativo">Inativo</SelectItem><SelectItem value="inadimplente">Inadimplente</SelectItem><SelectItem value="pendente">Pendente</SelectItem></SelectContent></Select></div>
-                <div className="flex items-end"><Button variant="outline" size="sm" onClick={() => exportCsv(filteredAssoc as unknown as Record<string, unknown>[], "associados")}><Download className="h-4 w-4" />Exportar</Button></div>
+        <TabsContent value="associados" className="space-y-0 mt-4">
+          {/* Scrollable filter sections */}
+          <div className="space-y-4 mb-6">
+            {/* Date range */}
+            <div className="border border-border">
+              <div className="bg-primary px-4 py-2">
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Período</h4>
               </div>
-              <div className="mt-3"><Label className="text-xs mb-1 block">Colunas visíveis:</Label>
-                <div className="flex flex-wrap gap-2">{allColumns.map(c => (
-                  <label key={c.key} className="flex items-center gap-1 text-xs cursor-pointer"><Checkbox checked={selectedCols.includes(c.key)} onCheckedChange={() => toggleCol(c.key)} className="h-3.5 w-3.5" />{c.label}</label>
-                ))}</div>
+              <div className="px-4 py-3 bg-card grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div><Label className="text-xs font-listing font-semibold">Data Cadastro De</Label><Input type="date" /></div>
+                <div><Label className="text-xs font-listing font-semibold">Data Cadastro Até</Label><Input type="date" /></div>
+                <div><Label className="text-xs font-listing font-semibold">Data Contrato De</Label><Input type="date" /></div>
+                <div><Label className="text-xs font-listing font-semibold">Data Contrato Até</Label><Input type="date" /></div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+
+            <FilterSection
+              title="Situação ATUAL do Veículo"
+              items={situacoesVeiculo}
+              selected={selSitVeiculo}
+              onToggle={(item) => toggleInSet(selSitVeiculo, setSelSitVeiculo, item)}
+              color="success"
+            />
+
+            <FilterSection
+              title="Regional do Veículo"
+              items={regionaisLista}
+              selected={selRegional}
+              onToggle={(item) => toggleInSet(selRegional, setSelRegional, item)}
+              columns={2}
+              color="primary"
+            />
+
+            <FilterSection
+              title="Cooperativa do Veículo"
+              items={cooperativasLista}
+              selected={selCooperativa}
+              onToggle={(item) => toggleInSet(selCooperativa, setSelCooperativa, item)}
+              color="warning"
+            />
+
+            <FilterSection
+              title="Situação do Associado"
+              items={situacoesAssociado}
+              selected={selSitAssociado}
+              onToggle={(item) => toggleInSet(selSitAssociado, setSelSitAssociado, item)}
+              color="destructive"
+            />
+
+            <FilterSection
+              title="Tipo de Veículo"
+              items={tiposVeiculo}
+              selected={selTipoVeiculo}
+              onToggle={(item) => toggleInSet(selTipoVeiculo, setSelTipoVeiculo, item)}
+              columns={3}
+              color="primary"
+            />
+
+            <FilterSection
+              title="Faixa de Cota"
+              items={cotasVeiculo}
+              selected={selCota}
+              onToggle={(item) => toggleInSet(selCota, setSelCota, item)}
+              columns={4}
+              color="success"
+            />
+
+            <FilterSection
+              title="Categoria do Veículo"
+              items={categoriasVeiculo}
+              selected={selCategoria}
+              onToggle={(item) => toggleInSet(selCategoria, setSelCategoria, item)}
+              columns={3}
+              color="warning"
+            />
+
+            {/* Columns selector */}
+            <div className="border border-border">
+              <div className="bg-primary px-4 py-2">
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Colunas Visíveis no Resultado</h4>
+              </div>
+              <div className="px-4 py-3 bg-card">
+                <div className="grid grid-cols-3 md:grid-cols-5 gap-x-6 gap-y-1.5">
+                  {allColumns.map(c => (
+                    <label key={c.key} className="inline-flex items-center gap-2 cursor-pointer py-0.5">
+                      <Checkbox checked={selectedCols.includes(c.key)} onCheckedChange={() => toggleCol(c.key)} className="h-4 w-4" />
+                      <span className={`text-xs font-listing ${selectedCols.includes(c.key) ? "text-success font-semibold" : "text-foreground"}`}>{c.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Search + action bar */}
+            <div className="flex items-center gap-3 bg-muted/50 border border-border p-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input className="pl-9" placeholder="Busca rápida: Nome, CPF ou placa..." value={busca} onChange={e => setBusca(e.target.value)} />
+              </div>
+              <Button onClick={() => toast.success("Relatório gerado")}><Search className="h-4 w-4" />Gerar Relatório</Button>
+              <Button variant="outline" onClick={() => exportCsv(filteredAssoc as unknown as Record<string, unknown>[], "associados")}><Download className="h-4 w-4" />Exportar</Button>
+              <Button variant="outline"><Printer className="h-4 w-4" />Imprimir</Button>
+            </div>
+          </div>
+
+          {/* Result table */}
           <Card>
             <CardContent className="p-0">
               <Table>
-                <TableHeader><TableRow>{selectedCols.map(k => <TableHead key={k}>{allColumns.find(c => c.key === k)?.label}</TableHead>)}<TableHead></TableHead></TableRow></TableHeader>
+                <TableHeader><TableRow>{selectedCols.map(k => <TableHead key={k} className="font-listing font-bold text-xs uppercase">{allColumns.find(c => c.key === k)?.label}</TableHead>)}<TableHead></TableHead></TableRow></TableHeader>
                 <TableBody>
                   {filteredAssoc.map(a => (
                     <TableRow key={a.id} className="cursor-pointer" onClick={() => setDetalhe(a)}>
                       {selectedCols.map(k => (
-                        <TableCell key={k}>
+                        <TableCell key={k} className="font-listing">
                           {k === "situacao" ? <Badge className={situacaoColor[a.situacao]}>{a.situacao}</Badge>
                            : k === "dataCadastro" ? new Date(a.dataCadastro).toLocaleDateString("pt-BR")
                            : String((a as Record<string, unknown>)[k] ?? "")}
@@ -150,29 +374,83 @@ export default function RelatoriosTab() {
               </Table>
             </CardContent>
           </Card>
-          <p className="text-xs text-muted-foreground">{filteredAssoc.length} registros encontrados</p>
+          <p className="text-xs text-muted-foreground font-listing mt-2">{filteredAssoc.length} registros encontrados</p>
         </TabsContent>
 
         {/* ── VEÍCULOS ── */}
-        <TabsContent value="veiculos" className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-base">Filtros de Veículos</CardTitle></CardHeader>
-            <CardContent>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                <div><Label className="text-xs">Buscar</Label><Input placeholder="Placa ou modelo..." /></div>
-                <div><Label className="text-xs">Tipo</Label><Select defaultValue="todos"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem><SelectItem value="leve">Automóvel leve</SelectItem><SelectItem value="utilitario">Utilitário</SelectItem><SelectItem value="moto">Motocicleta</SelectItem></SelectContent></Select></div>
-                <div><Label className="text-xs">Cota</Label><Select defaultValue="todas"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem><SelectItem value="30-40">R$ 30-40 mil</SelectItem><SelectItem value="40-50">R$ 40-50 mil</SelectItem><SelectItem value="50-70">R$ 50-70 mil</SelectItem><SelectItem value="70-100">R$ 70-100 mil</SelectItem><SelectItem value="100-150">R$ 100-150 mil</SelectItem></SelectContent></Select></div>
-                <div><Label className="text-xs">Cooperativa</Label><Select defaultValue="todas"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{cooperativas.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
-                <div className="flex items-end"><Button variant="outline" size="sm" onClick={() => exportCsv(mockAssociados.map(a => ({ placa: a.placa, modelo: a.modelo, ano: a.ano, tipo: a.tipo, categoria: a.categoria, cota: a.cota, associado: a.nome, cooperativa: a.cooperativa })), "veiculos")}><Download className="h-4 w-4" />Exportar</Button></div>
+        <TabsContent value="veiculos" className="space-y-0 mt-4">
+          <div className="space-y-4 mb-6">
+            <div className="border border-border">
+              <div className="bg-primary px-4 py-2">
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Período</h4>
               </div>
-            </CardContent>
-          </Card>
+              <div className="px-4 py-3 bg-card grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div><Label className="text-xs font-listing font-semibold">Data Cadastro De</Label><Input type="date" /></div>
+                <div><Label className="text-xs font-listing font-semibold">Data Cadastro Até</Label><Input type="date" /></div>
+                <div><Label className="text-xs font-listing font-semibold">Ano Fabricação De</Label><Input type="number" placeholder="2020" /></div>
+                <div><Label className="text-xs font-listing font-semibold">Ano Fabricação Até</Label><Input type="number" placeholder="2025" /></div>
+              </div>
+            </div>
+
+            <FilterSection
+              title="Situação ATUAL do Veículo"
+              items={situacoesVeiculo}
+              selected={selSitVeiculo}
+              onToggle={(item) => toggleInSet(selSitVeiculo, setSelSitVeiculo, item)}
+              color="success"
+            />
+
+            <FilterSection
+              title="Tipo de Veículo"
+              items={tiposVeiculo}
+              selected={selTipoVeiculo}
+              onToggle={(item) => toggleInSet(selTipoVeiculo, setSelTipoVeiculo, item)}
+              columns={3}
+              color="primary"
+            />
+
+            <FilterSection
+              title="Faixa de Cota"
+              items={cotasVeiculo}
+              selected={selCota}
+              onToggle={(item) => toggleInSet(selCota, setSelCota, item)}
+              columns={4}
+              color="success"
+            />
+
+            <FilterSection
+              title="Regional do Veículo"
+              items={regionaisLista}
+              selected={selRegional}
+              onToggle={(item) => toggleInSet(selRegional, setSelRegional, item)}
+              columns={2}
+              color="primary"
+            />
+
+            <FilterSection
+              title="Cooperativa do Veículo"
+              items={cooperativasLista}
+              selected={selCooperativa}
+              onToggle={(item) => toggleInSet(selCooperativa, setSelCooperativa, item)}
+              color="warning"
+            />
+
+            <div className="flex items-center gap-3 bg-muted/50 border border-border p-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input className="pl-9" placeholder="Busca por placa ou modelo..." />
+              </div>
+              <Button><Search className="h-4 w-4" />Gerar Relatório</Button>
+              <Button variant="outline" onClick={() => exportCsv(mockAssociados.map(a => ({ placa: a.placa, modelo: a.modelo, ano: a.ano, tipo: a.tipo, categoria: a.categoria, cota: a.cota, associado: a.nome, cooperativa: a.cooperativa })), "veiculos")}><Download className="h-4 w-4" />Exportar</Button>
+            </div>
+          </div>
+
           <Card><CardContent className="p-0">
             <Table>
-              <TableHeader><TableRow><TableHead>Placa</TableHead><TableHead>Modelo</TableHead><TableHead>Ano</TableHead><TableHead>Tipo</TableHead><TableHead>Categoria</TableHead><TableHead>Cota</TableHead><TableHead>Associado</TableHead><TableHead>Cooperativa</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead className="font-listing font-bold text-xs uppercase">Placa</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Modelo</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Ano</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Tipo</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Categoria</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Cota</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Associado</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Cooperativa</TableHead></TableRow></TableHeader>
               <TableBody>
                 {mockAssociados.map(a => (
-                  <TableRow key={a.id}><TableCell className="font-mono">{a.placa}</TableCell><TableCell>{a.modelo}</TableCell><TableCell>{a.ano}</TableCell><TableCell><Badge variant="outline">{a.tipo}</Badge></TableCell><TableCell>{a.categoria}</TableCell><TableCell>{a.cota}</TableCell><TableCell className="font-medium">{a.nome}</TableCell><TableCell>{a.cooperativa}</TableCell></TableRow>
+                  <TableRow key={a.id}><TableCell className="font-mono">{a.placa}</TableCell><TableCell className="font-listing">{a.modelo}</TableCell><TableCell className="font-listing">{a.ano}</TableCell><TableCell><Badge variant="outline">{a.tipo}</Badge></TableCell><TableCell className="font-listing">{a.categoria}</TableCell><TableCell className="font-listing">{a.cota}</TableCell><TableCell className="font-medium font-listing">{a.nome}</TableCell><TableCell className="font-listing">{a.cooperativa}</TableCell></TableRow>
                 ))}
               </TableBody>
             </Table>
@@ -180,58 +458,113 @@ export default function RelatoriosTab() {
         </TabsContent>
 
         {/* ── BOLETOS ── */}
-        <TabsContent value="boletos" className="space-y-4">
+        <TabsContent value="boletos" className="space-y-4 mt-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{mockBoletos.length}</p><p className="text-xs text-muted-foreground">Total gerado</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-green-600">{mockBoletos.filter(b => b.situacao === "pago_dia").length}</p><p className="text-xs text-muted-foreground">Pagos em dia</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-yellow-600">{mockBoletos.filter(b => b.situacao === "pago_atraso").length}</p><p className="text-xs text-muted-foreground">Pagos em atraso</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-destructive">{mockBoletos.filter(b => b.situacao === "vencido").length}</p><p className="text-xs text-muted-foreground">Vencidos</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold font-listing">{mockBoletos.length}</p><p className="text-xs text-muted-foreground font-listing">Total gerado</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-success font-listing">{mockBoletos.filter(b => b.situacao === "pago_dia").length}</p><p className="text-xs text-muted-foreground font-listing">Pagos em dia</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-warning font-listing">{mockBoletos.filter(b => b.situacao === "pago_atraso").length}</p><p className="text-xs text-muted-foreground font-listing">Pagos em atraso</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-destructive font-listing">{mockBoletos.filter(b => b.situacao === "vencido").length}</p><p className="text-xs text-muted-foreground font-listing">Vencidos</p></CardContent></Card>
           </div>
+
+          <div className="space-y-4">
+            <div className="border border-border">
+              <div className="bg-primary px-4 py-2">
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Filtros de Boletos</h4>
+              </div>
+              <div className="px-4 py-3 bg-card grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div><Label className="text-xs font-listing font-semibold">Vencimento De</Label><Input type="date" /></div>
+                <div><Label className="text-xs font-listing font-semibold">Vencimento Até</Label><Input type="date" /></div>
+                <div><Label className="text-xs font-listing font-semibold">Situação</Label>
+                  <Select defaultValue="todos"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem><SelectItem value="pago_dia">Pago em dia</SelectItem><SelectItem value="pago_atraso">Pago em atraso</SelectItem><SelectItem value="pendente">Pendente</SelectItem><SelectItem value="vencido">Vencido</SelectItem></SelectContent></Select>
+                </div>
+                <div><Label className="text-xs font-listing font-semibold">Associado</Label><Input placeholder="Nome..." /></div>
+                <div className="flex items-end gap-2">
+                  <Button size="sm"><Search className="h-4 w-4" />Gerar</Button>
+                  <Button variant="outline" size="sm" onClick={() => exportCsv(mockBoletos as unknown as Record<string, unknown>[], "boletos")}><Download className="h-4 w-4" />Exportar</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <Card><CardContent className="p-0">
             <Table>
-              <TableHeader><TableRow><TableHead>ID</TableHead><TableHead>Associado</TableHead><TableHead className="text-right">Valor</TableHead><TableHead>Gerado</TableHead><TableHead>Vencimento</TableHead><TableHead>Pagamento</TableHead><TableHead>Situação</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead className="font-listing font-bold text-xs uppercase">ID</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Associado</TableHead><TableHead className="font-listing font-bold text-xs uppercase text-right">Valor</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Gerado</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Vencimento</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Pagamento</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Situação</TableHead></TableRow></TableHeader>
               <TableBody>
                 {mockBoletos.map(b => (
-                  <TableRow key={b.id}><TableCell className="font-mono text-xs">{b.id}</TableCell><TableCell className="font-medium">{b.associado}</TableCell><TableCell className="text-right">R$ {b.valor.toFixed(2)}</TableCell><TableCell>{new Date(b.gerado).toLocaleDateString("pt-BR")}</TableCell><TableCell>{new Date(b.vencimento).toLocaleDateString("pt-BR")}</TableCell><TableCell>{b.pagamento ? new Date(b.pagamento).toLocaleDateString("pt-BR") : "—"}</TableCell><TableCell><Badge className={situacaoColor[b.situacao]}>{b.situacao.replace("_", " ")}</Badge></TableCell></TableRow>
+                  <TableRow key={b.id}><TableCell className="font-mono text-xs">{b.id}</TableCell><TableCell className="font-medium font-listing">{b.associado}</TableCell><TableCell className="text-right font-listing">R$ {b.valor.toFixed(2)}</TableCell><TableCell className="font-listing">{new Date(b.gerado).toLocaleDateString("pt-BR")}</TableCell><TableCell className="font-listing">{new Date(b.vencimento).toLocaleDateString("pt-BR")}</TableCell><TableCell className="font-listing">{b.pagamento ? new Date(b.pagamento).toLocaleDateString("pt-BR") : "—"}</TableCell><TableCell><Badge className={situacaoColor[b.situacao]}>{b.situacao.replace("_", " ")}</Badge></TableCell></TableRow>
                 ))}
               </TableBody>
             </Table>
           </CardContent></Card>
-          <Button variant="outline" size="sm" onClick={() => exportCsv(mockBoletos as unknown as Record<string, unknown>[], "boletos")}><Download className="h-4 w-4" />Exportar Excel</Button>
         </TabsContent>
 
         {/* ── DEMAIS ── */}
-        <TabsContent value="outros" className="space-y-4">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <TabsContent value="outros" className="space-y-4 mt-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {outrosRelatorios.map(r => (
-              <Card key={r.id} className={`cursor-pointer transition-colors hover:border-primary/50 ${outroAtivo === r.id ? "border-primary" : ""}`} onClick={() => setOutroAtivo(r.id)}>
-                <CardContent className="p-4 flex items-start gap-3">
-                  <r.icon className="h-5 w-5 text-primary mt-0.5" />
-                  <div><p className="font-semibold text-sm">{r.label}</p><p className="text-xs text-muted-foreground">{r.desc}</p></div>
-                </CardContent>
-              </Card>
+              <button
+                key={r.id}
+                onClick={() => setOutroAtivo(r.id)}
+                className={`group flex items-center gap-5 border-2 bg-card px-6 py-6 text-left hover:bg-muted/40 hover:border-primary/40 transition-colors min-h-[100px] ${outroAtivo === r.id ? "border-primary" : "border-muted-foreground/30"}`}
+              >
+                <div className="w-14 h-14 bg-muted flex items-center justify-center shrink-0">
+                  <r.icon className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-base font-listing">{r.label}</h3>
+                  <p className="text-sm text-muted-foreground font-listing mt-1">{r.desc}</p>
+                </div>
+              </button>
             ))}
           </div>
           {outroAtivo && (
-            <Card>
-              <CardHeader className="pb-3"><CardTitle className="text-base">{outrosRelatorios.find(r => r.id === outroAtivo)?.label}</CardTitle></CardHeader>
-              <CardContent>
-                <div className="grid sm:grid-cols-4 gap-3 mb-4">
-                  <div><Label className="text-xs">Data início</Label><Input type="date" /></div>
-                  <div><Label className="text-xs">Data fim</Label><Input type="date" /></div>
-                  <div><Label className="text-xs">Cooperativa</Label><Select defaultValue="todas"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{cooperativas.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
-                  <div><Label className="text-xs">Regional</Label><Select defaultValue="todas"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{regionais.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-4">
+              <div className="border border-border">
+                <div className="bg-primary px-4 py-2">
+                  <h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">
+                    Filtros — {outrosRelatorios.find(r => r.id === outroAtivo)?.label}
+                  </h4>
                 </div>
-                <div className="flex gap-2">
-                  <Button size="sm"><Search className="h-4 w-4" />Gerar Relatório</Button>
-                  <Button size="sm" variant="outline" onClick={() => toast.success("Relatório exportado")}><Download className="h-4 w-4" />Exportar Excel</Button>
+                <div className="px-4 py-3 bg-card grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div><Label className="text-xs font-listing font-semibold">Data início</Label><Input type="date" /></div>
+                  <div><Label className="text-xs font-listing font-semibold">Data fim</Label><Input type="date" /></div>
+                  <div><Label className="text-xs font-listing font-semibold">Cooperativa</Label>
+                    <Select defaultValue="todas"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{cooperativasSimples.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+                  </div>
+                  <div><Label className="text-xs font-listing font-semibold">Regional</Label>
+                    <Select defaultValue="todas"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{regionaisSimples.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>
+                  </div>
                 </div>
-                <div className="mt-4 p-8 bg-muted rounded-lg text-center text-muted-foreground">
-                  <BarChart3 className="h-8 w-8 mx-auto mb-2" />
-                  <p className="text-sm">Aplique os filtros e clique em "Gerar Relatório"</p>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+
+              <FilterSection
+                title="Regional"
+                items={regionaisLista}
+                selected={selRegional}
+                onToggle={(item) => toggleInSet(selRegional, setSelRegional, item)}
+                columns={2}
+                color="primary"
+              />
+
+              <FilterSection
+                title="Cooperativa"
+                items={cooperativasLista}
+                selected={selCooperativa}
+                onToggle={(item) => toggleInSet(selCooperativa, setSelCooperativa, item)}
+                color="warning"
+              />
+
+              <div className="flex items-center gap-3 bg-muted/50 border border-border p-4">
+                <Button><Search className="h-4 w-4" />Gerar Relatório</Button>
+                <Button variant="outline" onClick={() => toast.success("Relatório exportado")}><Download className="h-4 w-4" />Exportar Excel</Button>
+                <Button variant="outline"><Printer className="h-4 w-4" />Imprimir</Button>
+              </div>
+
+              <div className="p-8 bg-muted text-center text-muted-foreground border">
+                <BarChart3 className="h-8 w-8 mx-auto mb-2" />
+                <p className="text-sm font-listing">Aplique os filtros e clique em "Gerar Relatório"</p>
+              </div>
+            </div>
           )}
         </TabsContent>
       </Tabs>
@@ -239,10 +572,10 @@ export default function RelatoriosTab() {
       {/* Detalhe Sheet */}
       <Sheet open={!!detalhe} onOpenChange={() => setDetalhe(null)}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader><SheetTitle>Cadastro Completo</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle className="font-listing">Cadastro Completo</SheetTitle></SheetHeader>
           {detalhe && (
             <div className="space-y-4 mt-4">
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2 text-sm font-listing">
                 {([
                   ["Nome", detalhe.nome], ["CPF", detalhe.cpf], ["Nascimento", new Date(detalhe.nascimento).toLocaleDateString("pt-BR")],
                   ["Telefone", detalhe.telefone], ["E-mail", detalhe.email], ["Endereço", detalhe.endereco],
@@ -254,7 +587,7 @@ export default function RelatoriosTab() {
                 ))}
                 <div className="flex justify-between"><span className="text-muted-foreground">Situação:</span><Badge className={situacaoColor[detalhe.situacao]}>{detalhe.situacao}</Badge></div>
               </div>
-              <div className="border-t pt-3 space-y-2 text-sm">
+              <div className="border-t pt-3 space-y-2 text-sm font-listing">
                 <p className="font-semibold">Veículo</p>
                 {([["Placa", detalhe.placa], ["Modelo", detalhe.modelo], ["Ano", String(detalhe.ano)], ["Tipo", detalhe.tipo], ["Categoria", detalhe.categoria], ["Cota", detalhe.cota]] as [string, string][]).map(([l, v]) => (
                   <div key={l} className="flex justify-between"><span className="text-muted-foreground">{l}:</span><span className="font-medium">{v}</span></div>
