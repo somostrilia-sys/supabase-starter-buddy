@@ -36,7 +36,7 @@ import RelatoriosFinanceiro from "./pages/financeiro/RelatoriosFinanceiro";
 import Pipeline from "./pages/vendas/Pipeline";
 import VendasLista from "./pages/vendas/VendasLista";
 import Contatos from "./pages/vendas/Contatos";
-import DealDetail from "./pages/vendas/DealDetail";
+
 import NegociacaoDetalhe from "./pages/vendas/NegociacaoDetalhe";
 import Atividades from "./pages/vendas/Atividades";
 import Calendario from "./pages/vendas/Calendario";
