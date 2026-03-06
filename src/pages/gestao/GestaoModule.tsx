@@ -97,13 +97,6 @@ export default function GestaoModule() {
           <div className="h-5 w-px bg-white/20" />
 
           <div className="flex items-center gap-3">
-            {brand.logoUrl ? (
-              <img src={brand.logoUrl} alt={brand.name} className="w-8 h-8 object-contain" />
-            ) : (
-              <div className="w-8 h-8 bg-white/10 flex items-center justify-center">
-                <Shield className="h-4 w-4" style={{ color: `hsl(${brand.headerAccent})` }} />
-              </div>
-            )}
             <span className="font-semibold text-sm text-white">Gestão</span>
           </div>
 
