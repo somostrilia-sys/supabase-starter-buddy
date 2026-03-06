@@ -117,7 +117,7 @@ export default function GestaoModule() {
       </header>
 
       {/* Tab Navigation */}
-      <nav className="border-b bg-card shrink-0 shadow-sm">
+      <nav className="border-b bg-[hsl(210_30%_94%)] shrink-0">
         <div className="px-6 lg:px-8">
           <ScrollArea className="w-full">
             <div className="flex items-center gap-0">
@@ -129,8 +129,8 @@ export default function GestaoModule() {
                     onClick={() => setActiveTab(tab.id)}
                     className={`relative flex items-center gap-2 px-4 py-3 text-[13px] whitespace-nowrap transition-colors font-medium ${
                       isActive
-                        ? "text-primary bg-[hsl(210_45%_94%)] border border-[hsl(210_40%_82%)] border-b-transparent -mb-px"
-                        : "text-muted-foreground hover:text-foreground hover:bg-[hsl(210_30%_96%)]"
+                        ? "text-white bg-[hsl(212_35%_30%)]"
+                        : "text-[hsl(210_20%_45%)] hover:text-[hsl(210_30%_30%)] hover:bg-[hsl(210_25%_90%)]"
                     }`}
                   >
                     <tab.icon className="h-4 w-4" />
