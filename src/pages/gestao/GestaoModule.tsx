@@ -81,7 +81,7 @@ export default function GestaoModule() {
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
       <header className="border-b bg-[hsl(212_35%_18%)] shrink-0">
-        <div className="max-w-[1280px] mx-auto flex items-center h-14 px-6 lg:px-8 gap-4">
+        <div className="flex items-center h-14 px-6 lg:px-8 gap-4">
           <Button
             variant="ghost"
             size="sm"
@@ -118,7 +118,7 @@ export default function GestaoModule() {
 
       {/* Tab Navigation */}
       <nav className="border-b bg-card shrink-0 shadow-sm">
-        <div className="max-w-[1280px] mx-auto px-6 lg:px-8">
+        <div className="px-6 lg:px-8">
           <ScrollArea className="w-full">
             <div className="flex items-center gap-0">
               {gestaoTabs.map((tab) => {
@@ -146,7 +146,7 @@ export default function GestaoModule() {
 
       {/* Content */}
       <main className="flex-1 overflow-auto">
-        <div className="max-w-[1280px] mx-auto">
+        <div className="w-full">
           {renderContent()}
         </div>
       </main>
