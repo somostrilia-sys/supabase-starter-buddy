@@ -5,69 +5,47 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { useBrand } from "@/hooks/useBrand";
 import {
-  LayoutDashboard, Wallet, Receipt, ArrowLeftRight, TrendingDown,
-  TrendingUp, Building2, FileBarChart, FileText, FolderTree,
-  LineChart, PieChart, BarChart3, Building, DollarSign,
+  Wallet, PieChart, ArrowLeftRight, TrendingDown,
+  LineChart, FileBarChart, BarChart3, Building,
   ChevronLeft, LogOut,
 } from "lucide-react";
 
-import DashboardFinanceiro from "./dashboard/DashboardFinanceiro";
-import FluxoDiarioTab from "./fluxo-diario/FluxoDiarioTab";
-import BoletosTab from "./boletos/BoletosTab";
+import FluxoCaixaTab from "./fluxo-caixa/FluxoCaixaTab";
+import RecebimentosCategoriaTab from "./recebimentos-categoria/RecebimentosCategoriaTab";
 import ConciliacaoTab from "./conciliacao/ConciliacaoTab";
 import ContasPagarTab from "./contas-pagar/ContasPagarTab";
-import ContasReceberTab from "./contas-receber/ContasReceberTab";
-import ExtratoBancarioTab from "./extrato/ExtratoBancarioTab";
-import DRETab from "./dre/DRETab";
-import NotasFiscaisTab from "./notas-fiscais/NotasFiscaisTab";
-import CentroCustosTab from "./centro-custos/CentroCustosTab";
 import ProjecaoDespesasTab from "./projecao-despesas/ProjecaoDespesasTab";
-import RecebimentosCategoriaTab from "./recebimentos-categoria/RecebimentosCategoriaTab";
+import RelatoriosFinanceiroTab from "./relatorios/RelatoriosFinanceiroTab";
 import AnaliseCustoTab from "./analise-custo/AnaliseCustoTab";
 import AnaliseCooperativaTab from "./analise-cooperativa/AnaliseCooperativaTab";
-import RelatoriosFinanceiroTab from "./relatorios/RelatoriosFinanceiroTab";
 
 const financeiroTabs = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "fluxo-diario", label: "Fluxo Diário", icon: Wallet },
-  { id: "boletos", label: "Boletos", icon: Receipt },
+  { id: "fluxo-caixa", label: "Fluxo de Caixa", icon: Wallet },
+  { id: "recebimentos", label: "Recebimentos", icon: PieChart },
   { id: "conciliacao", label: "Conciliação", icon: ArrowLeftRight },
   { id: "contas-pagar", label: "Contas a Pagar", icon: TrendingDown },
-  { id: "contas-receber", label: "Contas a Receber", icon: TrendingUp },
-  { id: "extrato", label: "Extrato Bancário", icon: Building2 },
-  { id: "dre", label: "DRE", icon: FileBarChart },
-  { id: "notas-fiscais", label: "Notas Fiscais", icon: FileText },
-  { id: "centro-custos", label: "Centro de Custos", icon: FolderTree },
-  { id: "projecao", label: "Projeção Despesas", icon: LineChart },
-  { id: "recebimentos", label: "Receb. Categoria", icon: PieChart },
-  { id: "custo-faturamento", label: "Custo vs Faturamento", icon: BarChart3 },
-  { id: "cooperativa", label: "Por Cooperativa", icon: Building },
+  { id: "projecao", label: "Projeção", icon: LineChart },
   { id: "relatorios", label: "Relatórios", icon: FileBarChart },
+  { id: "analise-consultor", label: "Análise Consultor", icon: BarChart3 },
+  { id: "analise-cooperativa", label: "Análise Cooperativa", icon: Building },
 ];
 
 export default function FinanceiroModule() {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("fluxo-caixa");
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { brand } = useBrand();
 
   const renderContent = () => {
     switch (activeTab) {
-      case "dashboard": return <DashboardFinanceiro />;
-      case "fluxo-diario": return <FluxoDiarioTab />;
-      case "boletos": return <BoletosTab />;
+      case "fluxo-caixa": return <FluxoCaixaTab />;
+      case "recebimentos": return <RecebimentosCategoriaTab />;
       case "conciliacao": return <ConciliacaoTab />;
       case "contas-pagar": return <ContasPagarTab />;
-      case "contas-receber": return <ContasReceberTab />;
-      case "extrato": return <ExtratoBancarioTab />;
-      case "dre": return <DRETab />;
-      case "notas-fiscais": return <NotasFiscaisTab />;
-      case "centro-custos": return <CentroCustosTab />;
       case "projecao": return <ProjecaoDespesasTab />;
-      case "recebimentos": return <RecebimentosCategoriaTab />;
-      case "custo-faturamento": return <AnaliseCustoTab />;
-      case "cooperativa": return <AnaliseCooperativaTab />;
       case "relatorios": return <RelatoriosFinanceiroTab />;
+      case "analise-consultor": return <AnaliseCustoTab />;
+      case "analise-cooperativa": return <AnaliseCooperativaTab />;
       default: return null;
     }
   };
