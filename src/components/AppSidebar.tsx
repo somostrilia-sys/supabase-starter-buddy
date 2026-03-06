@@ -5,6 +5,7 @@ import {
   BarChart3, Receipt, ArrowLeftRight, Wallet, Kanban, Contact, Building,
   Activity, UsersRound, Tag, FileSpreadsheet, Upload, Crosshair,
 } from "lucide-react";
+import { useBrand } from "@/hooks/useBrand";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -128,21 +129,26 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { signOut, user } = useAuth();
   const location = useLocation();
+  const { brand } = useBrand();
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="p-4 border-b border-sidebar-border bg-[hsl(212_40%_14%)]">
+      <SidebarHeader className="p-4 border-b border-sidebar-border" style={{ backgroundColor: `hsl(${brand.headerBg})` }}>
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-sidebar-primary/20 flex items-center justify-center shrink-0">
-            <Shield className="w-4 h-4 text-sidebar-primary" />
-          </div>
+          {brand.logoUrl ? (
+            <img src={brand.logoUrl} alt={brand.name} className="w-8 h-8 object-contain shrink-0" />
+          ) : (
+            <div className="w-8 h-8 bg-sidebar-primary/20 flex items-center justify-center shrink-0">
+              <Shield className="w-4 h-4" style={{ color: `hsl(${brand.headerAccent})` }} />
+            </div>
+          )}
           {!collapsed && (
             <div className="flex flex-col">
               <span className="font-semibold text-sm text-white tracking-tight">
-                GIA
+                {brand.name}
               </span>
               <span className="text-[10px] text-sidebar-foreground/50 leading-tight uppercase tracking-wider">
-                Proteção Veicular
+                {brand.subtitle}
               </span>
             </div>
           )}

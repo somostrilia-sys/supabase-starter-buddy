@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useBrand } from "@/hooks/useBrand";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -156,6 +157,7 @@ function KpiCard({
 export default function Dashboard() {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const { brand } = useBrand();
   const [stats, setStats] = useState({
     associadosAtivos: 0,
     associadosInativos: 0,
@@ -229,25 +231,29 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* ══════════ HEADER ══════════ */}
-      <header className="border-b bg-card sticky top-0 z-20">
+      <header className="border-b sticky top-0 z-20" style={{ backgroundColor: `hsl(${brand.headerBg})` }}>
         <div className="px-6 lg:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
-              <Shield className="w-4 h-4 text-primary-foreground" />
-            </div>
+            {brand.logoUrl ? (
+              <img src={brand.logoUrl} alt={brand.name} className="w-8 h-8 object-contain" />
+            ) : (
+              <div className="w-8 h-8 rounded bg-white/10 flex items-center justify-center">
+                <Shield className="w-4 h-4" style={{ color: `hsl(${brand.headerAccent})` }} />
+              </div>
+            )}
             <div>
-              <span className="font-bold text-sm tracking-tight text-foreground">GIA</span>
-              <span className="text-xs text-muted-foreground ml-2 hidden sm:inline">Proteção Veicular</span>
+              <span className="font-bold text-sm tracking-tight text-white">{brand.name}</span>
+              <span className="text-xs text-white/50 ml-2 hidden sm:inline">{brand.subtitle}</span>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-xs text-muted-foreground hidden md:block">{user?.email}</span>
-            <div className="h-4 w-px bg-border hidden md:block" />
+            <span className="text-xs text-white/50 hidden md:block">{user?.email}</span>
+            <div className="h-4 w-px bg-white/20 hidden md:block" />
             <Button
               variant="ghost"
               size="sm"
               onClick={signOut}
-              className="text-muted-foreground hover:text-foreground h-8 gap-1.5 text-xs"
+              className="text-white/60 hover:text-white hover:bg-white/10 h-8 gap-1.5 text-xs"
             >
               <LogOut className="h-3.5 w-3.5" />
               Sair

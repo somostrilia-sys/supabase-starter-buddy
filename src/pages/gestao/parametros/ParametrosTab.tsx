@@ -10,11 +10,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
-  Settings, DollarSign, Globe, PieChart, AlertTriangle, Shield, Landmark, Save,
+  Settings, DollarSign, Globe, PieChart, AlertTriangle, Shield, Landmark, Save, Palette,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useBrand } from "@/hooks/useBrand";
 
 export default function ParametrosTab() {
+  const { brand, updateBrand } = useBrand();
   // Gerais
   const [menuGestao, setMenuGestao] = useState(true);
   const [menuFinanceiro, setMenuFinanceiro] = useState(true);
