@@ -230,7 +230,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background">
       {/* ══════════ HEADER ══════════ */}
       <header className="border-b bg-card sticky top-0 z-20">
-        <div className="max-w-[1280px] mx-auto px-6 lg:px-8 h-14 flex items-center justify-between">
+        <div className="px-6 lg:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
               <Shield className="w-4 h-4 text-primary-foreground" />
@@ -256,7 +256,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="max-w-[1280px] mx-auto px-6 lg:px-8 py-8 space-y-10">
+      <div className="px-6 lg:px-8 py-8 space-y-10">
         {/* ══════════ PAGE TITLE ══════════ */}
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Painel Principal</h1>
