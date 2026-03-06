@@ -135,6 +135,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4 border-b border-sidebar-border" style={{ backgroundColor: `hsl(${brand.headerBg})` }}>
         <div className="flex items-center gap-2.5">
+          {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="h-8 object-contain shrink-0" />}
           {!collapsed && (
             <div className="flex flex-col">
               <span className="font-semibold text-sm text-white tracking-tight">

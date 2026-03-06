@@ -97,6 +97,7 @@ export default function GestaoModule() {
           <div className="h-5 w-px bg-white/20" />
 
           <div className="flex items-center gap-3">
+            {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="h-8 object-contain" />}
             <span className="font-semibold text-sm text-white">Gestão</span>
           </div>
 

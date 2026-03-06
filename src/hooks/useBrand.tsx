@@ -15,7 +15,7 @@ interface BrandConfig {
 const defaultBrand: BrandConfig = {
   name: "Objetivo Auto & Truck",
   subtitle: "Proteção Veicular",
-  logoUrl: "",
+  logoUrl: logoObjetiva,
   headerBg: "212 35% 18%",
   headerAccent: "210 55% 70%",
   tabBg: "210 30% 94%",
