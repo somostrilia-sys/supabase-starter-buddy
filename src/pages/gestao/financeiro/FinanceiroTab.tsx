@@ -33,21 +33,21 @@ export default function FinanceiroTab() {
         <h1 className="text-lg font-semibold">Financeiro / Fechamento</h1>
         <span className="text-sm text-muted-foreground ml-1">— Ciclo financeiro da associação</span>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 flex-1">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {actions.map((a) => (
           <button
             key={a.id}
             onClick={() => setView(a.id)}
-            className="group relative overflow-hidden rounded-xl border border-[hsl(210_30%_85%)] bg-[hsl(210_30%_97%)] text-left transition-all duration-200 hover:shadow-lg hover:shadow-[hsl(210_30%_80%)]/30 hover:-translate-y-0.5 hover:border-[hsl(210_30%_75%)]"
+            className="group relative overflow-hidden rounded-xl border border-[hsl(210_30%_85%)] bg-card text-left transition-all duration-200 hover:shadow-lg hover:shadow-[hsl(210_30%_80%)]/20 hover:-translate-y-0.5 hover:border-[hsl(210_35%_70%)]"
+            style={{ borderTop: '3px solid hsl(212 35% 25%)' }}
           >
-            <div className="h-2 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
-            <div className="flex items-center gap-5 px-7 py-6">
-              <div className="w-14 h-14 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shrink-0 shadow-md">
-                <a.icon className="h-6 w-6 text-[hsl(210_55%_70%)]" />
+            <div className="flex items-center gap-5 px-6 py-5">
+              <div className="w-12 h-12 rounded-full bg-[hsl(212_35%_18%)] flex items-center justify-center shrink-0 shadow-md">
+                <a.icon className="h-5 w-5 text-[hsl(210_55%_70%)]" />
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-[15px] text-foreground">{a.title}</h3>
-                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{a.desc}</p>
+                <p className="text-[13px] text-muted-foreground mt-0.5 leading-relaxed">{a.desc}</p>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
             </div>
