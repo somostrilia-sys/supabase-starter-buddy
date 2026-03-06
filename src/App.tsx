@@ -56,7 +56,7 @@ const queryClient = new QueryClient();
 const D = ({ children }: { children: React.ReactNode }) => (
   <ProtectedRoute>
     <div className="min-h-screen bg-background">
-      <main className="p-6 max-w-7xl mx-auto">{children}</main>
+      <main className="p-6">{children}</main>
     </div>
   </ProtectedRoute>
 );
