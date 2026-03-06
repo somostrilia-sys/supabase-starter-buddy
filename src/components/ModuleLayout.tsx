@@ -34,6 +34,7 @@ const financeiroItems = [
 ];
 
 const vendasItems = [
+  { title: "Dashboard", url: "/vendas/dashboard", icon: LayoutDashboard },
   { title: "Pipeline", url: "/vendas/pipeline", icon: Kanban },
   { title: "Contatos", url: "/vendas/contatos", icon: Contact },
   { title: "Atividades", url: "/vendas/atividades", icon: Activity },
