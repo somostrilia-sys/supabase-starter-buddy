@@ -41,15 +41,15 @@ export default function VeiculoTab() {
           <h1 className="text-lg font-semibold">Veículo</h1>
           <span className="text-sm text-muted-foreground ml-1">— Selecione a ação desejada</span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 flex-1 auto-rows-fr">
           {actions.map((a) => (
             <button
               key={a.id}
               onClick={() => setView(a.id)}
-              className="group relative overflow-hidden rounded-xl border border-[hsl(210_30%_85%)] bg-card text-left transition-all duration-200 hover:shadow-lg hover:shadow-[hsl(210_30%_80%)]/20 hover:-translate-y-0.5 hover:border-[hsl(210_35%_70%)]"
+              className="group relative overflow-hidden rounded-xl border border-[hsl(210_30%_85%)] bg-card text-left transition-all duration-200 hover:shadow-lg hover:shadow-[hsl(210_30%_80%)]/20 hover:-translate-y-0.5 hover:border-[hsl(210_35%_70%)] flex flex-col"
             >
               <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
-              <div className="flex items-center gap-5 px-6 py-5">
+              <div className="flex items-center gap-5 px-6 py-5 flex-1">
                 <div className="w-12 h-12 rounded-full bg-[hsl(212_35%_18%)] flex items-center justify-center shrink-0 shadow-md">
                   <a.icon className="h-5 w-5 text-[hsl(210_55%_70%)]" />
                 </div>
