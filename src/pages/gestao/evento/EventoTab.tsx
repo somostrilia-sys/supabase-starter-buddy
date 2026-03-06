@@ -280,24 +280,234 @@ export default function EventoTab() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog Detalhe */}
+      {/* Dialog Detalhe — Completo com abas */}
       <Dialog open={!!showDetalhe} onOpenChange={() => setShowDetalhe(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Evento {showDetalhe?.id}</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg">Evento {showDetalhe?.id}</DialogTitle>
+            {showDetalhe && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {showDetalhe.associado} — {showDetalhe.placa} — Protocolo <span className="font-bold">{showDetalhe.id}</span>
+              </p>
+            )}
+          </DialogHeader>
           {showDetalhe && (
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Tipo:</span><Badge variant="outline">{showDetalhe.tipo}</Badge></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Data:</span><span>{new Date(showDetalhe.data).toLocaleDateString("pt-BR")}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Associado:</span><span className="font-medium">{showDetalhe.associado}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Placa:</span><span className="font-mono">{showDetalhe.placa}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Status:</span><Badge className={statusColor[showDetalhe.status]}>{showDetalhe.status.replace("_", " ")}</Badge></div>
-              <div className="border-t pt-2"><p className="text-muted-foreground mb-1">Descrição:</p><p>{showDetalhe.descricao}</p></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Valor estimado:</span><span className="font-bold">R$ {showDetalhe.valorEstimado.toLocaleString("pt-BR")}</span></div>
-              {showDetalhe.valorAprovado !== null && <div className="flex justify-between"><span className="text-muted-foreground">Valor aprovado:</span><span className="font-bold text-green-600">R$ {showDetalhe.valorAprovado.toLocaleString("pt-BR")}</span></div>}
-              <div className="flex justify-between"><span className="text-muted-foreground">Incluído no rateio:</span><span>{showDetalhe.rateio ? "Sim" : "Não"}</span></div>
-            </div>
+            <Tabs defaultValue="info" className="mt-2">
+              <TabsList className="flex-wrap h-auto gap-1">
+                <TabsTrigger value="info">Informações Gerais</TabsTrigger>
+                <TabsTrigger value="ocorrencia">Dados Ocorrência</TabsTrigger>
+                <TabsTrigger value="analise">Análise</TabsTrigger>
+                <TabsTrigger value="reparo">Reparo do Veículo</TabsTrigger>
+                <TabsTrigger value="terceiro">Reparo Veículo Terceiro</TabsTrigger>
+                <TabsTrigger value="patrimonial">Reparo Patrimonial</TabsTrigger>
+                <TabsTrigger value="rateio-param">Parâmetros Rateio</TabsTrigger>
+                <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
+              </TabsList>
+
+              {/* ── INFORMAÇÕES GERAIS ── */}
+              <TabsContent value="info" className="space-y-4 mt-4">
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Dados do Evento</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div><Label className="text-xs">Código</Label><Input value={showDetalhe.id} readOnly /></div>
+                    <div><Label className="text-xs">Tipo</Label><Input value={showDetalhe.tipo} readOnly /></div>
+                    <div><Label className="text-xs">Data Evento</Label><Input value={new Date(showDetalhe.data).toLocaleDateString("pt-BR")} readOnly /></div>
+                    <div><Label className="text-xs">Status</Label>
+                      <Select defaultValue={showDetalhe.status}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{statusEvento.map(s => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}</SelectContent></Select>
+                    </div>
+                    <div><Label className="text-xs">Rateio</Label><Input value={showDetalhe.rateio ? "Sim" : "Não"} readOnly /></div>
+                    <div><Label className="text-xs">Data Cadastro</Label><Input value={new Date(showDetalhe.data).toLocaleDateString("pt-BR")} readOnly /></div>
+                  </div>
+                </div>
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Associado / Veículo</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div><Label className="text-xs">Associado</Label><Input value={showDetalhe.associado} readOnly /></div>
+                    <div><Label className="text-xs">Placa</Label><Input value={showDetalhe.placa} readOnly /></div>
+                    <div><Label className="text-xs">CPF</Label><Input value="000.000.000-00" readOnly /></div>
+                    <div><Label className="text-xs">Regional</Label><Input value="São Paulo" readOnly /></div>
+                    <div><Label className="text-xs">Cooperativa</Label><Input value="Cooperativa Central" readOnly /></div>
+                    <div><Label className="text-xs">Produto</Label><Input value="Proteção Total" readOnly /></div>
+                  </div>
+                </div>
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Descrição Evento (Controle Interno)</h4>
+                  <Textarea rows={4} defaultValue={showDetalhe.descricao} />
+                </div>
+              </TabsContent>
+
+              {/* ── DADOS OCORRÊNCIA ── */}
+              <TabsContent value="ocorrencia" className="space-y-4 mt-4">
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Local e Circunstâncias</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div><Label className="text-xs">Endereço</Label><Input placeholder="Rua / Avenida" /></div>
+                    <div><Label className="text-xs">Cidade</Label><Input placeholder="Cidade" /></div>
+                    <div><Label className="text-xs">UF</Label><Input placeholder="SP" /></div>
+                    <div><Label className="text-xs">CEP</Label><Input placeholder="00000-000" /></div>
+                    <div><Label className="text-xs">Data/Hora Ocorrência</Label><Input type="datetime-local" /></div>
+                    <div><Label className="text-xs">Boletim de Ocorrência</Label><Input placeholder="Nº B.O." /></div>
+                  </div>
+                </div>
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Relato da Ocorrência</h4>
+                  <Textarea rows={5} placeholder="Descreva os detalhes da ocorrência..." />
+                </div>
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Testemunhas</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><Label className="text-xs">Nome Testemunha 1</Label><Input /></div>
+                    <div><Label className="text-xs">Telefone</Label><Input /></div>
+                    <div><Label className="text-xs">Nome Testemunha 2</Label><Input /></div>
+                    <div><Label className="text-xs">Telefone</Label><Input /></div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* ── ANÁLISE ── */}
+              <TabsContent value="analise" className="space-y-4 mt-4">
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Parecer Técnico</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><Label className="text-xs">Analista Responsável</Label><Input placeholder="Nome do analista" /></div>
+                    <div><Label className="text-xs">Data Análise</Label><Input type="date" /></div>
+                  </div>
+                  <div className="mt-3"><Label className="text-xs">Parecer</Label><Textarea rows={4} placeholder="Parecer técnico da análise..." /></div>
+                </div>
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Documentos Anexados</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2"><Checkbox id="doc-bo" /><Label htmlFor="doc-bo">Boletim de Ocorrência</Label></div>
+                    <div className="flex items-center gap-2"><Checkbox id="doc-cnh" /><Label htmlFor="doc-cnh">CNH do Condutor</Label></div>
+                    <div className="flex items-center gap-2"><Checkbox id="doc-fotos" /><Label htmlFor="doc-fotos">Fotos do Veículo</Label></div>
+                    <div className="flex items-center gap-2"><Checkbox id="doc-laudo" /><Label htmlFor="doc-laudo">Laudo Pericial</Label></div>
+                    <div className="flex items-center gap-2"><Checkbox id="doc-nf" /><Label htmlFor="doc-nf">Nota Fiscal Reparo</Label></div>
+                    <div className="flex items-center gap-2"><Checkbox id="doc-orc" /><Label htmlFor="doc-orc">Orçamento</Label></div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* ── REPARO DO VEÍCULO ── */}
+              <TabsContent value="reparo" className="space-y-4 mt-4">
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Situação Reparo</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><Label className="text-xs">Situação do Item</Label>
+                      <Select defaultValue="pendente"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pendente">Documentação Pendente</SelectItem><SelectItem value="em_reparo">Em Reparo</SelectItem><SelectItem value="concluido">Concluído</SelectItem><SelectItem value="aguardando_peca">Aguardando Peça</SelectItem></SelectContent></Select>
+                    </div>
+                    <div><Label className="text-xs">Oficina / Fornecedor</Label><Input placeholder="Nome da oficina" /></div>
+                  </div>
+                </div>
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Custo</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div><Label className="text-xs">Valor Estimado (R$)</Label><Input type="number" defaultValue={showDetalhe.valorEstimado} /></div>
+                    <div><Label className="text-xs">Valor Aprovado (R$)</Label><Input type="number" defaultValue={showDetalhe.valorAprovado ?? ""} /></div>
+                    <div><Label className="text-xs">Valor Final (R$)</Label><Input type="number" placeholder="0.00" /></div>
+                    <div><Label className="text-xs">Mão de Obra (R$)</Label><Input type="number" placeholder="0.00" /></div>
+                    <div><Label className="text-xs">Peças (R$)</Label><Input type="number" placeholder="0.00" /></div>
+                    <div><Label className="text-xs">Outros (R$)</Label><Input type="number" placeholder="0.00" /></div>
+                  </div>
+                </div>
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Datas</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div><Label className="text-xs">Entrada na Oficina</Label><Input type="date" /></div>
+                    <div><Label className="text-xs">Previsão Entrega</Label><Input type="date" /></div>
+                    <div><Label className="text-xs">Entrega Real</Label><Input type="date" /></div>
+                  </div>
+                </div>
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Condutor no Momento</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><Label className="text-xs">Nome</Label><Input /></div>
+                    <div><Label className="text-xs">CPF</Label><Input /></div>
+                    <div><Label className="text-xs">CNH</Label><Input /></div>
+                    <div><Label className="text-xs">Categoria</Label><Input /></div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* ── REPARO VEÍCULO TERCEIRO ── */}
+              <TabsContent value="terceiro" className="space-y-4 mt-4">
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Dados do Terceiro</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div><Label className="text-xs">Nome</Label><Input /></div>
+                    <div><Label className="text-xs">CPF/CNPJ</Label><Input /></div>
+                    <div><Label className="text-xs">Telefone</Label><Input /></div>
+                    <div><Label className="text-xs">Placa Terceiro</Label><Input /></div>
+                    <div><Label className="text-xs">Marca/Modelo</Label><Input /></div>
+                    <div><Label className="text-xs">Seguradora</Label><Input /></div>
+                  </div>
+                </div>
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Custo Terceiro</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div><Label className="text-xs">Valor Estimado (R$)</Label><Input type="number" placeholder="0.00" /></div>
+                    <div><Label className="text-xs">Valor Aprovado (R$)</Label><Input type="number" placeholder="0.00" /></div>
+                    <div><Label className="text-xs">Valor Pago (R$)</Label><Input type="number" placeholder="0.00" /></div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* ── REPARO PATRIMONIAL ── */}
+              <TabsContent value="patrimonial" className="space-y-4 mt-4">
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Danos Patrimoniais</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><Label className="text-xs">Tipo do Patrimônio</Label>
+                      <Select><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="muro">Muro/Parede</SelectItem><SelectItem value="poste">Poste</SelectItem><SelectItem value="guardrail">Guardrail</SelectItem><SelectItem value="outro">Outro</SelectItem></SelectContent></Select>
+                    </div>
+                    <div><Label className="text-xs">Proprietário</Label><Input /></div>
+                    <div><Label className="text-xs">Valor Estimado (R$)</Label><Input type="number" placeholder="0.00" /></div>
+                    <div><Label className="text-xs">Valor Aprovado (R$)</Label><Input type="number" placeholder="0.00" /></div>
+                  </div>
+                  <div className="mt-3"><Label className="text-xs">Descrição do Dano</Label><Textarea rows={3} /></div>
+                </div>
+              </TabsContent>
+
+              {/* ── PARÂMETROS RATEIO ── */}
+              <TabsContent value="rateio-param" className="space-y-4 mt-4">
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Configuração de Rateio</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2"><Checkbox id="inc-rateio" defaultChecked={showDetalhe.rateio} /><Label htmlFor="inc-rateio">Incluir no rateio mensal</Label></div>
+                    <div><Label className="text-xs">Período de Referência</Label><Input defaultValue="07/2025" /></div>
+                    <div><Label className="text-xs">Percentual de Participação (%)</Label><Input type="number" defaultValue="100" /></div>
+                    <div><Label className="text-xs">Nº de Parcelas</Label><Input type="number" defaultValue="1" /></div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* ── FINANCEIRO ── */}
+              <TabsContent value="financeiro" className="space-y-4 mt-4">
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Resumo Financeiro</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center p-3 bg-background border"><p className="text-xs text-muted-foreground">Estimado</p><p className="text-lg font-bold">R$ {showDetalhe.valorEstimado.toLocaleString("pt-BR")}</p></div>
+                    <div className="text-center p-3 bg-background border"><p className="text-xs text-muted-foreground">Aprovado</p><p className="text-lg font-bold text-green-600">R$ {(showDetalhe.valorAprovado ?? 0).toLocaleString("pt-BR")}</p></div>
+                    <div className="text-center p-3 bg-background border"><p className="text-xs text-muted-foreground">Pago</p><p className="text-lg font-bold text-primary">R$ 0</p></div>
+                    <div className="text-center p-3 bg-background border"><p className="text-xs text-muted-foreground">Saldo</p><p className="text-lg font-bold text-destructive">R$ {showDetalhe.valorEstimado.toLocaleString("pt-BR")}</p></div>
+                  </div>
+                </div>
+                <div className="bg-muted/50 border-l-4 border-primary p-4">
+                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Pagamentos</h4>
+                  <Table>
+                    <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Tipo</TableHead><TableHead>Favorecido</TableHead><TableHead className="text-right">Valor</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">Nenhum pagamento registrado</TableCell></TableRow>
+                    </TableBody>
+                  </Table>
+                  <div className="mt-3"><Button size="sm" variant="outline"><Plus className="h-4 w-4" />Registrar Pagamento</Button></div>
+                </div>
+              </TabsContent>
+            </Tabs>
           )}
-          <DialogFooter><Button variant="outline" onClick={() => setShowDetalhe(null)}>Fechar</Button></DialogFooter>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setShowDetalhe(null)}>Fechar</Button>
+            <Button onClick={() => { toast.success("Evento salvo"); setShowDetalhe(null); }}>Salvar Alterações</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

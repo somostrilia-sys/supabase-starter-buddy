@@ -33,21 +33,21 @@ export default function CadastroTab() {
           <h1 className="text-lg font-semibold">Cadastro</h1>
           <span className="text-sm text-muted-foreground ml-1">— Configurações e cadastros do sistema</span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1">
           {actions.map((a) => (
             <button
               key={a.id}
               onClick={() => setView(a.id)}
-              className="group flex items-center gap-5 border bg-card px-6 py-6 text-left hover:bg-muted/40 hover:border-primary/30 transition-colors min-h-[100px]"
+              className="group flex items-center gap-6 border-2 border-muted-foreground/30 bg-card px-8 py-8 text-left hover:bg-muted/40 hover:border-primary/40 transition-colors min-h-[130px]"
             >
-              <div className="w-12 h-12 bg-muted flex items-center justify-center shrink-0">
-                <a.icon className="h-5 w-5 text-muted-foreground" />
+              <div className="w-16 h-16 bg-muted flex items-center justify-center shrink-0">
+                <a.icon className="h-7 w-7 text-muted-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm">{a.title}</h3>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{a.desc}</p>
+                <h3 className="font-semibold text-base">{a.title}</h3>
+                <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{a.desc}</p>
               </div>
-              <ChevronRight className="h-5 w-5 text-border group-hover:text-foreground shrink-0" />
+              <ChevronRight className="h-6 w-6 text-muted-foreground/40 group-hover:text-foreground shrink-0" />
             </button>
           ))}
         </div>
