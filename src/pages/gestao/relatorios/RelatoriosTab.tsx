@@ -507,8 +507,8 @@ export default function RelatoriosTab() {
                 onClick={() => setOutroAtivo(r.id)}
                 className={`group flex items-center gap-5 border-2 bg-card px-6 py-6 text-left hover:bg-muted/40 hover:border-primary/40 transition-colors min-h-[100px] ${outroAtivo === r.id ? "border-primary" : "border-muted-foreground/30"}`}
               >
-                <div className="w-14 h-14 bg-muted flex items-center justify-center shrink-0">
-                  <r.icon className="h-6 w-6 text-muted-foreground" />
+                <div className="w-14 h-14 bg-[hsl(210_30%_94%)] flex items-center justify-center shrink-0">
+                  <r.icon className="h-6 w-6 text-[hsl(210_40%_50%)]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-base font-listing">{r.label}</h3>
