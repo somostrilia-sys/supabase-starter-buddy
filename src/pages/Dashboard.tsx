@@ -32,7 +32,7 @@ const modules = [
     title: "Financeiro",
     subtitle: "Fluxo diário, boletos e conciliação",
     icon: DollarSign,
-    route: "/financeiro/fluxo-diario",
+    route: "/financeiro",
     color: "hsl(var(--financeiro))",
   },
   {
@@ -381,7 +381,7 @@ export default function Dashboard() {
           title="Financeiro"
           color="hsl(var(--financeiro))"
           action="Abrir módulo"
-          onAction={() => navigate("/financeiro/fluxo-diario")}
+          onAction={() => navigate("/financeiro")}
         >
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard
