@@ -120,7 +120,7 @@ function FilterSection({
                   onCheckedChange={() => onToggle(item)}
                   className="h-4 w-4"
                 />
-                <span className={`text-xs font-listing ${isChecked ? "text-success font-semibold" : "text-foreground"}`}>
+                <span className={`text-xs font-listing ${isChecked ? "text-primary font-medium" : "text-muted-foreground"}`}>
                   {item}
                 </span>
               </label>
@@ -333,7 +333,7 @@ export default function RelatoriosTab() {
                   {allColumns.map(c => (
                     <label key={c.key} className="inline-flex items-center gap-2 cursor-pointer py-0.5">
                       <Checkbox checked={selectedCols.includes(c.key)} onCheckedChange={() => toggleCol(c.key)} className="h-4 w-4" />
-                      <span className={`text-xs font-listing ${selectedCols.includes(c.key) ? "text-success font-semibold" : "text-foreground"}`}>{c.label}</span>
+                      <span className={`text-xs font-listing ${selectedCols.includes(c.key) ? "text-primary font-medium" : "text-muted-foreground"}`}>{c.label}</span>
                     </label>
                   ))}
                 </div>
