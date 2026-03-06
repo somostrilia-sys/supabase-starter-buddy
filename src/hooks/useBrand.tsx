@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from "react";
-import logoObjetiva from "@/assets/logo-objetiva.jpg";
+import logoObjetiva from "@/assets/logo-objetiva.png";
 
 interface BrandConfig {
   name: string;
