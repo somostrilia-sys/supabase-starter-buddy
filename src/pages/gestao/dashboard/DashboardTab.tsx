@@ -56,13 +56,11 @@ export default function DashboardTab() {
         {kpis.map((kpi) => {
           const isPositive = kpi.trend >= 0;
           return (
-            <Card key={kpi.title} className="border-0 shadow-sm hover:shadow-md transition-shadow">
+            <Card key={kpi.title} className="shadow-none">
               <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <kpi.icon className="w-4 h-4 text-primary" />
-                  </div>
-                  <span className={`text-xs font-semibold flex items-center gap-0.5 ${isPositive ? "text-green-600" : "text-red-500"}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <kpi.icon className="w-4 h-4 text-muted-foreground" />
+                  <span className={`text-xs font-medium flex items-center gap-0.5 ${isPositive ? "text-accent" : "text-destructive"}`}>
                     {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                     {isPositive ? "+" : ""}{kpi.trend}%
                   </span>
@@ -77,8 +75,7 @@ export default function DashboardTab() {
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Boletos Gerados vs Recebidos */}
-        <Card className="lg:col-span-2 border-0 shadow-sm">
+        <Card className="lg:col-span-2 shadow-none">
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
               <div>
@@ -94,18 +91,15 @@ export default function DashboardTab() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="semana" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                />
-                <Bar dataKey="gerados" name="Gerados" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="recebidos" name="Recebidos" fill="hsl(142 71% 45%)" radius={[4, 4, 0, 0]} />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 12 }} />
+                <Bar dataKey="gerados" name="Gerados" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="recebidos" name="Recebidos" fill="hsl(var(--accent))" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Participação no Fechamento */}
-        <Card className="border-0 shadow-sm">
+        <Card className="shadow-none">
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
               <div>
@@ -118,22 +112,12 @@ export default function DashboardTab() {
           <CardContent className="flex flex-col items-center pb-3">
             <ResponsiveContainer width="100%" height={180}>
               <RechartsPie>
-                <Pie
-                  data={fechamentoData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={80}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
+                <Pie data={fechamentoData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value">
                   {fechamentoData.map((entry, i) => (
                     <Cell key={i} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 12 }} />
               </RechartsPie>
             </ResponsiveContainer>
             <div className="flex gap-4 mt-1">
@@ -152,8 +136,7 @@ export default function DashboardTab() {
 
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Veículos cadastrados na semana */}
-        <Card className="border-0 shadow-sm">
+        <Card className="shadow-none">
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
               <div>
@@ -169,17 +152,14 @@ export default function DashboardTab() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="dia" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                />
-                <Bar dataKey="cadastrados" name="Cadastrados" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 12 }} />
+                <Bar dataKey="cadastrados" name="Cadastrados" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Recebimento do dia (por hora) */}
-        <Card className="border-0 shadow-sm">
+        <Card className="shadow-none">
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
               <div>
@@ -196,18 +176,18 @@ export default function DashboardTab() {
               <AreaChart data={recebimentoDiarioData}>
                 <defs>
                   <linearGradient id="recebGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(142 71% 45%)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(142 71% 45%)" stopOpacity={0} />
+                    <stop offset="5%" stopColor="hsl(var(--accent))" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="hsl(var(--accent))" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="hora" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
                 <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 12 }}
                   formatter={(value: number) => [`R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, "Valor"]}
                 />
-                <Area type="monotone" dataKey="valor" stroke="hsl(142 71% 45%)" fill="url(#recebGrad)" strokeWidth={2} />
+                <Area type="monotone" dataKey="valor" stroke="hsl(var(--accent))" fill="url(#recebGrad)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
