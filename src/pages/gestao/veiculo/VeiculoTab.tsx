@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   Car, CarFront, Search, UserPlus, ClipboardCheck, BarChart3,
-  ArrowLeft, ChevronRight, Link2, RefreshCw,
+  ArrowLeft, ChevronRight, Link2, RefreshCw, User, CheckCircle, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CadastrarVeiculo from "./CadastrarVeiculo";
@@ -11,16 +11,22 @@ import CadastrarVistoria from "./CadastrarVistoria";
 import RelatoriosVeiculo from "./RelatoriosVeiculo";
 import ConsultarAgregado from "./ConsultarAgregado";
 import GestaoAgregados from "./GestaoAgregados";
+import Condutor from "./Condutor";
+import Proprietario from "./Proprietario";
+import AprovarCadastro from "./AprovarCadastro";
 
-type View = "menu" | "cadastrar" | "consultar" | "agregado" | "vistoria" | "relatorios" | "consultar-agregado" | "gestao-agregados";
+type View = "menu" | "cadastrar" | "consultar" | "agregado" | "vistoria" | "relatorios" | "consultar-agregado" | "gestao-agregados" | "condutor" | "proprietario" | "aprovar-cadastro";
 
 const actions = [
   { id: "cadastrar" as const, title: "Cadastrar Veículo", desc: "Cadastro completo com consulta FIPE integrada e vinculação ao associado", icon: CarFront, color: "from-emerald-500 to-emerald-600" },
-  { id: "consultar" as const, title: "Consultar / Alterar Veículo", desc: "Busca por placa, chassi ou associado com edição e histórico de alterações", icon: Search, color: "from-blue-500 to-blue-600" },
+  { id: "consultar" as const, title: "Consultar / Alterar Veículo", desc: "Busca por placa, chassi ou associado com edição e histórico", icon: Search, color: "from-blue-500 to-blue-600" },
   { id: "agregado" as const, title: "Cadastrar Agregado", desc: "Cadastro completo de veículo agregado vinculado a um veículo principal", icon: UserPlus, color: "from-amber-500 to-amber-600" },
   { id: "consultar-agregado" as const, title: "Consultar / Alterar Agregado", desc: "Busca, edição e histórico financeiro de veículos agregados", icon: Search, color: "from-orange-500 to-orange-600" },
   { id: "gestao-agregados" as const, title: "Gestão de Agregados", desc: "Vincular, transformar veículo em agregado e vice-versa", icon: RefreshCw, color: "from-purple-500 to-purple-600" },
-  { id: "vistoria" as const, title: "Cadastrar Vistoria", desc: "Registrar vistoria com checklist, resultado e fotos", icon: ClipboardCheck, color: "from-indigo-500 to-indigo-600" },
+  { id: "condutor" as const, title: "Condutor", desc: "Cadastrar, consultar, vincular e classificar condutores", icon: Users, color: "from-cyan-500 to-cyan-600" },
+  { id: "proprietario" as const, title: "Proprietário", desc: "CRUD completo de proprietários de veículos", icon: User, color: "from-teal-500 to-teal-600" },
+  { id: "aprovar-cadastro" as const, title: "Aprovar Cadastro", desc: "Aprovação e negação em lote de cadastros de veículos", icon: CheckCircle, color: "from-green-500 to-green-600" },
+  { id: "vistoria" as const, title: "Cadastrar Vistoria", desc: "Registrar vistoria com checklist, acessórios, avarias e fotos", icon: ClipboardCheck, color: "from-indigo-500 to-indigo-600" },
   { id: "relatorios" as const, title: "Relatórios de Veículo", desc: "Relatórios de alterações, geral de veículos e vinculação financeira", icon: BarChart3, color: "from-rose-500 to-rose-600" },
 ];
 
@@ -71,6 +77,9 @@ export default function VeiculoTab() {
       {view === "agregado" && <CadastrarAgregado />}
       {view === "consultar-agregado" && <ConsultarAgregado />}
       {view === "gestao-agregados" && <GestaoAgregados />}
+      {view === "condutor" && <Condutor />}
+      {view === "proprietario" && <Proprietario />}
+      {view === "aprovar-cadastro" && <AprovarCadastro />}
       {view === "vistoria" && <CadastrarVistoria />}
       {view === "relatorios" && <RelatoriosVeiculo />}
     </div>
