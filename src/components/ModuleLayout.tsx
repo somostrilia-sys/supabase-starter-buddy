@@ -9,7 +9,7 @@ import {
   DollarSign, Wallet, Receipt, ArrowLeftRight, BarChart3,
   Target, Kanban, Contact, Activity, CalendarDays, Crosshair,
   Tag, FileSpreadsheet, Upload, UsersRound, Building,
-  LayoutDashboard, LogOut, ChevronLeft,
+  LayoutDashboard, LogOut, ChevronLeft, Globe,
 } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
@@ -39,6 +39,8 @@ const vendasItems = [
   { title: "Atividades", url: "/vendas/atividades", icon: Activity },
   { title: "Calendário", url: "/vendas/calendario", icon: CalendarDays },
   { title: "Metas", url: "/vendas/metas", icon: Crosshair },
+  { title: "Vistorias", url: "/vendas/vistorias", icon: ClipboardCheck },
+  { title: "Landing Pages", url: "/vendas/landing-pages", icon: Globe },
   { title: "Tags", url: "/vendas/tags", icon: Tag },
   { title: "Formulários", url: "/vendas/formularios", icon: FileSpreadsheet },
   { title: "Importar Leads", url: "/vendas/importar", icon: Upload },

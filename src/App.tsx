@@ -45,6 +45,8 @@ import NegociacaoDetalhe from "./pages/vendas/NegociacaoDetalhe";
 import Atividades from "./pages/vendas/Atividades";
 import Calendario from "./pages/vendas/Calendario";
 import Afiliados from "./pages/vendas/Afiliados";
+import VistoriasVendas from "./pages/vendas/VistoriasVendas";
+import LandingPages from "./pages/vendas/LandingPages";
 import RelatoriosVendas from "./pages/vendas/RelatoriosVendas";
 import FinanceiroVendas from "./pages/vendas/Financeiro";
 import FerramentasVendas from "./pages/vendas/FerramentasVendas";
@@ -118,6 +120,8 @@ const App = () => (
             <Route path="/vendas/formularios" element={<M><Formularios /></M>} />
             <Route path="/vendas/importar" element={<M><ImportarLeads /></M>} />
             <Route path="/vendas/afiliados" element={<M><Afiliados /></M>} />
+            <Route path="/vendas/vistorias" element={<M><VistoriasVendas /></M>} />
+            <Route path="/vendas/landing-pages" element={<M><LandingPages /></M>} />
             <Route path="/vendas/relatorios" element={<M><RelatoriosVendas /></M>} />
             <Route path="/vendas/financeiro" element={<M><FinanceiroVendas /></M>} />
             <Route path="/vendas/ferramentas" element={<M><FerramentasVendas /></M>} />
