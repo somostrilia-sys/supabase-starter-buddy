@@ -56,6 +56,7 @@ export default function GestaoModule() {
       case "financeiro": return <FinanceiroTab />;
       case "fornecedor": return <FornecedorTab />;
       case "evento": return <EventoTab />;
+      case "rateio": return <RateioTab />;
       case "relatorios": return <RelatoriosTab />;
       case "documentacao": return <DocumentacaoTab />;
       case "area-cliente": return <AreaClienteTab />;
