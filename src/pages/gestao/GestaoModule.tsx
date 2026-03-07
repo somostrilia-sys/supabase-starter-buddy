@@ -7,9 +7,10 @@ import { useBrand } from "@/hooks/useBrand";
 import {
   Users, Car, ClipboardList, Wrench, SlidersHorizontal,
   DollarSign, Truck, AlertTriangle, BarChart3, FileText,
-  Globe, ChevronLeft, LayoutDashboard, LogOut, Shield,
+  Globe, ChevronLeft, LayoutDashboard, LogOut, Shield, Calculator,
 } from "lucide-react";
 import DashboardTab from "./dashboard/DashboardTab";
+import RateioTab from "./rateio/RateioTab";
 import AssociadoTab from "./associado/AssociadoTab";
 import VeiculoTab from "./veiculo/VeiculoTab";
 import CadastroTab from "./cadastro/CadastroTab";
