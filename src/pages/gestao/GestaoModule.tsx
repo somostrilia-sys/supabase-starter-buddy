@@ -33,6 +33,7 @@ const gestaoTabs = [
   { id: "financeiro", label: "Financeiro", icon: DollarSign },
   { id: "fornecedor", label: "Fornecedor", icon: Truck },
   { id: "evento", label: "Evento", icon: AlertTriangle },
+  { id: "rateio", label: "Rateio", icon: Calculator },
   { id: "relatorios", label: "Relatórios", icon: BarChart3 },
   { id: "documentacao", label: "Documentação", icon: FileText },
   { id: "area-cliente", label: "Área do Cliente", icon: Globe },
