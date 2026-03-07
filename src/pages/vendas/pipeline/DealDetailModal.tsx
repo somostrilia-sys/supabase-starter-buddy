@@ -71,47 +71,9 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
 
           <ScrollArea className="flex-1 px-6 py-4">
             {/* TAB 1 - Cotação */}
-            <TabsContent value="cotacao" className="mt-0 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Plano</Label>
-                  <Select defaultValue={deal.plano}><SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
-                    <SelectContent>{planos.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Valor FIPE</Label><Input className="rounded-none" defaultValue="R$ 85.000,00" /></div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Valor Protegido</Label><Input className="rounded-none" defaultValue="R$ 85.000,00" /></div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Cidade Circulação</Label><Input className="rounded-none" defaultValue="São Paulo - SP" /></div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Parcelas Adesão</Label><Input className="rounded-none" type="number" defaultValue={3} /></div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Desconto (%)</Label><Input className="rounded-none" type="number" defaultValue={0} /></div>
-              </div>
-              <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Opcionais/Implementos</Label>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  {["Vidros", "Faróis", "Rodas Liga Leve", "Película", "Multimídia"].map(o => (
-                    <label key={o} className="flex items-center gap-1.5 px-2 py-1 border cursor-pointer hover:bg-muted font-['Source_Serif_4']">
-                      <input type="checkbox" className="rounded-none" />{o}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Observação Interna</Label><Textarea className="rounded-none" rows={2} /></div>
-              <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Observação Contrato</Label><Textarea className="rounded-none" rows={2} /></div>
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" className="rounded-none bg-green-600 hover:bg-green-700 text-white"><MessageSquare className="h-3.5 w-3.5 mr-1" />Enviar WhatsApp</Button>
-                <Button size="sm" variant="outline" className="rounded-none"><Mail className="h-3.5 w-3.5 mr-1" />Enviar PDF Email</Button>
-                <Button size="sm" variant="outline" className="rounded-none">Gerar Link</Button>
-              </div>
-              <div className="flex items-center gap-6 pt-2">
-                <div className="flex items-center gap-2"><Switch checked={cotacaoPronta} onCheckedChange={setCotacaoPronta} /><span className="text-sm font-['Source_Serif_4']">Cotação Pronta / Comparativo</span></div>
-                <div className="flex items-center gap-2"><Switch checked={clienteAlteraPlano} onCheckedChange={setClienteAlteraPlano} /><span className="text-sm font-['Source_Serif_4']">Cliente pode alterar plano</span></div>
-              </div>
-              <div className="flex items-center gap-3 pt-2">
-                <span className="text-sm text-muted-foreground font-['Source_Serif_4']">Status Aceite:</span>
-                <Badge variant="outline" className="text-amber-600 border-amber-300 rounded-none">Pendente</Badge>
-              </div>
-              <Button variant="outline" className="rounded-none"><Download className="h-3.5 w-3.5 mr-1" />Gerar Contrato PDF</Button>
+            <TabsContent value="cotacao" className="mt-0">
+              <CotacaoTab deal={deal} />
             </TabsContent>
-
-            {/* TAB 2 - Associado */}
             <TabsContent value="associado" className="mt-0">
               <AssociadoTab deal={deal} />
             </TabsContent>
