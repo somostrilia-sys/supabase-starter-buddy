@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PipelineDeal, mockActivities, planos } from "./mockData";
+import AssociadoTab from "./AssociadoTab";
 import {
   FileText, User, Car, ClipboardCheck, Send, Activity,
   Phone, Mail, MessageSquare, Video, Plus, Download, CheckCircle, XCircle,
@@ -110,26 +111,8 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
             </TabsContent>
 
             {/* TAB 2 - Associado */}
-            <TabsContent value="associado" className="mt-0 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  ["Nome", deal.lead_nome], ["CPF/CNPJ", deal.cpf_cnpj], ["RG", "12.345.678-9"],
-                  ["Data Nascimento", "1990-05-15", "date"], ["Celular/WhatsApp", deal.telefone], ["Email", deal.email],
-                  ["CEP", "01310-100"], ["Bairro", "Bela Vista"], ["Cidade", "São Paulo"], ["Estado", "SP"],
-                ].map(([label, val, type]) => (
-                  <div key={label as string} className="space-y-1.5">
-                    <Label className="font-['Source_Serif_4']">{label as string}</Label>
-                    <Input className="rounded-none font-['Source_Serif_4']" type={(type as string) || "text"} defaultValue={val as string} />
-                  </div>
-                ))}
-                <div className="col-span-2 space-y-1.5"><Label className="font-['Source_Serif_4']">Logradouro</Label><Input className="rounded-none font-['Source_Serif_4']" defaultValue="Av. Paulista, 1000 - Sala 301" /></div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Sexo</Label>
-                  <Select defaultValue="M"><SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="M">Masculino</SelectItem><SelectItem value="F">Feminino</SelectItem></SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Data 1ª Habilitação</Label><Input className="rounded-none" type="date" defaultValue="2010-03-20" /></div>
-              </div>
+            <TabsContent value="associado" className="mt-0">
+              <AssociadoTab deal={deal} />
             </TabsContent>
 
             {/* TAB 3 - Veículo + planos + envio */}
