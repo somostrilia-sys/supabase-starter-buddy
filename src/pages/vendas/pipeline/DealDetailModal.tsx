@@ -127,7 +127,12 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
               <AssinaturaTab deal={deal} />
             </TabsContent>
 
-            {/* TAB 6 - SGA */}
+            {/* TAB 6 - Financeiro */}
+            <TabsContent value="financeiro" className="mt-0">
+              <FinanceiroNegociacaoTab deal={deal} />
+            </TabsContent>
+
+            {/* TAB 7 - SGA */}
             <TabsContent value="sga" className="mt-0 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Regional SGA</Label>
