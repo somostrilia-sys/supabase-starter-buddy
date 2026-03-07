@@ -45,6 +45,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
     { v: "veiculo", l: "Veículo", i: Car },
     { v: "vistoria", l: "Vistoria", i: ClipboardCheck },
     { v: "assinatura", l: "Assinatura", i: PenTool },
+    { v: "financeiro", l: "Financeiro", i: Wallet },
     { v: "sga", l: "SGA", i: Send },
     { v: "atividades", l: "Atividades", i: Activity },
   ];
