@@ -128,13 +128,14 @@ export default function DashboardVendas() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
         {[
           { label: "Total Leads", value: totalLeads.toString(), icon: Users, color: "text-[hsl(212,55%,40%)]", bg: "bg-[hsl(212,55%,95%)]" },
           { label: "Propostas Enviadas", value: propostas.toString(), icon: FileText, color: "text-[hsl(38,90%,45%)]", bg: "bg-[hsl(38,90%,95%)]" },
           { label: "Contratos Fechados", value: contratos.toString(), icon: Handshake, color: "text-[hsl(142,50%,35%)]", bg: "bg-[hsl(142,50%,95%)]" },
           { label: "Faturamento Total", value: `R$ ${faturamento.toLocaleString("pt-BR")}`, icon: DollarSign, color: "text-[hsl(212,35%,25%)]", bg: "bg-[hsl(210,30%,94%)]" },
           { label: "Taxa de Conversão", value: `${conversao}%`, icon: TrendingUp, color: "text-[hsl(142,50%,35%)]", bg: "bg-[hsl(142,50%,95%)]" },
+          { label: "Comissões do Mês", value: "R$ 7.950", icon: ArrowRightLeft, color: "text-[hsl(152,50%,35%)]", bg: "bg-[hsl(152,50%,95%)]" },
         ].map(c => (
           <Card key={c.label}>
             <CardContent className="p-4">

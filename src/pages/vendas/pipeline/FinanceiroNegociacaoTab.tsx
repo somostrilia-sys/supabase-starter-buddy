@@ -106,6 +106,32 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
         </div>
       </fieldset>
 
+      {/* Split de Pagamento */}
+      <fieldset className="space-y-3">
+        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">SPLIT DE PAGAMENTO (COMISSÃO)</legend>
+        <div className="p-4 rounded border bg-muted/30 space-y-2">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center p-3 rounded bg-background border">
+              <p className="text-[10px] text-muted-foreground uppercase">Valor Total Adesão</p>
+              <p className="text-lg font-bold font-['Source_Serif_4'] text-[#1A3A5C]">{fmt(taxaAdesao)}</p>
+            </div>
+            <div className="text-center p-3 rounded bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
+              <p className="text-[10px] text-muted-foreground uppercase">Comissão Consultor</p>
+              <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">{fmt(taxaAdesao * 0.15)}</p>
+              <p className="text-[10px] text-emerald-600">15% — {deal.consultor}</p>
+            </div>
+            <div className="text-center p-3 rounded bg-background border">
+              <p className="text-[10px] text-muted-foreground uppercase">Líquido Associação</p>
+              <p className="text-lg font-bold font-['Source_Serif_4'] text-[#1A3A5C]">{fmt(taxaAdesao * 0.85)}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+            Split automático via gateway — executado na confirmação do pagamento
+          </div>
+        </div>
+      </fieldset>
+
       {/* Tabela de faturas */}
       <fieldset className="space-y-3">
         <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">FATURAS E RECIBOS</legend>
