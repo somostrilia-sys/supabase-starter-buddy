@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PipelineDeal, mockActivities, planos } from "./mockData";
 import AssociadoTab from "./AssociadoTab";
+import CotacaoTab from "./CotacaoTab";
 import {
   FileText, User, Car, ClipboardCheck, Send, Activity,
   Phone, Mail, MessageSquare, Video, Plus, Download, CheckCircle, XCircle,
