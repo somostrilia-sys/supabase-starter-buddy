@@ -1,0 +1,234 @@
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { toast } from "sonner";
+import { PipelineDeal } from "./mockData";
+
+const UFS = [
+  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA",
+  "PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
+];
+
+const cidadesPorUF: Record<string, string[]> = {
+  SP: ["São Paulo", "Campinas", "Ribeirão Preto", "Santos", "Sorocaba", "São José dos Campos"],
+  RJ: ["Rio de Janeiro", "Niterói", "Petrópolis", "Volta Redonda", "Campos dos Goytacazes"],
+  MG: ["Belo Horizonte", "Uberlândia", "Contagem", "Juiz de Fora", "Betim"],
+  PR: ["Curitiba", "Londrina", "Maringá", "Ponta Grossa", "Cascavel"],
+  RS: ["Porto Alegre", "Caxias do Sul", "Pelotas", "Canoas", "Santa Maria"],
+  SC: ["Florianópolis", "Joinville", "Blumenau", "Chapecó", "Itajaí"],
+  GO: ["Goiânia", "Aparecida de Goiânia", "Anápolis", "Rio Verde"],
+  BA: ["Salvador", "Feira de Santana", "Vitória da Conquista"],
+  DF: ["Brasília"],
+};
+
+const CATEGORIAS_CNH = ["A", "B", "AB", "C", "D", "E"];
+
+function maskCPF(v: string) {
+  return v.replace(/\D/g, "").slice(0, 11)
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+}
+
+function maskPhone(v: string) {
+  return v.replace(/\D/g, "").slice(0, 11)
+    .replace(/(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d)/, "$1-$2");
+}
+
+function maskCEP(v: string) {
+  return v.replace(/\D/g, "").slice(0, 8)
+    .replace(/(\d{5})(\d)/, "$1-$2");
+}
+
+interface Props {
+  deal: PipelineDeal;
+}
+
+export default function AssociadoTab({ deal }: Props) {
+  const [form, setForm] = useState({
+    nome: deal.lead_nome || "",
+    cpf: deal.cpf_cnpj || "",
+    rg: "12.345.678-9",
+    orgaoExpedidor: "SSP",
+    dataExpedicao: "2008-06-10",
+    cnh: "04512345678",
+    categoriaCNH: "B",
+    dataPrimeiraHab: "2010-03-20",
+    validadeHab: "2030-03-20",
+    dataNascimento: "1990-05-15",
+    sexo: "M",
+    telefone: deal.telefone || "",
+    telefone2: "",
+    email: deal.email || "",
+    cep: "01310-100",
+    rua: "Av. Paulista",
+    numero: "1000",
+    complemento: "Sala 301",
+    bairro: "Bela Vista",
+    estado: "SP",
+    cidade: "São Paulo",
+  });
+
+  const set = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
+
+  const cidades = cidadesPorUF[form.estado] || [];
+
+  const handleCEPBlur = () => {
+    // Simula auto-fill de CEP
+    if (form.cep.replace(/\D/g, "").length === 8) {
+      setForm(prev => ({
+        ...prev,
+        rua: "Av. Paulista",
+        bairro: "Bela Vista",
+        estado: "SP",
+        cidade: "São Paulo",
+      }));
+    }
+  };
+
+  const handleSalvar = () => {
+    if (!form.nome.trim() || !form.telefone.trim()) {
+      toast.error("Nome e Telefone são obrigatórios.");
+      return;
+    }
+    toast.success("Dados do associado salvos com sucesso!");
+  };
+
+  const lbl = "text-sm font-semibold font-['Source_Serif_4']";
+  const reqMark = <span className="text-destructive ml-0.5">*</span>;
+
+  return (
+    <div className="space-y-6">
+      {/* DADOS PESSOAIS */}
+      <fieldset className="space-y-3">
+        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">DADOS PESSOAIS</legend>
+        <div className="grid grid-cols-3 gap-x-4 gap-y-3">
+          <div className="col-span-2 space-y-1">
+            <Label className={lbl}>Nome{reqMark}</Label>
+            <Input className="rounded-none" value={form.nome} onChange={e => set("nome", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className={lbl}>CPF</Label>
+            <Input className="rounded-none" value={form.cpf} onChange={e => set("cpf", maskCPF(e.target.value))} placeholder="000.000.000-00" />
+          </div>
+          <div className="space-y-1">
+            <Label className={lbl}>RG</Label>
+            <Input className="rounded-none" value={form.rg} onChange={e => set("rg", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className={lbl}>Órgão Expedidor</Label>
+            <Input className="rounded-none" value={form.orgaoExpedidor} onChange={e => set("orgaoExpedidor", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className={lbl}>Data Expedição</Label>
+            <Input className="rounded-none" type="date" value={form.dataExpedicao} onChange={e => set("dataExpedicao", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className={lbl}>CNH</Label>
+            <Input className="rounded-none" value={form.cnh} onChange={e => set("cnh", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className={lbl}>Categoria CNH</Label>
+            <Select value={form.categoriaCNH} onValueChange={v => set("categoriaCNH", v)}>
+              <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
+              <SelectContent>{CATEGORIAS_CNH.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className={lbl}>Data 1ª Habilitação</Label>
+            <Input className="rounded-none" type="date" value={form.dataPrimeiraHab} onChange={e => set("dataPrimeiraHab", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className={lbl}>Validade Habilitação</Label>
+            <Input className="rounded-none" type="date" value={form.validadeHab} onChange={e => set("validadeHab", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className={lbl}>Data Nascimento</Label>
+            <Input className="rounded-none" type="date" value={form.dataNascimento} onChange={e => set("dataNascimento", e.target.value)} />
+          </div>
+          <div className="col-span-2 space-y-1">
+            <Label className={lbl}>Sexo</Label>
+            <RadioGroup value={form.sexo} onValueChange={v => set("sexo", v)} className="flex gap-6 pt-1">
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="M" id="sexo-m" />
+                <Label htmlFor="sexo-m" className="font-normal cursor-pointer">Masculino</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="F" id="sexo-f" />
+                <Label htmlFor="sexo-f" className="font-normal cursor-pointer">Feminino</Label>
+              </div>
+            </RadioGroup>
+          </div>
+        </div>
+      </fieldset>
+
+      {/* DADOS DE CONTATO */}
+      <fieldset className="space-y-3">
+        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">DADOS DE CONTATO</legend>
+        <div className="grid grid-cols-3 gap-x-4 gap-y-3">
+          <div className="space-y-1">
+            <Label className={lbl}>Telefone Principal{reqMark}</Label>
+            <Input className="rounded-none" value={form.telefone} onChange={e => set("telefone", maskPhone(e.target.value))} placeholder="(00) 00000-0000" />
+          </div>
+          <div className="space-y-1">
+            <Label className={lbl}>Telefone 2</Label>
+            <Input className="rounded-none" value={form.telefone2} onChange={e => set("telefone2", maskPhone(e.target.value))} placeholder="(00) 00000-0000" />
+          </div>
+          <div className="space-y-1">
+            <Label className={lbl}>Email</Label>
+            <Input className="rounded-none" type="email" value={form.email} onChange={e => set("email", e.target.value)} />
+          </div>
+        </div>
+      </fieldset>
+
+      {/* ENDEREÇO */}
+      <fieldset className="space-y-3">
+        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">ENDEREÇO</legend>
+        <div className="grid grid-cols-3 gap-x-4 gap-y-3">
+          <div className="space-y-1">
+            <Label className={lbl}>CEP</Label>
+            <Input className="rounded-none" value={form.cep} onChange={e => set("cep", maskCEP(e.target.value))} onBlur={handleCEPBlur} placeholder="00000-000" />
+          </div>
+          <div className="col-span-2 space-y-1">
+            <Label className={lbl}>Rua</Label>
+            <Input className="rounded-none" value={form.rua} onChange={e => set("rua", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className={lbl}>Número</Label>
+            <Input className="rounded-none" value={form.numero} onChange={e => set("numero", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className={lbl}>Complemento</Label>
+            <Input className="rounded-none" value={form.complemento} onChange={e => set("complemento", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className={lbl}>Bairro</Label>
+            <Input className="rounded-none" value={form.bairro} onChange={e => set("bairro", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className={lbl}>Estado</Label>
+            <Select value={form.estado} onValueChange={v => { set("estado", v); set("cidade", ""); }}>
+              <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
+              <SelectContent>{UFS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className={lbl}>Cidade</Label>
+            <Select value={form.cidade} onValueChange={v => set("cidade", v)}>
+              <SelectTrigger className="rounded-none"><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>{cidades.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+        </div>
+      </fieldset>
+
+      <div className="flex justify-end pt-2">
+        <Button className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white px-8" onClick={handleSalvar}>Salvar</Button>
+      </div>
+    </div>
+  );
+}
