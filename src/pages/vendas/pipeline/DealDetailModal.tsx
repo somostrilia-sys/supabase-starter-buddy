@@ -35,8 +35,6 @@ const mockSGAHistory = [
 
 export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
   const [activeTab, setActiveTab] = useState("cotacao");
-  const [cotacaoPronta, setCotacaoPronta] = useState(false);
-  const [clienteAlteraPlano, setClienteAlteraPlano] = useState(false);
 
   const tabs = [
     { v: "cotacao", l: "Cotação", i: FileText },
