@@ -47,20 +47,25 @@ const cidades = [
 const now = Date.now();
 const day = 86400000;
 
-const mockContatos: Contato[] = nomes.map((nome, i) => ({
-  id: `c${i}`,
-  nome,
-  cpf: gerarCPF(i),
-  telefone: `(11) 9${String(8000 + i * 37).slice(0,4)}-${String(1000 + i * 53).slice(0,4)}`,
-  email: nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").split(" ").slice(0,2).join(".") + "@email.com",
-  cidade: cidades[i][0],
-  estado: cidades[i][1],
-  dataCadastro: new Date(now - (i * 5 + 1) * day).toISOString(),
-  ultimaInteracao: new Date(now - (i * 3) * day).toISOString(),
-  nascimento: `${1980 + (i % 20)}-${String(((new Date().getMonth() + 1) % 12) + 1).padStart(2,"0")}-${String((i % 28) + 1).padStart(2,"0")}`,
-  negociacoes: i % 5 === 0 ? 0 : (i % 3) + 1,
-  sexo: i % 2 === 0 ? "F" : "M",
-}));
+const mockContatos: Contato[] = [
+  // 2 contatos sem nome para simular o problema
+  { id: "csn1", nome: "", cpf: "000.000.000-01", telefone: "(11) 90000-0001", email: "", cidade: "São Paulo", estado: "SP", dataCadastro: new Date(now - 2 * day).toISOString(), ultimaInteracao: new Date(now - day).toISOString(), nascimento: "1990-01-01", negociacoes: 1, sexo: "M" },
+  { id: "csn2", nome: "", cpf: "000.000.000-02", telefone: "(11) 90000-0002", email: "", cidade: "Rio de Janeiro", estado: "RJ", dataCadastro: new Date(now - 3 * day).toISOString(), ultimaInteracao: new Date(now - 2 * day).toISOString(), nascimento: "1985-06-15", negociacoes: 0, sexo: "F" },
+  ...nomes.map((nome, i) => ({
+    id: `c${i}`,
+    nome,
+    cpf: gerarCPF(i),
+    telefone: `(11) 9${String(8000 + i * 37).slice(0,4)}-${String(1000 + i * 53).slice(0,4)}`,
+    email: nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").split(" ").slice(0,2).join(".") + "@email.com",
+    cidade: cidades[i][0],
+    estado: cidades[i][1],
+    dataCadastro: new Date(now - (i * 5 + 1) * day).toISOString(),
+    ultimaInteracao: new Date(now - (i * 3) * day).toISOString(),
+    nascimento: `${1980 + (i % 20)}-${String(((new Date().getMonth() + 1) % 12) + 1).padStart(2,"0")}-${String((i % 28) + 1).padStart(2,"0")}`,
+    negociacoes: i % 5 === 0 ? 0 : (i % 3) + 1,
+    sexo: i % 2 === 0 ? "F" : "M",
+  })),
+];
 
 function timeAgo(d: string) {
   const diff = now - new Date(d).getTime();
