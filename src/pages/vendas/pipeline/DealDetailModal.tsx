@@ -20,7 +20,6 @@ import {
   Phone, Mail, MessageSquare, Video, Plus, Download, CheckCircle, XCircle,
   Clock, Image,
 } from "lucide-react";
-} from "lucide-react";
 
 interface Props {
   deal: PipelineDeal;
