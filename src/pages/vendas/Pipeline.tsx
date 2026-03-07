@@ -14,7 +14,9 @@ import {
   Plus, LayoutGrid, List, Search, Filter, X, Eye, MoreVertical,
   ArrowUpDown, GripVertical, Car, User, Calendar, Clock, Download,
   ChevronLeft, ChevronRight, Pencil, ArrowRight, Archive,
+  CheckCircle, AlertCircle, Shield, Send, Radio, AlertTriangle, DollarSign,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   PipelineDeal, PipelineStage, stageColumns, mockDeals,
   consultores, gerentes, cooperativas, regionais, planos,
