@@ -56,6 +56,7 @@ import Tags from "./pages/vendas/Tags";
 import Formularios from "./pages/vendas/Formularios";
 import ImportarLeads from "./pages/vendas/ImportarLeads";
 import MinhaEmpresa from "./pages/vendas/MinhaEmpresa";
+import MinhaConta from "./pages/vendas/MinhaConta";
 
 const queryClient = new QueryClient();
 
