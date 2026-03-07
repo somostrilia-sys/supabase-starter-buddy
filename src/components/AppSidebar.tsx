@@ -3,7 +3,7 @@ import {
   ClipboardCheck, Package, UserCog, SlidersHorizontal, LogOut,
   ChevronDown, LayoutDashboard, DollarSign, Target, CalendarDays,
   BarChart3, Receipt, ArrowLeftRight, Wallet, Kanban, Contact, Building,
-  Activity, UsersRound, Tag, FileSpreadsheet, Upload, Crosshair,
+  Activity, UsersRound, Tag, FileSpreadsheet, Upload, Crosshair, UserCircle,
 } from "lucide-react";
 import { useBrand } from "@/hooks/useBrand";
 import { NavLink } from "@/components/NavLink";
