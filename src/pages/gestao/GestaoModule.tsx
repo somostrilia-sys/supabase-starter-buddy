@@ -7,9 +7,10 @@ import { useBrand } from "@/hooks/useBrand";
 import {
   Users, Car, ClipboardList, Wrench, SlidersHorizontal,
   DollarSign, Truck, AlertTriangle, BarChart3, FileText,
-  Globe, ChevronLeft, LayoutDashboard, LogOut, Shield,
+  Globe, ChevronLeft, LayoutDashboard, LogOut, Shield, Calculator,
 } from "lucide-react";
 import DashboardTab from "./dashboard/DashboardTab";
+import RateioTab from "./rateio/RateioTab";
 import AssociadoTab from "./associado/AssociadoTab";
 import VeiculoTab from "./veiculo/VeiculoTab";
 import CadastroTab from "./cadastro/CadastroTab";
@@ -32,6 +33,7 @@ const gestaoTabs = [
   { id: "financeiro", label: "Financeiro", icon: DollarSign },
   { id: "fornecedor", label: "Fornecedor", icon: Truck },
   { id: "evento", label: "Evento", icon: AlertTriangle },
+  { id: "rateio", label: "Rateio", icon: Calculator },
   { id: "relatorios", label: "Relatórios", icon: BarChart3 },
   { id: "documentacao", label: "Documentação", icon: FileText },
   { id: "area-cliente", label: "Área do Cliente", icon: Globe },
@@ -54,6 +56,7 @@ export default function GestaoModule() {
       case "financeiro": return <FinanceiroTab />;
       case "fornecedor": return <FornecedorTab />;
       case "evento": return <EventoTab />;
+      case "rateio": return <RateioTab />;
       case "relatorios": return <RelatoriosTab />;
       case "documentacao": return <DocumentacaoTab />;
       case "area-cliente": return <AreaClienteTab />;
