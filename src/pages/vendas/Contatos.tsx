@@ -189,10 +189,10 @@ export default function Contatos() {
             <tbody>
               {pageData.map(c => (
                 <tr key={c.id} className="border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-colors" onClick={() => setSelected(c)}>
-                  <td className="p-3">
+                   <td className="p-3">
                     <div className="flex items-center gap-2">
-                      <Avatar className="h-7 w-7"><AvatarFallback className="text-[10px] bg-primary/20 text-primary">{c.nome.split(" ").map(n=>n[0]).slice(0,2).join("")}</AvatarFallback></Avatar>
-                      <span className="font-medium text-xs">{c.nome}</span>
+                      <Avatar className="h-7 w-7"><AvatarFallback className="text-[10px] bg-primary/20 text-primary">{c.nome ? c.nome.split(" ").map(n=>n[0]).slice(0,2).join("") : "?"}</AvatarFallback></Avatar>
+                      <span className={`font-medium text-xs ${!c.nome.trim() ? "italic text-amber-600" : ""}`}>{c.nome.trim() || "Contato sem nome"}</span>
                     </div>
                   </td>
                   <td className="p-3 text-xs font-mono text-muted-foreground">{c.cpf}</td>
