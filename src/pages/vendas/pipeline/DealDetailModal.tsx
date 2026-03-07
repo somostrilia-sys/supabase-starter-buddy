@@ -16,9 +16,10 @@ import CotacaoTab from "./CotacaoTab";
 import VistoriaTab from "./VistoriaTab";
 import AssinaturaTab from "./AssinaturaTab";
 import {
-  FileText, User, Car, ClipboardCheck, Send, Activity,
+  FileText, User, Car, ClipboardCheck, Send, Activity, PenTool,
   Phone, Mail, MessageSquare, Video, Plus, Download, CheckCircle, XCircle,
   Clock, Image,
+} from "lucide-react";
 } from "lucide-react";
 
 interface Props {
