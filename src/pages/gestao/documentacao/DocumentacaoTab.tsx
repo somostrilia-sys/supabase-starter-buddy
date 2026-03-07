@@ -160,7 +160,7 @@ function EmitirTermoTab() {
 
   const gerarDocumento = () => {
     if (!selecionado || !termoSelecionado) return;
-    const modelo = mockModelosTermos.find(m => m.id === termosDisponiveis.find(t => t.id === termoSelecionado)?.id || m.tipo === termoSelecionado);
+    const modelo = mockModelosTermos.find(m => m.tipo === termoSelecionado);
     if (!modelo) return;
     setShowPreview(true);
   };
