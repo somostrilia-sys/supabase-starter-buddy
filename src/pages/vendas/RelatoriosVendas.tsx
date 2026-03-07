@@ -21,6 +21,7 @@ import BancoDadosTab from "./relatorios/BancoDadosTab";
 import GrupoTagsTab from "./relatorios/GrupoTagsTab";
 import ResumoMetasTab from "./relatorios/ResumoMetasTab";
 import VeiculosSemCoberturaTab from "./relatorios/VeiculosSemCoberturaTab";
+import ExtratoComissoesTab from "./relatorios/ExtratoComissoesTab";
 
 export default function RelatoriosVendas() {
   const [tab, setTab] = useState("dashboard");
@@ -101,6 +102,7 @@ export default function RelatoriosVendas() {
             { v: "tags", l: "Grupos de Tags" },
             { v: "metas", l: "Resumo de Metas" },
             { v: "veiculos", l: "Veículos s/ Cobertura" },
+            { v: "extrato-comissoes", l: "Extrato de Comissões" },
           ].map(t => (
             <TabsTrigger key={t.v} value={t.v} className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t.l}</TabsTrigger>
           ))}
@@ -115,6 +117,7 @@ export default function RelatoriosVendas() {
         <TabsContent value="tags"><GrupoTagsTab /></TabsContent>
         <TabsContent value="metas"><ResumoMetasTab /></TabsContent>
         <TabsContent value="veiculos"><VeiculosSemCoberturaTab /></TabsContent>
+        <TabsContent value="extrato-comissoes"><ExtratoComissoesTab /></TabsContent>
       </Tabs>
     </div>
   );
