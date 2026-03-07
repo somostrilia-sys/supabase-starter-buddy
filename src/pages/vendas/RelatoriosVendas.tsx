@@ -21,6 +21,7 @@ import BancoDadosTab from "./relatorios/BancoDadosTab";
 import GrupoTagsTab from "./relatorios/GrupoTagsTab";
 import ResumoMetasTab from "./relatorios/ResumoMetasTab";
 import VeiculosSemCoberturaTab from "./relatorios/VeiculosSemCoberturaTab";
+import ExtratoComissoesTab from "./relatorios/ExtratoComissoesTab";
 
 export default function RelatoriosVendas() {
   const [tab, setTab] = useState("dashboard");
