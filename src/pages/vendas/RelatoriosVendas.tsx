@@ -117,6 +117,7 @@ export default function RelatoriosVendas() {
         <TabsContent value="tags"><GrupoTagsTab /></TabsContent>
         <TabsContent value="metas"><ResumoMetasTab /></TabsContent>
         <TabsContent value="veiculos"><VeiculosSemCoberturaTab /></TabsContent>
+        <TabsContent value="extrato-comissoes"><ExtratoComissoesTab /></TabsContent>
       </Tabs>
     </div>
   );
