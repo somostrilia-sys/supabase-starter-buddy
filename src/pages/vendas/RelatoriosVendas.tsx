@@ -102,6 +102,7 @@ export default function RelatoriosVendas() {
             { v: "tags", l: "Grupos de Tags" },
             { v: "metas", l: "Resumo de Metas" },
             { v: "veiculos", l: "Veículos s/ Cobertura" },
+            { v: "extrato-comissoes", l: "Extrato de Comissões" },
           ].map(t => (
             <TabsTrigger key={t.v} value={t.v} className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t.l}</TabsTrigger>
           ))}
