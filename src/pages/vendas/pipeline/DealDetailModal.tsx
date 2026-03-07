@@ -15,8 +15,9 @@ import AssociadoTab from "./AssociadoTab";
 import CotacaoTab from "./CotacaoTab";
 import VistoriaTab from "./VistoriaTab";
 import AssinaturaTab from "./AssinaturaTab";
+import FinanceiroNegociacaoTab from "./FinanceiroNegociacaoTab";
 import {
-  FileText, User, Car, ClipboardCheck, Send, Activity, PenTool,
+  FileText, User, Car, ClipboardCheck, Send, Activity, PenTool, Wallet,
   Phone, Mail, MessageSquare, Video, Plus, Download, CheckCircle, XCircle,
   Clock, Image,
 } from "lucide-react";
@@ -44,6 +45,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
     { v: "veiculo", l: "Veículo", i: Car },
     { v: "vistoria", l: "Vistoria", i: ClipboardCheck },
     { v: "assinatura", l: "Assinatura", i: PenTool },
+    { v: "financeiro", l: "Financeiro", i: Wallet },
     { v: "sga", l: "SGA", i: Send },
     { v: "atividades", l: "Atividades", i: Activity },
   ];
@@ -125,7 +127,12 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
               <AssinaturaTab deal={deal} />
             </TabsContent>
 
-            {/* TAB 6 - SGA */}
+            {/* TAB 6 - Financeiro */}
+            <TabsContent value="financeiro" className="mt-0">
+              <FinanceiroNegociacaoTab deal={deal} />
+            </TabsContent>
+
+            {/* TAB 7 - SGA */}
             <TabsContent value="sga" className="mt-0 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Regional SGA</Label>
