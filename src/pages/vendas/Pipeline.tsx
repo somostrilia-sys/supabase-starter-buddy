@@ -397,10 +397,33 @@ export default function Pipeline() {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Nova Negociação</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1.5"><Label>Nome do Lead *</Label><Input value={form.lead_nome} onChange={e => setForm({ ...form, lead_nome: e.target.value })} placeholder="Nome completo" /></div>
+            <div className="p-3 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-xs">
+              <strong>Dados mínimos para cotação:</strong> Preencha Nome e Telefone para criar a negociação.
+            </div>
+            <div className="space-y-1.5">
+              <Label>Nome do Lead *</Label>
+              <Input
+                value={form.lead_nome}
+                onChange={e => setForm({ ...form, lead_nome: e.target.value })}
+                onBlur={() => setFormTouched(t => ({ ...t, lead_nome: true }))}
+                placeholder="Nome completo"
+                className={formNomeInvalid ? "border-destructive focus-visible:ring-destructive" : ""}
+              />
+              {formNomeInvalid && <p className="text-xs text-destructive">Nome é obrigatório</p>}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={e => setForm({ ...form, cpf_cnpj: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>Telefone/WhatsApp</Label><Input value={form.telefone} onChange={e => setForm({ ...form, telefone: e.target.value })} /></div>
+              <div className="space-y-1.5">
+                <Label>Telefone/WhatsApp *</Label>
+                <Input
+                  value={form.telefone}
+                  onChange={e => setForm({ ...form, telefone: e.target.value })}
+                  onBlur={() => setFormTouched(t => ({ ...t, telefone: true }))}
+                  placeholder="(00) 00000-0000"
+                  className={formTelInvalid ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {formTelInvalid && <p className="text-xs text-destructive">Telefone é obrigatório</p>}
+              </div>
             </div>
             <div className="space-y-1.5"><Label>E-mail</Label><Input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-3">
@@ -433,8 +456,8 @@ export default function Pipeline() {
             </div>
             <div className="space-y-1.5"><Label>Observações</Label><Textarea value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} rows={3} /></div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setNewDealOpen(false)}>Cancelar</Button>
-              <Button onClick={handleNewDeal} disabled={!form.lead_nome}>Criar Negociação</Button>
+              <Button variant="outline" onClick={() => { setNewDealOpen(false); setFormTouched({ lead_nome: false, telefone: false }); }}>Cancelar</Button>
+              <Button onClick={handleNewDeal} disabled={!canCreateDeal}>Criar Negociação</Button>
             </div>
           </div>
         </DialogContent>

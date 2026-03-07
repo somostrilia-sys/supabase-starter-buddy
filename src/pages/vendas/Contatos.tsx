@@ -120,6 +120,16 @@ export default function Contatos() {
         </div>
       </div>
 
+      {contatosSemNome > 0 && (
+        <div
+          className="flex items-center gap-2 p-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-sm cursor-pointer hover:bg-amber-100 transition-colors"
+          onClick={() => { setTab("sem-nome"); setPage(0); }}
+        >
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span><strong>{contatosSemNome} contato{contatosSemNome > 1 ? "s" : ""} sem nome</strong> identificado{contatosSemNome > 1 ? "s" : ""}. Clique para revisar.</span>
+        </div>
+      )}
+
       <Tabs value={tab} onValueChange={v => { setTab(v); setPage(0); }}>
         <TabsList className="bg-muted/50">
           <TabsTrigger value="todos" className="text-xs">Todos</TabsTrigger>
@@ -127,6 +137,7 @@ export default function Contatos() {
           <TabsTrigger value="antigos" className="text-xs">Antigos (+90d)</TabsTrigger>
           <TabsTrigger value="sem-dados" className="text-xs">Sem Dados</TabsTrigger>
           <TabsTrigger value="aniversariantes" className="text-xs">🎂 Aniversariantes</TabsTrigger>
+          {contatosSemNome > 0 && <TabsTrigger value="sem-nome" className="text-xs text-amber-700">⚠️ Sem Nome ({contatosSemNome})</TabsTrigger>}
         </TabsList>
       </Tabs>
 
