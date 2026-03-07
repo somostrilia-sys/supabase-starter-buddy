@@ -56,6 +56,7 @@ import Tags from "./pages/vendas/Tags";
 import Formularios from "./pages/vendas/Formularios";
 import ImportarLeads from "./pages/vendas/ImportarLeads";
 import MinhaEmpresa from "./pages/vendas/MinhaEmpresa";
+import MinhaConta from "./pages/vendas/MinhaConta";
 
 const queryClient = new QueryClient();
 
@@ -128,6 +129,7 @@ const App = () => (
             <Route path="/vendas/financeiro" element={<M><FinanceiroVendas /></M>} />
             <Route path="/vendas/ferramentas" element={<M><FerramentasVendas /></M>} />
             <Route path="/vendas/minha-empresa" element={<M><MinhaEmpresa /></M>} />
+            <Route path="/vendas/minha-conta" element={<M><MinhaConta /></M>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
