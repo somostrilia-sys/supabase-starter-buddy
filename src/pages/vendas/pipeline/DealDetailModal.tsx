@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PipelineDeal, mockActivities, planos } from "./mockData";
 import AssociadoTab from "./AssociadoTab";
 import CotacaoTab from "./CotacaoTab";
+import VistoriaTab from "./VistoriaTab";
 import {
   FileText, User, Car, ClipboardCheck, Send, Activity,
   Phone, Mail, MessageSquare, Video, Plus, Download, CheckCircle, XCircle,
@@ -112,43 +113,9 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
               </div>
             </TabsContent>
 
-            {/* TAB 4 - Vistoria (código + status) */}
-            <TabsContent value="vistoria" className="mt-0 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Código Vistoria</Label><Input className="rounded-none font-mono" defaultValue="VST-2026-0042" readOnly /></div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Status</Label>
-                  <Badge className="rounded-none bg-amber-100 text-amber-800 border border-amber-300">Aguardando Envio</Badge>
-                </div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Prazo Limite</Label>
-                  <Select defaultValue="7"><SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="3">3 dias</SelectItem><SelectItem value="7">7 dias</SelectItem><SelectItem value="15">15 dias</SelectItem></SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Origem Lead</Label>
-                  <Select defaultValue={deal.origem}><SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["WhatsApp", "Facebook", "Indicação", "Google", "Telefone"].map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" className="rounded-none"><ClipboardCheck className="h-3.5 w-3.5 mr-1" />Liberar Vistoria App Visto</Button>
-                <Button size="sm" variant="outline" className="rounded-none">Vincular Vistoria Existente</Button>
-              </div>
-              <div>
-                <Label className="mb-2 block font-['Source_Serif_4']">Fotos da Vistoria</Label>
-                <div className="grid grid-cols-3 gap-3">
-                  {[1,2,3,4,5,6].map(i => (
-                    <div key={i} className="aspect-square border-2 border-dashed border-muted-foreground/20 flex items-center justify-center bg-muted/30">
-                      <Image className="h-8 w-8 text-muted-foreground/30" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" className="rounded-none bg-green-600 hover:bg-green-700 text-white"><CheckCircle className="h-3.5 w-3.5 mr-1" />Aprovar</Button>
-                <Button size="sm" variant="destructive" className="rounded-none"><XCircle className="h-3.5 w-3.5 mr-1" />Reprovar</Button>
-                <Button size="sm" variant="outline" className="rounded-none"><Download className="h-3.5 w-3.5 mr-1" />Download Laudo PDF</Button>
-              </div>
+            {/* TAB 4 - Vistoria */}
+            <TabsContent value="vistoria" className="mt-0">
+              <VistoriaTab deal={deal} />
             </TabsContent>
 
             {/* TAB 5 - SGA */}
