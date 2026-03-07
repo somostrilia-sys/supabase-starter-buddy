@@ -61,6 +61,7 @@ const vendasItems = [
   { title: "Ferramentas", url: "/vendas/ferramentas", icon: FileSpreadsheet },
   { title: "Minha Empresa", url: "/vendas/minha-empresa", icon: Building },
   { title: "Minha Conta", url: "/vendas/minha-conta", icon: UserCircle },
+  { title: "Comissões", url: "/vendas/comissoes", icon: ArrowRightLeft },
 ];
 
 interface ModuleGroupProps {
