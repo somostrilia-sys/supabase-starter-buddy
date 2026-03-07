@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Search, Filter, Download, MessageSquare, Phone, Mail, User,
-  ChevronLeft, ChevronRight, ExternalLink, Plus, Calendar, MapPin,
+  ChevronLeft, ChevronRight, ExternalLink, Plus, Calendar, MapPin, AlertTriangle,
 } from "lucide-react";
 
 const ufs = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
