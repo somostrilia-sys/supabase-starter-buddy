@@ -3,7 +3,7 @@ import {
   ClipboardCheck, Package, UserCog, SlidersHorizontal, LogOut,
   ChevronDown, LayoutDashboard, DollarSign, Target, CalendarDays,
   BarChart3, Receipt, ArrowLeftRight, Wallet, Kanban, Contact, Building,
-  Activity, UsersRound, Tag, FileSpreadsheet, Upload, Crosshair, UserCircle,
+  Activity, UsersRound, Tag, FileSpreadsheet, Upload, Crosshair, UserCircle, ArrowRightLeft,
 } from "lucide-react";
 import { useBrand } from "@/hooks/useBrand";
 import { NavLink } from "@/components/NavLink";
@@ -61,6 +61,7 @@ const vendasItems = [
   { title: "Ferramentas", url: "/vendas/ferramentas", icon: FileSpreadsheet },
   { title: "Minha Empresa", url: "/vendas/minha-empresa", icon: Building },
   { title: "Minha Conta", url: "/vendas/minha-conta", icon: UserCircle },
+  { title: "Comissões", url: "/vendas/comissoes", icon: ArrowRightLeft },
 ];
 
 interface ModuleGroupProps {

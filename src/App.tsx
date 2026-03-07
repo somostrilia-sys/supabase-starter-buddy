@@ -57,6 +57,7 @@ import Formularios from "./pages/vendas/Formularios";
 import ImportarLeads from "./pages/vendas/ImportarLeads";
 import MinhaEmpresa from "./pages/vendas/MinhaEmpresa";
 import MinhaConta from "./pages/vendas/MinhaConta";
+import ConfigComissoes from "./pages/vendas/ConfigComissoes";
 
 const queryClient = new QueryClient();
 
@@ -130,6 +131,7 @@ const App = () => (
             <Route path="/vendas/ferramentas" element={<M><FerramentasVendas /></M>} />
             <Route path="/vendas/minha-empresa" element={<M><MinhaEmpresa /></M>} />
             <Route path="/vendas/minha-conta" element={<M><MinhaConta /></M>} />
+            <Route path="/vendas/comissoes" element={<M><ConfigComissoes /></M>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
