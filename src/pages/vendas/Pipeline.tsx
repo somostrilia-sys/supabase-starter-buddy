@@ -14,7 +14,9 @@ import {
   Plus, LayoutGrid, List, Search, Filter, X, Eye, MoreVertical,
   ArrowUpDown, GripVertical, Car, User, Calendar, Clock, Download,
   ChevronLeft, ChevronRight, Pencil, ArrowRight, Archive,
+  CheckCircle, AlertCircle, Shield, Send, Radio, AlertTriangle, DollarSign,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   PipelineDeal, PipelineStage, stageColumns, mockDeals,
   consultores, gerentes, cooperativas, regionais, planos,
@@ -112,10 +114,11 @@ export default function Pipeline() {
   function handleNewDeal() {
     if (!form.lead_nome) return;
     const newDeal: PipelineDeal = {
-      id: `p${Date.now()}`, lead_nome: form.lead_nome, cpf_cnpj: form.cpf_cnpj, telefone: form.telefone, email: form.email,
-      veiculo_modelo: form.modelo, veiculo_placa: form.placa, plano: form.plano || "Básico", stage: "novo_lead",
+      id: `p${Date.now()}`, codigo: `NEG-2026-${String(Date.now()).slice(-3)}`, lead_nome: form.lead_nome, cpf_cnpj: form.cpf_cnpj, telefone: form.telefone, email: form.email,
+      veiculo_modelo: form.modelo, veiculo_placa: form.placa, plano: form.plano || "Básico", valor_plano: 149.90, stage: "cotacoes_recebidas",
       consultor: form.consultor || consultores[0], cooperativa: form.cooperativa || cooperativas[0], regional: form.regional || regionais[0],
       gerente: gerentes[0], origem: "Manual", observacoes: form.observacoes, enviado_sga: false, visualizacoes_proposta: 0,
+      status_icons: { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false },
       created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     };
     setDeals(prev => [newDeal, ...prev]);
@@ -219,20 +222,26 @@ export default function Pipeline() {
                   <div className="space-y-2">
                     {colDeals.map(deal => {
                       const days = daysStalled(deal.updated_at);
+                      const si = deal.status_icons;
                       return (
                         <div
                           key={deal.id}
                           draggable
                           onDragStart={e => handleDragStart(e, deal.id)}
-                          className={`group bg-card rounded-lg border cursor-grab active:cursor-grabbing transition-all hover:shadow-md hover:scale-[1.02] ${draggedId === deal.id ? "opacity-40" : ""}`}
+                          onClick={() => setDetailDeal(deal)}
+                          className={`group bg-card border cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] ${draggedId === deal.id ? "opacity-40" : ""}`}
                           style={{ borderLeft: `3px solid ${col.color}` }}
                         >
                           <div className="p-3 space-y-1.5">
+                            {/* Header: nome + código + menu */}
                             <div className="flex items-start justify-between">
-                              <p className="text-[13px] font-semibold leading-tight">{deal.lead_nome}</p>
+                              <div>
+                                <p className="text-[13px] font-semibold leading-tight font-['Source_Serif_4']">{deal.lead_nome}</p>
+                                <span className="text-[10px] font-mono text-muted-foreground">{deal.codigo}</span>
+                              </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100"><MoreVertical className="h-3.5 w-3.5" /></Button>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}><MoreVertical className="h-3.5 w-3.5" /></Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem onClick={() => setDetailDeal(deal)}><Eye className="h-3.5 w-3.5 mr-2" />Ver Detalhes</DropdownMenuItem>
@@ -242,31 +251,47 @@ export default function Pipeline() {
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>
+
+                            {/* Veículo + Placa */}
                             <div className="flex items-center gap-1.5 text-muted-foreground">
-                              <Car className="h-3 w-3" />
-                              <span className="text-[11px] truncate">{deal.veiculo_modelo}</span>
-                              <Badge variant="outline" className="text-[9px] font-mono px-1 py-0">{deal.veiculo_placa}</Badge>
+                              <Car className="h-3 w-3 shrink-0" />
+                              <span className="text-[11px] truncate font-['Source_Serif_4']">{deal.veiculo_modelo}</span>
+                              <Badge variant="outline" className="text-[9px] font-mono px-1 py-0 rounded-none">{deal.veiculo_placa}</Badge>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                <span className="text-[9px] font-bold text-primary">{deal.consultor.charAt(0)}</span>
+
+                            {/* Plano + Valor */}
+                            <div className="flex items-center justify-between">
+                              <Badge variant="outline" className="text-[9px] px-1.5 py-0 rounded-none">{deal.plano}</Badge>
+                              <span className="text-[11px] font-bold text-foreground font-['Source_Serif_4']">R$ {deal.valor_plano.toFixed(2).replace(".", ",")}</span>
+                            </div>
+
+                            {/* Status icons row */}
+                            <TooltipProvider delayDuration={200}>
+                              <div className="flex items-center gap-1 pt-0.5">
+                                <Tooltip><TooltipTrigger><CheckCircle className={`h-3.5 w-3.5 ${si.aceita ? "text-green-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Aceita</TooltipContent></Tooltip>
+                                <Tooltip><TooltipTrigger><AlertCircle className={`h-3.5 w-3.5 ${si.pendente ? "text-amber-500" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Pendente</TooltipContent></Tooltip>
+                                <Tooltip><TooltipTrigger><Shield className={`h-3.5 w-3.5 ${si.aprovada ? "text-blue-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Aprovada</TooltipContent></Tooltip>
+                                <Tooltip><TooltipTrigger><Send className={`h-3.5 w-3.5 ${si.sga ? "text-green-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">SGA</TooltipContent></Tooltip>
+                                <Tooltip><TooltipTrigger><Radio className={`h-3.5 w-3.5 ${si.rastreador ? "text-blue-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Rastreador</TooltipContent></Tooltip>
+                                <Tooltip><TooltipTrigger><AlertTriangle className={`h-3.5 w-3.5 ${si.inadimplencia ? "text-red-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Inadimplência</TooltipContent></Tooltip>
                               </div>
-                              <span className="text-[10px] text-muted-foreground">{deal.consultor}</span>
-                            </div>
+                            </TooltipProvider>
+
+                            {/* Data + Stalled */}
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1 text-muted-foreground">
                                 <Calendar className="h-3 w-3" />
-                                <span className="text-[10px]">Criado em {new Date(deal.created_at).toLocaleDateString("pt-BR")}</span>
+                                <span className="text-[10px]">{new Date(deal.created_at).toLocaleDateString("pt-BR")} {new Date(deal.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
                               </div>
                               <StalledBadge days={days} />
                             </div>
-                            <div className="flex items-center gap-2 pt-1">
-                              {deal.enviado_sga && <Badge className="bg-green-600 text-white text-[9px] px-1.5 py-0">Enviado SGA</Badge>}
-                              {deal.visualizacoes_proposta > 0 && (
-                                <div className="flex items-center gap-0.5 text-muted-foreground">
-                                  <Eye className="h-3 w-3" /><span className="text-[10px]">{deal.visualizacoes_proposta}x</span>
-                                </div>
-                              )}
+
+                            {/* Footer: Consultor (responsável comercial) */}
+                            <div className="flex items-center justify-end gap-1.5 pt-0.5 border-t border-muted/40 mt-1">
+                              <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                <span className="text-[9px] font-bold text-primary">{deal.consultor.charAt(0)}</span>
+                              </div>
+                              <span className="text-[10px] text-muted-foreground font-['Source_Serif_4']">{deal.consultor}</span>
                             </div>
                           </div>
                         </div>
