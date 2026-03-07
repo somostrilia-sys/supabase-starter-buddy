@@ -15,6 +15,7 @@ import AssociadoTab from "./AssociadoTab";
 import CotacaoTab from "./CotacaoTab";
 import VistoriaTab from "./VistoriaTab";
 import AssinaturaTab from "./AssinaturaTab";
+import FinanceiroNegociacaoTab from "./FinanceiroNegociacaoTab";
 import {
   FileText, User, Car, ClipboardCheck, Send, Activity, PenTool,
   Phone, Mail, MessageSquare, Video, Plus, Download, CheckCircle, XCircle,
