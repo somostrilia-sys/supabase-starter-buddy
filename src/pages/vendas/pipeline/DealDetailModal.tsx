@@ -17,7 +17,7 @@ import VistoriaTab from "./VistoriaTab";
 import AssinaturaTab from "./AssinaturaTab";
 import FinanceiroNegociacaoTab from "./FinanceiroNegociacaoTab";
 import {
-  FileText, User, Car, ClipboardCheck, Send, Activity, PenTool,
+  FileText, User, Car, ClipboardCheck, Send, Activity, PenTool, Wallet,
   Phone, Mail, MessageSquare, Video, Plus, Download, CheckCircle, XCircle,
   Clock, Image,
 } from "lucide-react";
