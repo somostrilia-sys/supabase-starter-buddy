@@ -60,6 +60,7 @@ export default function Pipeline() {
 
   // New deal form
   const [form, setForm] = useState({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
+  const [formTouched, setFormTouched] = useState({ lead_nome: false, telefone: false });
 
   // Drag state
   const [draggedId, setDraggedId] = useState<string | null>(null);
