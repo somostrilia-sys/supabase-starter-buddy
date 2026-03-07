@@ -85,6 +85,7 @@ export default function Contatos() {
   const [filterOpen, setFilterOpen] = useState(false);
 
   const currentMonth = new Date().getMonth() + 1;
+  const contatosSemNome = mockContatos.filter(c => !c.nome.trim()).length;
 
   const filtered = useMemo(() => {
     let list = mockContatos;
@@ -99,6 +100,7 @@ export default function Contatos() {
     if (tab === "antigos") list = list.filter(c => (now - new Date(c.ultimaInteracao).getTime()) > 90 * day);
     if (tab === "sem-dados") list = list.filter(c => !c.email || !c.telefone);
     if (tab === "aniversariantes") list = list.filter(c => parseInt(c.nascimento.split("-")[1]) === currentMonth);
+    if (tab === "sem-nome") list = list.filter(c => !c.nome.trim());
     return list;
   }, [search, tab, currentMonth]);
 
