@@ -14,6 +14,7 @@ import { PipelineDeal, mockActivities, planos } from "./mockData";
 import AssociadoTab from "./AssociadoTab";
 import CotacaoTab from "./CotacaoTab";
 import VistoriaTab from "./VistoriaTab";
+import AssinaturaTab from "./AssinaturaTab";
 import {
   FileText, User, Car, ClipboardCheck, Send, Activity,
   Phone, Mail, MessageSquare, Video, Plus, Download, CheckCircle, XCircle,
