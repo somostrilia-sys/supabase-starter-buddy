@@ -6,510 +6,873 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import {
-  Plus, Search, Download, AlertTriangle, BarChart3, Clock,
-  Eye, FileText, DollarSign, TrendingUp,
+  Plus, Search, Download, Eye, Save, Loader2,
+  AlertTriangle, Car, User, Wrench, Users, DollarSign,
+  BarChart3, Clock, CheckCircle2, XCircle, FileText,
+  ChevronRight, ChevronLeft, Upload, Trash2, TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 
-// ── Mock ──
-const tiposEvento = ["Colisão", "Furto", "Roubo", "Incêndio", "Alagamento", "Perda total", "Vidros", "Outros"];
-const statusEvento = ["aberto", "em_analise", "aprovado", "negado", "pago", "encerrado"] as const;
-type StatusEvento = typeof statusEvento[number];
+// ── Types & Constants ──────────────────────────────────────
 
-const statusColor: Record<StatusEvento, string> = {
-  aberto: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  em_analise: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  aprovado: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  negado: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-  pago: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300",
-  encerrado: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
+const tiposEvento = ["Colisão", "Roubo", "Furto", "Fenômeno Natural", "Incêndio", "Periférico"];
+const statusConsulta = ["Em análise", "Em reparo", "Aguardando docs", "Indenização integral", "Negado", "Reembolso"];
+const regionais = ["Central SP", "Campinas", "Ribeirão Preto", "Litoral SP", "Curitiba", "Belo Horizonte"];
+const categoriasVeiculo = ["Passeio", "Utilitário", "Caminhão", "Moto", "Van"];
+
+const statusColor: Record<string, string> = {
+  "Em análise": "bg-yellow-100 text-yellow-800",
+  "Em reparo": "bg-blue-100 text-blue-800",
+  "Aguardando docs": "bg-orange-100 text-orange-800",
+  "Indenização integral": "bg-purple-100 text-purple-800",
+  "Negado": "bg-red-100 text-red-800",
+  "Reembolso": "bg-green-100 text-green-800",
 };
 
-const mockEventos = [
-  { id: "EVT-001", tipo: "Colisão", data: "2025-06-15", associado: "Carlos Eduardo Silva", placa: "BRA2E19", descricao: "Colisão traseira no semáforo da Av. Paulista", valorEstimado: 8500, valorAprovado: 7200, status: "pago" as StatusEvento, rateio: true },
-  { id: "EVT-002", tipo: "Roubo", data: "2025-06-20", associado: "Maria Fernanda Oliveira", placa: "RIO4F56", descricao: "Veículo roubado no estacionamento do shopping", valorEstimado: 45000, valorAprovado: null, status: "em_analise" as StatusEvento, rateio: true },
-  { id: "EVT-003", tipo: "Vidros", data: "2025-06-25", associado: "José Roberto Santos", placa: "MGA7B32", descricao: "Para-brisa trincado por pedra na rodovia", valorEstimado: 1200, valorAprovado: 1200, status: "aprovado" as StatusEvento, rateio: false },
-  { id: "EVT-004", tipo: "Alagamento", data: "2025-07-01", associado: "Fernanda Rodrigues", placa: "CWB1D45", descricao: "Motor alagado durante enchente na zona sul", valorEstimado: 12000, valorAprovado: null, status: "aberto" as StatusEvento, rateio: true },
-  { id: "EVT-005", tipo: "Furto", data: "2025-07-03", associado: "Ricardo Almeida", placa: "CPR8H67", descricao: "Furto de rodas e pneus durante a madrugada", valorEstimado: 6800, valorAprovado: null, status: "aberto" as StatusEvento, rateio: true },
-  { id: "EVT-006", tipo: "Incêndio", data: "2025-07-05", associado: "Ana Paula Costa", placa: "RJO3K21", descricao: "Curto-circuito causou incêndio no motor", valorEstimado: 35000, valorAprovado: 32000, status: "aprovado" as StatusEvento, rateio: true },
-  { id: "EVT-007", tipo: "Outros", data: "2025-07-01", associado: "Rateio Administrativo", placa: "-", descricao: "Evento fictício para rateio administrativo mensal", valorEstimado: 0, valorAprovado: 0, status: "encerrado" as StatusEvento, rateio: true },
+// ── Mock Data ──────────────────────────────────────────────
+
+const mockConsulta = [
+  { protocolo: "EVT-2025-0341", associado: "Carlos Eduardo Silva", placa: "BRA2E19", tipo: "Colisão", data: "2025-06-15", status: "Em reparo", responsavel: "João Mendes" },
+  { protocolo: "EVT-2025-0298", associado: "Maria Fernanda Oliveira", placa: "RIO4H77", tipo: "Roubo", data: "2025-06-20", status: "Em análise", responsavel: "Ana Costa" },
+  { protocolo: "EVT-2025-0315", associado: "João Pedro Santos", placa: "SPO1C33", tipo: "Furto", data: "2025-06-25", status: "Aguardando docs", responsavel: "Pedro Lima" },
+  { protocolo: "EVT-2025-0322", associado: "Ana Carolina Ferreira", placa: "MGA5B22", tipo: "Colisão", data: "2025-07-01", status: "Indenização integral", responsavel: "João Mendes" },
+  { protocolo: "EVT-2025-0330", associado: "Roberto Almeida Neto", placa: "BSB3K11", tipo: "Fenômeno Natural", data: "2025-07-03", status: "Negado", responsavel: "Ana Costa" },
+  { protocolo: "EVT-2025-0335", associado: "Fernanda Lima Costa", placa: "CWB7D55", tipo: "Incêndio", data: "2025-07-05", status: "Reembolso", responsavel: "Pedro Lima" },
+  { protocolo: "EVT-2025-0340", associado: "Lucas Martins Souza", placa: "POA8F44", tipo: "Periférico", data: "2025-07-08", status: "Em análise", responsavel: "João Mendes" },
+  { protocolo: "EVT-2025-0345", associado: "Patricia Rocha Lima", placa: "REC2G88", tipo: "Colisão", data: "2025-07-10", status: "Em reparo", responsavel: "Ana Costa" },
 ];
 
-const mockRateioHist = [
-  { periodo: "07/2025", totalEventos: 4, valorTotal: 101500, associados: 847, valorPorAssociado: 119.83, status: "calculado" },
-  { periodo: "06/2025", totalEventos: 3, valorTotal: 54500, associados: 832, valorPorAssociado: 65.50, status: "distribuído" },
-  { periodo: "05/2025", totalEventos: 2, valorTotal: 28000, associados: 820, valorPorAssociado: 34.15, status: "distribuído" },
-  { periodo: "04/2025", totalEventos: 5, valorTotal: 87200, associados: 815, valorPorAssociado: 107.00, status: "distribuído" },
+const mockEventosRateio = [
+  { id: 1, mes: "07/2025", descricao: "Rateio Administrativo", valorTotal: 0, categoria: "Passeio", regional: "Central SP" },
+  { id: 2, mes: "06/2025", descricao: "Ajuste Mensal Frota", valorTotal: 1500, categoria: "Utilitário", regional: "Campinas" },
+  { id: 3, mes: "05/2025", descricao: "Evento Zerado - Adm", valorTotal: 0, categoria: "Passeio", regional: "Litoral SP" },
 ];
 
-const emptyForm = { tipo: "Colisão", data: "", associado: "", placa: "", descricao: "", valorEstimado: "", paraRateio: true };
+const mockDistribuicao = [
+  { regional: "Central SP", categoria: "Passeio", qtdeVeiculos: 320, valorBase: 85.50, fator: 1.0, valorCalc: 85.50 },
+  { regional: "Central SP", categoria: "Utilitário", qtdeVeiculos: 85, valorBase: 85.50, fator: 1.3, valorCalc: 111.15 },
+  { regional: "Campinas", categoria: "Passeio", qtdeVeiculos: 210, valorBase: 85.50, fator: 0.9, valorCalc: 76.95 },
+  { regional: "Campinas", categoria: "Caminhão", qtdeVeiculos: 45, valorBase: 85.50, fator: 1.8, valorCalc: 153.90 },
+  { regional: "Ribeirão Preto", categoria: "Passeio", qtdeVeiculos: 130, valorBase: 85.50, fator: 0.85, valorCalc: 72.68 },
+  { regional: "Litoral SP", categoria: "Moto", qtdeVeiculos: 57, valorBase: 85.50, fator: 0.6, valorCalc: 51.30 },
+];
+
+const mockHistDist = [
+  { mes: "07/2025", valorTotal: 95420.00, qtdeVeiculos: 847, regionais: 4, usuario: "Admin", data: "2025-07-15" },
+  { mes: "06/2025", valorTotal: 78350.00, qtdeVeiculos: 832, regionais: 4, usuario: "Gerente", data: "2025-06-14" },
+  { mes: "05/2025", valorTotal: 62100.00, qtdeVeiculos: 820, regionais: 3, usuario: "Admin", data: "2025-05-15" },
+  { mes: "04/2025", valorTotal: 87200.00, qtdeVeiculos: 815, regionais: 4, usuario: "Gerente", data: "2025-04-14" },
+  { mes: "03/2025", valorTotal: 54800.00, qtdeVeiculos: 808, regionais: 3, usuario: "Admin", data: "2025-03-15" },
+];
+
+const mockTimeline = [
+  { protocolo: "EVT-2025-0341", movimentacoes: [
+    { data: "15/06/2025 08:30", acao: "Evento registrado", usuario: "João Mendes" },
+    { data: "15/06/2025 14:00", acao: "Documentação recebida", usuario: "Ana Costa" },
+    { data: "18/06/2025 10:15", acao: "Análise iniciada", usuario: "Pedro Lima" },
+    { data: "22/06/2025 16:45", acao: "Orçamento aprovado — R$ 7.200,00", usuario: "Gerente" },
+    { data: "25/06/2025 09:00", acao: "Enviado para oficina", usuario: "João Mendes" },
+  ]},
+  { protocolo: "EVT-2025-0298", movimentacoes: [
+    { data: "20/06/2025 22:10", acao: "Evento registrado — Roubo", usuario: "Ana Costa" },
+    { data: "21/06/2025 08:00", acao: "Boletim de ocorrência anexado", usuario: "Maria Fernanda" },
+    { data: "23/06/2025 11:30", acao: "Análise pericial agendada", usuario: "Pedro Lima" },
+  ]},
+];
+
+// ── Main Component ─────────────────────────────────────────
 
 export default function EventoTab() {
-  const [busca, setBusca] = useState("");
-  const [filtroTipo, setFiltroTipo] = useState("todos");
-  const [filtroStatus, setFiltroStatus] = useState("todos");
-  const [showCadastro, setShowCadastro] = useState(false);
-  const [showDetalhe, setShowDetalhe] = useState<typeof mockEventos[0] | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [subTab, setSubTab] = useState<string>("cadastro");
 
-  const filtered = mockEventos.filter(e => {
-    if (filtroTipo !== "todos" && e.tipo !== filtroTipo) return false;
-    if (filtroStatus !== "todos" && e.status !== filtroStatus) return false;
-    if (busca && !e.associado.toLowerCase().includes(busca.toLowerCase()) && !e.placa.includes(busca.toUpperCase()) && !e.id.includes(busca.toUpperCase())) return false;
-    return true;
-  });
-
-  const totalAberto = mockEventos.filter(e => e.status === "aberto" || e.status === "em_analise").length;
-  const totalValor = mockEventos.reduce((s, e) => s + e.valorEstimado, 0);
-  const mediaEvento = totalValor / mockEventos.filter(e => e.valorEstimado > 0).length;
-
-  const handleSalvar = () => {
-    if (!form.associado || !form.data) { toast.error("Associado e data obrigatórios"); return; }
-    toast.success(form.paraRateio && form.valorEstimado === "0" ? "Evento para rateio cadastrado (R$ 0,00)" : "Evento cadastrado com sucesso");
-    setShowCadastro(false); setForm(emptyForm);
-  };
-
-  const exportCsv = () => {
-    const header = "ID;Tipo;Data;Associado;Placa;Valor Estimado;Status;Rateio\n";
-    const rows = filtered.map(e => `${e.id};${e.tipo};${e.data};${e.associado};${e.placa};${e.valorEstimado};${e.status};${e.rateio ? "Sim" : "Não"}`).join("\n");
-    const blob = new Blob([header + rows], { type: "text/csv" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "eventos.csv"; a.click();
-    toast.success("Relatório exportado");
-  };
+  const tabs = [
+    { id: "cadastro", label: "Cadastro de Evento", icon: Plus },
+    { id: "consultar", label: "Consultar Eventos", icon: Search },
+    { id: "rateio-eventos", label: "Eventos p/ Rateio", icon: AlertTriangle },
+    { id: "distribuicao", label: "Distribuição Rateio", icon: DollarSign },
+    { id: "historico", label: "Histórico Distrib.", icon: Clock },
+    { id: "monitoramento", label: "Monitoramento", icon: BarChart3 },
+    { id: "relatorios", label: "Relatórios", icon: FileText },
+  ];
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div><h2 className="text-xl font-bold">Eventos</h2><p className="text-sm text-muted-foreground">Cadastro, distribuição de rateio e monitoramento de eventos</p></div>
-        <Button size="sm" onClick={() => setShowCadastro(true)}><Plus className="h-4 w-4" />Novo Evento</Button>
+      <div>
+        <h2 className="text-xl font-bold text-[hsl(212_35%_18%)]">Eventos</h2>
+        <p className="text-sm text-muted-foreground">Cadastro, rateio, distribuição e monitoramento de eventos</p>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{mockEventos.length}</p><p className="text-xs text-muted-foreground">Total de eventos</p></CardContent></Card>
-        <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-yellow-600">{totalAberto}</p><p className="text-xs text-muted-foreground">Em aberto / análise</p></CardContent></Card>
-        <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-destructive">R$ {totalValor.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Valor total estimado</p></CardContent></Card>
-        <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-primary">R$ {mediaEvento.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</p><p className="text-xs text-muted-foreground">Média por evento</p></CardContent></Card>
+      {/* Sub-tabs */}
+      <div className="flex gap-1 border-b border-[hsl(210_30%_88%)] overflow-x-auto">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setSubTab(t.id)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
+              subTab === t.id
+                ? "border-[hsl(212_55%_40%)] text-[hsl(212_35%_18%)]"
+                : "border-transparent text-muted-foreground hover:text-[hsl(212_35%_30%)]"
+            }`}
+          >
+            <t.icon className="h-4 w-4" />
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      <Tabs defaultValue="eventos">
-        <TabsList>
-          <TabsTrigger value="eventos">Eventos</TabsTrigger>
-          <TabsTrigger value="rateio">Distribuição de Rateio</TabsTrigger>
-          <TabsTrigger value="historico">Histórico de Rateio</TabsTrigger>
-          <TabsTrigger value="relatorio">Relatório</TabsTrigger>
-        </TabsList>
+      {subTab === "cadastro" && <CadastroEventoTab />}
+      {subTab === "consultar" && <ConsultarEventosTab />}
+      {subTab === "rateio-eventos" && <EventosRateioTab />}
+      {subTab === "distribuicao" && <DistribuicaoRateioTab />}
+      {subTab === "historico" && <HistoricoDistribuicaoTab />}
+      {subTab === "monitoramento" && <MonitoramentoTab />}
+      {subTab === "relatorios" && <RelatoriosEventoTab />}
+    </div>
+  );
+}
 
-        {/* ── EVENTOS ── */}
-        <TabsContent value="eventos" className="space-y-4">
-          <div className="grid sm:grid-cols-4 gap-3">
-            <div><Label className="text-xs">Buscar</Label><div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="pl-9" placeholder="Código, associado ou placa..." value={busca} onChange={e => setBusca(e.target.value)} /></div></div>
-            <div><Label className="text-xs">Tipo</Label>
-              <Select value={filtroTipo} onValueChange={setFiltroTipo}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{tiposEvento.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
-            </div>
-            <div><Label className="text-xs">Status</Label>
-              <Select value={filtroStatus} onValueChange={setFiltroStatus}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{statusEvento.map(s => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}</SelectContent></Select>
-            </div>
-            <div className="flex items-end"><Button variant="outline" size="sm" onClick={exportCsv}><Download className="h-4 w-4" />Exportar</Button></div>
+// ── 1) CADASTRO DE EVENTO (9-step stepper) ─────────────────
+
+function CadastroEventoTab() {
+  const [step, setStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [placaBusca, setPlacaBusca] = useState("");
+  const [dadosCarregados, setDadosCarregados] = useState(false);
+
+  const steps = [
+    "Informações Gerais", "Dados da Ocorrência", "Dados do Condutor",
+    "Reparo Veículo Associado", "Veículo Terceiro", "Reparo Terceiro",
+    "Reparo Patrimonial", "Parâmetros Rateio", "Termos",
+  ];
+
+  const buscarPlaca = () => {
+    if (!placaBusca) return;
+    setLoading(true);
+    setTimeout(() => { setDadosCarregados(true); setLoading(false); toast.success("Dados carregados da placa " + placaBusca); }, 800);
+  };
+
+  const salvarEvento = () => {
+    toast.success("Evento cadastrado com sucesso — Protocolo EVT-2025-0350");
+    setStep(0); setDadosCarregados(false); setPlacaBusca("");
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Stepper */}
+      <div className="flex items-center gap-1 overflow-x-auto pb-2">
+        {steps.map((s, i) => (
+          <div key={i} className="flex items-center">
+            <button
+              onClick={() => setStep(i)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                i === step ? "bg-[hsl(212_35%_18%)] text-white" :
+                i < step ? "bg-[hsl(210_40%_90%)] text-[hsl(212_35%_30%)]" :
+                "bg-[hsl(210_40%_96%)] text-muted-foreground"
+              }`}
+            >
+              <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border border-current/20">
+                {i < step ? "✓" : i + 1}
+              </span>
+              <span className="hidden sm:inline">{s}</span>
+            </button>
+            {i < steps.length - 1 && <ChevronRight className="h-4 w-4 text-muted-foreground mx-1 shrink-0" />}
           </div>
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow><TableHead>Código</TableHead><TableHead>Tipo</TableHead><TableHead>Data</TableHead><TableHead>Associado</TableHead><TableHead>Placa</TableHead><TableHead className="text-right">Valor Est.</TableHead><TableHead>Status</TableHead><TableHead>Rateio</TableHead><TableHead></TableHead></TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map(e => (
-                    <TableRow key={e.id}>
-                      <TableCell className="font-mono text-xs">{e.id}</TableCell>
-                      <TableCell><Badge variant="outline">{e.tipo}</Badge></TableCell>
-                      <TableCell>{new Date(e.data).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell className="font-medium">{e.associado}</TableCell>
-                      <TableCell className="font-mono">{e.placa}</TableCell>
-                      <TableCell className="text-right">R$ {e.valorEstimado.toLocaleString("pt-BR")}</TableCell>
-                      <TableCell><Badge className={statusColor[e.status]}>{e.status.replace("_", " ")}</Badge></TableCell>
-                      <TableCell>{e.rateio ? <Badge className="bg-primary/10 text-primary">Sim</Badge> : <Badge variant="secondary">Não</Badge>}</TableCell>
-                      <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowDetalhe(e)}><Eye className="h-3.5 w-3.5" /></Button></TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        ))}
+      </div>
 
-        {/* ── RATEIO ── */}
-        <TabsContent value="rateio" className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2"><DollarSign className="h-4 w-4" />Distribuição de Rateio — 07/2025</CardTitle>
-              <CardDescription>Cálculo automático baseado nos eventos incluídos no rateio</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid sm:grid-cols-3 gap-4">
-                <div className="p-4 bg-muted rounded-lg text-center">
-                  <p className="text-2xl font-bold">{mockEventos.filter(e => e.rateio && e.valorEstimado > 0).length}</p>
-                  <p className="text-xs text-muted-foreground">Eventos no rateio</p>
+      <Card className="border-[hsl(210_30%_88%)] shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base text-[hsl(212_35%_18%)]">{steps[step]}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Step 0 - Informações Gerais */}
+          {step === 0 && (
+            <>
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <Label className="text-xs">Buscar por Placa / Chassi</Label>
+                  <Input placeholder="Ex: BRA2E19 ou 9BGKS48U..." value={placaBusca} onChange={e => setPlacaBusca(e.target.value.toUpperCase())} />
                 </div>
-                <div className="p-4 bg-muted rounded-lg text-center">
-                  <p className="text-2xl font-bold">R$ {mockEventos.filter(e => e.rateio).reduce((s, e) => s + e.valorEstimado, 0).toLocaleString("pt-BR")}</p>
-                  <p className="text-xs text-muted-foreground">Valor total do rateio</p>
-                </div>
-                <div className="p-4 bg-muted rounded-lg text-center">
-                  <p className="text-2xl font-bold text-primary">R$ {(mockEventos.filter(e => e.rateio).reduce((s, e) => s + e.valorEstimado, 0) / 847).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                  <p className="text-xs text-muted-foreground">Valor por associado (847)</p>
-                </div>
+                <Button onClick={buscarPlaca} disabled={loading} className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white gap-2">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}Buscar
+                </Button>
               </div>
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader><TableRow><TableHead>Evento</TableHead><TableHead>Tipo</TableHead><TableHead>Associado</TableHead><TableHead className="text-right">Valor</TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {mockEventos.filter(e => e.rateio).map(e => (
-                      <TableRow key={e.id}>
-                        <TableCell className="font-mono text-xs">{e.id}</TableCell>
-                        <TableCell><Badge variant="outline">{e.tipo}</Badge></TableCell>
-                        <TableCell>{e.associado}</TableCell>
-                        <TableCell className="text-right font-semibold">R$ {e.valorEstimado.toLocaleString("pt-BR")}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={() => toast.success("Rateio calculado e pronto para inclusão nos boletos")}><TrendingUp className="h-4 w-4" />Calcular Rateio</Button>
-                <Button variant="outline" onClick={() => toast.info("Rateio incluído nos boletos do período 07/2025")}>Incluir nos Boletos</Button>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-dashed">
-            <CardContent className="p-4 flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-yellow-600" />
-              <div className="text-sm">
-                <p className="font-semibold">Conformidade Regulatória</p>
-                <p className="text-muted-foreground">Todos os eventos devem ser incluídos no rateio conforme normas regulatórias. Eventos fictícios (R$ 0,00) podem ser criados para distribuição administrativa.</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ── HISTÓRICO RATEIO ── */}
-        <TabsContent value="historico" className="space-y-4">
-          <div className="relative">
-            <div className="absolute left-6 top-0 bottom-0 w-px bg-border" />
-            <div className="space-y-4">
-              {mockRateioHist.map((r, i) => (
-                <div key={i} className="relative flex items-start gap-4 pl-12">
-                  <div className="absolute left-4 top-1 w-5 h-5 rounded-full border-2 bg-background border-primary flex items-center justify-center">
-                    <DollarSign className="h-2.5 w-2.5 text-primary" />
-                  </div>
-                  <Card className="flex-1">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-semibold">Rateio {r.periodo}</p>
-                          <p className="text-sm text-muted-foreground">{r.totalEventos} eventos · {r.associados} associados</p>
-                        </div>
-                        <Badge className={r.status === "distribuído" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"}>{r.status}</Badge>
-                      </div>
-                      <div className="grid grid-cols-3 gap-3 mt-3 text-sm">
-                        <div><span className="text-muted-foreground">Total:</span> <span className="font-bold">R$ {r.valorTotal.toLocaleString("pt-BR")}</span></div>
-                        <div><span className="text-muted-foreground">Por associado:</span> <span className="font-bold">R$ {r.valorPorAssociado.toFixed(2)}</span></div>
-                        <div><span className="text-muted-foreground">Eventos:</span> <span className="font-bold">{r.totalEventos}</span></div>
-                      </div>
-                    </CardContent>
-                  </Card>
+              {dadosCarregados && (
+                <div className="grid grid-cols-2 gap-3 p-4 bg-[hsl(210_40%_96%)] rounded-lg border border-[hsl(210_30%_88%)]">
+                  <div><Label className="text-xs text-muted-foreground">Associado</Label><p className="text-sm font-medium">Carlos Eduardo Silva</p></div>
+                  <div><Label className="text-xs text-muted-foreground">CPF</Label><p className="text-sm">123.456.789-00</p></div>
+                  <div><Label className="text-xs text-muted-foreground">Veículo</Label><p className="text-sm">Chevrolet Onix Plus 2023</p></div>
+                  <div><Label className="text-xs text-muted-foreground">Placa</Label><p className="text-sm font-mono">{placaBusca || "BRA2E19"}</p></div>
+                  <div><Label className="text-xs text-muted-foreground">Chassi</Label><p className="text-sm font-mono">9BGKS48U0MG123456</p></div>
+                  <div><Label className="text-xs text-muted-foreground">Cooperativa</Label><p className="text-sm">Central SP</p></div>
+                  <div><Label className="text-xs text-muted-foreground">Cota</Label><p className="text-sm">R$ 50-70 mil</p></div>
+                  <div><Label className="text-xs text-muted-foreground">Status</Label><Badge className="bg-green-100 text-green-800">Ativo</Badge></div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* ── RELATÓRIO ── */}
-        <TabsContent value="relatorio" className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-base">Relatório de Eventos</CardTitle></CardHeader>
-            <CardContent>
-              <div className="grid sm:grid-cols-4 gap-3 mb-4">
-                <div><Label className="text-xs">Tipo</Label>
-                  <Select defaultValue="todos"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{tiposEvento.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
-                </div>
-                <div><Label className="text-xs">Status</Label>
-                  <Select defaultValue="todos"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{statusEvento.map(s => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}</SelectContent></Select>
-                </div>
-                <div><Label className="text-xs">Data início</Label><Input type="date" /></div>
-                <div><Label className="text-xs">Data fim</Label><Input type="date" /></div>
-              </div>
-              <Button onClick={exportCsv}><Download className="h-4 w-4" />Exportar Excel</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Dialog Cadastro */}
-      <Dialog open={showCadastro} onOpenChange={setShowCadastro}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Novo Evento</DialogTitle></DialogHeader>
-          <div className="grid gap-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Tipo *</Label>
-                <Select value={form.tipo} onValueChange={v => setForm({ ...form, tipo: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{tiposEvento.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
-              </div>
-              <div><Label className="text-xs">Data *</Label><Input type="date" value={form.data} onChange={e => setForm({ ...form, data: e.target.value })} /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Associado *</Label><Input placeholder="Nome do associado" value={form.associado} onChange={e => setForm({ ...form, associado: e.target.value })} /></div>
-              <div><Label className="text-xs">Placa</Label><Input placeholder="BRA2E19" value={form.placa} onChange={e => setForm({ ...form, placa: e.target.value.toUpperCase() })} /></div>
-            </div>
-            <div><Label className="text-xs">Descrição</Label><Textarea value={form.descricao} onChange={e => setForm({ ...form, descricao: e.target.value })} /></div>
-            <div><Label className="text-xs">Valor Estimado (R$)</Label><Input type="number" placeholder="0.00" value={form.valorEstimado} onChange={e => setForm({ ...form, valorEstimado: e.target.value })} /></div>
-            <div className="flex items-center gap-2">
-              <Checkbox id="rateio" checked={form.paraRateio} onCheckedChange={c => setForm({ ...form, paraRateio: !!c })} />
-              <Label htmlFor="rateio" className="text-sm">Incluir no rateio</Label>
-            </div>
-            {form.paraRateio && form.valorEstimado === "0" && (
-              <p className="text-xs text-yellow-600 flex items-center gap-1"><AlertTriangle className="h-3 w-3" />Evento fictício (R$ 0,00) será criado para distribuição no rateio</p>
-            )}
-          </div>
-          <DialogFooter><Button variant="outline" onClick={() => setShowCadastro(false)}>Cancelar</Button><Button onClick={handleSalvar}>Cadastrar Evento</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog Detalhe — Completo com abas */}
-      <Dialog open={!!showDetalhe} onOpenChange={() => setShowDetalhe(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg">Evento {showDetalhe?.id}</DialogTitle>
-            {showDetalhe && (
-              <p className="text-sm text-muted-foreground mt-1">
-                {showDetalhe.associado} — {showDetalhe.placa} — Protocolo <span className="font-bold">{showDetalhe.id}</span>
-              </p>
-            )}
-          </DialogHeader>
-          {showDetalhe && (
-            <Tabs defaultValue="info" className="mt-2">
-              <TabsList className="flex-wrap h-auto gap-1">
-                <TabsTrigger value="info">Informações Gerais</TabsTrigger>
-                <TabsTrigger value="ocorrencia">Dados Ocorrência</TabsTrigger>
-                <TabsTrigger value="analise">Análise</TabsTrigger>
-                <TabsTrigger value="reparo">Reparo do Veículo</TabsTrigger>
-                <TabsTrigger value="terceiro">Reparo Veículo Terceiro</TabsTrigger>
-                <TabsTrigger value="patrimonial">Reparo Patrimonial</TabsTrigger>
-                <TabsTrigger value="rateio-param">Parâmetros Rateio</TabsTrigger>
-                <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
-              </TabsList>
-
-              {/* ── INFORMAÇÕES GERAIS ── */}
-              <TabsContent value="info" className="space-y-4 mt-4">
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Dados do Evento</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div><Label className="text-xs">Código</Label><Input value={showDetalhe.id} readOnly /></div>
-                    <div><Label className="text-xs">Tipo</Label><Input value={showDetalhe.tipo} readOnly /></div>
-                    <div><Label className="text-xs">Data Evento</Label><Input value={new Date(showDetalhe.data).toLocaleDateString("pt-BR")} readOnly /></div>
-                    <div><Label className="text-xs">Status</Label>
-                      <Select defaultValue={showDetalhe.status}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{statusEvento.map(s => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}</SelectContent></Select>
-                    </div>
-                    <div><Label className="text-xs">Rateio</Label><Input value={showDetalhe.rateio ? "Sim" : "Não"} readOnly /></div>
-                    <div><Label className="text-xs">Data Cadastro</Label><Input value={new Date(showDetalhe.data).toLocaleDateString("pt-BR")} readOnly /></div>
-                  </div>
-                </div>
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Associado / Veículo</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div><Label className="text-xs">Associado</Label><Input value={showDetalhe.associado} readOnly /></div>
-                    <div><Label className="text-xs">Placa</Label><Input value={showDetalhe.placa} readOnly /></div>
-                    <div><Label className="text-xs">CPF</Label><Input value="000.000.000-00" readOnly /></div>
-                    <div><Label className="text-xs">Regional</Label><Input value="São Paulo" readOnly /></div>
-                    <div><Label className="text-xs">Cooperativa</Label><Input value="Cooperativa Central" readOnly /></div>
-                    <div><Label className="text-xs">Produto</Label><Input value="Proteção Total" readOnly /></div>
-                  </div>
-                </div>
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Descrição Evento (Controle Interno)</h4>
-                  <Textarea rows={4} defaultValue={showDetalhe.descricao} />
-                </div>
-              </TabsContent>
-
-              {/* ── DADOS OCORRÊNCIA ── */}
-              <TabsContent value="ocorrencia" className="space-y-4 mt-4">
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Local e Circunstâncias</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div><Label className="text-xs">Endereço</Label><Input placeholder="Rua / Avenida" /></div>
-                    <div><Label className="text-xs">Cidade</Label><Input placeholder="Cidade" /></div>
-                    <div><Label className="text-xs">UF</Label><Input placeholder="SP" /></div>
-                    <div><Label className="text-xs">CEP</Label><Input placeholder="00000-000" /></div>
-                    <div><Label className="text-xs">Data/Hora Ocorrência</Label><Input type="datetime-local" /></div>
-                    <div><Label className="text-xs">Boletim de Ocorrência</Label><Input placeholder="Nº B.O." /></div>
-                  </div>
-                </div>
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Relato da Ocorrência</h4>
-                  <Textarea rows={5} placeholder="Descreva os detalhes da ocorrência..." />
-                </div>
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Testemunhas</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><Label className="text-xs">Nome Testemunha 1</Label><Input /></div>
-                    <div><Label className="text-xs">Telefone</Label><Input /></div>
-                    <div><Label className="text-xs">Nome Testemunha 2</Label><Input /></div>
-                    <div><Label className="text-xs">Telefone</Label><Input /></div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              {/* ── ANÁLISE ── */}
-              <TabsContent value="analise" className="space-y-4 mt-4">
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Parecer Técnico</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><Label className="text-xs">Analista Responsável</Label><Input placeholder="Nome do analista" /></div>
-                    <div><Label className="text-xs">Data Análise</Label><Input type="date" /></div>
-                  </div>
-                  <div className="mt-3"><Label className="text-xs">Parecer</Label><Textarea rows={4} placeholder="Parecer técnico da análise..." /></div>
-                </div>
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Documentos Anexados</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2"><Checkbox id="doc-bo" /><Label htmlFor="doc-bo">Boletim de Ocorrência</Label></div>
-                    <div className="flex items-center gap-2"><Checkbox id="doc-cnh" /><Label htmlFor="doc-cnh">CNH do Condutor</Label></div>
-                    <div className="flex items-center gap-2"><Checkbox id="doc-fotos" /><Label htmlFor="doc-fotos">Fotos do Veículo</Label></div>
-                    <div className="flex items-center gap-2"><Checkbox id="doc-laudo" /><Label htmlFor="doc-laudo">Laudo Pericial</Label></div>
-                    <div className="flex items-center gap-2"><Checkbox id="doc-nf" /><Label htmlFor="doc-nf">Nota Fiscal Reparo</Label></div>
-                    <div className="flex items-center gap-2"><Checkbox id="doc-orc" /><Label htmlFor="doc-orc">Orçamento</Label></div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              {/* ── REPARO DO VEÍCULO ── */}
-              <TabsContent value="reparo" className="space-y-4 mt-4">
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Situação Reparo</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><Label className="text-xs">Situação do Item</Label>
-                      <Select defaultValue="pendente"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pendente">Documentação Pendente</SelectItem><SelectItem value="em_reparo">Em Reparo</SelectItem><SelectItem value="concluido">Concluído</SelectItem><SelectItem value="aguardando_peca">Aguardando Peça</SelectItem></SelectContent></Select>
-                    </div>
-                    <div><Label className="text-xs">Oficina / Fornecedor</Label><Input placeholder="Nome da oficina" /></div>
-                  </div>
-                </div>
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Custo</h4>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div><Label className="text-xs">Valor Estimado (R$)</Label><Input type="number" defaultValue={showDetalhe.valorEstimado} /></div>
-                    <div><Label className="text-xs">Valor Aprovado (R$)</Label><Input type="number" defaultValue={showDetalhe.valorAprovado ?? ""} /></div>
-                    <div><Label className="text-xs">Valor Final (R$)</Label><Input type="number" placeholder="0.00" /></div>
-                    <div><Label className="text-xs">Mão de Obra (R$)</Label><Input type="number" placeholder="0.00" /></div>
-                    <div><Label className="text-xs">Peças (R$)</Label><Input type="number" placeholder="0.00" /></div>
-                    <div><Label className="text-xs">Outros (R$)</Label><Input type="number" placeholder="0.00" /></div>
-                  </div>
-                </div>
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Datas</h4>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div><Label className="text-xs">Entrada na Oficina</Label><Input type="date" /></div>
-                    <div><Label className="text-xs">Previsão Entrega</Label><Input type="date" /></div>
-                    <div><Label className="text-xs">Entrega Real</Label><Input type="date" /></div>
-                  </div>
-                </div>
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Condutor no Momento</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><Label className="text-xs">Nome</Label><Input /></div>
-                    <div><Label className="text-xs">CPF</Label><Input /></div>
-                    <div><Label className="text-xs">CNH</Label><Input /></div>
-                    <div><Label className="text-xs">Categoria</Label><Input /></div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              {/* ── REPARO VEÍCULO TERCEIRO ── */}
-              <TabsContent value="terceiro" className="space-y-4 mt-4">
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Dados do Terceiro</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div><Label className="text-xs">Nome</Label><Input /></div>
-                    <div><Label className="text-xs">CPF/CNPJ</Label><Input /></div>
-                    <div><Label className="text-xs">Telefone</Label><Input /></div>
-                    <div><Label className="text-xs">Placa Terceiro</Label><Input /></div>
-                    <div><Label className="text-xs">Marca/Modelo</Label><Input /></div>
-                    <div><Label className="text-xs">Seguradora</Label><Input /></div>
-                  </div>
-                </div>
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Custo Terceiro</h4>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div><Label className="text-xs">Valor Estimado (R$)</Label><Input type="number" placeholder="0.00" /></div>
-                    <div><Label className="text-xs">Valor Aprovado (R$)</Label><Input type="number" placeholder="0.00" /></div>
-                    <div><Label className="text-xs">Valor Pago (R$)</Label><Input type="number" placeholder="0.00" /></div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              {/* ── REPARO PATRIMONIAL ── */}
-              <TabsContent value="patrimonial" className="space-y-4 mt-4">
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Danos Patrimoniais</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><Label className="text-xs">Tipo do Patrimônio</Label>
-                      <Select><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="muro">Muro/Parede</SelectItem><SelectItem value="poste">Poste</SelectItem><SelectItem value="guardrail">Guardrail</SelectItem><SelectItem value="outro">Outro</SelectItem></SelectContent></Select>
-                    </div>
-                    <div><Label className="text-xs">Proprietário</Label><Input /></div>
-                    <div><Label className="text-xs">Valor Estimado (R$)</Label><Input type="number" placeholder="0.00" /></div>
-                    <div><Label className="text-xs">Valor Aprovado (R$)</Label><Input type="number" placeholder="0.00" /></div>
-                  </div>
-                  <div className="mt-3"><Label className="text-xs">Descrição do Dano</Label><Textarea rows={3} /></div>
-                </div>
-              </TabsContent>
-
-              {/* ── PARÂMETROS RATEIO ── */}
-              <TabsContent value="rateio-param" className="space-y-4 mt-4">
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Configuração de Rateio</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2"><Checkbox id="inc-rateio" defaultChecked={showDetalhe.rateio} /><Label htmlFor="inc-rateio">Incluir no rateio mensal</Label></div>
-                    <div><Label className="text-xs">Período de Referência</Label><Input defaultValue="07/2025" /></div>
-                    <div><Label className="text-xs">Percentual de Participação (%)</Label><Input type="number" defaultValue="100" /></div>
-                    <div><Label className="text-xs">Nº de Parcelas</Label><Input type="number" defaultValue="1" /></div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              {/* ── FINANCEIRO ── */}
-              <TabsContent value="financeiro" className="space-y-4 mt-4">
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Resumo Financeiro</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center p-3 bg-background border"><p className="text-xs text-muted-foreground">Estimado</p><p className="text-lg font-bold">R$ {showDetalhe.valorEstimado.toLocaleString("pt-BR")}</p></div>
-                    <div className="text-center p-3 bg-background border"><p className="text-xs text-muted-foreground">Aprovado</p><p className="text-lg font-bold text-green-600">R$ {(showDetalhe.valorAprovado ?? 0).toLocaleString("pt-BR")}</p></div>
-                    <div className="text-center p-3 bg-background border"><p className="text-xs text-muted-foreground">Pago</p><p className="text-lg font-bold text-primary">R$ 0</p></div>
-                    <div className="text-center p-3 bg-background border"><p className="text-xs text-muted-foreground">Saldo</p><p className="text-lg font-bold text-destructive">R$ {showDetalhe.valorEstimado.toLocaleString("pt-BR")}</p></div>
-                  </div>
-                </div>
-                <div className="bg-muted/50 border-l-4 border-primary p-4">
-                  <h4 className="font-bold text-sm uppercase tracking-wide mb-3">Pagamentos</h4>
-                  <Table>
-                    <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Tipo</TableHead><TableHead>Favorecido</TableHead><TableHead className="text-right">Valor</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
-                    <TableBody>
-                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">Nenhum pagamento registrado</TableCell></TableRow>
-                    </TableBody>
-                  </Table>
-                  <div className="mt-3"><Button size="sm" variant="outline"><Plus className="h-4 w-4" />Registrar Pagamento</Button></div>
-                </div>
-              </TabsContent>
-            </Tabs>
+              )}
+            </>
           )}
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setShowDetalhe(null)}>Fechar</Button>
-            <Button onClick={() => { toast.success("Evento salvo"); setShowDetalhe(null); }}>Salvar Alterações</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+          {/* Step 1 - Dados da Ocorrência */}
+          {step === 1 && (
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label className="text-xs">Data do Evento *</Label><Input type="date" defaultValue="2025-07-10" /></div>
+              <div><Label className="text-xs">Hora</Label><Input type="time" defaultValue="14:30" /></div>
+              <div><Label className="text-xs">Data do Reporte</Label><Input type="date" defaultValue="2025-07-10" /></div>
+              <div>
+                <Label className="text-xs">Tipo de Evento *</Label>
+                <Select defaultValue="Colisão"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{tiposEvento.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
+              </div>
+              <div className="col-span-2"><Label className="text-xs">Descrição da Ocorrência</Label><Textarea defaultValue="Colisão traseira no semáforo da Av. Paulista, altura do nº 1.000. Condutor relata que o veículo de trás não freou a tempo." className="min-h-[80px]" /></div>
+              <div className="col-span-2"><Label className="text-xs">Responsável pelo Atendimento</Label><Input defaultValue="João Mendes" /></div>
+            </div>
+          )}
+
+          {/* Step 2 - Dados do Condutor */}
+          {step === 2 && (
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label className="text-xs">Nome do Condutor</Label><Input defaultValue="Carlos Eduardo Silva" /></div>
+              <div><Label className="text-xs">CPF</Label><Input defaultValue="123.456.789-00" /></div>
+              <div><Label className="text-xs">CNH</Label><Input defaultValue="04512378900" /></div>
+              <div><Label className="text-xs">Data de Nascimento</Label><Input type="date" defaultValue="1985-03-15" /></div>
+              <div><Label className="text-xs">Telefone</Label><Input defaultValue="(11) 99876-5432" /></div>
+              <div className="col-span-2"><Label className="text-xs">Observações</Label><Textarea defaultValue="Condutor é o próprio associado. CNH categoria B, válida." /></div>
+            </div>
+          )}
+
+          {/* Step 3 - Reparo Veículo Associado */}
+          {step === 3 && (
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label className="text-xs">Oficina</Label><Input defaultValue="Auto Center Paulista" /></div>
+              <div>
+                <Label className="text-xs">Tipo de Reparo</Label>
+                <Select defaultValue="funilaria"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                  <SelectItem value="funilaria">Funilaria e Pintura</SelectItem>
+                  <SelectItem value="mecanica">Mecânica</SelectItem>
+                  <SelectItem value="eletrica">Elétrica</SelectItem>
+                  <SelectItem value="vidros">Vidros</SelectItem>
+                </SelectContent></Select>
+              </div>
+              <div className="col-span-2"><Label className="text-xs">Descrição do Serviço</Label><Textarea defaultValue="Troca do para-choque traseiro, lanterna esquerda e pintura. Alinhamento estrutural." /></div>
+              <div><Label className="text-xs">Valor Estimado</Label><Input defaultValue="R$ 8.500,00" /></div>
+              <div><Label className="text-xs">Valor Aprovado</Label><Input defaultValue="R$ 7.200,00" /></div>
+              <div><Label className="text-xs">Previsão de Conclusão</Label><Input type="date" defaultValue="2025-08-05" /></div>
+              <div>
+                <Label className="text-xs">Status do Reparo</Label>
+                <Select defaultValue="em-andamento"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                  <SelectItem value="orcamento">Orçamento</SelectItem>
+                  <SelectItem value="aprovado">Aprovado</SelectItem>
+                  <SelectItem value="em-andamento">Em andamento</SelectItem>
+                  <SelectItem value="concluido">Concluído</SelectItem>
+                </SelectContent></Select>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4 - Veículo Terceiro */}
+          {step === 4 && (
+            <div className="space-y-4">
+              <Card className="border-[hsl(210_30%_88%)]">
+                <CardHeader className="pb-2"><CardTitle className="text-sm text-[hsl(212_35%_18%)]">Terceiro #1 — Dados Pessoais</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-xs">Nome</Label><Input defaultValue="Marcos Pereira da Silva" /></div>
+                    <div><Label className="text-xs">CPF</Label><Input defaultValue="567.890.123-00" /></div>
+                    <div><Label className="text-xs">CNH</Label><Input defaultValue="09876543210" /></div>
+                    <div><Label className="text-xs">Telefone</Label><Input defaultValue="(11) 98765-4321" /></div>
+                    <div><Label className="text-xs">E-mail</Label><Input defaultValue="marcos.pereira@email.com" /></div>
+                    <div>
+                      <Label className="text-xs">Situação</Label>
+                      <Select defaultValue="envolvido"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                        <SelectItem value="envolvido">Envolvido</SelectItem>
+                        <SelectItem value="vitima">Vítima</SelectItem>
+                        <SelectItem value="causador">Causador</SelectItem>
+                      </SelectContent></Select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-[hsl(210_30%_88%)]">
+                <CardHeader className="pb-2"><CardTitle className="text-sm text-[hsl(212_35%_18%)]">Terceiro #1 — Dados do Veículo</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-xs">Placa</Label><Input defaultValue="XYZ9A88" /></div>
+                    <div><Label className="text-xs">Chassi</Label><Input defaultValue="9BWZZZ377VT054321" /></div>
+                    <div><Label className="text-xs">Marca</Label><Input defaultValue="Volkswagen" /></div>
+                    <div><Label className="text-xs">Modelo</Label><Input defaultValue="Gol 1.0" /></div>
+                    <div><Label className="text-xs">Ano</Label><Input defaultValue="2020" /></div>
+                    <div><Label className="text-xs">Cor</Label><Input defaultValue="Prata" /></div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Button variant="outline" className="gap-2 border-[hsl(210_30%_85%)]" onClick={() => toast.info("Formulário de terceiro adicional aberto")}>
+                <Plus className="h-4 w-4" />Adicionar outro terceiro
+              </Button>
+            </div>
+          )}
+
+          {/* Step 5 - Reparo Terceiro */}
+          {step === 5 && (
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label className="text-xs">Oficina</Label><Input defaultValue="Funilaria Brasil" /></div>
+              <div className="col-span-2"><Label className="text-xs">Descrição do Serviço</Label><Textarea defaultValue="Reparo no para-choque dianteiro e troca do farol esquerdo do veículo terceiro." /></div>
+              <div><Label className="text-xs">Valor do Orçamento</Label><Input defaultValue="R$ 3.200,00" /></div>
+              <div><Label className="text-xs">Valor Aprovado</Label><Input defaultValue="R$ 2.800,00" /></div>
+              <div>
+                <Label className="text-xs">Status</Label>
+                <Select defaultValue="aprovado"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                  <SelectItem value="orcamento">Orçamento</SelectItem>
+                  <SelectItem value="aprovado">Aprovado</SelectItem>
+                  <SelectItem value="em-andamento">Em andamento</SelectItem>
+                  <SelectItem value="concluido">Concluído</SelectItem>
+                </SelectContent></Select>
+              </div>
+            </div>
+          )}
+
+          {/* Step 6 - Reparo Patrimonial */}
+          {step === 6 && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2"><Label className="text-xs">Descrição do Dano Patrimonial</Label><Textarea defaultValue="Poste de iluminação danificado na colisão. Muro do estabelecimento comercial atingido." /></div>
+              <div><Label className="text-xs">Valor Estimado</Label><Input defaultValue="R$ 4.500,00" /></div>
+              <div><Label className="text-xs">Valor Aprovado</Label><Input defaultValue="R$ 4.000,00" /></div>
+              <div>
+                <Label className="text-xs">Situação</Label>
+                <Select defaultValue="em-analise"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="em-analise">Em análise</SelectItem>
+                  <SelectItem value="aprovado">Aprovado</SelectItem>
+                  <SelectItem value="pago">Pago</SelectItem>
+                </SelectContent></Select>
+              </div>
+              <div className="col-span-2"><Label className="text-xs">Observações</Label><Textarea defaultValue="Aguardando laudo da prefeitura para o poste. Proprietário do muro notificado." /></div>
+            </div>
+          )}
+
+          {/* Step 7 - Parâmetros Rateio */}
+          {step === 7 && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 flex items-center gap-3">
+                <Checkbox id="elegivel" defaultChecked />
+                <Label htmlFor="elegivel" className="text-sm">Elegível para rateio</Label>
+              </div>
+              <div>
+                <Label className="text-xs">Regional</Label>
+                <Select defaultValue="Central SP"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{regionais.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>
+              </div>
+              <div>
+                <Label className="text-xs">Categoria do Veículo</Label>
+                <Select defaultValue="Passeio"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{categoriasVeiculo.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+              </div>
+              <div><Label className="text-xs">Valor do Evento para Rateio</Label><Input defaultValue="R$ 14.000,00" /></div>
+            </div>
+          )}
+
+          {/* Step 8 - Termos */}
+          {step === 8 && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-xs">Upload de Documentos</Label>
+                <div className="mt-1 border-2 border-dashed border-[hsl(210_30%_85%)] rounded-lg p-6 text-center hover:border-[hsl(212_55%_40%)] transition-colors cursor-pointer" onClick={() => toast.info("Selecione os documentos para upload")}>
+                  <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Clique ou arraste arquivos aqui</p>
+                  <p className="text-xs text-muted-foreground">PDF, JPG, PNG — máx. 10MB</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">Documentos Anexados</Label>
+                {["Boletim_Ocorrencia.pdf", "Fotos_Veiculo.zip", "CNH_Condutor.jpg"].map((doc, i) => (
+                  <div key={i} className="flex items-center justify-between p-2 border rounded border-[hsl(210_30%_88%)] bg-[hsl(210_40%_96%)]">
+                    <div className="flex items-center gap-2"><FileText className="h-4 w-4 text-[hsl(212_55%_40%)]" /><span className="text-sm">{doc}</span></div>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Trash2 className="h-3.5 w-3.5 text-muted-foreground" /></Button>
+                  </div>
+                ))}
+              </div>
+              <div className="p-3 bg-[hsl(210_40%_96%)] rounded-lg border border-[hsl(210_30%_88%)]">
+                <p className="text-xs font-semibold text-[hsl(212_35%_18%)] mb-2">Registro de Aceite de Termos</p>
+                <div className="space-y-1.5">
+                  {[
+                    { termo: "Termo de Responsabilidade", aceito: true, data: "10/07/2025 14:35" },
+                    { termo: "Termo de Ciência de Rateio", aceito: true, data: "10/07/2025 14:36" },
+                    { termo: "Autorização de Vistoria", aceito: false, data: "" },
+                  ].map((t, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs">
+                      {t.aceito ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600" /> : <XCircle className="h-3.5 w-3.5 text-muted-foreground" />}
+                      <span className={t.aceito ? "font-medium" : "text-muted-foreground"}>{t.termo}</span>
+                      {t.data && <span className="text-muted-foreground ml-auto">{t.data}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Navigation Buttons */}
+      <div className="flex justify-between">
+        <Button variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)} className="gap-2 border-[hsl(210_30%_85%)]">
+          <ChevronLeft className="h-4 w-4" />Anterior
+        </Button>
+        {step < steps.length - 1 ? (
+          <Button onClick={() => setStep(step + 1)} className="gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white">
+            Próximo<ChevronRight className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button onClick={salvarEvento} className="gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white">
+            <Save className="h-4 w-4" />Salvar Evento
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── 2) CONSULTAR EVENTOS ───────────────────────────────────
+
+function ConsultarEventosTab() {
+  const [busca, setBusca] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState("Todos");
+  const [filtroResp, setFiltroResp] = useState("Todos");
+
+  const responsaveis = ["Todos", ...Array.from(new Set(mockConsulta.map(e => e.responsavel)))];
+
+  const filtered = mockConsulta.filter(e => {
+    if (filtroStatus !== "Todos" && e.status !== filtroStatus) return false;
+    if (filtroResp !== "Todos" && e.responsavel !== filtroResp) return false;
+    if (busca && !e.associado.toLowerCase().includes(busca.toLowerCase()) && !e.placa.toLowerCase().includes(busca.toLowerCase()) && !e.protocolo.toLowerCase().includes(busca.toLowerCase())) return false;
+    return true;
+  });
+
+  return (
+    <div className="space-y-5">
+      <div className="flex gap-3 items-end flex-wrap">
+        <div className="flex-1 min-w-[200px]">
+          <Label className="text-xs">Buscar</Label>
+          <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input className="pl-9" placeholder="Protocolo, associado ou placa..." value={busca} onChange={e => setBusca(e.target.value)} /></div>
+        </div>
+        <div>
+          <Label className="text-xs">Status</Label>
+          <Select value={filtroStatus} onValueChange={setFiltroStatus}><SelectTrigger className="w-48"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Todos">Todos</SelectItem>{statusConsulta.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
+        </div>
+        <div>
+          <Label className="text-xs">Responsável</Label>
+          <Select value={filtroResp} onValueChange={setFiltroResp}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent>{responsaveis.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>
+        </div>
+      </div>
+
+      <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-[hsl(210_40%_96%)]">
+              <TableHead className="text-xs">Protocolo</TableHead>
+              <TableHead className="text-xs">Associado</TableHead>
+              <TableHead className="text-xs">Placa</TableHead>
+              <TableHead className="text-xs">Tipo</TableHead>
+              <TableHead className="text-xs">Data</TableHead>
+              <TableHead className="text-xs">Status</TableHead>
+              <TableHead className="text-xs">Responsável</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map(e => (
+              <TableRow key={e.protocolo}>
+                <TableCell className="font-mono text-xs">{e.protocolo}</TableCell>
+                <TableCell className="text-sm font-medium">{e.associado}</TableCell>
+                <TableCell className="font-mono text-sm">{e.placa}</TableCell>
+                <TableCell><Badge variant="outline" className="text-xs border-[hsl(210_35%_70%)] bg-[hsl(210_40%_95%)]">{e.tipo}</Badge></TableCell>
+                <TableCell className="text-sm">{new Date(e.data).toLocaleDateString("pt-BR")}</TableCell>
+                <TableCell><Badge className={`text-xs ${statusColor[e.status] || "bg-gray-100 text-gray-800"}`}>{e.status}</Badge></TableCell>
+                <TableCell className="text-sm">{e.responsavel}</TableCell>
+              </TableRow>
+            ))}
+            {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhum evento encontrado</TableCell></TableRow>}
+          </TableBody>
+        </Table>
+      </div>
+      <p className="text-xs text-muted-foreground">{filtered.length} evento(s) encontrado(s)</p>
+    </div>
+  );
+}
+
+// ── 3) EVENTOS PARA RATEIO ─────────────────────────────────
+
+function EventosRateioTab() {
+  const [mes, setMes] = useState("07/2025");
+  const [valor, setValor] = useState("");
+  const [cat, setCat] = useState("");
+  const [reg, setReg] = useState("");
+
+  return (
+    <div className="space-y-5">
+      <Card className="border-[hsl(210_30%_88%)] shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base text-[hsl(212_35%_18%)]">Criar Evento Fictício para Rateio</CardTitle>
+          <CardDescription>Eventos administrativos com valor zerado ou ajustes para distribuição mensal</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div><Label className="text-xs">Mês Referência *</Label><Input value={mes} onChange={e => setMes(e.target.value)} placeholder="MM/AAAA" /></div>
+            <div><Label className="text-xs">Valor Total</Label><Input value={valor} onChange={e => setValor(e.target.value)} placeholder="R$ 0,00" /></div>
+            <div>
+              <Label className="text-xs">Categoria Veículo</Label>
+              <Select value={cat} onValueChange={setCat}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{categoriasVeiculo.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+            </div>
+            <div>
+              <Label className="text-xs">Regional</Label>
+              <Select value={reg} onValueChange={setReg}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{regionais.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>
+            </div>
+          </div>
+          <Button className="mt-4 gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={() => toast.success("Evento fictício criado para " + mes)}>
+            <Plus className="h-4 w-4" />Criar Evento
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="border-[hsl(210_30%_88%)] shadow-sm">
+        <CardHeader className="pb-3"><CardTitle className="text-base text-[hsl(212_35%_18%)]">Eventos Fictícios Cadastrados</CardTitle></CardHeader>
+        <CardContent>
+          <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-[hsl(210_40%_96%)]">
+                  <TableHead className="text-xs">Mês</TableHead>
+                  <TableHead className="text-xs">Descrição</TableHead>
+                  <TableHead className="text-xs text-right">Valor Total</TableHead>
+                  <TableHead className="text-xs">Categoria</TableHead>
+                  <TableHead className="text-xs">Regional</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mockEventosRateio.map(e => (
+                  <TableRow key={e.id}>
+                    <TableCell className="text-sm font-mono">{e.mes}</TableCell>
+                    <TableCell className="text-sm">{e.descricao}</TableCell>
+                    <TableCell className="text-sm text-right font-medium">R$ {e.valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-sm">{e.categoria}</TableCell>
+                    <TableCell className="text-sm">{e.regional}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ── 4) DISTRIBUIÇÃO DE RATEIO ──────────────────────────────
+
+function DistribuicaoRateioTab() {
+  const [mesRef, setMesRef] = useState("07/2025");
+  const [dataLimite, setDataLimite] = useState("2025-07-25");
+  const [valorBase, setValorBase] = useState("85.50");
+
+  const totalDistribuido = mockDistribuicao.reduce((s, d) => s + (d.qtdeVeiculos * d.valorCalc), 0);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex gap-3 items-end flex-wrap">
+        <div><Label className="text-xs">Mês Referência</Label><Input value={mesRef} onChange={e => setMesRef(e.target.value)} className="w-32" /></div>
+        <div><Label className="text-xs">Data Limite</Label><Input type="date" value={dataLimite} onChange={e => setDataLimite(e.target.value)} className="w-44" /></div>
+        <div><Label className="text-xs">Valor Base (1ª cota)</Label><Input value={valorBase} onChange={e => setValorBase(e.target.value)} className="w-32" /></div>
+      </div>
+
+      <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-[hsl(210_40%_96%)]">
+              <TableHead className="text-xs">Regional</TableHead>
+              <TableHead className="text-xs">Categoria</TableHead>
+              <TableHead className="text-xs text-right">Qtde Veículos</TableHead>
+              <TableHead className="text-xs text-right">Valor Base</TableHead>
+              <TableHead className="text-xs text-right">Fator Multiplicador</TableHead>
+              <TableHead className="text-xs text-right">Valor Calculado</TableHead>
+              <TableHead className="text-xs text-right">Subtotal</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {mockDistribuicao.map((d, i) => (
+              <TableRow key={i}>
+                <TableCell className="text-sm font-medium">{d.regional}</TableCell>
+                <TableCell className="text-sm">{d.categoria}</TableCell>
+                <TableCell className="text-sm text-right">{d.qtdeVeiculos}</TableCell>
+                <TableCell className="text-sm text-right">R$ {d.valorBase.toFixed(2)}</TableCell>
+                <TableCell className="text-sm text-right font-mono">{d.fator.toFixed(2)}x</TableCell>
+                <TableCell className="text-sm text-right font-medium">R$ {d.valorCalc.toFixed(2)}</TableCell>
+                <TableCell className="text-sm text-right font-medium">R$ {(d.qtdeVeiculos * d.valorCalc).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-[hsl(212_35%_18%)]">Total Distribuído: R$ {totalDistribuido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+        <Button className="gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={() => toast.success("Rateio gravado com sucesso para " + mesRef)}>
+          <Save className="h-4 w-4" />Gravar Rateio
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ── 5) HISTÓRICO DE DISTRIBUIÇÃO ───────────────────────────
+
+function HistoricoDistribuicaoTab() {
+  return (
+    <div className="space-y-5">
+      <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-[hsl(210_40%_96%)]">
+              <TableHead className="text-xs">Mês Referência</TableHead>
+              <TableHead className="text-xs text-right">Valor Total Distribuído</TableHead>
+              <TableHead className="text-xs text-right">Qtde Veículos</TableHead>
+              <TableHead className="text-xs text-right">Regionais</TableHead>
+              <TableHead className="text-xs">Usuário Responsável</TableHead>
+              <TableHead className="text-xs">Data Lançamento</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {mockHistDist.map((h, i) => (
+              <TableRow key={i}>
+                <TableCell className="text-sm font-mono font-medium">{h.mes}</TableCell>
+                <TableCell className="text-sm text-right font-bold">R$ {h.valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                <TableCell className="text-sm text-right">{h.qtdeVeiculos}</TableCell>
+                <TableCell className="text-sm text-right">{h.regionais}</TableCell>
+                <TableCell className="text-sm">{h.usuario}</TableCell>
+                <TableCell className="text-sm">{new Date(h.data).toLocaleDateString("pt-BR")}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+// ── 6) MONITORAMENTO ───────────────────────────────────────
+
+function MonitoramentoTab() {
+  const [monTab, setMonTab] = useState<"eventos" | "estado" | "processo">("eventos");
+
+  const kpis = [
+    { label: "Colisão", valor: 12, icon: Car },
+    { label: "Roubo/Furto", valor: 5, icon: AlertTriangle },
+    { label: "Total Reparos", valor: 14, icon: Wrench },
+    { label: "Valor Total", valor: "R$ 187.500", icon: DollarSign },
+    { label: "Média Custo", valor: "R$ 11.030", icon: TrendingUp },
+  ];
+
+  const estadoDoTempo = [
+    { status: "Aguardando cota", qtde: 3, cor: "bg-yellow-100 text-yellow-800" },
+    { status: "Aprovados", qtde: 8, cor: "bg-green-100 text-green-800" },
+    { status: "Em reparação", qtde: 5, cor: "bg-blue-100 text-blue-800" },
+    { status: "Indenização integral", qtde: 2, cor: "bg-purple-100 text-purple-800" },
+    { status: "Negados", qtde: 1, cor: "bg-red-100 text-red-800" },
+    { status: "Reembolso", qtde: 3, cor: "bg-emerald-100 text-emerald-800" },
+    { status: "Aguardando documentos", qtde: 4, cor: "bg-orange-100 text-orange-800" },
+    { status: "Encerrados", qtde: 15, cor: "bg-gray-100 text-gray-800" },
+  ];
+
+  return (
+    <div className="space-y-5">
+      <div className="flex gap-1 border-b border-[hsl(210_30%_88%)]">
+        {(["eventos", "estado", "processo"] as const).map(t => (
+          <button key={t} onClick={() => setMonTab(t)} className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px transition-colors capitalize ${monTab === t ? "border-[hsl(212_55%_40%)] text-[hsl(212_35%_18%)]" : "border-transparent text-muted-foreground"}`}>
+            {t === "estado" ? "Estado do Tempo" : t === "processo" ? "Processo" : "Eventos"}
+          </button>
+        ))}
+      </div>
+
+      {monTab === "eventos" && (
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {kpis.map((k, i) => (
+            <Card key={i} className="border-[hsl(210_30%_88%)]">
+              <CardContent className="p-4 text-center">
+                <k.icon className="h-5 w-5 mx-auto mb-1 text-[hsl(212_55%_40%)]" />
+                <p className="text-xl font-bold text-[hsl(212_35%_18%)]">{k.valor}</p>
+                <p className="text-xs text-muted-foreground">{k.label}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {monTab === "estado" && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {estadoDoTempo.map((e, i) => (
+            <Card key={i} className="border-[hsl(210_30%_88%)]">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">{e.status}</p>
+                </div>
+                <Badge className={`text-sm font-bold ${e.cor}`}>{e.qtde}</Badge>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {monTab === "processo" && (
+        <div className="space-y-6">
+          {mockTimeline.map((evt, ei) => (
+            <Card key={ei} className="border-[hsl(210_30%_88%)] shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-[hsl(212_35%_18%)]">Protocolo {evt.protocolo}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="relative pl-6">
+                  <div className="absolute left-2 top-0 bottom-0 w-px bg-[hsl(210_30%_85%)]" />
+                  <div className="space-y-3">
+                    {evt.movimentacoes.map((m, mi) => (
+                      <div key={mi} className="relative flex gap-3">
+                        <div className="absolute -left-4 top-1 w-3 h-3 rounded-full bg-[hsl(212_55%_40%)] border-2 border-white" />
+                        <div>
+                          <p className="text-sm font-medium">{m.acao}</p>
+                          <p className="text-xs text-muted-foreground">{m.data} — {m.usuario}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── 7) RELATÓRIOS ──────────────────────────────────────────
+
+function RelatoriosEventoTab() {
+  const [relTab, setRelTab] = useState<"eventos" | "cotacao" | "sincronismo">("eventos");
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const handleExport = (tipo: string) => {
+    setLoading(tipo);
+    setTimeout(() => { toast.success(`Relatório de ${tipo} exportado para Excel`); setLoading(null); }, 900);
+  };
+
+  const mockCotacao = [
+    { evento: "EVT-2025-0341", oficina1: "Auto Center Paulista", valor1: 8500, oficina2: "Funilaria SP", valor2: 9200, oficina3: "CarFix", valor3: 7800, escolhida: "CarFix" },
+    { evento: "EVT-2025-0345", oficina1: "Reparo Total", valor1: 4200, oficina2: "AutoTech", valor2: 3900, oficina3: "MasterCar", valor3: 4500, escolhida: "AutoTech" },
+  ];
+
+  const mockSincronismo = [
+    { protocolo: "EVT-2025-0341", dataCadastro: "15/06/2025", dataSync: "15/06/2025 08:45", status: "Sincronizado" },
+    { protocolo: "EVT-2025-0298", dataCadastro: "20/06/2025", dataSync: "20/06/2025 22:30", status: "Sincronizado" },
+    { protocolo: "EVT-2025-0315", dataCadastro: "25/06/2025", dataSync: "26/06/2025 08:00", status: "Atrasado" },
+    { protocolo: "EVT-2025-0345", dataCadastro: "10/07/2025", dataSync: "-", status: "Pendente" },
+  ];
+
+  return (
+    <div className="space-y-5">
+      <div className="flex gap-1 border-b border-[hsl(210_30%_88%)]">
+        {([
+          { id: "eventos" as const, label: "Relatório de Eventos" },
+          { id: "cotacao" as const, label: "Cotação / Orçamento" },
+          { id: "sincronismo" as const, label: "Sincronismo" },
+        ]).map(t => (
+          <button key={t.id} onClick={() => setRelTab(t.id)} className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px transition-colors ${relTab === t.id ? "border-[hsl(212_55%_40%)] text-[hsl(212_35%_18%)]" : "border-transparent text-muted-foreground"}`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {relTab === "eventos" && (
+        <div className="space-y-4">
+          <div className="flex gap-3 items-end flex-wrap">
+            <div><Label className="text-xs">De</Label><Input type="date" className="w-40" /></div>
+            <div><Label className="text-xs">Até</Label><Input type="date" className="w-40" /></div>
+            <div><Label className="text-xs">Tipo</Label>
+              <Select defaultValue="Todos"><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Todos">Todos</SelectItem>{tiposEvento.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
+            </div>
+            <Button variant="outline" className="gap-2 border-[hsl(210_30%_85%)]" disabled={loading === "eventos"} onClick={() => handleExport("eventos")}>
+              {loading === "eventos" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exportar Excel
+            </Button>
+          </div>
+          <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+            <Table>
+              <TableHeader><TableRow className="bg-[hsl(210_40%_96%)]"><TableHead className="text-xs">Protocolo</TableHead><TableHead className="text-xs">Associado</TableHead><TableHead className="text-xs">Placa</TableHead><TableHead className="text-xs">Tipo</TableHead><TableHead className="text-xs">Data</TableHead><TableHead className="text-xs">Status</TableHead><TableHead className="text-xs">Responsável</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {mockConsulta.map(e => (
+                  <TableRow key={e.protocolo}>
+                    <TableCell className="font-mono text-xs">{e.protocolo}</TableCell>
+                    <TableCell className="text-sm">{e.associado}</TableCell>
+                    <TableCell className="font-mono text-sm">{e.placa}</TableCell>
+                    <TableCell className="text-sm">{e.tipo}</TableCell>
+                    <TableCell className="text-sm">{new Date(e.data).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell><Badge className={`text-xs ${statusColor[e.status] || ""}`}>{e.status}</Badge></TableCell>
+                    <TableCell className="text-sm">{e.responsavel}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+
+      {relTab === "cotacao" && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button variant="outline" className="gap-2 border-[hsl(210_30%_85%)]" disabled={loading === "cotacao"} onClick={() => handleExport("cotação")}>
+              {loading === "cotacao" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exportar Excel
+            </Button>
+          </div>
+          <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+            <Table>
+              <TableHeader><TableRow className="bg-[hsl(210_40%_96%)]"><TableHead className="text-xs">Evento</TableHead><TableHead className="text-xs">Oficina 1</TableHead><TableHead className="text-xs text-right">Valor</TableHead><TableHead className="text-xs">Oficina 2</TableHead><TableHead className="text-xs text-right">Valor</TableHead><TableHead className="text-xs">Oficina 3</TableHead><TableHead className="text-xs text-right">Valor</TableHead><TableHead className="text-xs">Escolhida</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {mockCotacao.map((c, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-mono text-xs">{c.evento}</TableCell>
+                    <TableCell className="text-sm">{c.oficina1}</TableCell>
+                    <TableCell className="text-sm text-right">R$ {c.valor1.toLocaleString("pt-BR")}</TableCell>
+                    <TableCell className="text-sm">{c.oficina2}</TableCell>
+                    <TableCell className="text-sm text-right">R$ {c.valor2.toLocaleString("pt-BR")}</TableCell>
+                    <TableCell className="text-sm">{c.oficina3}</TableCell>
+                    <TableCell className="text-sm text-right">R$ {c.valor3.toLocaleString("pt-BR")}</TableCell>
+                    <TableCell><Badge className="bg-green-100 text-green-800 text-xs">{c.escolhida}</Badge></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+
+      {relTab === "sincronismo" && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button variant="outline" className="gap-2 border-[hsl(210_30%_85%)]" disabled={loading === "sincronismo"} onClick={() => handleExport("sincronismo")}>
+              {loading === "sincronismo" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exportar Excel
+            </Button>
+          </div>
+          <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+            <Table>
+              <TableHeader><TableRow className="bg-[hsl(210_40%_96%)]"><TableHead className="text-xs">Protocolo</TableHead><TableHead className="text-xs">Data Cadastro</TableHead><TableHead className="text-xs">Data Sincronização</TableHead><TableHead className="text-xs">Status</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {mockSincronismo.map((s, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-mono text-xs">{s.protocolo}</TableCell>
+                    <TableCell className="text-sm">{s.dataCadastro}</TableCell>
+                    <TableCell className="text-sm">{s.dataSync}</TableCell>
+                    <TableCell><Badge className={`text-xs ${s.status === "Sincronizado" ? "bg-green-100 text-green-800" : s.status === "Atrasado" ? "bg-yellow-100 text-yellow-800" : "bg-orange-100 text-orange-800"}`}>{s.status}</Badge></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
