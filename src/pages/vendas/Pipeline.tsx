@@ -60,6 +60,7 @@ export default function Pipeline() {
 
   // New deal form
   const [form, setForm] = useState({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
+  const [formTouched, setFormTouched] = useState({ lead_nome: false, telefone: false });
 
   // Drag state
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -111,10 +112,15 @@ export default function Pipeline() {
     setDraggedId(null); setDragOverStage(null);
   }
 
+  const formNomeInvalid = formTouched.lead_nome && !form.lead_nome.trim();
+  const formTelInvalid = formTouched.telefone && !form.telefone.trim();
+  const canCreateDeal = form.lead_nome.trim().length > 0 && form.telefone.trim().length > 0;
+
   function handleNewDeal() {
-    if (!form.lead_nome) return;
+    setFormTouched({ lead_nome: true, telefone: true });
+    if (!canCreateDeal) return;
     const newDeal: PipelineDeal = {
-      id: `p${Date.now()}`, codigo: `NEG-2026-${String(Date.now()).slice(-3)}`, lead_nome: form.lead_nome, cpf_cnpj: form.cpf_cnpj, telefone: form.telefone, email: form.email,
+      id: `p${Date.now()}`, codigo: `NEG-2026-${String(Date.now()).slice(-3)}`, lead_nome: form.lead_nome.trim(), cpf_cnpj: form.cpf_cnpj, telefone: form.telefone.trim(), email: form.email,
       veiculo_modelo: form.modelo, veiculo_placa: form.placa, plano: form.plano || "Básico", valor_plano: 149.90, stage: "cotacoes_recebidas",
       consultor: form.consultor || consultores[0], cooperativa: form.cooperativa || cooperativas[0], regional: form.regional || regionais[0],
       gerente: gerentes[0], origem: "Manual", observacoes: form.observacoes, enviado_sga: false, visualizacoes_proposta: 0,
@@ -124,6 +130,7 @@ export default function Pipeline() {
     setDeals(prev => [newDeal, ...prev]);
     setNewDealOpen(false);
     setForm({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
+    setFormTouched({ lead_nome: false, telefone: false });
   }
 
   const stageLabel = (s: PipelineStage) => stageColumns.find(c => c.key === s)?.label || s;
@@ -390,10 +397,33 @@ export default function Pipeline() {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Nova Negociação</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1.5"><Label>Nome do Lead *</Label><Input value={form.lead_nome} onChange={e => setForm({ ...form, lead_nome: e.target.value })} placeholder="Nome completo" /></div>
+            <div className="p-3 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-xs">
+              <strong>Dados mínimos para cotação:</strong> Preencha Nome e Telefone para criar a negociação.
+            </div>
+            <div className="space-y-1.5">
+              <Label>Nome do Lead *</Label>
+              <Input
+                value={form.lead_nome}
+                onChange={e => setForm({ ...form, lead_nome: e.target.value })}
+                onBlur={() => setFormTouched(t => ({ ...t, lead_nome: true }))}
+                placeholder="Nome completo"
+                className={formNomeInvalid ? "border-destructive focus-visible:ring-destructive" : ""}
+              />
+              {formNomeInvalid && <p className="text-xs text-destructive">Nome é obrigatório</p>}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={e => setForm({ ...form, cpf_cnpj: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>Telefone/WhatsApp</Label><Input value={form.telefone} onChange={e => setForm({ ...form, telefone: e.target.value })} /></div>
+              <div className="space-y-1.5">
+                <Label>Telefone/WhatsApp *</Label>
+                <Input
+                  value={form.telefone}
+                  onChange={e => setForm({ ...form, telefone: e.target.value })}
+                  onBlur={() => setFormTouched(t => ({ ...t, telefone: true }))}
+                  placeholder="(00) 00000-0000"
+                  className={formTelInvalid ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {formTelInvalid && <p className="text-xs text-destructive">Telefone é obrigatório</p>}
+              </div>
             </div>
             <div className="space-y-1.5"><Label>E-mail</Label><Input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-3">
@@ -426,8 +456,8 @@ export default function Pipeline() {
             </div>
             <div className="space-y-1.5"><Label>Observações</Label><Textarea value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} rows={3} /></div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setNewDealOpen(false)}>Cancelar</Button>
-              <Button onClick={handleNewDeal} disabled={!form.lead_nome}>Criar Negociação</Button>
+              <Button variant="outline" onClick={() => { setNewDealOpen(false); setFormTouched({ lead_nome: false, telefone: false }); }}>Cancelar</Button>
+              <Button onClick={handleNewDeal} disabled={!canCreateDeal}>Criar Negociação</Button>
             </div>
           </div>
         </DialogContent>

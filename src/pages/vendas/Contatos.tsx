@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Search, Filter, Download, MessageSquare, Phone, Mail, User,
-  ChevronLeft, ChevronRight, ExternalLink, Plus, Calendar, MapPin,
+  ChevronLeft, ChevronRight, ExternalLink, Plus, Calendar, MapPin, AlertTriangle,
 } from "lucide-react";
 
 const ufs = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
@@ -47,20 +47,25 @@ const cidades = [
 const now = Date.now();
 const day = 86400000;
 
-const mockContatos: Contato[] = nomes.map((nome, i) => ({
-  id: `c${i}`,
-  nome,
-  cpf: gerarCPF(i),
-  telefone: `(11) 9${String(8000 + i * 37).slice(0,4)}-${String(1000 + i * 53).slice(0,4)}`,
-  email: nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").split(" ").slice(0,2).join(".") + "@email.com",
-  cidade: cidades[i][0],
-  estado: cidades[i][1],
-  dataCadastro: new Date(now - (i * 5 + 1) * day).toISOString(),
-  ultimaInteracao: new Date(now - (i * 3) * day).toISOString(),
-  nascimento: `${1980 + (i % 20)}-${String(((new Date().getMonth() + 1) % 12) + 1).padStart(2,"0")}-${String((i % 28) + 1).padStart(2,"0")}`,
-  negociacoes: i % 5 === 0 ? 0 : (i % 3) + 1,
-  sexo: i % 2 === 0 ? "F" : "M",
-}));
+const mockContatos: Contato[] = [
+  // 2 contatos sem nome para simular o problema
+  { id: "csn1", nome: "", cpf: "000.000.000-01", telefone: "(11) 90000-0001", email: "", cidade: "São Paulo", estado: "SP", dataCadastro: new Date(now - 2 * day).toISOString(), ultimaInteracao: new Date(now - day).toISOString(), nascimento: "1990-01-01", negociacoes: 1, sexo: "M" },
+  { id: "csn2", nome: "", cpf: "000.000.000-02", telefone: "(11) 90000-0002", email: "", cidade: "Rio de Janeiro", estado: "RJ", dataCadastro: new Date(now - 3 * day).toISOString(), ultimaInteracao: new Date(now - 2 * day).toISOString(), nascimento: "1985-06-15", negociacoes: 0, sexo: "F" },
+  ...nomes.map((nome, i) => ({
+    id: `c${i}`,
+    nome,
+    cpf: gerarCPF(i),
+    telefone: `(11) 9${String(8000 + i * 37).slice(0,4)}-${String(1000 + i * 53).slice(0,4)}`,
+    email: nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").split(" ").slice(0,2).join(".") + "@email.com",
+    cidade: cidades[i][0],
+    estado: cidades[i][1],
+    dataCadastro: new Date(now - (i * 5 + 1) * day).toISOString(),
+    ultimaInteracao: new Date(now - (i * 3) * day).toISOString(),
+    nascimento: `${1980 + (i % 20)}-${String(((new Date().getMonth() + 1) % 12) + 1).padStart(2,"0")}-${String((i % 28) + 1).padStart(2,"0")}`,
+    negociacoes: i % 5 === 0 ? 0 : (i % 3) + 1,
+    sexo: i % 2 === 0 ? "F" : "M",
+  })),
+];
 
 function timeAgo(d: string) {
   const diff = now - new Date(d).getTime();
@@ -80,6 +85,7 @@ export default function Contatos() {
   const [filterOpen, setFilterOpen] = useState(false);
 
   const currentMonth = new Date().getMonth() + 1;
+  const contatosSemNome = mockContatos.filter(c => !c.nome.trim()).length;
 
   const filtered = useMemo(() => {
     let list = mockContatos;
@@ -94,6 +100,7 @@ export default function Contatos() {
     if (tab === "antigos") list = list.filter(c => (now - new Date(c.ultimaInteracao).getTime()) > 90 * day);
     if (tab === "sem-dados") list = list.filter(c => !c.email || !c.telefone);
     if (tab === "aniversariantes") list = list.filter(c => parseInt(c.nascimento.split("-")[1]) === currentMonth);
+    if (tab === "sem-nome") list = list.filter(c => !c.nome.trim());
     return list;
   }, [search, tab, currentMonth]);
 
@@ -113,6 +120,16 @@ export default function Contatos() {
         </div>
       </div>
 
+      {contatosSemNome > 0 && (
+        <div
+          className="flex items-center gap-2 p-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-sm cursor-pointer hover:bg-amber-100 transition-colors"
+          onClick={() => { setTab("sem-nome"); setPage(0); }}
+        >
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span><strong>{contatosSemNome} contato{contatosSemNome > 1 ? "s" : ""} sem nome</strong> identificado{contatosSemNome > 1 ? "s" : ""}. Clique para revisar.</span>
+        </div>
+      )}
+
       <Tabs value={tab} onValueChange={v => { setTab(v); setPage(0); }}>
         <TabsList className="bg-muted/50">
           <TabsTrigger value="todos" className="text-xs">Todos</TabsTrigger>
@@ -120,6 +137,7 @@ export default function Contatos() {
           <TabsTrigger value="antigos" className="text-xs">Antigos (+90d)</TabsTrigger>
           <TabsTrigger value="sem-dados" className="text-xs">Sem Dados</TabsTrigger>
           <TabsTrigger value="aniversariantes" className="text-xs">🎂 Aniversariantes</TabsTrigger>
+          {contatosSemNome > 0 && <TabsTrigger value="sem-nome" className="text-xs text-amber-700">⚠️ Sem Nome ({contatosSemNome})</TabsTrigger>}
         </TabsList>
       </Tabs>
 
@@ -171,10 +189,10 @@ export default function Contatos() {
             <tbody>
               {pageData.map(c => (
                 <tr key={c.id} className="border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-colors" onClick={() => setSelected(c)}>
-                  <td className="p-3">
+                   <td className="p-3">
                     <div className="flex items-center gap-2">
-                      <Avatar className="h-7 w-7"><AvatarFallback className="text-[10px] bg-primary/20 text-primary">{c.nome.split(" ").map(n=>n[0]).slice(0,2).join("")}</AvatarFallback></Avatar>
-                      <span className="font-medium text-xs">{c.nome}</span>
+                      <Avatar className="h-7 w-7"><AvatarFallback className="text-[10px] bg-primary/20 text-primary">{c.nome ? c.nome.split(" ").map(n=>n[0]).slice(0,2).join("") : "?"}</AvatarFallback></Avatar>
+                      <span className={`font-medium text-xs ${!c.nome.trim() ? "italic text-amber-600" : ""}`}>{c.nome.trim() || "Contato sem nome"}</span>
                     </div>
                   </td>
                   <td className="p-3 text-xs font-mono text-muted-foreground">{c.cpf}</td>
