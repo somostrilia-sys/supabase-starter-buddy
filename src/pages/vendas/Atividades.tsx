@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,9 @@ import { toast } from "@/hooks/use-toast";
 import {
   Plus, Phone, Mail, MessageCircle, Users, MapPin, Clock,
   CheckCircle, AlertTriangle, CalendarIcon, Filter, X,
-  MoreVertical, Pencil, Trash2,
+  MoreVertical, Pencil, Trash2, Target, Zap,
+  TrendingUp, Bell, CalendarDays, ArrowRight, Brain,
+  PhoneCall, Send, Eye, AlertCircle, Flame,
 } from "lucide-react";
 import { consultores, cooperativas, regionais } from "./pipeline/mockData";
 
@@ -60,6 +62,217 @@ const mockAtividades: Atividade[] = [
   { id: "at10", tipo: "Visita", descricao: "Retirar documentação assinada na sede da cooperativa", lead_vinculado: "Camila Rodrigues", responsavel: "Ana Silva", data: new Date(now + 2 * day).toISOString().split("T")[0], hora: "13:00", status: "Pendente" },
 ];
 
+// ── Mock AI Advisor Data ──
+const mockNextAction = {
+  lead: "João Pereira",
+  motivo: "Sem interação há 2 dias — etapa Cotações Recebidas",
+  canal: "Ligação",
+  argumento: "Reforçar benefícios do plano Premium e prazo especial de adesão sem taxa até sexta-feira.",
+  urgencia: "alta" as const,
+};
+
+const mockSugestaoTarefa = {
+  tipo: "Follow-up",
+  lead: "Maria Santos",
+  descricao: "Reenviar cotação por WhatsApp com comparativo de planos. Lead visualizou proposta 1x mas não respondeu.",
+  prioridade: "urgente" as const,
+};
+
+const mockAnalise = {
+  leadsParados: 3,
+  leadsQuentes: 2,
+  taxaConversao: 12.5,
+  oportunidades: "R$ 1.429,50",
+};
+
+const mockAlertas = [
+  { id: "al1", tipo: "risco", texto: "Roberto Lima — inadimplente, em negociação há 5 dias sem resposta", icon: AlertCircle },
+  { id: "al2", tipo: "expirada", texto: "Cotação de Carlos Oliveira expira em 2 dias — nenhuma visualização", icon: Eye },
+  { id: "al3", tipo: "followup", texto: "Follow-up atrasado: Fernanda Alves aguarda retorno desde segunda", icon: Clock },
+  { id: "al4", tipo: "quente", texto: "Ana Costa visualizou proposta 3x — oportunidade quente para fechamento", icon: Flame },
+];
+
+const mockAgenda = [
+  { hora: "08:00", tarefa: "Enviar documentação para Carlos Oliveira", canal: "Email", prioridade: "alta" as const },
+  { hora: "09:00", tarefa: "Ligar para João Pereira — reativar negociação", canal: "Ligação", prioridade: "urgente" as const },
+  { hora: "10:30", tarefa: "WhatsApp para Maria Santos — reenviar cotação", canal: "WhatsApp", prioridade: "alta" as const },
+  { hora: "14:00", tarefa: "Reunião presencial com Ana Costa — fechamento", canal: "Presencial", prioridade: "media" as const },
+  { hora: "16:00", tarefa: "Visita para vistoria — Roberto Lima", canal: "Presencial", prioridade: "media" as const },
+];
+
+const prioridadeColors: Record<string, string> = {
+  urgente: "bg-red-500/15 text-red-700 border-red-300",
+  alta: "bg-amber-500/15 text-amber-700 border-amber-300",
+  media: "bg-blue-500/15 text-blue-700 border-blue-300",
+};
+
+const alertaColors: Record<string, string> = {
+  risco: "text-red-600",
+  expirada: "text-amber-600",
+  followup: "text-orange-600",
+  quente: "text-green-600",
+};
+
+function AIAdvisorSection() {
+  const [showAdvisor, setShowAdvisor] = useState(true);
+
+  if (!showAdvisor) {
+    return (
+      <Button variant="outline" size="sm" onClick={() => setShowAdvisor(true)} className="mb-2">
+        <Brain className="h-3.5 w-3.5 mr-1" />Mostrar Conselheiro IA
+      </Button>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600">
+            <Brain className="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold flex items-center gap-1.5">Conselheiro de IA <Badge className="bg-violet-500/15 text-violet-700 border-violet-300 text-[9px]">BETA</Badge></h2>
+            <p className="text-[11px] text-muted-foreground">Análise inteligente do seu pipeline em tempo real</p>
+          </div>
+        </div>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowAdvisor(false)}><X className="h-3.5 w-3.5" /></Button>
+      </div>
+
+      {/* Row 1: Next Best Action + Task Suggestion */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <Card className="border-violet-200 dark:border-violet-800 bg-gradient-to-br from-violet-50/80 to-indigo-50/50 dark:from-violet-950/30 dark:to-indigo-950/20">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-xs font-semibold flex items-center gap-1.5 text-violet-700 dark:text-violet-400">
+              <Target className="h-3.5 w-3.5" />PRÓXIMA MELHOR AÇÃO
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-sm font-bold">{mockNextAction.lead}</p>
+                <p className="text-[11px] text-muted-foreground">{mockNextAction.motivo}</p>
+              </div>
+              <Badge className={cn("text-[9px] shrink-0", prioridadeColors[mockNextAction.urgencia])}>
+                {mockNextAction.urgencia.toUpperCase()}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <PhoneCall className="h-3 w-3" /><span>Canal sugerido: <strong className="text-foreground">{mockNextAction.canal}</strong></span>
+            </div>
+            <p className="text-xs bg-white/60 dark:bg-white/5 rounded p-2 border border-violet-200/50 dark:border-violet-800/50 italic">
+              💡 {mockNextAction.argumento}
+            </p>
+            <Button size="sm" className="w-full bg-violet-600 hover:bg-violet-700 text-white text-xs h-8">
+              <PhoneCall className="h-3 w-3 mr-1" />Executar Agora <ArrowRight className="h-3 w-3 ml-auto" />
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50/80 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/20">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-xs font-semibold flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
+              <Zap className="h-3.5 w-3.5" />SUGESTÃO DE TAREFA
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 space-y-2">
+            <div>
+              <p className="text-sm font-bold">{mockSugestaoTarefa.tipo}: {mockSugestaoTarefa.lead}</p>
+              <Badge className={cn("text-[9px] mt-1", prioridadeColors[mockSugestaoTarefa.prioridade])}>
+                {mockSugestaoTarefa.prioridade.toUpperCase()}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">{mockSugestaoTarefa.descricao}</p>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="flex-1 text-xs h-8">
+                <Send className="h-3 w-3 mr-1" />Criar Atividade
+              </Button>
+              <Button size="sm" variant="ghost" className="text-xs h-8">Ignorar</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Row 2: Pipeline Analysis + Alerts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <Card>
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-xs font-semibold flex items-center gap-1.5 text-blue-700 dark:text-blue-400">
+              <TrendingUp className="h-3.5 w-3.5" />ANÁLISE DO PIPELINE
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-800/50">
+                <p className="text-lg font-bold text-red-700 dark:text-red-400">{mockAnalise.leadsParados}</p>
+                <p className="text-[10px] text-muted-foreground">Leads Parados</p>
+              </div>
+              <div className="p-2.5 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200/50 dark:border-green-800/50">
+                <p className="text-lg font-bold text-green-700 dark:text-green-400">{mockAnalise.leadsQuentes}</p>
+                <p className="text-[10px] text-muted-foreground">Leads Quentes</p>
+              </div>
+              <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/50">
+                <p className="text-lg font-bold text-blue-700 dark:text-blue-400">{mockAnalise.taxaConversao}%</p>
+                <p className="text-[10px] text-muted-foreground">Taxa Conversão</p>
+              </div>
+              <div className="p-2.5 rounded-lg bg-violet-50 dark:bg-violet-950/20 border border-violet-200/50 dark:border-violet-800/50">
+                <p className="text-lg font-bold text-violet-700 dark:text-violet-400">{mockAnalise.oportunidades}</p>
+                <p className="text-[10px] text-muted-foreground">Oportunidades</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-xs font-semibold flex items-center gap-1.5 text-red-700 dark:text-red-400">
+              <Bell className="h-3.5 w-3.5" />ALERTAS INTELIGENTES
+              <Badge className="bg-red-500/15 text-red-700 border-red-300 text-[9px] ml-auto">{mockAlertas.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 space-y-1.5">
+            {mockAlertas.map(a => (
+              <div key={a.id} className="flex items-start gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+                <a.icon className={cn("h-3.5 w-3.5 mt-0.5 shrink-0", alertaColors[a.tipo])} />
+                <p className="text-[11px] leading-tight">{a.texto}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Row 3: Agenda Sugerida */}
+      <Card>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-xs font-semibold flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+            <CalendarDays className="h-3.5 w-3.5" />AGENDA SUGERIDA PARA HOJE
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          <div className="space-y-1.5">
+            {mockAgenda.map((item, i) => (
+              <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors group">
+                <span className="text-xs font-mono font-bold text-muted-foreground w-12 shrink-0">{item.hora}</span>
+                <div className="h-8 w-[2px] rounded-full bg-emerald-300 dark:bg-emerald-700 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate">{item.tarefa}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] text-muted-foreground">{item.canal}</span>
+                    <Badge className={cn("text-[9px]", prioridadeColors[item.prioridade])}>{item.prioridade}</Badge>
+                  </div>
+                </div>
+                <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity text-xs h-7 px-2">
+                  <CheckCircle className="h-3 w-3 mr-1" />Feito
+                </Button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function Atividades() {
   const [atividades, setAtividades] = useState(mockAtividades);
   const [fStatus, setFStatus] = useState("all");
@@ -96,7 +309,6 @@ export default function Atividades() {
     if (selected.size === filtered.length) setSelected(new Set());
     else setSelected(new Set(filtered.map(a => a.id)));
   }
-
   function concluirSelecionados() {
     setAtividades(prev => prev.map(a => selected.has(a.id) ? { ...a, status: "Concluída" as const } : a));
     toast({ title: `${selected.size} atividades concluídas` });
@@ -115,7 +327,6 @@ export default function Atividades() {
     setAtividades(prev => prev.filter(a => a.id !== id));
     toast({ title: "Atividade excluída" });
   }
-
   function clearFilters() { setFStatus("all"); setFTipo("all"); setFConsultor("all"); setFCoop("all"); setFRegional("all"); setFDateStart(undefined); setFDateEnd(undefined); }
   const activeFilters = [fStatus !== "all", fTipo !== "all", fConsultor !== "all", fCoop !== "all", fRegional !== "all", !!fDateStart, !!fDateEnd].filter(Boolean).length;
 
@@ -134,6 +345,9 @@ export default function Atividades() {
           <Button onClick={() => setNewOpen(true)}><Plus className="h-4 w-4 mr-1" />Nova Atividade</Button>
         </div>
       </div>
+
+      {/* AI Advisor */}
+      <AIAdvisorSection />
 
       {/* Stat cards */}
       <div className="grid grid-cols-3 gap-3">
@@ -157,7 +371,6 @@ export default function Atividades() {
         </Card>
       </div>
 
-      {/* Filters */}
       {showFilters && (
         <Card>
           <CardContent className="p-4">
@@ -207,7 +420,6 @@ export default function Atividades() {
         </Card>
       )}
 
-      {/* Bulk actions */}
       {selected.size > 0 && (
         <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border">
           <span className="text-sm font-medium">{selected.size} selecionado(s)</span>
@@ -216,7 +428,6 @@ export default function Atividades() {
         </div>
       )}
 
-      {/* Table */}
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -272,7 +483,6 @@ export default function Atividades() {
         </CardContent>
       </Card>
 
-      {/* New Activity Modal */}
       <Dialog open={newOpen} onOpenChange={setNewOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Nova Atividade</DialogTitle></DialogHeader>
