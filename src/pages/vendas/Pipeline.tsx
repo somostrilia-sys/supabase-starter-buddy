@@ -112,10 +112,15 @@ export default function Pipeline() {
     setDraggedId(null); setDragOverStage(null);
   }
 
+  const formNomeInvalid = formTouched.lead_nome && !form.lead_nome.trim();
+  const formTelInvalid = formTouched.telefone && !form.telefone.trim();
+  const canCreateDeal = form.lead_nome.trim().length > 0 && form.telefone.trim().length > 0;
+
   function handleNewDeal() {
-    if (!form.lead_nome) return;
+    setFormTouched({ lead_nome: true, telefone: true });
+    if (!canCreateDeal) return;
     const newDeal: PipelineDeal = {
-      id: `p${Date.now()}`, codigo: `NEG-2026-${String(Date.now()).slice(-3)}`, lead_nome: form.lead_nome, cpf_cnpj: form.cpf_cnpj, telefone: form.telefone, email: form.email,
+      id: `p${Date.now()}`, codigo: `NEG-2026-${String(Date.now()).slice(-3)}`, lead_nome: form.lead_nome.trim(), cpf_cnpj: form.cpf_cnpj, telefone: form.telefone.trim(), email: form.email,
       veiculo_modelo: form.modelo, veiculo_placa: form.placa, plano: form.plano || "Básico", valor_plano: 149.90, stage: "cotacoes_recebidas",
       consultor: form.consultor || consultores[0], cooperativa: form.cooperativa || cooperativas[0], regional: form.regional || regionais[0],
       gerente: gerentes[0], origem: "Manual", observacoes: form.observacoes, enviado_sga: false, visualizacoes_proposta: 0,
@@ -125,6 +130,7 @@ export default function Pipeline() {
     setDeals(prev => [newDeal, ...prev]);
     setNewDealOpen(false);
     setForm({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
+    setFormTouched({ lead_nome: false, telefone: false });
   }
 
   const stageLabel = (s: PipelineStage) => stageColumns.find(c => c.key === s)?.label || s;
