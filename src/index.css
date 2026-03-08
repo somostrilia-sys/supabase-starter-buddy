@@ -146,3 +146,72 @@
     background: linear-gradient(135deg, hsl(217 90% 55%) 0%, hsl(230 80% 60%) 100%);
   }
 }
+
+/* ═══ Legacy color remapping ═══
+   Maps old hardcoded HSL colors to new design tokens
+   so all 30+ internal pages inherit the new palette */
+
+/* Old dark navy → new primary */
+.bg-\[hsl\(212_35\%_18\%\)\] { background-color: hsl(var(--primary)) !important; }
+.hover\:bg-\[hsl\(212_35\%_18\%\)\]:hover { background-color: hsl(var(--primary)) !important; }
+.hover\:bg-\[hsl\(212_35\%_25\%\)\]:hover { background-color: hsl(222 70% 28%) !important; }
+.text-\[hsl\(212_35\%_18\%\)\] { color: hsl(var(--primary)) !important; }
+.text-\[hsl\(212_35\%_20\%\)\] { color: hsl(var(--primary)) !important; }
+.text-\[hsl\(212_35\%_25\%\)\] { color: hsl(var(--primary)) !important; }
+.text-\[hsl\(212_35\%_30\%\)\] { color: hsl(var(--primary)) !important; }
+.hover\:text-\[hsl\(212_35\%_30\%\)\]:hover { color: hsl(var(--primary)) !important; }
+.hover\:text-\[hsl\(210_30\%_30\%\)\]:hover { color: hsl(var(--foreground)) !important; }
+
+/* Old light blue accent → new accent */
+.text-\[hsl\(210_55\%_70\%\)\] { color: hsl(var(--accent)) !important; }
+.text-\[hsl\(210_55\%_80\%\)\] { color: hsl(217 90% 80%) !important; }
+.text-\[hsl\(212_55\%_40\%\)\] { color: hsl(var(--accent)) !important; }
+.border-\[hsl\(212_55\%_40\%\)\] { border-color: hsl(var(--accent)) !important; }
+
+/* Old borders → new border token */
+.border-\[hsl\(210_30\%_85\%\)\] { border-color: hsl(var(--border)) !important; }
+.border-\[hsl\(210_30\%_88\%\)\] { border-color: hsl(var(--border)) !important; }
+.border-\[hsl\(210_30\%_90\%\)\] { border-color: hsl(var(--border)) !important; }
+.border-\[hsl\(210_30\%_92\%\)\] { border-color: hsl(var(--border)) !important; }
+.border-\[hsl\(210_35\%_70\%\)\] { border-color: hsl(var(--accent) / 0.4) !important; }
+.border-\[hsl\(210_40\%_80\%\)\] { border-color: hsl(var(--border)) !important; }
+.hover\:border-\[hsl\(210_35\%_70\%\)\]:hover { border-color: hsl(var(--accent) / 0.5) !important; }
+.hover\:border-\[hsl\(212_35\%_50\%\)\]:hover { border-color: hsl(var(--accent) / 0.5) !important; }
+.hover\:border-\[hsl\(210_30\%_75\%\)\]:hover { border-color: hsl(var(--accent) / 0.4) !important; }
+
+/* Old backgrounds → new muted/secondary */
+.bg-\[hsl\(210_40\%_96\%\)\] { background-color: hsl(var(--muted)) !important; }
+.bg-\[hsl\(210_40\%_95\%\)\] { background-color: hsl(var(--muted)) !important; }
+.bg-\[hsl\(210_30\%_97\%\)\] { background-color: hsl(var(--muted) / 0.5) !important; }
+.bg-\[hsl\(210_40\%_97\%\)\] { background-color: hsl(var(--muted) / 0.5) !important; }
+.bg-\[hsl\(210_30\%_94\%\)\] { background-color: hsl(var(--secondary)) !important; }
+.bg-\[hsl\(210_30\%_95\%\)\] { background-color: hsl(var(--secondary)) !important; }
+.bg-\[hsl\(210_30\%_96\%\)\] { background-color: hsl(var(--muted)) !important; }
+.bg-\[hsl\(210_40\%_90\%\)\] { background-color: hsl(var(--secondary)) !important; }
+.hover\:bg-\[hsl\(210_40\%_94\%\)\]:hover { background-color: hsl(var(--muted)) !important; }
+.hover\:bg-\[hsl\(210_30\%_93\%\)\]:hover { background-color: hsl(var(--muted)) !important; }
+.hover\:bg-\[hsl\(210_30\%_95\%\)\]:hover { background-color: hsl(var(--muted)) !important; }
+
+/* Old muted text */
+.text-\[hsl\(210_20\%_45\%\)\] { color: hsl(var(--muted-foreground)) !important; }
+.text-\[hsl\(210_40\%_45\%\)\] { color: hsl(var(--muted-foreground)) !important; }
+.text-\[hsl\(210_30\%_30\%\)\] { color: hsl(var(--foreground)) !important; }
+
+/* Old gradients → new gradients */
+.from-\[hsl\(212_35\%_18\%\)\] { --tw-gradient-from: hsl(var(--primary)) !important; }
+.via-\[hsl\(212_35\%_28\%\)\] { --tw-gradient-via: hsl(222 60% 26%) !important; }
+.to-\[hsl\(210_40\%_40\%\)\] { --tw-gradient-to: hsl(var(--accent) / 0.7) !important; }
+.from-\[hsl\(210_40\%_40\%\)\] { --tw-gradient-from: hsl(var(--accent) / 0.7) !important; }
+.to-\[hsl\(210_55\%_60\%\)\] { --tw-gradient-to: hsl(var(--accent)) !important; }
+.from-\[hsl\(212_35\%_18\%\)\] { --tw-gradient-from: hsl(var(--primary)) !important; }
+.to-\[hsl\(212_35\%_35\%\)\] { --tw-gradient-to: hsl(222 60% 30%) !important; }
+
+/* Old shadow */
+.hover\:shadow-\[hsl\(210_30\%_80\%\)\]\/20:hover { --tw-shadow-color: hsl(var(--primary) / 0.1) !important; }
+
+/* Old focus ring */
+.focus-visible\:ring-\[hsl\(212_35\%_25\%\)\]:focus-visible { --tw-ring-color: hsl(var(--ring)) !important; }
+
+/* TabsTrigger active state remapping */
+.data-\[state\=active\]\:bg-\[hsl\(212_35\%_18\%\)\][data-state="active"] { background-color: hsl(var(--primary)) !important; }
+.data-\[state\=active\]\:text-white[data-state="active"] { color: white !important; }
