@@ -47,10 +47,10 @@ export default function Metas() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md">
-            <Target className="h-5 w-5 text-[hsl(210_55%_70%)]" />
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
+            <Target className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">Metas de Vendas</h1>
@@ -59,7 +59,7 @@ export default function Metas() {
         </div>
         <div className="flex gap-2">
           <Select value={periodo} onValueChange={setPeriodo}>
-            <SelectTrigger className="w-36 border-[hsl(210_30%_85%)]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-36 border-border"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="jul-2025">Julho 2025</SelectItem>
               <SelectItem value="jun-2025">Junho 2025</SelectItem>
