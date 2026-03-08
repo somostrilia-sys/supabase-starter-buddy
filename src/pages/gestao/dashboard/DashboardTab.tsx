@@ -85,7 +85,7 @@ export default function DashboardTab() {
     <div className="p-4 md:p-6 space-y-5 min-h-full">
       {/* ═══ CADASTRO & VEÍCULOS ═══ */}
       <SectionDivider title="Cadastro & Veículos" />
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {kpisCadastro.map(renderKpi)}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
