@@ -106,7 +106,7 @@ export default function DashboardVendas() {
         <div>
           <Label className="text-xs font-semibold">Consultor</Label>
           <Select value={consultor} onValueChange={setConsultor}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>{consultores.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
           </Select>
         </div>
