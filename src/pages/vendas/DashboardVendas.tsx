@@ -119,11 +119,11 @@ export default function DashboardVendas() {
         </div>
         <div>
           <Label className="text-xs font-semibold">Data Início</Label>
-          <Input type="date" className="w-40" />
+          <Input type="date" className="w-full" />
         </div>
         <div>
           <Label className="text-xs font-semibold">Data Fim</Label>
-          <Input type="date" className="w-40" />
+          <Input type="date" className="w-full" />
         </div>
       </div>
 
