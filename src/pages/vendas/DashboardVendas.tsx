@@ -113,7 +113,7 @@ export default function DashboardVendas() {
         <div>
           <Label className="text-xs font-semibold">Cooperativa</Label>
           <Select value={cooperativa} onValueChange={setCooperativa}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>{cooperativas.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
           </Select>
         </div>
