@@ -90,11 +90,11 @@ export default function DashboardVendas() {
   return (
     <div className="p-6 space-y-6">
       {/* Filtros */}
-      <div className="flex items-end gap-4 flex-wrap">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div>
           <Label className="text-xs font-semibold">Período</Label>
           <Select value={periodo} onValueChange={setPeriodo}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="semana">Esta Semana</SelectItem>
               <SelectItem value="mes">Este Mês</SelectItem>
