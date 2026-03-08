@@ -39,8 +39,8 @@ function CrudTable({ title, columns, data, onAdd }: { title: string; columns: st
           <Plus className="h-3 w-3" />Adicionar
         </Button>
       </div>
-      <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
-        <Table>
+      <div className="border rounded-lg border-border overflow-x-auto">
+        <Table className="min-w-[500px]">
           <TableHeader>
             <TableRow className="bg-[hsl(210_40%_96%)]">
               {columns.map(c => <TableHead key={c} className="text-xs">{c}</TableHead>)}
