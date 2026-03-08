@@ -150,8 +150,8 @@ function GrupoProdutos({ subView, setSubView }: { subView: number; setSubView: (
             <h4 className="text-sm font-semibold text-[hsl(212_35%_18%)]">Grupos de Produtos</h4>
             <Button size="sm" className="h-7 text-xs gap-1 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={() => setShowModal(true)}><Plus className="h-3 w-3" />Novo Grupo</Button>
           </div>
-          <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
-            <Table>
+          <div className="border rounded-lg border-border overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader><TableRow className="bg-[hsl(210_40%_96%)]"><TableHead className="text-xs">Grupo</TableHead><TableHead className="text-xs">Produtos</TableHead><TableHead className="text-xs text-right">Valor Mensal</TableHead><TableHead className="text-xs">Status</TableHead><TableHead className="text-xs w-[80px]">Ações</TableHead></TableRow></TableHeader>
               <TableBody>
                 {[
