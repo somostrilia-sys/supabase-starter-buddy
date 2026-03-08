@@ -193,7 +193,7 @@ export default function DashboardVendas() {
 
       {/* Ranking + Pizza */}
       <div className="grid lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 overflow-hidden">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <Trophy className="h-4 w-4 text-[hsl(38,90%,50%)]" />
