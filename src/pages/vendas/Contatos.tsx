@@ -131,7 +131,7 @@ export default function Contatos() {
       )}
 
       <Tabs value={tab} onValueChange={v => { setTab(v); setPage(0); }}>
-        <TabsList className="bg-muted/50">
+        <TabsList className="bg-muted/50 flex-wrap h-auto">
           <TabsTrigger value="todos" className="text-xs">Todos</TabsTrigger>
           <TabsTrigger value="novos" className="text-xs">Novos (7d)</TabsTrigger>
           <TabsTrigger value="antigos" className="text-xs">Antigos (+90d)</TabsTrigger>
