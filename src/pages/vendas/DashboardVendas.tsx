@@ -241,6 +241,7 @@ export default function DashboardVendas() {
                 })}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
 

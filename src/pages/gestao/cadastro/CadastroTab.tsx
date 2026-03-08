@@ -209,7 +209,7 @@ function GrupoProdutos({ subView, setSubView }: { subView: number; setSubView: (
             <CardDescription>Migrar todos os produtos de um fornecedor para outro</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label className="text-xs">Fornecedor Atual</Label>
                 <Select><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>
