@@ -199,6 +199,7 @@ export default function DashboardVendas() {
               <Trophy className="h-4 w-4 text-[hsl(38,90%,50%)]" />
               <h3 className="font-semibold text-sm">Ranking de Consultores</h3>
             </div>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
