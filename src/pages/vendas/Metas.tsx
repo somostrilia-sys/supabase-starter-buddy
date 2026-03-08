@@ -88,7 +88,7 @@ export default function Metas() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map(k => (
           <Card key={k.label} className="border-[hsl(210_30%_88%)]">
             <CardContent className="p-4 flex items-center gap-3">
