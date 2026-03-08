@@ -215,3 +215,9 @@
 /* TabsTrigger active state remapping */
 .data-\[state\=active\]\:bg-\[hsl\(212_35\%_18\%\)\][data-state="active"] { background-color: hsl(var(--primary)) !important; }
 .data-\[state\=active\]\:text-white[data-state="active"] { color: white !important; }
+
+/* ═══ RESPONSIVE UTILITIES ═══ */
+@media (max-width: 640px) {
+  .p-6 { padding: 1rem; }
+  main.flex-1.overflow-auto { padding: 0; }
+}

@@ -203,7 +203,7 @@ export default function Pipeline() {
 
       {/* KANBAN VIEW */}
       {viewMode === "kanban" ? (
-        <div className="flex gap-3 overflow-x-auto pb-2" style={{ minHeight: "70vh" }}>
+        <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0" style={{ minHeight: "70vh" }}>
           {stageColumns.map(col => {
             const colDeals = filtered.filter(d => d.stage === col.key);
             const isOver = dragOverStage === col.key;

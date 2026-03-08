@@ -129,7 +129,7 @@ export default function BoletosSimulacao({ onBack }: { onBack: () => void }) {
       </Card>
 
       {/* Resumo */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{filtered.length}</p><p className="text-xs text-muted-foreground">Boletos</p></CardContent></Card>
         <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-green-600">R$ {totalValor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p><p className="text-xs text-muted-foreground">Valor total</p></CardContent></Card>
         <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-green-600">{filtered.filter(b => b.status === "pago").length}</p><p className="text-xs text-muted-foreground">Pagos</p></CardContent></Card>
@@ -138,8 +138,8 @@ export default function BoletosSimulacao({ onBack }: { onBack: () => void }) {
 
       {/* Tabela */}
       <Card>
-        <CardContent className="p-0">
-          <Table>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="min-w-[700px]">
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>

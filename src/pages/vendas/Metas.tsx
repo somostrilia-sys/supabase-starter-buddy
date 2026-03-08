@@ -47,10 +47,10 @@ export default function Metas() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md">
-            <Target className="h-5 w-5 text-[hsl(210_55%_70%)]" />
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
+            <Target className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">Metas de Vendas</h1>
@@ -59,7 +59,7 @@ export default function Metas() {
         </div>
         <div className="flex gap-2">
           <Select value={periodo} onValueChange={setPeriodo}>
-            <SelectTrigger className="w-36 border-[hsl(210_30%_85%)]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-36 border-border"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="jul-2025">Julho 2025</SelectItem>
               <SelectItem value="jun-2025">Junho 2025</SelectItem>
@@ -88,7 +88,7 @@ export default function Metas() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map(k => (
           <Card key={k.label} className="border-[hsl(210_30%_88%)]">
             <CardContent className="p-4 flex items-center gap-3">
@@ -105,10 +105,10 @@ export default function Metas() {
       </div>
 
       {/* Table */}
-      <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
-        <CardContent className="p-0">
-          <Table>
+      <Card className="border-border overflow-hidden">
+        <div className="h-1 gradient-hero" />
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
                 <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">#</TableHead>

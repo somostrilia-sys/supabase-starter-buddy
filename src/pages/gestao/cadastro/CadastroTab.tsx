@@ -39,8 +39,8 @@ function CrudTable({ title, columns, data, onAdd }: { title: string; columns: st
           <Plus className="h-3 w-3" />Adicionar
         </Button>
       </div>
-      <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
-        <Table>
+      <div className="border rounded-lg border-border overflow-x-auto">
+        <Table className="min-w-[500px]">
           <TableHeader>
             <TableRow className="bg-[hsl(210_40%_96%)]">
               {columns.map(c => <TableHead key={c} className="text-xs">{c}</TableHead>)}
@@ -78,23 +78,25 @@ export default function CadastroTab() {
         <p className="text-sm text-muted-foreground">Configurações e cadastros operacionais do sistema</p>
       </div>
 
-      <div className="flex gap-6 min-h-[600px]">
-        {/* Sidebar vertical */}
-        <div className="w-56 shrink-0 space-y-1">
-          {groups.map(g => (
-            <button
-              key={g.id}
-              onClick={() => { setActiveGroup(g.id); setSubView(0); }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors text-left ${
-                activeGroup === g.id
-                  ? "bg-[hsl(212_35%_18%)] text-white"
-                  : "text-muted-foreground hover:bg-[hsl(210_40%_96%)] hover:text-[hsl(212_35%_30%)]"
-              }`}
-            >
-              <g.icon className="h-4 w-4 shrink-0" />
-              {g.label}
-            </button>
-          ))}
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6 min-h-[400px] md:min-h-[600px]">
+        {/* Sidebar - horizontal scroll on mobile, vertical on desktop */}
+        <div className="md:w-56 shrink-0">
+          <div className="flex md:flex-col gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
+            {groups.map(g => (
+              <button
+                key={g.id}
+                onClick={() => { setActiveGroup(g.id); setSubView(0); }}
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors text-left whitespace-nowrap ${
+                  activeGroup === g.id
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <g.icon className="h-4 w-4 shrink-0" />
+                {g.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Content area */}
@@ -148,8 +150,8 @@ function GrupoProdutos({ subView, setSubView }: { subView: number; setSubView: (
             <h4 className="text-sm font-semibold text-[hsl(212_35%_18%)]">Grupos de Produtos</h4>
             <Button size="sm" className="h-7 text-xs gap-1 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={() => setShowModal(true)}><Plus className="h-3 w-3" />Novo Grupo</Button>
           </div>
-          <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
-            <Table>
+          <div className="border rounded-lg border-border overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader><TableRow className="bg-[hsl(210_40%_96%)]"><TableHead className="text-xs">Grupo</TableHead><TableHead className="text-xs">Produtos</TableHead><TableHead className="text-xs text-right">Valor Mensal</TableHead><TableHead className="text-xs">Status</TableHead><TableHead className="text-xs w-[80px]">Ações</TableHead></TableRow></TableHeader>
               <TableBody>
                 {[
@@ -207,7 +209,7 @@ function GrupoProdutos({ subView, setSubView }: { subView: number; setSubView: (
             <CardDescription>Migrar todos os produtos de um fornecedor para outro</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label className="text-xs">Fornecedor Atual</Label>
                 <Select><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>

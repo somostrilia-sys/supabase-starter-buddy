@@ -90,11 +90,11 @@ export default function DashboardVendas() {
   return (
     <div className="p-6 space-y-6">
       {/* Filtros */}
-      <div className="flex items-end gap-4 flex-wrap">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div>
           <Label className="text-xs font-semibold">Período</Label>
           <Select value={periodo} onValueChange={setPeriodo}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="semana">Esta Semana</SelectItem>
               <SelectItem value="mes">Este Mês</SelectItem>
@@ -106,29 +106,29 @@ export default function DashboardVendas() {
         <div>
           <Label className="text-xs font-semibold">Consultor</Label>
           <Select value={consultor} onValueChange={setConsultor}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>{consultores.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div>
           <Label className="text-xs font-semibold">Cooperativa</Label>
           <Select value={cooperativa} onValueChange={setCooperativa}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>{cooperativas.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div>
           <Label className="text-xs font-semibold">Data Início</Label>
-          <Input type="date" className="w-40" />
+          <Input type="date" className="w-full" />
         </div>
         <div>
           <Label className="text-xs font-semibold">Data Fim</Label>
-          <Input type="date" className="w-40" />
+          <Input type="date" className="w-full" />
         </div>
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         {[
           { label: "Total Leads", value: totalLeads.toString(), icon: Users, color: "text-[hsl(212,55%,40%)]", bg: "bg-[hsl(212,55%,95%)]" },
           { label: "Propostas Enviadas", value: propostas.toString(), icon: FileText, color: "text-[hsl(38,90%,45%)]", bg: "bg-[hsl(38,90%,95%)]" },
@@ -193,12 +193,13 @@ export default function DashboardVendas() {
 
       {/* Ranking + Pizza */}
       <div className="grid lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 overflow-hidden">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <Trophy className="h-4 w-4 text-[hsl(38,90%,50%)]" />
               <h3 className="font-semibold text-sm">Ranking de Consultores</h3>
             </div>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -240,6 +241,7 @@ export default function DashboardVendas() {
                 })}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
 

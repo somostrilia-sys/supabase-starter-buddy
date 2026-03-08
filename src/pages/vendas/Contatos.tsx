@@ -131,7 +131,7 @@ export default function Contatos() {
       )}
 
       <Tabs value={tab} onValueChange={v => { setTab(v); setPage(0); }}>
-        <TabsList className="bg-muted/50">
+        <TabsList className="bg-muted/50 flex-wrap h-auto">
           <TabsTrigger value="todos" className="text-xs">Todos</TabsTrigger>
           <TabsTrigger value="novos" className="text-xs">Novos (7d)</TabsTrigger>
           <TabsTrigger value="antigos" className="text-xs">Antigos (+90d)</TabsTrigger>
@@ -174,8 +174,8 @@ export default function Contatos() {
       </div>
 
       <Card className="border border-border/50">
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
+        <CardContent className="p-0 overflow-x-auto">
+          <table className="w-full text-sm min-w-[800px]">
             <thead><tr className="border-b bg-muted/30">
               <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">Nome</th>
               <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">CPF</th>

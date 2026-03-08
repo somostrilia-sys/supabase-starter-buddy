@@ -87,7 +87,7 @@ function FilterSection({
             <span className="text-sm font-bold uppercase">TODOS</span>
           </label>
         </div>
-        <div className="grid gap-x-6 gap-y-1.5" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-1.5">
           {items.map(item => {
             const isChecked = selected.has(item);
             return (
