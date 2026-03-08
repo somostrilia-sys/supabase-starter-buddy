@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useBrand } from "@/hooks/useBrand";
 import {
   Shield, Users, Car, MapPin, Building2, AlertTriangle, FileText,
   ClipboardCheck, Package, UserCog, SlidersHorizontal,
@@ -55,21 +56,18 @@ const moduleConfigs = [
     prefix: ["/gestao", "/associados", "/veiculos", "/regionais", "/cooperativas", "/sinistros", "/documentacao", "/vistorias", "/produtos", "/usuarios", "/parametros"],
     label: "Gestão",
     icon: Shield,
-    gradient: "from-primary to-primary/70",
     items: gestaoItems,
   },
   {
     prefix: ["/financeiro"],
     label: "Financeiro",
     icon: DollarSign,
-    gradient: "from-accent to-accent/70",
     items: financeiroItems,
   },
   {
     prefix: ["/vendas"],
     label: "Vendas",
     icon: Target,
-    gradient: "from-warning to-warning/70",
     items: vendasItems,
   },
 ];
@@ -87,45 +85,51 @@ export function ModuleLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut, user } = useAuth();
+  const { brand } = useBrand();
   const activeMod = getActiveModule(location.pathname);
 
   if (!activeMod) return <>{children}</>;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Top header bar with gradient accent */}
-      <header className="border-b bg-card shadow-sm shrink-0">
+      {/* Top header bar */}
+      <header className="shrink-0 gradient-hero border-b border-white/10">
         <div className="flex items-center h-14 px-4 gap-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate("/")}
-            className="gap-1.5 text-muted-foreground hover:text-foreground"
+            className="gap-1.5 text-white/50 hover:text-white hover:bg-white/10"
           >
             <ChevronLeft className="h-4 w-4" />
             <LayoutDashboard className="h-4 w-4" />
           </Button>
 
-          <div className="h-6 w-px bg-border" />
+          <div className="h-6 w-px bg-white/15" />
 
           <div className="flex items-center gap-2.5">
-            <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${activeMod.gradient} flex items-center justify-center`}>
-              <activeMod.icon className="h-4 w-4 text-primary-foreground" />
+            {brand.logoUrl && (
+              <img src={brand.logoUrl} alt={brand.name} className="h-7 object-contain brightness-0 invert opacity-80" />
+            )}
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center shadow-lg shadow-accent/20">
+                <activeMod.icon className="h-4 w-4 text-white" />
+              </div>
+              <span className="font-bold text-sm tracking-wide text-white">{activeMod.label}</span>
             </div>
-            <span className="font-bold text-sm tracking-wide">{activeMod.label}</span>
           </div>
 
           <div className="ml-auto flex items-center gap-3">
-            <span className="text-xs text-muted-foreground hidden sm:block">{user?.email}</span>
-            <Button variant="ghost" size="icon" onClick={signOut} className="text-muted-foreground hover:text-foreground h-8 w-8">
+            <span className="text-xs text-white/40 hidden sm:block">{user?.email}</span>
+            <Button variant="ghost" size="icon" onClick={signOut} className="text-white/40 hover:text-white hover:bg-white/10 h-8 w-8">
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Module navigation - horizontal scrollable with accent line */}
-      <nav className="border-b bg-card/60 backdrop-blur-sm shrink-0">
+      {/* Module navigation */}
+      <nav className="border-b bg-card shrink-0 shadow-sm">
         <ScrollArea className="w-full">
           <div className="flex items-center gap-0.5 px-4 py-1">
             {activeMod.items.map((item) => {
@@ -134,9 +138,9 @@ export function ModuleLayout({ children }: { children: ReactNode }) {
                 <NavLink
                   key={item.url}
                   to={item.url}
-                  className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm transition-colors whitespace-nowrap rounded-t-md ${
+                  className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm transition-colors whitespace-nowrap rounded-t-lg ${
                     isActive
-                      ? "text-primary font-semibold"
+                      ? "text-accent font-semibold"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
                   activeClassName=""
@@ -144,7 +148,7 @@ export function ModuleLayout({ children }: { children: ReactNode }) {
                   <item.icon className="h-3.5 w-3.5" />
                   <span>{item.title}</span>
                   {isActive && (
-                    <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full" />
+                    <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-accent rounded-full" />
                   )}
                 </NavLink>
               );

@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import {
   Users, Car, AlertTriangle, Wallet, Handshake, TrendingUp,
   PercentCircle, Target, Shield, DollarSign, ArrowRight,
-  BarChart3, PieChart, Activity, ChevronRight, LogOut,
-  Receipt, FileText, CircleDot,
+  BarChart3, Activity, ChevronRight, LogOut,
+  Receipt, FileText, CircleDot, Zap,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -97,26 +97,24 @@ function ModuleSection({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div
-            className="w-9 h-9 rounded flex items-center justify-center"
-            style={{ backgroundColor: color }}
+            className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+            style={{ backgroundColor: color, boxShadow: `0 4px 14px -3px ${color}40` }}
           >
-            <Icon className="h-4.5 w-4.5 text-white" />
+            <Icon className="h-5 w-5 text-white" />
           </div>
-          <div>
-            <h2 className="text-base font-semibold tracking-tight text-foreground">{title}</h2>
-          </div>
+          <h2 className="text-lg font-bold tracking-tight text-foreground">{title}</h2>
         </div>
         {action && onAction && (
           <button
             onClick={onAction}
-            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors border border-border rounded px-3 py-1.5 hover:bg-muted"
+            className="flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent/80 transition-colors border border-accent/20 rounded-lg px-3 py-1.5 hover:bg-accent/5"
           >
             {action}
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
         )}
       </div>
-      <div className="pl-0">{children}</div>
+      <div>{children}</div>
     </section>
   );
 }
@@ -133,7 +131,7 @@ function KpiCard({
   subtitle?: string;
 }) {
   return (
-    <Card className="shadow-none border">
+    <Card className="shadow-sm border hover:shadow-md transition-shadow">
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
@@ -145,8 +143,8 @@ function KpiCard({
               <p className="text-[11px] text-muted-foreground leading-tight">{subtitle}</p>
             )}
           </div>
-          <div className="w-10 h-10 rounded bg-muted flex items-center justify-center shrink-0">
-            <Icon className="w-5 h-5 text-muted-foreground" />
+          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+            <Icon className="w-5 h-5 text-accent" />
           </div>
         </div>
       </CardContent>
@@ -231,23 +229,23 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* ══════════ HEADER ══════════ */}
-      <header className="border-b sticky top-0 z-20" style={{ backgroundColor: `hsl(${brand.headerBg})` }}>
-        <div className="px-6 lg:px-8 h-14 flex items-center justify-between">
+      <header className="border-b border-white/10 sticky top-0 z-20 gradient-hero shadow-lg">
+        <div className="px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="h-8 object-contain" />}
+            {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="h-9 object-contain brightness-0 invert" />}
             <div>
               <span className="font-bold text-sm tracking-tight text-white">{brand.name}</span>
-              <span className="text-xs text-white/50 ml-2 hidden sm:inline">{brand.subtitle}</span>
+              <span className="text-xs text-white/30 ml-2 hidden sm:inline uppercase tracking-wider">{brand.subtitle}</span>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-xs text-white/50 hidden md:block">{user?.email}</span>
-            <div className="h-4 w-px bg-white/20 hidden md:block" />
+            <span className="text-xs text-white/40 hidden md:block">{user?.email}</span>
+            <div className="h-4 w-px bg-white/15 hidden md:block" />
             <Button
               variant="ghost"
               size="sm"
               onClick={signOut}
-              className="text-white/60 hover:text-white hover:bg-white/10 h-8 gap-1.5 text-xs"
+              className="text-white/50 hover:text-white hover:bg-white/10 h-8 gap-1.5 text-xs"
             >
               <LogOut className="h-3.5 w-3.5" />
               Sair
@@ -258,11 +256,16 @@ export default function Dashboard() {
 
       <div className="px-6 lg:px-8 py-8 space-y-10">
         {/* ══════════ PAGE TITLE ══════════ */}
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Painel Principal</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Visão consolidada da sua associação de proteção veicular
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl gradient-accent flex items-center justify-center shadow-lg shadow-accent/25">
+            <Zap className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Painel Principal</h1>
+            <p className="text-sm text-muted-foreground">
+              Visão consolidada da sua associação de proteção veicular
+            </p>
+          </div>
         </div>
 
         {/* ══════════ MODULE NAVIGATION ══════════ */}
@@ -271,11 +274,11 @@ export default function Dashboard() {
             <button
               key={mod.title}
               onClick={() => navigate(mod.route)}
-              className="group relative flex items-center gap-5 rounded-lg border bg-card p-6 text-left hover:border-primary/40 transition-all duration-200"
+              className="group relative flex items-center gap-5 rounded-xl border bg-card p-6 text-left hover:shadow-lg hover:border-accent/30 transition-all duration-300"
             >
               <div
-                className="w-14 h-14 rounded-lg flex items-center justify-center shrink-0"
-                style={{ backgroundColor: mod.color }}
+                className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+                style={{ backgroundColor: mod.color, boxShadow: `0 4px 14px -3px ${mod.color}50` }}
               >
                 <mod.icon className="w-6 h-6 text-white" />
               </div>
@@ -283,14 +286,12 @@ export default function Dashboard() {
                 <h2 className="font-semibold text-base text-foreground">{mod.title}</h2>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{mod.subtitle}</p>
               </div>
-              <ArrowRight className="h-5 w-5 text-border group-hover:text-primary transition-colors shrink-0" />
+              <ArrowRight className="h-5 w-5 text-border group-hover:text-accent transition-colors shrink-0" />
             </button>
           ))}
         </div>
 
-        {/* ═══════════════════════════════════════ */}
         {/* ══════════ GESTÃO SECTION ══════════ */}
-        {/* ═══════════════════════════════════════ */}
         <ModuleSection
           icon={Shield}
           title="Gestão"
@@ -314,7 +315,7 @@ export default function Dashboard() {
             />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-            <Card className="shadow-none border">
+            <Card className="shadow-sm border">
               <CardHeader className="pb-2 pt-5 px-5">
                 <CardTitle className="text-sm font-semibold text-foreground">Crescimento Mensal</CardTitle>
                 <p className="text-xs text-muted-foreground">Associados e veículos cadastrados</p>
@@ -326,13 +327,13 @@ export default function Dashboard() {
                     <XAxis dataKey="mes" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                     <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="associados" fill="hsl(var(--chart-1))" radius={[3, 3, 0, 0]} />
-                    <Bar dataKey="veiculos" fill="hsl(var(--chart-2))" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="associados" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="veiculos" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ChartContainer>
               </CardContent>
             </Card>
-            <Card className="shadow-none border">
+            <Card className="shadow-sm border">
               <CardHeader className="pb-2 pt-5 px-5">
                 <CardTitle className="text-sm font-semibold text-foreground">Status dos Associados</CardTitle>
                 <p className="text-xs text-muted-foreground">Distribuição atual da base</p>
@@ -370,12 +371,9 @@ export default function Dashboard() {
           </div>
         </ModuleSection>
 
-        {/* Divider */}
         <div className="h-px bg-border" />
 
-        {/* ═══════════════════════════════════════ */}
         {/* ══════════ FINANCEIRO SECTION ══════════ */}
-        {/* ═══════════════════════════════════════ */}
         <ModuleSection
           icon={DollarSign}
           title="Financeiro"
@@ -399,7 +397,7 @@ export default function Dashboard() {
             <KpiCard label="Boletos em Aberto" value="124" icon={FileText} subtitle="Vencendo este mês" />
           </div>
           <div className="mt-4">
-            <Card className="shadow-none border">
+            <Card className="shadow-sm border">
               <CardHeader className="pb-2 pt-5 px-5">
                 <CardTitle className="text-sm font-semibold text-foreground">Receitas da Semana</CardTitle>
                 <p className="text-xs text-muted-foreground">Recebimentos diários acumulados</p>
@@ -425,12 +423,9 @@ export default function Dashboard() {
           </div>
         </ModuleSection>
 
-        {/* Divider */}
         <div className="h-px bg-border" />
 
-        {/* ═══════════════════════════════════════ */}
         {/* ══════════ VENDAS SECTION ══════════ */}
-        {/* ═══════════════════════════════════════ */}
         <ModuleSection
           icon={Target}
           title="Vendas"

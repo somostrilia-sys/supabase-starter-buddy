@@ -5,21 +5,21 @@ interface BrandConfig {
   name: string;
   subtitle: string;
   logoUrl: string;
-  headerBg: string;       // HSL string for header/sidebar dark bg
-  headerAccent: string;   // HSL string for accent icons on dark bg
-  tabBg: string;          // HSL string for tab bar background
-  tabActiveBg: string;    // HSL string for active tab bg
-  tabActiveText: string;  // color for active tab text
+  headerBg: string;
+  headerAccent: string;
+  tabBg: string;
+  tabActiveBg: string;
+  tabActiveText: string;
 }
 
 const defaultBrand: BrandConfig = {
   name: "Objetivo Auto & Truck",
   subtitle: "Proteção Veicular",
   logoUrl: logoObjetiva,
-  headerBg: "212 35% 18%",
-  headerAccent: "210 55% 70%",
-  tabBg: "210 30% 94%",
-  tabActiveBg: "212 35% 30%",
+  headerBg: "222 47% 11%",
+  headerAccent: "217 90% 62%",
+  tabBg: "220 20% 94%",
+  tabActiveBg: "222 47% 18%",
   tabActiveText: "#ffffff",
 };
 
@@ -39,7 +39,6 @@ export function BrandProvider({ children }: { children: ReactNode }) {
       const saved = localStorage.getItem("brand-config");
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Always use the latest logoUrl from defaults
         return { ...defaultBrand, ...parsed, logoUrl: defaultBrand.logoUrl };
       }
     } catch {}
