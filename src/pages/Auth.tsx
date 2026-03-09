@@ -59,10 +59,8 @@ export default function Auth() {
     { icon: FileText, title: "Financeiro Inteligente", desc: "Fluxo de caixa, boletos e conciliação automática" },
   ];
 
-  const stats = [
-    { value: "99.9%", label: "Uptime" },
-    { value: "5K+", label: "Associados" },
-    { value: "24/7", label: "Suporte" },
+  const differentials = [
+    { icon: Zap, title: "Suporte 24 horas", desc: "Atendimento especializado disponível a qualquer momento" },
   ];
 
   return (
