@@ -218,7 +218,7 @@ export default function Auth() {
                 className="h-11"
               />
             </div>
-            <Button type="submit" className="w-full h-11 gradient-accent border-0 text-white font-semibold shadow-lg shadow-accent/25 hover:shadow-accent/40 transition-all" disabled={loading}>
+            <Button type="submit" className="w-full h-11 gradient-accent border-0 text-white font-semibold shadow-lg shadow-accent/25 hover:shadow-accent/40 transition-all btn-shimmer" disabled={loading}>
               {loading ? "Aguarde..." : isLogin ? (
                 <><LogIn className="mr-2 h-4 w-4" /> Entrar</>
               ) : (
