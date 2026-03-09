@@ -120,18 +120,19 @@ export default function Auth() {
               ))}
             </div>
 
-            {/* Stats */}
-            <div className="flex items-center gap-8 pt-2">
-              {stats.map((s, i) => (
-                <div key={s.label} className="flex items-center gap-3">
-                  {i > 0 && <div className="w-px h-8 bg-white/10" />}
-                  <div className={i > 0 ? "pl-3" : ""}>
-                    <p className="text-2xl font-bold text-white">{s.value}</p>
-                    <p className="text-xs text-white/40">{s.label}</p>
+            {/* Differential highlight */}
+            <div className="flex items-center gap-4 pt-2">
+              {differentials.map((d) => (
+                <div key={d.title} className="flex items-center gap-3 glass rounded-xl px-5 py-3">
+                  <div className="w-10 h-10 rounded-lg gradient-accent flex items-center justify-center">
+                    <d.icon className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold text-white">{d.title}</p>
+                    <p className="text-xs text-white/50">{d.desc}</p>
                   </div>
                 </div>
               ))}
-            </div>
           </div>
 
           {/* Bottom */}
