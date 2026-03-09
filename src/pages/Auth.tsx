@@ -134,6 +134,7 @@ export default function Auth() {
                 </div>
               ))}
             </div>
+          </div>
 
           {/* Bottom */}
           <p className="text-xs text-white/20">
