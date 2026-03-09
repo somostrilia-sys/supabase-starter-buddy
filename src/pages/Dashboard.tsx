@@ -236,7 +236,8 @@ export default function Dashboard() {
   ].filter((d) => d.value > 0);
 
   return (
-    <div className="min-h-screen bg-background dot-pattern">
+    <div className="min-h-screen bg-background dot-pattern relative">
+      <BackgroundEffects />
       {/* ══════════ HEADER ══════════ */}
       <header className="border-b border-white/10 sticky top-0 z-20 gradient-header shadow-lg">
         <div className="px-6 lg:px-8 h-16 flex items-center justify-between">

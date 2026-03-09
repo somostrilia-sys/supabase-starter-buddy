@@ -288,6 +288,35 @@
   50% { box-shadow: 0 0 8px 2px currentColor; }
 }
 
+/* Background Circles rotation */
+@keyframes bg-circle-rotate {
+  0% { transform: rotate(0deg) scale(1); opacity: 0.5; }
+  50% { transform: rotate(180deg) scale(1.05); opacity: 1; }
+  100% { transform: rotate(360deg) scale(1); opacity: 0.5; }
+}
+.animate-bg-circle {
+  animation: bg-circle-rotate 18s linear infinite;
+}
+
+/* Background Lights drift */
+@keyframes light-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(25px, -15px) scale(1.08); }
+  66% { transform: translate(-15px, 20px) scale(0.95); }
+}
+@keyframes light-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-20px, 10px) scale(1.05); }
+  66% { transform: translate(18px, -12px) scale(0.97); }
+}
+@keyframes light-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(12px, 18px) scale(1.1); }
+}
+.animate-light-drift { animation: light-drift 20s ease-in-out infinite; }
+.animate-light-drift-2 { animation: light-drift-2 24s ease-in-out infinite; }
+.animate-light-drift-3 { animation: light-drift-3 16s ease-in-out infinite; }
+
 /* ═══ Legacy color remapping ═══ */
 .bg-\[hsl\(212_35\%_18\%\)\] { background-color: hsl(var(--primary)) !important; }
 .hover\:bg-\[hsl\(212_35\%_18\%\)\]:hover { background-color: hsl(var(--primary)) !important; }
