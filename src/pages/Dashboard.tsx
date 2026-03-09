@@ -239,7 +239,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background dot-pattern relative">
       <BackgroundEffects />
       {/* ══════════ HEADER ══════════ */}
-      <header className="border-b border-white/10 sticky top-0 z-20 gradient-header shadow-lg relative">
+      <header className="border-b border-white/10 sticky top-0 z-20 gradient-header shadow-lg relative relative">
         <div className="px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="h-9 object-contain brightness-0 invert" />}
@@ -264,7 +264,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="px-6 lg:px-8 py-8 space-y-10">
+      <div className="px-6 lg:px-8 py-8 s relative z-10pace-y-10">
         {/* ══════════ PAGE TITLE ══════════ */}
         <div className="flex items-center gap-3 animate-fade-in-up">
           <div className="w-10 h-10 rounded-xl gradient-accent flex items-center justify-center shadow-lg shadow-accent/25">
