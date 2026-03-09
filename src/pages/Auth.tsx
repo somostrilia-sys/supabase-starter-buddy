@@ -144,8 +144,13 @@ export default function Auth() {
       </div>
 
       {/* Right side - Login form */}
-      <div className="flex-1 flex items-center justify-center bg-background p-6 sm:p-10">
-        <div className="w-full max-w-[380px] space-y-8">
+      <div className="flex-1 flex items-center justify-center bg-background p-6 sm:p-10 relative overflow-hidden">
+        {/* Subtle orbs on right side too */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none lg:hidden">
+          <div className="orb orb-1" />
+          <div className="orb orb-2" />
+        </div>
+        <div className="w-full max-w-[380px] space-y-8 relative z-10 login-glow">
           {/* Mobile logo */}
           <div className="text-center lg:hidden space-y-3">
             {brand.logoUrl && (
