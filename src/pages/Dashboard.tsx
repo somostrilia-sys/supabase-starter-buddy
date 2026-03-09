@@ -12,6 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useCountUp } from "@/hooks/useCountUp";
+import { BackgroundEffects } from "@/components/BackgroundEffects";
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
 } from "@/components/ui/chart";
