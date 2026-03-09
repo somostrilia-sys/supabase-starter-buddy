@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useCountUp } from "@/hooks/useCountUp";
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
 } from "@/components/ui/chart";
@@ -107,7 +108,7 @@ function ModuleSection({
         {action && onAction && (
           <button
             onClick={onAction}
-            className="flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent/80 transition-colors border border-accent/20 rounded-lg px-3 py-1.5 hover:bg-accent/5"
+            className="flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent/80 transition-colors border border-accent/20 rounded-lg px-3 py-1.5 hover:bg-accent/5 btn-shimmer"
           >
             {action}
             <ChevronRight className="h-3.5 w-3.5" />
@@ -124,21 +125,28 @@ function KpiCard({
   value,
   icon: Icon,
   subtitle,
+  animDelay,
 }: {
   label: string;
   value: string | number;
   icon: React.ElementType;
   subtitle?: string;
+  animDelay?: number;
 }) {
+  const numericValue = typeof value === 'number' ? value : null;
+  const animatedValue = useCountUp(numericValue ?? 0);
+
   return (
-    <Card className="shadow-sm border hover:shadow-md transition-shadow">
+    <Card className={`shadow-sm border card-premium card-glow animate-fade-in-up animate-fade-in-up-${animDelay ?? 1}`}>
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider leading-tight">
               {label}
             </p>
-            <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>
+            <p className="text-2xl font-bold tracking-tight text-foreground">
+              {numericValue !== null ? animatedValue : value}
+            </p>
             {subtitle && (
               <p className="text-[11px] text-muted-foreground leading-tight">{subtitle}</p>
             )}
@@ -227,9 +235,9 @@ export default function Dashboard() {
   ].filter((d) => d.value > 0);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background dot-pattern">
       {/* ══════════ HEADER ══════════ */}
-      <header className="border-b border-white/10 sticky top-0 z-20 gradient-hero shadow-lg">
+      <header className="border-b border-white/10 sticky top-0 z-20 gradient-header shadow-lg">
         <div className="px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="h-9 object-contain brightness-0 invert" />}
@@ -256,7 +264,7 @@ export default function Dashboard() {
 
       <div className="px-6 lg:px-8 py-8 space-y-10">
         {/* ══════════ PAGE TITLE ══════════ */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 animate-fade-in-up">
           <div className="w-10 h-10 rounded-xl gradient-accent flex items-center justify-center shadow-lg shadow-accent/25">
             <Zap className="h-5 w-5 text-white" />
           </div>
@@ -270,11 +278,11 @@ export default function Dashboard() {
 
         {/* ══════════ MODULE NAVIGATION ══════════ */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {modules.map((mod) => (
+          {modules.map((mod, i) => (
             <button
               key={mod.title}
               onClick={() => navigate(mod.route)}
-              className="group relative flex items-center gap-5 rounded-xl border bg-card p-6 text-left hover:shadow-lg hover:border-accent/30 transition-all duration-300"
+              className={`group relative flex items-center gap-5 rounded-xl border bg-card card-premium card-glow p-6 text-left transition-all duration-300 animate-fade-in-up animate-fade-in-up-${i + 1}`}
             >
               <div
                 className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
@@ -300,22 +308,24 @@ export default function Dashboard() {
           onAction={() => navigate("/gestao")}
         >
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard label="Associados Ativos" value={stats.associadosAtivos} icon={Users} />
-            <KpiCard label="Veículos Protegidos" value={stats.veiculos} icon={Car} />
+            <KpiCard label="Associados Ativos" value={stats.associadosAtivos} icon={Users} animDelay={1} />
+            <KpiCard label="Veículos Protegidos" value={stats.veiculos} icon={Car} animDelay={2} />
             <KpiCard
               label="Eventos Abertos"
               value={stats.eventosAbertos}
               icon={AlertTriangle}
               subtitle={stats.eventosAbertos > 0 ? "Requer atenção" : "Nenhum pendente"}
+              animDelay={3}
             />
             <KpiCard
               label="Inativos / Suspensos"
               value={`${stats.associadosInativos} / ${stats.associadosSuspensos}`}
               icon={Users}
+              animDelay={4}
             />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-            <Card className="shadow-sm border">
+            <Card className="shadow-sm border card-premium card-glow animate-fade-in-up animate-fade-in-up-5">
               <CardHeader className="pb-2 pt-5 px-5">
                 <CardTitle className="text-sm font-semibold text-foreground">Crescimento Mensal</CardTitle>
                 <p className="text-xs text-muted-foreground">Associados e veículos cadastrados</p>
@@ -333,7 +343,7 @@ export default function Dashboard() {
                 </ChartContainer>
               </CardContent>
             </Card>
-            <Card className="shadow-sm border">
+            <Card className="shadow-sm border card-premium card-glow animate-fade-in-up animate-fade-in-up-6">
               <CardHeader className="pb-2 pt-5 px-5">
                 <CardTitle className="text-sm font-semibold text-foreground">Status dos Associados</CardTitle>
                 <p className="text-xs text-muted-foreground">Distribuição atual da base</p>
@@ -386,18 +396,20 @@ export default function Dashboard() {
               label="Recebido Hoje"
               value={`R$ ${stats.recebidoHoje.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
               icon={Wallet}
+              animDelay={1}
             />
             <KpiCard
               label="Inadimplência"
               value={`${stats.inadimplencia}%`}
               icon={PercentCircle}
               subtitle={stats.inadimplencia > 20 ? "Acima do aceitável" : "Dentro da meta"}
+              animDelay={2}
             />
-            <KpiCard label="Receita Semanal" value="R$ 10.350,00" icon={Receipt} subtitle="Últimos 7 dias" />
-            <KpiCard label="Boletos em Aberto" value="124" icon={FileText} subtitle="Vencendo este mês" />
+            <KpiCard label="Receita Semanal" value="R$ 10.350,00" icon={Receipt} subtitle="Últimos 7 dias" animDelay={3} />
+            <KpiCard label="Boletos em Aberto" value="124" icon={FileText} subtitle="Vencendo este mês" animDelay={4} />
           </div>
           <div className="mt-4">
-            <Card className="shadow-sm border">
+            <Card className="shadow-sm border card-premium card-glow animate-fade-in-up animate-fade-in-up-5">
               <CardHeader className="pb-2 pt-5 px-5">
                 <CardTitle className="text-sm font-semibold text-foreground">Receitas da Semana</CardTitle>
                 <p className="text-xs text-muted-foreground">Recebimentos diários acumulados</p>
@@ -434,15 +446,16 @@ export default function Dashboard() {
           onAction={() => navigate("/vendas/pipeline")}
         >
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pb-8">
-            <KpiCard label="Negociações Ativas" value={stats.negociacoesAtivas} icon={Handshake} />
-            <KpiCard label="Vendas no Mês" value={stats.vendasMes} icon={TrendingUp} />
+            <KpiCard label="Negociações Ativas" value={stats.negociacoesAtivas} icon={Handshake} animDelay={1} />
+            <KpiCard label="Vendas no Mês" value={stats.vendasMes} icon={TrendingUp} animDelay={2} />
             <KpiCard
               label="Taxa de Conversão"
               value={`${stats.conversao}%`}
               icon={Target}
               subtitle={stats.conversao >= 30 ? "Boa performance" : "Abaixo da meta"}
+              animDelay={3}
             />
-            <KpiCard label="Leads no Pipeline" value="47" icon={CircleDot} subtitle="Em qualificação" />
+            <KpiCard label="Leads no Pipeline" value="47" icon={CircleDot} subtitle="Em qualificação" animDelay={4} />
           </div>
         </ModuleSection>
       </div>

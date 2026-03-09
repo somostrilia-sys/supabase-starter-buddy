@@ -67,11 +67,11 @@ export default function Auth() {
     <div className="min-h-screen flex">
       {/* Left side - Hero with gradient */}
       <div className="hidden lg:flex lg:w-[58%] relative gradient-hero overflow-hidden">
-        {/* Decorative elements */}
+        {/* Animated orbs */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-accent/8 blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-[600px] h-[600px] rounded-full bg-accent/6 blur-3xl translate-x-1/4 translate-y-1/4" />
-          <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] rounded-full bg-accent/5 blur-2xl -translate-x-1/2 -translate-y-1/2" />
+          <div className="orb orb-1" />
+          <div className="orb orb-2" />
+          <div className="orb orb-3" />
           {/* Grid pattern overlay */}
           <div className="absolute inset-0 opacity-[0.03]" style={{
             backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
@@ -144,8 +144,13 @@ export default function Auth() {
       </div>
 
       {/* Right side - Login form */}
-      <div className="flex-1 flex items-center justify-center bg-background p-6 sm:p-10">
-        <div className="w-full max-w-[380px] space-y-8">
+      <div className="flex-1 flex items-center justify-center bg-background p-6 sm:p-10 relative overflow-hidden">
+        {/* Subtle orbs on right side too */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none lg:hidden">
+          <div className="orb orb-1" />
+          <div className="orb orb-2" />
+        </div>
+        <div className="w-full max-w-[380px] space-y-8 relative z-10 login-glow">
           {/* Mobile logo */}
           <div className="text-center lg:hidden space-y-3">
             {brand.logoUrl && (
@@ -213,7 +218,7 @@ export default function Auth() {
                 className="h-11"
               />
             </div>
-            <Button type="submit" className="w-full h-11 gradient-accent border-0 text-white font-semibold shadow-lg shadow-accent/25 hover:shadow-accent/40 transition-all" disabled={loading}>
+            <Button type="submit" className="w-full h-11 gradient-accent border-0 text-white font-semibold shadow-lg shadow-accent/25 hover:shadow-accent/40 transition-all btn-shimmer" disabled={loading}>
               {loading ? "Aguarde..." : isLogin ? (
                 <><LogIn className="mr-2 h-4 w-4" /> Entrar</>
               ) : (
