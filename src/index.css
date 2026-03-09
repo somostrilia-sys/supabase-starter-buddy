@@ -138,6 +138,13 @@
     border: 1px solid rgba(255, 255, 255, 0.12);
   }
 
+  .glass-sidebar {
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-right: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
   .gradient-hero {
     background: linear-gradient(135deg, hsl(222 47% 11%) 0%, hsl(222 55% 18%) 40%, hsl(217 70% 28%) 70%, hsl(230 60% 22%) 100%);
   }
@@ -145,13 +152,143 @@
   .gradient-accent {
     background: linear-gradient(135deg, hsl(217 90% 55%) 0%, hsl(230 80% 60%) 100%);
   }
+
+  .gradient-header {
+    background: linear-gradient(135deg, #1A3A5C 0%, #087DBE 100%);
+  }
+
+  /* Dot pattern background for dashboard */
+  .dot-pattern {
+    background-image: radial-gradient(circle, hsl(var(--primary) / 0.07) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Card premium gradient */
+  .card-premium {
+    background: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 60% 98%) 100%);
+  }
+
+  /* Card glow on hover */
+  .card-glow {
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+  }
+  .card-glow:hover {
+    box-shadow: 0 0 20px -5px hsl(217 90% 55% / 0.2), 0 8px 25px -8px hsl(222 70% 32% / 0.15);
+    transform: translateY(-1px);
+  }
+
+  /* Button shimmer effect */
+  .btn-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.15) 50%,
+      transparent 100%
+    );
+    transition: left 0.5s ease;
+  }
+  .btn-shimmer:hover::after {
+    left: 100%;
+  }
+
+  /* Badge status pulse glow */
+  .badge-glow {
+    animation: badge-pulse 2.5s ease-in-out infinite;
+  }
+
+  /* Floating orb animation for login */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    animation: orb-float 12s ease-in-out infinite;
+  }
+  .orb-1 {
+    width: 400px;
+    height: 400px;
+    background: #087DBE;
+    opacity: 0.12;
+    top: -10%;
+    left: -5%;
+    animation-delay: 0s;
+  }
+  .orb-2 {
+    width: 350px;
+    height: 350px;
+    background: #1A3A5C;
+    opacity: 0.15;
+    bottom: -10%;
+    right: -5%;
+    animation-delay: -4s;
+  }
+  .orb-3 {
+    width: 250px;
+    height: 250px;
+    background: #087DBE;
+    opacity: 0.08;
+    top: 40%;
+    right: 20%;
+    animation-delay: -8s;
+  }
+
+  /* Login card glow */
+  .login-glow {
+    position: relative;
+  }
+  .login-glow::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, #087DBE33 0%, transparent 50%, #1A3A5C33 100%);
+    border-radius: inherit;
+    z-index: -1;
+    filter: blur(20px);
+    opacity: 0.6;
+  }
+
+  /* Fade in animation for cards */
+  .animate-fade-in-up {
+    animation: fade-in-up 0.5s ease-out both;
+  }
+  .animate-fade-in-up-1 { animation-delay: 0.05s; }
+  .animate-fade-in-up-2 { animation-delay: 0.1s; }
+  .animate-fade-in-up-3 { animation-delay: 0.15s; }
+  .animate-fade-in-up-4 { animation-delay: 0.2s; }
+  .animate-fade-in-up-5 { animation-delay: 0.25s; }
+  .animate-fade-in-up-6 { animation-delay: 0.3s; }
+  .animate-fade-in-up-7 { animation-delay: 0.35s; }
+  .animate-fade-in-up-8 { animation-delay: 0.4s; }
 }
 
-/* ═══ Legacy color remapping ═══
-   Maps old hardcoded HSL colors to new design tokens
-   so all 30+ internal pages inherit the new palette */
+/* ─── Keyframes ─── */
+@keyframes orb-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, -20px) scale(1.05); }
+  50% { transform: translate(-20px, 20px) scale(0.95); }
+  75% { transform: translate(15px, 10px) scale(1.02); }
+}
 
-/* Old dark navy → new primary */
+@keyframes fade-in-up {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 currentColor; }
+  50% { box-shadow: 0 0 8px 2px currentColor; }
+}
+
+/* ═══ Legacy color remapping ═══ */
 .bg-\[hsl\(212_35\%_18\%\)\] { background-color: hsl(var(--primary)) !important; }
 .hover\:bg-\[hsl\(212_35\%_18\%\)\]:hover { background-color: hsl(var(--primary)) !important; }
 .hover\:bg-\[hsl\(212_35\%_25\%\)\]:hover { background-color: hsl(222 70% 28%) !important; }
@@ -162,13 +299,11 @@
 .hover\:text-\[hsl\(212_35\%_30\%\)\]:hover { color: hsl(var(--primary)) !important; }
 .hover\:text-\[hsl\(210_30\%_30\%\)\]:hover { color: hsl(var(--foreground)) !important; }
 
-/* Old light blue accent → new accent */
 .text-\[hsl\(210_55\%_70\%\)\] { color: hsl(var(--accent)) !important; }
 .text-\[hsl\(210_55\%_80\%\)\] { color: hsl(217 90% 80%) !important; }
 .text-\[hsl\(212_55\%_40\%\)\] { color: hsl(var(--accent)) !important; }
 .border-\[hsl\(212_55\%_40\%\)\] { border-color: hsl(var(--accent)) !important; }
 
-/* Old borders → new border token */
 .border-\[hsl\(210_30\%_85\%\)\] { border-color: hsl(var(--border)) !important; }
 .border-\[hsl\(210_30\%_88\%\)\] { border-color: hsl(var(--border)) !important; }
 .border-\[hsl\(210_30\%_90\%\)\] { border-color: hsl(var(--border)) !important; }
@@ -179,7 +314,6 @@
 .hover\:border-\[hsl\(212_35\%_50\%\)\]:hover { border-color: hsl(var(--accent) / 0.5) !important; }
 .hover\:border-\[hsl\(210_30\%_75\%\)\]:hover { border-color: hsl(var(--accent) / 0.4) !important; }
 
-/* Old backgrounds → new muted/secondary */
 .bg-\[hsl\(210_40\%_96\%\)\] { background-color: hsl(var(--muted)) !important; }
 .bg-\[hsl\(210_40\%_95\%\)\] { background-color: hsl(var(--muted)) !important; }
 .bg-\[hsl\(210_30\%_97\%\)\] { background-color: hsl(var(--muted) / 0.5) !important; }
@@ -192,12 +326,10 @@
 .hover\:bg-\[hsl\(210_30\%_93\%\)\]:hover { background-color: hsl(var(--muted)) !important; }
 .hover\:bg-\[hsl\(210_30\%_95\%\)\]:hover { background-color: hsl(var(--muted)) !important; }
 
-/* Old muted text */
 .text-\[hsl\(210_20\%_45\%\)\] { color: hsl(var(--muted-foreground)) !important; }
 .text-\[hsl\(210_40\%_45\%\)\] { color: hsl(var(--muted-foreground)) !important; }
 .text-\[hsl\(210_30\%_30\%\)\] { color: hsl(var(--foreground)) !important; }
 
-/* Old gradients → new gradients */
 .from-\[hsl\(212_35\%_18\%\)\] { --tw-gradient-from: hsl(var(--primary)) !important; }
 .via-\[hsl\(212_35\%_28\%\)\] { --tw-gradient-via: hsl(222 60% 26%) !important; }
 .to-\[hsl\(210_40\%_40\%\)\] { --tw-gradient-to: hsl(var(--accent) / 0.7) !important; }
@@ -206,13 +338,9 @@
 .from-\[hsl\(212_35\%_18\%\)\] { --tw-gradient-from: hsl(var(--primary)) !important; }
 .to-\[hsl\(212_35\%_35\%\)\] { --tw-gradient-to: hsl(222 60% 30%) !important; }
 
-/* Old shadow */
 .hover\:shadow-\[hsl\(210_30\%_80\%\)\]\/20:hover { --tw-shadow-color: hsl(var(--primary) / 0.1) !important; }
-
-/* Old focus ring */
 .focus-visible\:ring-\[hsl\(212_35\%_25\%\)\]:focus-visible { --tw-ring-color: hsl(var(--ring)) !important; }
 
-/* TabsTrigger active state remapping */
 .data-\[state\=active\]\:bg-\[hsl\(212_35\%_18\%\)\][data-state="active"] { background-color: hsl(var(--primary)) !important; }
 .data-\[state\=active\]\:text-white[data-state="active"] { color: white !important; }
 
