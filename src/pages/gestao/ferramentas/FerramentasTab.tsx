@@ -4,11 +4,13 @@ import { ArrowLeft, Upload, Copy, Plug, Wrench, ChevronRight } from "lucide-reac
 import AlteracoesLote from "./AlteracoesLote";
 import ReplicarItens from "./ReplicarItens";
 import Integracoes from "./Integracoes";
+import PlanosProtecao from "./PlanosProtecao";
 import AlteracaoCotaMassa from "../AlteracaoCotaMassa";
 import SPCSerasa from "../SPCSerasa";
 import GestorSPCSerasa from "../GestorSPCSerasa";
 
 const actions = [
+  { id: "planos", title: "Planos de Proteção", desc: "Gerencie planos, coberturas, regionais e categorias de veículo", icon: Shield },
   { id: "lote", title: "Alterações em Lote", desc: "Importar, remover ou substituir produtos em massa", icon: Upload },
   { id: "replicar", title: "Replicar Itens em Lote", desc: "Copiar cotas e itens entre regionais e cooperativas", icon: Copy },
   { id: "integracoes", title: "Integrações", desc: "SPC/Serasa, SMS e WhatsApp", icon: Plug },
