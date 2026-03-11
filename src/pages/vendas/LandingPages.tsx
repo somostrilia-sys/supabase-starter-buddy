@@ -120,7 +120,6 @@ export default function LandingPages() {
           </div>
         </CardContent>
       </Card>
-    </div>
 
       {/* Preview Modal */}
       <Dialog open={!!previewConsultor} onOpenChange={() => setPreviewConsultor(null)}>
