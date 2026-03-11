@@ -16,6 +16,7 @@ import {
   ChevronRight, ChevronLeft, Upload, Trash2, TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import EventoDetalhe from "./EventoDetalhe";
 
 // ── Types & Constants ──────────────────────────────────────
 
