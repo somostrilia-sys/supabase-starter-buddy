@@ -1015,39 +1015,242 @@ export default function CadastrarVeiculo() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 13 */}
+        {/* SEÇÃO 13 — DOCUMENTOS DO VEÍCULO */}
         <AccordionItem value="sec-13" className="border rounded-lg overflow-hidden">
-          <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30"><SectionIcon icon={Upload} label="Upload Documentos" num={13} /></AccordionTrigger>
-          <AccordionContent className="px-4 pb-4 pt-2">
-            <div className="flex gap-3 mb-3 items-end">
-              <div className="flex-1">
-                <Label className="text-xs">Tipo Documento</Label>
-                <Select><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>{["CRLV","CNH","Comprovante","Fotos Veículo","Laudo Vistoria","Outros"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
+          <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
+            <SectionIcon icon={Upload} label="Documentos do Veículo" num={13} />
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4 pt-2 space-y-4">
+            {/* Upload controls */}
+            <div className="flex flex-wrap gap-3 items-end">
+              <div className="flex-1 min-w-[180px]">
+                <Label className="text-xs">Categoria do Documento</Label>
+                <Select value={docCategoria} onValueChange={setDocCategoria}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {DOC_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
-              <Button variant="outline" size="sm">Cadastrar Vistoria</Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_TYPES}
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  const valid = files.filter(f => {
+                    if (f.size > MAX_FILE_SIZE) {
+                      toast.error(`${f.name} excede 50MB`);
+                      return false;
+                    }
+                    return true;
+                  });
+                  const newPending = valid.map(f => ({
+                    file: f,
+                    tipo: docCategoria,
+                    preview: f.type.startsWith("image/") ? URL.createObjectURL(f) : undefined,
+                  }));
+                  setPendingFiles(prev => [...prev, ...newPending]);
+                  if (valid.length > 0) toast.success(`${valid.length} arquivo(s) adicionado(s)`);
+                  e.target.value = "";
+                }}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Adicionar Documento
+              </Button>
             </div>
-            <div className="border-2 border-dashed rounded-lg p-6 text-center mb-3 hover:border-primary/50 transition-colors cursor-pointer">
+
+            {/* Drop zone */}
+            <div
+              className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add("border-primary/50"); }}
+              onDragLeave={e => { e.preventDefault(); e.currentTarget.classList.remove("border-primary/50"); }}
+              onDrop={e => {
+                e.preventDefault();
+                e.currentTarget.classList.remove("border-primary/50");
+                const files = Array.from(e.dataTransfer.files).filter(f => {
+                  if (f.size > MAX_FILE_SIZE) { toast.error(`${f.name} excede 50MB`); return false; }
+                  return true;
+                });
+                const newPending = files.map(f => ({
+                  file: f,
+                  tipo: docCategoria,
+                  preview: f.type.startsWith("image/") ? URL.createObjectURL(f) : undefined,
+                }));
+                setPendingFiles(prev => [...prev, ...newPending]);
+                if (files.length > 0) toast.success(`${files.length} arquivo(s) adicionado(s)`);
+              }}
+            >
               <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
               <p className="text-sm font-medium">Arraste arquivos ou clique para selecionar</p>
+              <p className="text-[11px] text-muted-foreground mt-1">PDF, JPG, PNG, WEBP, MP4 — máx. 50MB</p>
             </div>
-            {documentos.length > 0 && (
-              <Table>
-                <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Tipo</TableHead><TableHead>Data</TableHead><TableHead className="w-12"></TableHead></TableRow></TableHeader>
-                <TableBody>
-                  {documentos.map((d, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="text-xs">{d.nome}</TableCell>
-                      <TableCell><Badge variant="outline" className="text-xs">{d.tipo}</Badge></TableCell>
-                      <TableCell className="text-xs">{d.data}</TableCell>
-                      <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDocumentos(p => p.filter((_,idx)=>idx!==i))}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+
+            {/* Pending files (before vehicle save) */}
+            {pendingFiles.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wider">
+                  Arquivos pendentes ({pendingFiles.length}) — serão enviados ao salvar o veículo
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {pendingFiles.map((pf, i) => {
+                    const FileIcon = getFileIcon(pf.file.type);
+                    return (
+                      <Card key={i} className="overflow-hidden">
+                        <CardContent className="p-0">
+                          {/* Preview */}
+                          <div className="h-28 bg-muted/30 flex items-center justify-center overflow-hidden">
+                            {pf.preview ? (
+                              <img src={pf.preview} alt={pf.file.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <FileIcon className="h-10 w-10 text-muted-foreground/50" />
+                            )}
+                          </div>
+                          <div className="p-3 space-y-1.5">
+                            <p className="text-xs font-medium truncate" title={pf.file.name}>{pf.file.name}</p>
+                            <div className="flex items-center justify-between">
+                              <Badge variant="outline" className="text-[10px]">{pf.tipo}</Badge>
+                              <span className="text-[10px] text-muted-foreground">{formatFileSize(pf.file.size)}</span>
+                            </div>
+                            <div className="flex justify-end">
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                                if (pf.preview) URL.revokeObjectURL(pf.preview);
+                                setPendingFiles(prev => prev.filter((_, idx) => idx !== i));
+                              }}>
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Already uploaded docs (for editing existing vehicles - future) */}
+            {uploadedDocs.length > 0 && (
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Documentos enviados ({uploadedDocs.length})
+                  </p>
+                  <Select value={docFilterCategoria} onValueChange={setDocFilterCategoria}>
+                    <SelectTrigger className="w-40 h-7 text-xs"><Filter className="h-3 w-3 mr-1" /><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todas">Todas categorias</SelectItem>
+                      {DOC_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {uploadedDocs
+                    .filter(d => docFilterCategoria === "todas" || d.tipo === docFilterCategoria)
+                    .map(doc => {
+                      const FileIcon = getFileIcon(doc.mime_type);
+                      const isImage = doc.mime_type.startsWith("image/");
+                      return (
+                        <Card key={doc.id} className="overflow-hidden">
+                          <CardContent className="p-0">
+                            <div className="h-28 bg-muted/30 flex items-center justify-center overflow-hidden">
+                              {isImage ? (
+                                <img src={doc.publicUrl} alt={doc.nome_arquivo} className="w-full h-full object-cover" />
+                              ) : (
+                                <FileIcon className="h-10 w-10 text-muted-foreground/50" />
+                              )}
+                            </div>
+                            <div className="p-3 space-y-1.5">
+                              <p className="text-xs font-medium truncate" title={doc.nome_arquivo}>{doc.nome_arquivo}</p>
+                              <div className="flex items-center justify-between">
+                                <Badge variant="outline" className="text-[10px]">{doc.tipo}</Badge>
+                                <span className="text-[10px] text-muted-foreground">{formatFileSize(doc.tamanho_bytes)}</span>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground">
+                                {new Date(doc.created_at).toLocaleDateString("pt-BR")}
+                              </p>
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPreviewDoc(doc)}>
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                                  <a href={doc.publicUrl} download={doc.nome_arquivo} target="_blank" rel="noopener noreferrer">
+                                    <Download className="h-3.5 w-3.5" />
+                                  </a>
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Excluir documento?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        O arquivo "{doc.nome_arquivo}" será removido permanentemente.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={async () => {
+                                        await supabase.storage.from("vehicle-documents").remove([doc.storage_path]);
+                                        await supabase.from("vehicle_documents" as any).delete().eq("id", doc.id);
+                                        setUploadedDocs(prev => prev.filter(d => d.id !== doc.id));
+                                        toast.success("Documento excluído");
+                                      }}>
+                                        Excluir
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                </div>
+              </div>
             )}
           </AccordionContent>
         </AccordionItem>
+
+        {/* Preview modal */}
+        <Dialog open={!!previewDoc} onOpenChange={o => !o && setPreviewDoc(null)}>
+          <DialogContent className="max-w-3xl max-h-[85vh]">
+            {previewDoc && (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="text-sm truncate">{previewDoc.nome_arquivo}</DialogTitle>
+                </DialogHeader>
+                <div className="flex items-center justify-center min-h-[300px] max-h-[65vh] overflow-auto">
+                  {previewDoc.mime_type.startsWith("image/") ? (
+                    <img src={previewDoc.publicUrl} alt={previewDoc.nome_arquivo} className="max-w-full max-h-[60vh] object-contain rounded" />
+                  ) : previewDoc.mime_type === "application/pdf" ? (
+                    <iframe src={previewDoc.publicUrl} className="w-full h-[60vh] rounded" title={previewDoc.nome_arquivo} />
+                  ) : previewDoc.mime_type.startsWith("video/") ? (
+                    <video src={previewDoc.publicUrl} controls className="max-w-full max-h-[60vh] rounded" />
+                  ) : (
+                    <div className="text-center text-muted-foreground">
+                      <File className="h-16 w-16 mx-auto mb-3 opacity-30" />
+                      <p className="text-sm">Pré-visualização não disponível</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* SEÇÃO 14 */}
         <AccordionItem value="sec-14" className="border rounded-lg overflow-hidden">
