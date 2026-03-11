@@ -17,7 +17,9 @@ import {
   Car, Plus, Search, Trash2, X, Copy, Eraser, Upload, DollarSign,
   FileText, MapPin, Users, Package, Settings, AlertTriangle, Landmark,
   Receipt, CreditCard, Send, Star, UserPlus, UserCheck, Loader2,
+  Eye, Download, File, Image, Video, Filter,
 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 const ufs = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
 
