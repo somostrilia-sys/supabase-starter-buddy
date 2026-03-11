@@ -12,6 +12,7 @@ import GestorSPCSerasa from "../GestorSPCSerasa";
 
 const actions = [
   { id: "planos", title: "Planos de Proteção", desc: "Gerencie planos, coberturas, regionais e categorias de veículo", icon: Shield },
+  { id: "tabela-cotas", title: "Tabela de Cotas", desc: "Visualize, edite e importe faixas FIPE com valores de cota e taxa", icon: FileSpreadsheet },
   { id: "lote", title: "Alterações em Lote", desc: "Importar, remover ou substituir produtos em massa", icon: Upload },
   { id: "replicar", title: "Replicar Itens em Lote", desc: "Copiar cotas e itens entre regionais e cooperativas", icon: Copy },
   { id: "integracoes", title: "Integrações", desc: "SPC/Serasa, SMS e WhatsApp", icon: Plug },
