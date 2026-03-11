@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Search, Eye, Copy, ExternalLink, Users, MousePointerClick, TrendingUp } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Globe, Search, Eye, Copy, ExternalLink, Users, MousePointerClick, TrendingUp, Phone, Mail, MapPin } from "lucide-react";
 
 const consultores = [
   { id: 1, nome: "Maria Santos", slug: "maria-santos", visitas: 1240, leads: 86, conversoes: 22, taxa: 25.6, ativa: true },
