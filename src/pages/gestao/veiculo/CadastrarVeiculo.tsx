@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,11 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Car, Plus, Search, Trash2, X, Copy, Eraser, Upload, DollarSign,
   FileText, MapPin, Users, Package, Settings, AlertTriangle, Landmark,
-  Receipt, CreditCard, Send, Star,
+  Receipt, CreditCard, Send, Star, UserPlus, UserCheck, Loader2,
 } from "lucide-react";
 
 const ufs = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
@@ -26,6 +29,14 @@ const maskCep = (v: string) => {
 const maskPlaca = (v: string) => {
   const u = v.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 7);
   return u.length <= 3 ? u : `${u.slice(0,3)}-${u.slice(3)}`;
+};
+
+const maskCpf = (v: string) => {
+  const d = v.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0,3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6)}`;
+  return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
 };
 
 const SelectWithAdd = ({ label, value, onValueChange, options, placeholder, required }: {
@@ -60,6 +71,15 @@ interface ProdutoVinculado { nome: string; valor: string; }
 interface ProdutoAdicional { descricao: string; valor: string; cobrarAte: string; classificacao: string; }
 interface Implemento { descricao: string; valor: string; porcentagem: string; somarProtegido: boolean; }
 interface Documento { nome: string; tipo: string; data: string; }
+
+interface AssociadoData {
+  id: string;
+  nome: string;
+  cpf: string;
+  telefone: string | null;
+  email: string | null;
+  status: string;
+}
 
 const produtosRegional = [
   { id: "1", nome: "Proteção Roubo/Furto", grupo: "Proteção" },
@@ -114,6 +134,10 @@ const mockPreenchido = {
   bairro: "Bela Vista", complemento: "Apto 42", cidade: "São Paulo", estado: "SP",
 };
 
+const initialNovoAssociado = {
+  nome: "", cpf: "", rg: "", data_nascimento: "", cep: "", endereco: "", cidade: "", estado: "", telefone: "", email: "",
+};
+
 export default function CadastrarVeiculo() {
   const [form, setForm] = useState(initialForm);
   const [produtosVinculados, setProdutosVinculados] = useState<ProdutoVinculado[]>([
@@ -129,7 +153,107 @@ export default function CadastrarVeiculo() {
   ]);
   const [produtosSelecionados, setProdutosSelecionados] = useState<string[]>(["1", "4"]);
 
+  // Associate linking states
+  const [associadoId, setAssociadoId] = useState<string | null>(null);
+  const [associadoData, setAssociadoData] = useState<AssociadoData | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<AssociadoData[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [showNovoModal, setShowNovoModal] = useState(false);
+  const [novoForm, setNovoForm] = useState(initialNovoAssociado);
+  const [savingAssociado, setSavingAssociado] = useState(false);
+  const [savingVeiculo, setSavingVeiculo] = useState(false);
+
   const set = (f: string, v: string | boolean) => setForm(p => ({ ...p, [f]: v }));
+
+  // Debounced search
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const q = searchQuery.trim();
+        const { data, error } = await supabase
+          .from("associados")
+          .select("id, nome, cpf, telefone, email, status")
+          .or(`nome.ilike.%${q}%,cpf.ilike.%${q}%`)
+          .limit(10);
+        if (error) throw error;
+        setSearchResults((data as AssociadoData[]) || []);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const selectAssociado = (a: AssociadoData) => {
+    setAssociadoId(a.id);
+    setAssociadoData(a);
+    setSearchQuery("");
+    setSearchResults([]);
+    setShowSearch(false);
+    toast.success(`Associado ${a.nome} vinculado!`);
+  };
+
+  const desvincularAssociado = () => {
+    setAssociadoId(null);
+    setAssociadoData(null);
+  };
+
+  const handleSalvarNovoAssociado = async () => {
+    if (!novoForm.nome.trim()) return toast.error("Nome é obrigatório");
+    if (novoForm.cpf.replace(/\D/g, "").length !== 11) return toast.error("CPF inválido");
+    setSavingAssociado(true);
+    try {
+      const { data, error } = await supabase.from("associados").insert({
+        nome: novoForm.nome.trim(),
+        cpf: novoForm.cpf.replace(/\D/g, ""),
+        rg: novoForm.rg || null,
+        data_nascimento: novoForm.data_nascimento || null,
+        cep: novoForm.cep || null,
+        endereco: novoForm.endereco || null,
+        cidade: novoForm.cidade || null,
+        estado: novoForm.estado || null,
+        telefone: novoForm.telefone || null,
+        email: novoForm.email || null,
+      }).select("id, nome, cpf, telefone, email, status").single();
+      if (error) throw error;
+      selectAssociado(data as AssociadoData);
+      setShowNovoModal(false);
+      setNovoForm(initialNovoAssociado);
+      toast.success("Associado cadastrado e vinculado!");
+    } catch (err: any) {
+      toast.error("Erro ao cadastrar associado: " + (err.message || "Erro desconhecido"));
+    } finally {
+      setSavingAssociado(false);
+    }
+  };
+
+  const buscarCepNovoAssociado = async () => {
+    const cepClean = novoForm.cep.replace(/\D/g, "");
+    if (cepClean.length !== 8) return toast.error("CEP inválido");
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cepClean}/json/`);
+      const data = await res.json();
+      if (data.erro) return toast.error("CEP não encontrado");
+      setNovoForm(p => ({
+        ...p,
+        endereco: `${data.logradouro || ""}, ${data.bairro || ""}`,
+        cidade: data.localidade || "",
+        estado: data.uf || "",
+      }));
+      toast.success("Endereço encontrado!");
+    } catch {
+      toast.error("Erro ao buscar CEP");
+    }
+  };
 
   const buscarCep = () => {
     if (form.cep.replace(/\D/g, "").length !== 8) return toast.error("CEP inválido");
@@ -150,11 +274,38 @@ export default function CadastrarVeiculo() {
     toast.success("VIN decodificado!");
   };
 
-  const handleSalvar = () => {
+  const handleSalvar = async () => {
+    if (!associadoId) return toast.error("Vincule um associado antes de salvar");
     if (!form.chassi) return toast.error("Chassi é obrigatório");
     if (!form.placa && !form.zeroKm) return toast.error("Placa é obrigatória");
     if (!form.modelo) return toast.error("Modelo é obrigatório");
-    toast.success("Veículo cadastrado com sucesso!", { description: `${form.modelo} - ${form.placa}` });
+    if (!form.montadora) return toast.error("Montadora é obrigatória");
+
+    setSavingVeiculo(true);
+    try {
+      const valorFipeNum = form.valorFipe ? parseFloat(form.valorFipe.replace(/\./g, "").replace(",", ".")) : null;
+      const anoNum = form.anoFab ? parseInt(form.anoFab) : null;
+
+      const { error } = await supabase.from("veiculos").insert({
+        associado_id: associadoId,
+        placa: form.placa.replace("-", "") || "0KM",
+        chassi: form.chassi,
+        renavam: form.renavam || null,
+        marca: form.montadora,
+        modelo: form.modelo,
+        ano: anoNum,
+        cor: form.cor || null,
+        valor_fipe: valorFipeNum,
+      });
+      if (error) throw error;
+      toast.success("Veículo cadastrado com sucesso!", { description: `${form.modelo} - ${form.placa || "0KM"}` });
+      handleLimpar();
+      desvincularAssociado();
+    } catch (err: any) {
+      toast.error("Erro ao salvar veículo: " + (err.message || "Erro desconhecido"));
+    } finally {
+      setSavingVeiculo(false);
+    }
   };
 
   const handleLimpar = () => { setForm({ ...initialForm }); toast.info("Formulário limpo"); };
@@ -185,6 +336,164 @@ export default function CadastrarVeiculo() {
           <Button variant="outline" size="sm" onClick={handleLimpar} className="gap-1.5 text-xs"><Eraser className="h-3.5 w-3.5" />Limpar</Button>
         </div>
       </div>
+
+      {/* ===== SEÇÃO 0 — ASSOCIADO (obrigatório) ===== */}
+      <div className="border rounded-lg p-4 mb-4 bg-muted/20">
+        <div className="flex items-center gap-2 mb-3">
+          <Users className="h-4 w-4 text-primary" />
+          <span className="font-semibold text-sm">Associado Vinculado</span>
+          <Badge variant="destructive" className="text-[10px]">Obrigatório</Badge>
+        </div>
+
+        {associadoData ? (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <UserCheck className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{associadoData.nome}</p>
+                    <p className="text-xs text-muted-foreground">CPF: {maskCpf(associadoData.cpf)}</p>
+                    <div className="flex gap-3 mt-1">
+                      {associadoData.telefone && <span className="text-xs text-muted-foreground">📱 {associadoData.telefone}</span>}
+                      {associadoData.email && <span className="text-xs text-muted-foreground">✉️ {associadoData.email}</span>}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={associadoData.status === "ativo" ? "default" : "secondary"} className="text-xs">
+                    {associadoData.status}
+                  </Badge>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={desvincularAssociado}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            <div className="relative">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={searchQuery}
+                    onChange={e => { setSearchQuery(e.target.value); setShowSearch(true); }}
+                    onFocus={() => setShowSearch(true)}
+                    placeholder="Buscar associado por nome ou CPF..."
+                    className="pl-9"
+                  />
+                  {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+                </div>
+                <Button variant="outline" onClick={() => setShowNovoModal(true)} className="gap-1.5 shrink-0">
+                  <UserPlus className="h-4 w-4" />
+                  Cadastrar Novo
+                </Button>
+              </div>
+
+              {showSearch && searchResults.length > 0 && (
+                <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-background border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {searchResults.map(a => (
+                    <button
+                      key={a.id}
+                      className="w-full text-left px-4 py-3 hover:bg-muted/50 flex items-center justify-between border-b last:border-0 transition-colors"
+                      onClick={() => selectAssociado(a)}
+                    >
+                      <div>
+                        <p className="text-sm font-medium">{a.nome}</p>
+                        <p className="text-xs text-muted-foreground">CPF: {maskCpf(a.cpf)}</p>
+                      </div>
+                      <Badge variant={a.status === "ativo" ? "default" : "secondary"} className="text-xs">
+                        {a.status}
+                      </Badge>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {showSearch && searchQuery.length >= 2 && searchResults.length === 0 && !searching && (
+                <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-background border rounded-lg shadow-lg p-4 text-center">
+                  <p className="text-sm text-muted-foreground">Nenhum associado encontrado</p>
+                  <Button variant="link" size="sm" onClick={() => { setShowNovoModal(true); setShowSearch(false); }}>
+                    Cadastrar novo associado
+                  </Button>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">⚠️ Vincule um associado para habilitar o salvamento do veículo.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Modal Novo Associado */}
+      <Dialog open={showNovoModal} onOpenChange={setShowNovoModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-primary" />
+              Cadastrar Novo Associado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-2">
+            <div className="sm:col-span-2">
+              <Label className="text-xs">Nome Completo *</Label>
+              <Input value={novoForm.nome} onChange={e => setNovoForm(p => ({ ...p, nome: e.target.value }))} placeholder="Nome completo" />
+            </div>
+            <div>
+              <Label className="text-xs">CPF *</Label>
+              <Input value={novoForm.cpf} onChange={e => setNovoForm(p => ({ ...p, cpf: maskCpf(e.target.value) }))} placeholder="000.000.000-00" />
+            </div>
+            <div>
+              <Label className="text-xs">RG</Label>
+              <Input value={novoForm.rg} onChange={e => setNovoForm(p => ({ ...p, rg: e.target.value }))} />
+            </div>
+            <div>
+              <Label className="text-xs">Data Nascimento</Label>
+              <Input type="date" value={novoForm.data_nascimento} onChange={e => setNovoForm(p => ({ ...p, data_nascimento: e.target.value }))} />
+            </div>
+            <div>
+              <Label className="text-xs">CEP</Label>
+              <div className="flex gap-1">
+                <Input value={novoForm.cep} onChange={e => setNovoForm(p => ({ ...p, cep: maskCep(e.target.value) }))} placeholder="00000-000" />
+                <Button variant="outline" size="sm" type="button" onClick={buscarCepNovoAssociado}>Buscar</Button>
+              </div>
+            </div>
+            <div className="sm:col-span-2">
+              <Label className="text-xs">Endereço</Label>
+              <Input value={novoForm.endereco} onChange={e => setNovoForm(p => ({ ...p, endereco: e.target.value }))} />
+            </div>
+            <div>
+              <Label className="text-xs">Cidade</Label>
+              <Input value={novoForm.cidade} onChange={e => setNovoForm(p => ({ ...p, cidade: e.target.value }))} />
+            </div>
+            <div>
+              <Label className="text-xs">Estado</Label>
+              <Select value={novoForm.estado} onValueChange={v => setNovoForm(p => ({ ...p, estado: v }))}>
+                <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
+                <SelectContent>{ufs.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Telefone / WhatsApp</Label>
+              <Input value={novoForm.telefone} onChange={e => setNovoForm(p => ({ ...p, telefone: e.target.value }))} placeholder="(11) 99999-9999" />
+            </div>
+            <div>
+              <Label className="text-xs">Email</Label>
+              <Input type="email" value={novoForm.email} onChange={e => setNovoForm(p => ({ ...p, email: e.target.value }))} placeholder="email@exemplo.com" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNovoModal(false)}>Cancelar</Button>
+            <Button onClick={handleSalvarNovoAssociado} disabled={savingAssociado} className="gap-1.5">
+              {savingAssociado && <Loader2 className="h-4 w-4 animate-spin" />}
+              Cadastrar e Vincular
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Accordion type="multiple" defaultValue={["sec-1", "sec-10"]} className="space-y-3">
 
@@ -545,7 +854,15 @@ export default function CadastrarVeiculo() {
 
       <div className="sticky bottom-0 bg-background border-t py-4 mt-6 flex justify-end gap-3">
         <Button variant="outline" onClick={handleLimpar}>Cancelar</Button>
-        <Button onClick={handleSalvar} className="bg-emerald-600 hover:bg-emerald-700 text-white">Salvar Veículo</Button>
+        <Button
+          onClick={handleSalvar}
+          disabled={!associadoId || savingVeiculo}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+          title={!associadoId ? "Vincule um associado para salvar" : ""}
+        >
+          {savingVeiculo && <Loader2 className="h-4 w-4 animate-spin" />}
+          Salvar Veículo
+        </Button>
       </div>
     </div>
   );
