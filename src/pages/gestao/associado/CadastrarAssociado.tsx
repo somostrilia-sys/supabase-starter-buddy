@@ -114,7 +114,7 @@ const mockPreenchido1 = {
   rg: "28.456.789-3",
   dataExpRg: "2015-06-20",
   orgaoExp: "SSP/SP",
-  profissao: "Engenheiro Civil",
+  profissao: "Engenheiro",
   cnh: "04512367890",
   categoriaCnh: "B",
   dataVencCnh: "2028-03-15",
