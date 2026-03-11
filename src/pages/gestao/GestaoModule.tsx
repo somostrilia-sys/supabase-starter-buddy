@@ -123,7 +123,7 @@ export default function GestaoModule() {
       </header>
 
       {/* Tab Navigation */}
-      <nav className="border-b bg-card shrink-0 shadow-sm">
+      <nav className="border-b bg-card shrink-0 shadow-sm relative">
         <div className="px-6 lg:px-8">
           <ScrollArea className="w-full">
             <div className="flex items-center gap-0.5">
