@@ -25,6 +25,7 @@ export default function FerramentasTab() {
   const [view, setView] = useState<string | null>(null);
 
   if (view === "planos") return <PlanosProtecao onBack={() => setView(null)} />;
+  if (view === "tabela-cotas") return <TabelaCotas onBack={() => setView(null)} />;
   if (view === "lote") return <AlteracoesLote onBack={() => setView(null)} />;
   if (view === "replicar") return <ReplicarItens onBack={() => setView(null)} />;
   if (view === "integracoes") return <Integracoes onBack={() => setView(null)} />;
