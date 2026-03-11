@@ -206,7 +206,7 @@ export default function CadastrarVeiculo() {
   const [documentos, setDocumentos] = useState<Documento[]>([
     { nome: "CRLV_BRA2E19.pdf", tipo: "CRLV", data: "05/03/2026" },
   ]);
-  const [produtosSelecionados, setProdutosSelecionados] = useState<string[]>(["1", "4"]);
+  const [produtosSelecionados, setProdutosSelecionados] = useState<string[]>([]);
 
   // Associate linking states
   const [associadoId, setAssociadoId] = useState<string | null>(null);
