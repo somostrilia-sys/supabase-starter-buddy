@@ -1,4 +1,5 @@
 import { useState } from "react";
+import RelatoriosGeraisTab from "./RelatoriosGeraisTab";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -285,6 +286,7 @@ export default function RelatoriosTab() {
           <TabsTrigger value="associados" className="gap-1"><Users className="h-3.5 w-3.5" />Associados</TabsTrigger>
           <TabsTrigger value="veiculos" className="gap-1"><Car className="h-3.5 w-3.5" />Veículos</TabsTrigger>
           <TabsTrigger value="boletos" className="gap-1"><FileText className="h-3.5 w-3.5" />Boletos</TabsTrigger>
+          <TabsTrigger value="gerais" className="gap-1"><BarChart3 className="h-3.5 w-3.5" />Gerais</TabsTrigger>
           <TabsTrigger value="outros" className="gap-1"><BarChart3 className="h-3.5 w-3.5" />Demais</TabsTrigger>
         </TabsList>
 
@@ -451,6 +453,11 @@ export default function RelatoriosTab() {
             </div>
             <Pagination page={pageBol} totalPages={totalPagesBol} onPageChange={setPageBol} />
           </CardContent></Card>
+        </TabsContent>
+
+        {/* ── GERAIS ── */}
+        <TabsContent value="gerais" className="mt-4">
+          <RelatoriosGeraisTab />
         </TabsContent>
 
         {/* ── DEMAIS ── */}

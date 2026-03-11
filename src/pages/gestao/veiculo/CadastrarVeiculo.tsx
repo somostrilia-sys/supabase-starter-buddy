@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import ConsultaFipe from "@/pages/gestao/ferramentas/ConsultaFipe";
 import {
   Car, Plus, Search, Trash2, X, Copy, Eraser, Upload, DollarSign,
   FileText, MapPin, Users, Package, Settings, AlertTriangle, Landmark,
@@ -258,6 +259,7 @@ export default function CadastrarVeiculo() {
   const [uploading, setUploading] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<UploadedDoc | null>(null);
   const [pendingFiles, setPendingFiles] = useState<{ file: File; tipo: string; preview?: string }[]>([]);
+  const [showFipeModal, setShowFipeModal] = useState(false);
 
   const set = (f: string, v: string | boolean) => setForm(p => ({ ...p, [f]: v }));
 
@@ -651,7 +653,7 @@ export default function CadastrarVeiculo() {
               <SelectWithAdd label="Categoria" value={form.categoria} onValueChange={v => set("categoria", v)} options={["Particular","Aluguel","Oficial","Missão Diplomática"]} />
               <div><Label className="text-xs">Cód. FIPE *</Label>
                 <div className="flex gap-1"><Input value={form.codFipe} onChange={e => set("codFipe", e.target.value)} placeholder="000000-0" />
-                <Button variant="outline" size="sm" onClick={buscarFipe}>FIPE</Button></div>
+                <Button variant="outline" size="sm" onClick={() => setShowFipeModal(true)}>🔍 FIPE</Button></div>
               </div>
               <SelectWithAdd label="Depreciação" value={form.depreciacao} onValueChange={v => set("depreciacao", v)} options={["Normal","Acelerada","Sem Depreciação"]} />
               <div><Label className="text-xs">Valor FIPE (R$) *</Label><Input value={form.valorFipe} onChange={e => set("valorFipe", e.target.value)} placeholder="0,00" /></div>
@@ -1274,6 +1276,24 @@ export default function CadastrarVeiculo() {
         </AccordionItem>
 
       </Accordion>
+
+      {/* FIPE Consultation Modal */}
+      <Dialog open={showFipeModal} onOpenChange={setShowFipeModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Consulta Tabela FIPE</DialogTitle></DialogHeader>
+          <ConsultaFipe
+            onSelect={(result) => {
+              set("codFipe", result.codFipe);
+              set("valorFipe", result.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 }));
+              set("valorProtegido", result.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 }));
+              set("modelo", result.modelo);
+              set("montadora", result.marca);
+              set("pctFipe", "100");
+              setShowFipeModal(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
 
       <div className="sticky bottom-0 bg-background border-t py-4 mt-6 flex justify-end gap-3">
         <Button variant="outline" onClick={handleLimpar}>Cancelar</Button>
