@@ -26,6 +26,7 @@ const kpis = [
 
 export default function LandingPages() {
   const [busca, setBusca] = useState("");
+  const [previewConsultor, setPreviewConsultor] = useState<typeof consultores[0] | null>(null);
   const filtered = consultores.filter(c => !busca || c.nome.toLowerCase().includes(busca.toLowerCase()));
   const baseUrl = "objetivoauto.com.br/c/";
 
