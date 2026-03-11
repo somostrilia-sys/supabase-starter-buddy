@@ -25,14 +25,12 @@ const modelosPorMarca: Record<string, string[]> = {
 const anos = ["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018"];
 
 const fipeResultMock: Record<string, { marca: string; modelo: string; ano: string; valor: number; codFipe: string }> = {
-  "004399-0": { marca: "Volkswagen", modelo: "T-Cross 200 TSI Comfortline", ano: "2024", valor: 119500 },
-  "001004-9": { marca: "Chevrolet", modelo: "Onix Plus 1.0 Turbo LTZ", ano: "2024", valor: 89900 },
-  "038003-2": { marca: "Toyota", modelo: "Corolla Cross XRE 2.0", ano: "2024", valor: 165000 },
-  "021157-0": { marca: "Fiat", modelo: "Strada Freedom 1.3", ano: "2024", valor: 94500 },
-  "015127-5": { marca: "Honda", modelo: "HR-V EXL", ano: "2024", valor: 158000 },
+  "004399-0": { marca: "Volkswagen", modelo: "T-Cross 200 TSI Comfortline", ano: "2024", valor: 119500, codFipe: "004399-0" },
+  "001004-9": { marca: "Chevrolet", modelo: "Onix Plus 1.0 Turbo LTZ", ano: "2024", valor: 89900, codFipe: "001004-9" },
+  "038003-2": { marca: "Toyota", modelo: "Corolla Cross XRE 2.0", ano: "2024", valor: 165000, codFipe: "038003-2" },
+  "021157-0": { marca: "Fiat", modelo: "Strada Freedom 1.3", ano: "2024", valor: 94500, codFipe: "021157-0" },
+  "015127-5": { marca: "Honda", modelo: "HR-V EXL", ano: "2024", valor: 158000, codFipe: "015127-5" },
 };
-// Add codFipe to each entry
-Object.entries(fipeResultMock).forEach(([k, v]) => { v.codFipe = k; });
 
 interface FipeResult {
   marca: string;
