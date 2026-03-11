@@ -81,16 +81,71 @@ interface AssociadoData {
   status: string;
 }
 
-const produtosRegional = [
-  { id: "1", nome: "Proteção Roubo/Furto", grupo: "Proteção" },
-  { id: "2", nome: "Proteção Colisão", grupo: "Proteção" },
-  { id: "3", nome: "Proteção Incêndio", grupo: "Proteção" },
-  { id: "4", nome: "Assistência 24h", grupo: "Assistência" },
-  { id: "5", nome: "Guincho 200km", grupo: "Assistência" },
-  { id: "6", nome: "Carro Reserva 7 dias", grupo: "Benefício" },
-  { id: "7", nome: "Vidros", grupo: "Proteção" },
-  { id: "8", nome: "Rastreador Veicular", grupo: "Rastreador" },
+type CategoriaVeiculo = "Leves" | "Pesados" | "Motos" | "Vans";
+
+interface PlanoDisponivel {
+  id: string;
+  nome: string;
+  icone: string;
+  valorBase: number;
+  categorias: CategoriaVeiculo[];
+  coberturas: { id: string; nome: string; grupo: string; valorBase: number }[];
+}
+
+const planosDisponiveis: PlanoDisponivel[] = [
+  { id: "p1", nome: "Premium", icone: "🏆", valorBase: 249.9, categorias: ["Leves", "Vans"],
+    coberturas: [
+      { id: "c1", nome: "Proteção Roubo/Furto", grupo: "Proteção", valorBase: 45 },
+      { id: "c2", nome: "Proteção Colisão", grupo: "Proteção", valorBase: 55 },
+      { id: "c3", nome: "Proteção Incêndio", grupo: "Proteção", valorBase: 25 },
+      { id: "c4", nome: "Proteção Enchente/Alagamento", grupo: "Proteção", valorBase: 20 },
+      { id: "c5", nome: "Proteção Terceiros", grupo: "Proteção", valorBase: 35 },
+      { id: "c6", nome: "Vidros", grupo: "Proteção", valorBase: 18 },
+      { id: "c7", nome: "Assistência 24h", grupo: "Assistência", valorBase: 29.9 },
+      { id: "c8", nome: "Guincho 200km", grupo: "Assistência", valorBase: 19.9 },
+      { id: "c9", nome: "Carro Reserva 7 dias", grupo: "Benefício", valorBase: 35 },
+      { id: "c10", nome: "Rastreador Veicular", grupo: "Rastreador", valorBase: 59.9 },
+      { id: "c11", nome: "APP (Acidentes Pessoais)", grupo: "Proteção", valorBase: 15 },
+      { id: "c12", nome: "Assistência Residencial", grupo: "Assistência", valorBase: 12 },
+    ],
+  },
+  { id: "p3", nome: "Básico", icone: "🛡️", valorBase: 89.9, categorias: ["Leves", "Pesados", "Motos", "Vans"],
+    coberturas: [
+      { id: "c1", nome: "Proteção Roubo/Furto", grupo: "Proteção", valorBase: 45 },
+      { id: "c2", nome: "Proteção Colisão", grupo: "Proteção", valorBase: 55 },
+      { id: "c7", nome: "Assistência 24h", grupo: "Assistência", valorBase: 29.9 },
+    ],
+  },
+  { id: "p4", nome: "Objetivo Leve", icone: "🚗", valorBase: 119.9, categorias: ["Leves"],
+    coberturas: [
+      { id: "c1", nome: "Proteção Roubo/Furto", grupo: "Proteção", valorBase: 45 },
+      { id: "c2", nome: "Proteção Colisão", grupo: "Proteção", valorBase: 55 },
+      { id: "c3", nome: "Proteção Incêndio", grupo: "Proteção", valorBase: 25 },
+      { id: "c5", nome: "Proteção Terceiros", grupo: "Proteção", valorBase: 35 },
+      { id: "c7", nome: "Assistência 24h", grupo: "Assistência", valorBase: 29.9 },
+      { id: "c8", nome: "Guincho 200km", grupo: "Assistência", valorBase: 19.9 },
+    ],
+  },
+  { id: "p5", nome: "Objetivo Sul", icone: "📍", valorBase: 139.9, categorias: ["Leves", "Vans"],
+    coberturas: [
+      { id: "c1", nome: "Proteção Roubo/Furto", grupo: "Proteção", valorBase: 45 },
+      { id: "c2", nome: "Proteção Colisão", grupo: "Proteção", valorBase: 55 },
+      { id: "c3", nome: "Proteção Incêndio", grupo: "Proteção", valorBase: 25 },
+      { id: "c4", nome: "Proteção Enchente/Alagamento", grupo: "Proteção", valorBase: 20 },
+      { id: "c5", nome: "Proteção Terceiros", grupo: "Proteção", valorBase: 35 },
+      { id: "c7", nome: "Assistência 24h", grupo: "Assistência", valorBase: 29.9 },
+      { id: "c8", nome: "Guincho 200km", grupo: "Assistência", valorBase: 19.9 },
+      { id: "c9", nome: "Carro Reserva 7 dias", grupo: "Benefício", valorBase: 35 },
+    ],
+  },
 ];
+
+const categoriasMap: Record<string, CategoriaVeiculo> = {
+  "Automóvel": "Leves", "Passeio": "Leves", "Utilitário": "Leves",
+  "Caminhão": "Pesados", "Ônibus": "Pesados", "Reboque": "Pesados",
+  "Motocicleta": "Motos", "Moto": "Motos", "Ciclomotor": "Motos",
+  "Van": "Vans", "Furgão": "Vans", "Microônibus": "Vans",
+};
 
 const initialForm = {
   classificacao: "", tipoAdesao: "", chassi: "", placa: "", zeroKm: false, renavam: "",
