@@ -455,6 +455,11 @@ export default function RelatoriosTab() {
           </CardContent></Card>
         </TabsContent>
 
+        {/* ── GERAIS ── */}
+        <TabsContent value="gerais" className="mt-4">
+          <RelatoriosGeraisTab />
+        </TabsContent>
+
         {/* ── DEMAIS ── */}
         <TabsContent value="outros" className="space-y-4 mt-4">
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
