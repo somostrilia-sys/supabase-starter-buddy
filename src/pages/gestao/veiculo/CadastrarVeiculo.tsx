@@ -651,7 +651,7 @@ export default function CadastrarVeiculo() {
               <SelectWithAdd label="Categoria" value={form.categoria} onValueChange={v => set("categoria", v)} options={["Particular","Aluguel","Oficial","Missão Diplomática"]} />
               <div><Label className="text-xs">Cód. FIPE *</Label>
                 <div className="flex gap-1"><Input value={form.codFipe} onChange={e => set("codFipe", e.target.value)} placeholder="000000-0" />
-                <Button variant="outline" size="sm" onClick={buscarFipe}>FIPE</Button></div>
+                <Button variant="outline" size="sm" onClick={() => setShowFipeModal(true)}>🔍 FIPE</Button></div>
               </div>
               <SelectWithAdd label="Depreciação" value={form.depreciacao} onValueChange={v => set("depreciacao", v)} options={["Normal","Acelerada","Sem Depreciação"]} />
               <div><Label className="text-xs">Valor FIPE (R$) *</Label><Input value={form.valorFipe} onChange={e => set("valorFipe", e.target.value)} placeholder="0,00" /></div>
