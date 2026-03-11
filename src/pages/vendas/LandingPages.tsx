@@ -106,7 +106,7 @@ export default function LandingPages() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" className="h-7 px-2" title="Visualizar"><Eye className="h-3.5 w-3.5" /></Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-2" title="Visualizar" onClick={() => setPreviewConsultor(c)}><Eye className="h-3.5 w-3.5" /></Button>
                       <Button variant="ghost" size="sm" className="h-7 px-2" title="Copiar URL"><Copy className="h-3.5 w-3.5" /></Button>
                       <Button variant="ghost" size="sm" className="h-7 px-2" title="Abrir"><ExternalLink className="h-3.5 w-3.5" /></Button>
                     </div>
