@@ -778,108 +778,129 @@ export default function CadastrarVeiculo() {
             {/* --- PLANO SELECIONADO --- */}
             <div>
               <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-muted-foreground">Plano Selecionado</p>
-              <div className="max-w-sm mb-3">
-                <Label className="text-xs">Plano</Label>
-                <Select value={form.grupoProduto} onValueChange={v => set("grupoProduto", v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione um plano" /></SelectTrigger>
-                  <SelectContent>
-                    {["Premium", "Básico", "Objetivo Leve", "Objetivo Sul"].map(p => (
-                      <SelectItem key={p} value={p}>{p}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {form.grupoProduto && (
-                <div className="border rounded-lg p-3 bg-muted/20">
-                  <p className="text-xs font-semibold mb-2">Proteções do Plano: <span className="text-primary">{form.grupoProduto}</span></p>
-                  <div className="space-y-1">
-                    {produtosRegional.map(p => (
-                      <div key={p.id} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
-                        <div className="flex items-center gap-2">
-                          <Checkbox checked={produtosSelecionados.includes(p.id)} onCheckedChange={() => toggleProduto(p.id)} />
-                          <span className="text-sm">{p.nome}</span>
-                          <Badge variant="outline" className="text-[10px]">{p.grupo}</Badge>
+              {(() => {
+                const catVeiculo = categoriasMap[form.classificacao] || categoriasMap[form.tipo] || null;
+                const planosFiltered = catVeiculo
+                  ? planosDisponiveis.filter(p => p.categorias.includes(catVeiculo))
+                  : planosDisponiveis;
+                const planoAtual = planosDisponiveis.find(p => p.nome === form.grupoProduto);
+                const coberturasPlano = planoAtual?.coberturas || [];
+
+                const subtotalProtecoes = produtosSelecionados.reduce((sum, id) => {
+                  const cob = coberturasPlano.find(c => c.id === id);
+                  return sum + (cob?.valorBase || 0);
+                }, 0);
+
+                return (
+                  <>
+                    <div className="max-w-sm mb-3">
+                      <Label className="text-xs">Plano {catVeiculo && <Badge variant="outline" className="text-[10px] ml-1">{catVeiculo}</Badge>}</Label>
+                      <Select value={form.grupoProduto} onValueChange={v => {
+                        set("grupoProduto", v);
+                        const plano = planosDisponiveis.find(p => p.nome === v);
+                        if (plano) setProdutosSelecionados(plano.coberturas.map(c => c.id));
+                      }}>
+                        <SelectTrigger><SelectValue placeholder="Selecione um plano" /></SelectTrigger>
+                        <SelectContent>
+                          {planosFiltered.map(p => (
+                            <SelectItem key={p.id} value={p.nome}>
+                              {p.icone} {p.nome} — R$ {p.valorBase.toFixed(2).replace(".", ",")}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {planoAtual && (
+                      <Card className="border-primary/20 bg-primary/5">
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-semibold">Plano selecionado: <span className="text-primary">{planoAtual.icone} {planoAtual.nome}</span></p>
+                            <span className="text-sm font-bold text-primary">R$ {planoAtual.valorBase.toFixed(2).replace(".", ",")}/mês</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {planoAtual && (
+                      <div className="border rounded-lg p-3 bg-muted/20 mt-3">
+                        <p className="text-xs font-semibold mb-2">Proteções do Plano: <span className="text-primary">{planoAtual.nome}</span></p>
+                        <div className="space-y-1">
+                          {coberturasPlano.map(c => (
+                            <div key={c.id} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
+                              <div className="flex items-center gap-2">
+                                <Checkbox checked={produtosSelecionados.includes(c.id)} onCheckedChange={() => toggleProduto(c.id)} />
+                                <span className="text-sm">{c.nome}</span>
+                                <Badge variant="outline" className="text-[10px]">{c.grupo}</Badge>
+                              </div>
+                              <span className="text-sm font-medium text-muted-foreground">
+                                R$ {c.valorBase.toFixed(2).replace(".", ",")}
+                              </span>
+                            </div>
+                          ))}
                         </div>
-                        <span className="text-sm font-medium text-muted-foreground">
-                          R$ {p.grupo === "Proteção" ? "45,00" : p.grupo === "Assistência" ? "29,90" : p.grupo === "Benefício" ? "35,00" : "59,90"}
-                        </span>
+                        <p className="text-sm font-semibold mt-3 text-right">
+                          Subtotal Proteções: R$ {subtotalProtecoes.toFixed(2).replace(".", ",")}
+                        </p>
                       </div>
-                    ))}
-                  </div>
-                  <p className="text-sm font-semibold mt-3 text-right">
-                    Subtotal Proteções: R$ {produtosSelecionados.reduce((sum, id) => {
-                      const prod = produtosRegional.find(p => p.id === id);
-                      if (!prod) return sum;
-                      const val = prod.grupo === "Proteção" ? 45 : prod.grupo === "Assistência" ? 29.9 : prod.grupo === "Benefício" ? 35 : 59.9;
-                      return sum + val;
-                    }, 0).toFixed(2).replace(".", ",")}
-                  </p>
-                </div>
-              )}
-            </div>
+                    )}
 
-            {/* --- TAXA ADMINISTRATIVA --- */}
-            <div>
-              <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-muted-foreground">Taxa Administrativa</p>
-              <div className="border rounded-lg p-3 bg-muted/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Faixa FIPE: <span className="font-medium text-foreground">R$ 100.000 a R$ 130.000</span> → Taxa: <span className="font-bold text-foreground">R$ 0,00</span></p>
-                    <p className="text-[11px] text-muted-foreground mt-1 italic">Calculado automaticamente pela tabela de cotas</p>
-                  </div>
-                  <Badge variant="secondary" className="text-xs">Automático</Badge>
-                </div>
-              </div>
-            </div>
+                    {/* --- TAXA ADMINISTRATIVA --- */}
+                    <div className="mt-6">
+                      <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-muted-foreground">Taxa Administrativa</p>
+                      <div className="border rounded-lg p-3 bg-muted/20">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Faixa FIPE: <span className="font-medium text-foreground">R$ 100.000 a R$ 130.000</span> → Taxa: <span className="font-bold text-foreground">R$ 0,00</span></p>
+                            <p className="text-[11px] text-muted-foreground mt-1 italic">Calculado automaticamente pela tabela de cotas</p>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">Automático</Badge>
+                        </div>
+                      </div>
+                    </div>
 
-            {/* --- RATEIO --- */}
-            <div>
-              <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-muted-foreground">Rateio</p>
-              <div className="border rounded-lg p-3 bg-muted/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm">Valor do Rateio: <span className="font-bold text-foreground">R$ 0,00</span></p>
-                    <p className="text-[11px] text-muted-foreground mt-1 italic">Baseado na categoria e regional</p>
-                  </div>
-                  <Badge variant="secondary" className="text-xs">Automático</Badge>
-                </div>
-              </div>
-            </div>
+                    {/* --- RATEIO --- */}
+                    <div className="mt-6">
+                      <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-muted-foreground">Rateio</p>
+                      <div className="border rounded-lg p-3 bg-muted/20">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm">Valor do Rateio: <span className="font-bold text-foreground">R$ 0,00</span></p>
+                            <p className="text-[11px] text-muted-foreground mt-1 italic">Baseado na categoria e regional</p>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">Automático</Badge>
+                        </div>
+                      </div>
+                    </div>
 
-            {/* --- RESUMO DA MENSALIDADE --- */}
-            <Card className="border-primary/30 bg-primary/5 shadow-md">
-              <CardContent className="p-5">
-                <p className="text-xs font-bold mb-3 uppercase tracking-wider text-primary">Resumo da Mensalidade</p>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Proteções</span>
-                    <span className="font-medium">R$ {produtosSelecionados.reduce((sum, id) => {
-                      const prod = produtosRegional.find(p => p.id === id);
-                      if (!prod) return sum;
-                      const val = prod.grupo === "Proteção" ? 45 : prod.grupo === "Assistência" ? 29.9 : prod.grupo === "Benefício" ? 35 : 59.9;
-                      return sum + val;
-                    }, 0).toFixed(2).replace(".", ",")}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Taxa administrativa</span>
-                    <span className="font-medium">R$ 0,00</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Rateio</span>
-                    <span className="font-medium">R$ 0,00</span>
-                  </div>
-                  <div className="border-t pt-3 mt-3 flex justify-between items-center">
-                    <span className="text-sm font-bold uppercase">Total Mensalidade</span>
-                    <span className="text-2xl font-bold text-primary">R$ {produtosSelecionados.reduce((sum, id) => {
-                      const prod = produtosRegional.find(p => p.id === id);
-                      if (!prod) return sum;
-                      const val = prod.grupo === "Proteção" ? 45 : prod.grupo === "Assistência" ? 29.9 : prod.grupo === "Benefício" ? 35 : 59.9;
-                      return sum + val;
-                    }, 0).toFixed(2).replace(".", ",")}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                    {/* --- RESUMO DA MENSALIDADE --- */}
+                    <Card className="border-primary/30 bg-primary/5 shadow-md mt-6">
+                      <CardContent className="p-5">
+                        <p className="text-xs font-bold mb-3 uppercase tracking-wider text-primary">Resumo da Mensalidade</p>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Proteções</span>
+                            <span className="font-medium">R$ {subtotalProtecoes.toFixed(2).replace(".", ",")}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Taxa administrativa</span>
+                            <span className="font-medium">R$ 0,00</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Rateio</span>
+                            <span className="font-medium">R$ 0,00</span>
+                          </div>
+                          <div className="border-t pt-3 mt-3 flex justify-between items-center">
+                            <span className="text-sm font-bold uppercase">Total Mensalidade</span>
+                            <span className="text-2xl font-bold text-primary">R$ {subtotalProtecoes.toFixed(2).replace(".", ",")}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </>
+                );
+              })()}
+            </div>
 
           </AccordionContent>
         </AccordionItem>
