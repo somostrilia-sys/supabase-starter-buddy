@@ -5,6 +5,7 @@ import AlteracoesLote from "./AlteracoesLote";
 import ReplicarItens from "./ReplicarItens";
 import Integracoes from "./Integracoes";
 import PlanosProtecao from "./PlanosProtecao";
+import TabelaCotas from "./TabelaCotas";
 import AlteracaoCotaMassa from "../AlteracaoCotaMassa";
 import SPCSerasa from "../SPCSerasa";
 import GestorSPCSerasa from "../GestorSPCSerasa";
