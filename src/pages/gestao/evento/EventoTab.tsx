@@ -438,6 +438,7 @@ function ConsultarEventosTab() {
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const [filtroResp, setFiltroResp] = useState("Todos");
+  const [selectedEvento, setSelectedEvento] = useState<typeof mockConsulta[0] | null>(null);
 
   const responsaveis = ["Todos", ...Array.from(new Set(mockConsulta.map(e => e.responsavel)))];
 
@@ -476,11 +477,12 @@ function ConsultarEventosTab() {
               <TableHead className="text-xs">Data</TableHead>
               <TableHead className="text-xs">Status</TableHead>
               <TableHead className="text-xs">Responsável</TableHead>
+              <TableHead className="text-xs w-16">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.map(e => (
-              <TableRow key={e.protocolo}>
+              <TableRow key={e.protocolo} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedEvento(e)}>
                 <TableCell className="font-mono text-xs">{e.protocolo}</TableCell>
                 <TableCell className="text-sm font-medium">{e.associado}</TableCell>
                 <TableCell className="font-mono text-sm">{e.placa}</TableCell>
@@ -488,13 +490,22 @@ function ConsultarEventosTab() {
                 <TableCell className="text-sm">{new Date(e.data).toLocaleDateString("pt-BR")}</TableCell>
                 <TableCell><Badge className={`text-xs ${statusColor[e.status] || "bg-gray-100 text-gray-800"}`}>{e.status}</Badge></TableCell>
                 <TableCell className="text-sm">{e.responsavel}</TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(ev) => { ev.stopPropagation(); setSelectedEvento(e); }}>
+                    <Eye className="h-3.5 w-3.5" />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
-            {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhum evento encontrado</TableCell></TableRow>}
+            {filtered.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nenhum evento encontrado</TableCell></TableRow>}
           </TableBody>
         </Table>
       </div>
       <p className="text-xs text-muted-foreground">{filtered.length} evento(s) encontrado(s)</p>
+
+      {selectedEvento && (
+        <EventoDetalhe evento={selectedEvento} onClose={() => setSelectedEvento(null)} />
+      )}
     </div>
   );
 }
