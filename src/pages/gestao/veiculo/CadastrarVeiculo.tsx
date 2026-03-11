@@ -250,6 +250,15 @@ export default function CadastrarVeiculo() {
   const [savingAssociado, setSavingAssociado] = useState(false);
   const [savingVeiculo, setSavingVeiculo] = useState(false);
 
+  // Document upload states
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
+  const [docCategoria, setDocCategoria] = useState<string>("Foto do Veículo");
+  const [docFilterCategoria, setDocFilterCategoria] = useState<string>("todas");
+  const [uploading, setUploading] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<UploadedDoc | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<{ file: File; tipo: string; preview?: string }[]>([]);
+
   const set = (f: string, v: string | boolean) => setForm(p => ({ ...p, [f]: v }));
 
   // Debounced search
