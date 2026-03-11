@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Upload, Copy, Plug, Wrench, ChevronRight, Shield } from "lucide-react";
+import { ArrowLeft, Upload, Copy, Plug, Wrench, ChevronRight, Shield, FileSpreadsheet } from "lucide-react";
 import AlteracoesLote from "./AlteracoesLote";
 import ReplicarItens from "./ReplicarItens";
 import Integracoes from "./Integracoes";
 import PlanosProtecao from "./PlanosProtecao";
+import TabelaCotas from "./TabelaCotas";
 import AlteracaoCotaMassa from "../AlteracaoCotaMassa";
 import SPCSerasa from "../SPCSerasa";
 import GestorSPCSerasa from "../GestorSPCSerasa";
 
 const actions = [
   { id: "planos", title: "Planos de Proteção", desc: "Gerencie planos, coberturas, regionais e categorias de veículo", icon: Shield },
+  { id: "tabela-cotas", title: "Tabela de Cotas", desc: "Visualize, edite e importe faixas FIPE com valores de cota e taxa", icon: FileSpreadsheet },
   { id: "lote", title: "Alterações em Lote", desc: "Importar, remover ou substituir produtos em massa", icon: Upload },
   { id: "replicar", title: "Replicar Itens em Lote", desc: "Copiar cotas e itens entre regionais e cooperativas", icon: Copy },
   { id: "integracoes", title: "Integrações", desc: "SPC/Serasa, SMS e WhatsApp", icon: Plug },
@@ -23,6 +25,7 @@ export default function FerramentasTab() {
   const [view, setView] = useState<string | null>(null);
 
   if (view === "planos") return <PlanosProtecao onBack={() => setView(null)} />;
+  if (view === "tabela-cotas") return <TabelaCotas onBack={() => setView(null)} />;
   if (view === "lote") return <AlteracoesLote onBack={() => setView(null)} />;
   if (view === "replicar") return <ReplicarItens onBack={() => setView(null)} />;
   if (view === "integracoes") return <Integracoes onBack={() => setView(null)} />;
