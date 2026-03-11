@@ -380,7 +380,7 @@ export default function CadastrarVeiculo() {
       const valorFipeNum = form.valorFipe ? parseFloat(form.valorFipe.replace(/\./g, "").replace(",", ".")) : null;
       const anoNum = form.anoFab ? parseInt(form.anoFab) : null;
 
-      const { error } = await supabase.from("veiculos").insert({
+      const { data: veiculoData, error } = await supabase.from("veiculos").insert({
         associado_id: associadoId,
         placa: form.placa.replace("-", "") || "0KM",
         chassi: form.chassi,
@@ -390,10 +390,37 @@ export default function CadastrarVeiculo() {
         ano: anoNum,
         cor: form.cor || null,
         valor_fipe: valorFipeNum,
-      });
+      }).select("id").single();
       if (error) throw error;
+
+      // Upload pending files
+      if (veiculoData && pendingFiles.length > 0) {
+        for (const pf of pendingFiles) {
+          const ts = Date.now();
+          const storagePath = `${veiculoData.id}/${ts}_${pf.file.name}`;
+          const { error: uploadErr } = await supabase.storage
+            .from("vehicle-documents")
+            .upload(storagePath, pf.file, { contentType: pf.file.type });
+          if (uploadErr) {
+            console.error("Upload error:", uploadErr);
+            continue;
+          }
+          await supabase.from("vehicle_documents" as any).insert({
+            vehicle_id: veiculoData.id,
+            tipo: pf.tipo,
+            nome_arquivo: pf.file.name,
+            storage_path: storagePath,
+            mime_type: pf.file.type,
+            tamanho_bytes: pf.file.size,
+          });
+        }
+        toast.success(`${pendingFiles.length} documento(s) enviado(s)`);
+      }
+
       toast.success("Veículo cadastrado com sucesso!", { description: `${form.modelo} - ${form.placa || "0KM"}` });
       handleLimpar();
+      setPendingFiles([]);
+      setUploadedDocs([]);
       desvincularAssociado();
     } catch (err: any) {
       toast.error("Erro ao salvar veículo: " + (err.message || "Erro desconhecido"));
