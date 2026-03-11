@@ -74,6 +74,34 @@ interface ProdutoAdicional { descricao: string; valor: string; cobrarAte: string
 interface Implemento { descricao: string; valor: string; porcentagem: string; somarProtegido: boolean; }
 interface Documento { nome: string; tipo: string; data: string; }
 
+const DOC_CATEGORIES = ["Foto do Veículo", "Documento CRLV", "Laudo de Vistoria", "Nota Fiscal", "Outro"] as const;
+const ACCEPTED_TYPES = ".pdf,.jpg,.jpeg,.png,.webp,.mp4";
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+interface UploadedDoc {
+  id: string;
+  nome_arquivo: string;
+  tipo: string;
+  storage_path: string;
+  mime_type: string;
+  tamanho_bytes: number;
+  created_at: string;
+  publicUrl: string;
+}
+
+const formatFileSize = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const getFileIcon = (mime: string) => {
+  if (mime.startsWith("image/")) return Image;
+  if (mime.startsWith("video/")) return Video;
+  if (mime === "application/pdf") return FileText;
+  return File;
+};
+
 interface AssociadoData {
   id: string;
   nome: string;
