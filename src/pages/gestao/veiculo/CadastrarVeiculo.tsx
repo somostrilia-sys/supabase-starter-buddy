@@ -1277,6 +1277,24 @@ export default function CadastrarVeiculo() {
 
       </Accordion>
 
+      {/* FIPE Consultation Modal */}
+      <Dialog open={showFipeModal} onOpenChange={setShowFipeModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Consulta Tabela FIPE</DialogTitle></DialogHeader>
+          <ConsultaFipe
+            onSelect={(result) => {
+              set("codFipe", result.codFipe);
+              set("valorFipe", result.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 }));
+              set("valorProtegido", result.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 }));
+              set("modelo", result.modelo);
+              set("montadora", result.marca);
+              set("pctFipe", "100");
+              setShowFipeModal(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
       <div className="sticky bottom-0 bg-background border-t py-4 mt-6 flex justify-end gap-3">
         <Button variant="outline" onClick={handleLimpar}>Cancelar</Button>
         <Button
