@@ -263,7 +263,7 @@ function GrupoProdutos({ subView, setSubView }: { subView: number; setSubView: (
   const [grupoDeleteIdx, setGrupoDeleteIdx] = useState<number | null>(null);
 
   const openGrupoNew = () => { setGrupoEditIdx(null); setGrupoForm({ Grupo: "", Produtos: "", Status: "Ativo" }); setGrupoModal(true); };
-  const openGrupoEdit = (i: number) => { setGrupoEditIdx(i); setGrupoForm({ ...grupos[i] }); setGrupoModal(true); };
+  const openGrupoEdit = (i: number) => { setGrupoEditIdx(i); setGrupoForm({ Grupo: grupos[i].Grupo, Produtos: grupos[i].Produtos, Status: grupos[i].Status }); setGrupoModal(true); };
   const saveGrupo = () => {
     if (!grupoForm.Grupo) { toast.error("Informe o nome do grupo"); return; }
     if (grupoEditIdx !== null) {
