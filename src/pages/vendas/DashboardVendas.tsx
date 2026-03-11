@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   Users, FileText, Handshake, DollarSign, TrendingUp, Trophy, ArrowRightLeft,
 } from "lucide-react";
+import { DemoBanner } from "@/components/DemoBanner";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, CartesianGrid, Legend,
