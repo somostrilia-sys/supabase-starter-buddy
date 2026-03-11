@@ -715,39 +715,117 @@ export default function CadastrarVeiculo() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 10 */}
+        {/* SEÇÃO 10 — PRODUTOS & MENSALIDADE UNIFICADA */}
         <AccordionItem value="sec-10" className="border rounded-lg overflow-hidden">
-          <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30"><SectionIcon icon={Package} label="Produtos Veículo" num={10} /></AccordionTrigger>
-          <AccordionContent className="px-4 pb-4 pt-2">
-            <div className="mb-4 max-w-xs">
-              <Label className="text-xs">Grupo Produto</Label>
-              <Select value={form.grupoProduto} onValueChange={v => set("grupoProduto", v)}><SelectTrigger><SelectValue placeholder="Filtrar grupo" /></SelectTrigger>
-              <SelectContent>{["Todos","Proteção","Assistência","Benefício","Rastreador"].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent></Select>
-            </div>
-            <p className="text-xs font-semibold mb-2">Produtos da Regional</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-1 mb-4">
-              {produtosRegional.filter(p => !form.grupoProduto || form.grupoProduto === "Todos" || p.grupo === form.grupoProduto).map(p => (
-                <div key={p.id} className="flex items-center gap-2 p-2 rounded hover:bg-muted/50">
-                  <Checkbox checked={produtosSelecionados.includes(p.id)} onCheckedChange={() => toggleProduto(p.id)} />
-                  <span className="text-sm">{p.nome}</span>
-                  <Badge variant="outline" className="text-xs ml-auto">{p.grupo}</Badge>
+          <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30"><SectionIcon icon={Package} label="Produtos & Mensalidade" num={10} /></AccordionTrigger>
+          <AccordionContent className="px-4 pb-4 pt-2 space-y-6">
+
+            {/* --- PLANO SELECIONADO --- */}
+            <div>
+              <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-muted-foreground">Plano Selecionado</p>
+              <div className="max-w-sm mb-3">
+                <Label className="text-xs">Plano</Label>
+                <Select value={form.grupoProduto} onValueChange={v => set("grupoProduto", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione um plano" /></SelectTrigger>
+                  <SelectContent>
+                    {["Premium", "Básico", "Objetivo Leve", "Objetivo Sul"].map(p => (
+                      <SelectItem key={p} value={p}>{p}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {form.grupoProduto && (
+                <div className="border rounded-lg p-3 bg-muted/20">
+                  <p className="text-xs font-semibold mb-2">Proteções do Plano: <span className="text-primary">{form.grupoProduto}</span></p>
+                  <div className="space-y-1">
+                    {produtosRegional.map(p => (
+                      <div key={p.id} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
+                        <div className="flex items-center gap-2">
+                          <Checkbox checked={produtosSelecionados.includes(p.id)} onCheckedChange={() => toggleProduto(p.id)} />
+                          <span className="text-sm">{p.nome}</span>
+                          <Badge variant="outline" className="text-[10px]">{p.grupo}</Badge>
+                        </div>
+                        <span className="text-sm font-medium text-muted-foreground">
+                          R$ {p.grupo === "Proteção" ? "45,00" : p.grupo === "Assistência" ? "29,90" : p.grupo === "Benefício" ? "35,00" : "59,90"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-sm font-semibold mt-3 text-right">
+                    Subtotal Proteções: R$ {produtosSelecionados.reduce((sum, id) => {
+                      const prod = produtosRegional.find(p => p.id === id);
+                      if (!prod) return sum;
+                      const val = prod.grupo === "Proteção" ? 45 : prod.grupo === "Assistência" ? 29.9 : prod.grupo === "Benefício" ? 35 : 59.9;
+                      return sum + val;
+                    }, 0).toFixed(2).replace(".", ",")}
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
-            <p className="text-xs font-semibold mb-2">Produtos Vinculados</p>
-            <Table>
-              <TableHeader><TableRow><TableHead>Produto</TableHead><TableHead>Valor (R$)</TableHead><TableHead className="w-12"></TableHead></TableRow></TableHeader>
-              <TableBody>
-                {produtosVinculados.map((p, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="text-sm">{p.nome}</TableCell>
-                    <TableCell><Input value={p.valor} onChange={e => { const nv = [...produtosVinculados]; nv[i].valor = e.target.value; setProdutosVinculados(nv); }} className="h-8 text-xs w-24" /></TableCell>
-                    <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setProdutosVinculados(p => p.filter((_,idx)=>idx!==i))}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <p className="text-sm font-semibold mt-2 text-right">Total: R$ {totalProdutos.toFixed(2).replace(".",",")}</p>
+
+            {/* --- TAXA ADMINISTRATIVA --- */}
+            <div>
+              <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-muted-foreground">Taxa Administrativa</p>
+              <div className="border rounded-lg p-3 bg-muted/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Faixa FIPE: <span className="font-medium text-foreground">R$ 100.000 a R$ 130.000</span> → Taxa: <span className="font-bold text-foreground">R$ 0,00</span></p>
+                    <p className="text-[11px] text-muted-foreground mt-1 italic">Calculado automaticamente pela tabela de cotas</p>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">Automático</Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* --- RATEIO --- */}
+            <div>
+              <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-muted-foreground">Rateio</p>
+              <div className="border rounded-lg p-3 bg-muted/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm">Valor do Rateio: <span className="font-bold text-foreground">R$ 0,00</span></p>
+                    <p className="text-[11px] text-muted-foreground mt-1 italic">Baseado na categoria e regional</p>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">Automático</Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* --- RESUMO DA MENSALIDADE --- */}
+            <Card className="border-primary/30 bg-primary/5 shadow-md">
+              <CardContent className="p-5">
+                <p className="text-xs font-bold mb-3 uppercase tracking-wider text-primary">Resumo da Mensalidade</p>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Proteções</span>
+                    <span className="font-medium">R$ {produtosSelecionados.reduce((sum, id) => {
+                      const prod = produtosRegional.find(p => p.id === id);
+                      if (!prod) return sum;
+                      const val = prod.grupo === "Proteção" ? 45 : prod.grupo === "Assistência" ? 29.9 : prod.grupo === "Benefício" ? 35 : 59.9;
+                      return sum + val;
+                    }, 0).toFixed(2).replace(".", ",")}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Taxa administrativa</span>
+                    <span className="font-medium">R$ 0,00</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Rateio</span>
+                    <span className="font-medium">R$ 0,00</span>
+                  </div>
+                  <div className="border-t pt-3 mt-3 flex justify-between items-center">
+                    <span className="text-sm font-bold uppercase">Total Mensalidade</span>
+                    <span className="text-2xl font-bold text-primary">R$ {produtosSelecionados.reduce((sum, id) => {
+                      const prod = produtosRegional.find(p => p.id === id);
+                      if (!prod) return sum;
+                      const val = prod.grupo === "Proteção" ? 45 : prod.grupo === "Assistência" ? 29.9 : prod.grupo === "Benefício" ? 35 : 59.9;
+                      return sum + val;
+                    }, 0).toFixed(2).replace(".", ",")}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
           </AccordionContent>
         </AccordionItem>
 
