@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Upload, Copy, Plug, Wrench, ChevronRight } from "lucide-react";
+import { ArrowLeft, Upload, Copy, Plug, Wrench, ChevronRight, Shield } from "lucide-react";
 import AlteracoesLote from "./AlteracoesLote";
 import ReplicarItens from "./ReplicarItens";
 import Integracoes from "./Integracoes";
