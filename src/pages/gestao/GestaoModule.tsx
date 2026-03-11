@@ -148,9 +148,11 @@ export default function GestaoModule() {
                 );
               })}
             </div>
-            <ScrollBar orientation="horizontal" />
+            <ScrollBar orientation="horizontal" className="h-2.5" />
           </ScrollArea>
         </div>
+        {/* Fade indicators for overflow */}
+        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-card to-transparent" />
       </nav>
 
       {/* Content */}

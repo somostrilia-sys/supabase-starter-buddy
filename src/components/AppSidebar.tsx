@@ -50,7 +50,7 @@ const vendasItems = [
   { title: "Negociações", url: "/vendas/negociacoes", icon: Target },
   { title: "Contatos", url: "/vendas/contatos", icon: Contact },
   { title: "Atividades", url: "/vendas/atividades", icon: Activity },
-  { title: "Calendário", url: "/vendas/calendario", icon: CalendarDays },
+  
   { title: "Metas", url: "/vendas/metas", icon: Crosshair },
   { title: "Tags", url: "/vendas/tags", icon: Tag },
   { title: "Formulários", url: "/vendas/formularios", icon: FileSpreadsheet },

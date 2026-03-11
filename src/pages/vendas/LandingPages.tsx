@@ -121,5 +121,51 @@ export default function LandingPages() {
         </CardContent>
       </Card>
     </div>
+
+      {/* Preview Modal */}
+      <Dialog open={!!previewConsultor} onOpenChange={() => setPreviewConsultor(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Preview — Landing Page</DialogTitle>
+          </DialogHeader>
+          {previewConsultor && (
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/30 p-6 text-center space-y-3">
+                <Avatar className="h-16 w-16 mx-auto">
+                  <AvatarFallback className="text-lg bg-primary/10 text-primary">
+                    {previewConsultor.nome.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <h3 className="text-lg font-bold">{previewConsultor.nome}</h3>
+                <p className="text-sm text-muted-foreground">Consultor(a) — Objetivo Proteção Veicular</p>
+                <div className="flex flex-col gap-1.5 items-center text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> (11) 99999-0000</span>
+                  <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> {previewConsultor.slug}@objetivoauto.com.br</span>
+                  <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> São Paulo, SP</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="rounded-lg border p-3">
+                  <p className="text-lg font-bold">{previewConsultor.visitas.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">Visitas</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-lg font-bold">{previewConsultor.leads}</p>
+                  <p className="text-xs text-muted-foreground">Leads</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-lg font-bold">{previewConsultor.conversoes}</p>
+                  <p className="text-xs text-muted-foreground">Conversões</p>
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">URL da página</p>
+                <p className="font-mono text-sm bg-muted px-3 py-1.5 rounded mt-1">{baseUrl}{previewConsultor.slug}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

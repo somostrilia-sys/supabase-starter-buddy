@@ -124,6 +124,7 @@ export default function FinanceiroModule() {
 
       {/* Content */}
       <main className="flex-1 overflow-auto">
+        <DemoBanner />
         <div className="w-full">
           {renderContent()}
         </div>

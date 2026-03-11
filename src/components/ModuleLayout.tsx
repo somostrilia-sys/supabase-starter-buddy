@@ -39,7 +39,7 @@ const vendasItems = [
   { title: "Pipeline", url: "/vendas/pipeline", icon: Kanban },
   { title: "Contatos", url: "/vendas/contatos", icon: Contact },
   { title: "Atividades", url: "/vendas/atividades", icon: Activity },
-  { title: "Calendário", url: "/vendas/calendario", icon: CalendarDays },
+  
   { title: "Metas", url: "/vendas/metas", icon: Crosshair },
   { title: "Vistorias", url: "/vendas/vistorias", icon: ClipboardCheck },
   { title: "Landing Pages", url: "/vendas/landing-pages", icon: Globe },
