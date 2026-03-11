@@ -259,6 +259,7 @@ export default function CadastrarVeiculo() {
   const [uploading, setUploading] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<UploadedDoc | null>(null);
   const [pendingFiles, setPendingFiles] = useState<{ file: File; tipo: string; preview?: string }[]>([]);
+  const [showFipeModal, setShowFipeModal] = useState(false);
 
   const set = (f: string, v: string | boolean) => setForm(p => ({ ...p, [f]: v }));
 
