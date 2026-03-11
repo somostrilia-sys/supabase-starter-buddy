@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   User, MapPin, GraduationCap, Phone, Mail, Heart, KeyRound, Landmark,
   FileText, Car, DollarSign, Gauge, Package, Radio, ClipboardCheck,
@@ -113,7 +114,7 @@ const mockPreenchido1 = {
   rg: "28.456.789-3",
   dataExpRg: "2015-06-20",
   orgaoExp: "SSP/SP",
-  profissao: "Engenheiro Civil",
+  profissao: "Engenheiro",
   cnh: "04512367890",
   categoriaCnh: "B",
   dataVencCnh: "2028-03-15",
@@ -252,11 +253,54 @@ export default function CadastrarAssociado() {
     toast.success("Valor FIPE atualizado!");
   };
 
-  const handleSalvar = () => {
+  const [saving, setSaving] = useState(false);
+
+  const handleSalvar = async () => {
     if (!form.nome) return toast.error("Nome é obrigatório");
     if (!form.cpfCnpj) return toast.error("CPF/CNPJ é obrigatório");
     if (!form.dataNasc) return toast.error("Data de nascimento é obrigatória");
-    toast.success("Associado/Veículo cadastrado com sucesso!", { description: `${form.nome} - ${form.cpfCnpj}` });
+
+    const cpfLimpo = form.cpfCnpj.replace(/\D/g, "");
+    setSaving(true);
+
+    try {
+      // Check for duplicate CPF
+      const { data: existing } = await supabase
+        .from("associados")
+        .select("id")
+        .eq("cpf", cpfLimpo)
+        .maybeSingle();
+
+      if (existing) {
+        toast.error("CPF já cadastrado!", { description: "Já existe um associado com este CPF no sistema." });
+        setSaving(false);
+        return;
+      }
+
+      const { error } = await supabase.from("associados").insert({
+        nome: form.nome,
+        cpf: cpfLimpo,
+        rg: form.rg || null,
+        data_nascimento: form.dataNasc || null,
+        cep: form.cep?.replace(/\D/g, "") || null,
+        endereco: [form.logradouro, form.numero, form.complemento, form.bairro].filter(Boolean).join(", ") || null,
+        cidade: form.cidade || null,
+        estado: form.estado || null,
+        telefone: form.celular || form.telResidencial || null,
+        email: form.email || null,
+        observacoes: form.observacoes || null,
+        status: (form.situacao === "Ativo" ? "ativo" : form.situacao === "Inativo" ? "inativo" : "suspenso") as "ativo" | "inativo" | "suspenso",
+      });
+
+      if (error) throw error;
+
+      toast.success("Associado cadastrado com sucesso!", { description: `${form.nome} - ${form.cpfCnpj}` });
+      handleLimpar();
+    } catch (err: any) {
+      toast.error("Erro ao salvar", { description: err.message });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleLimpar = () => { setForm({ ...initialForm, dataHora: now() }); toast.info("Formulário limpo"); };
@@ -893,7 +937,9 @@ export default function CadastrarAssociado() {
       {/* Rodapé fixo */}
       <div className="sticky bottom-0 bg-background border-t py-4 mt-6 flex justify-end gap-3">
         <Button variant="outline" onClick={handleLimpar}>Cancelar</Button>
-        <Button onClick={handleSalvar} className="bg-emerald-600 hover:bg-emerald-700 text-white">Salvar Cadastro</Button>
+        <Button onClick={handleSalvar} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+          {saving ? "Salvando..." : "Salvar Cadastro"}
+        </Button>
       </div>
     </div>
   );

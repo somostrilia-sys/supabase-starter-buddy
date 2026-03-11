@@ -123,7 +123,7 @@ export default function GestaoModule() {
       </header>
 
       {/* Tab Navigation */}
-      <nav className="border-b bg-card shrink-0 shadow-sm">
+      <nav className="border-b bg-card shrink-0 shadow-sm relative">
         <div className="px-6 lg:px-8">
           <ScrollArea className="w-full">
             <div className="flex items-center gap-0.5">
@@ -148,9 +148,11 @@ export default function GestaoModule() {
                 );
               })}
             </div>
-            <ScrollBar orientation="horizontal" />
+            <ScrollBar orientation="horizontal" className="h-2.5" />
           </ScrollArea>
         </div>
+        {/* Fade indicators for overflow */}
+        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-card to-transparent" />
       </nav>
 
       {/* Content */}

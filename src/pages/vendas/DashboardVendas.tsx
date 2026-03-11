@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   Users, FileText, Handshake, DollarSign, TrendingUp, Trophy, ArrowRightLeft,
 } from "lucide-react";
+import { DemoBanner } from "@/components/DemoBanner";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, CartesianGrid, Legend,
@@ -89,6 +90,7 @@ export default function DashboardVendas() {
 
   return (
     <div className="p-6 space-y-6">
+      <DemoBanner />
       {/* Filtros */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div>

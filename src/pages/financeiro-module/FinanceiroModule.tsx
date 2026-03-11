@@ -10,6 +10,7 @@ import {
   ChevronLeft, LogOut, DollarSign,
 } from "lucide-react";
 
+import { DemoBanner } from "@/components/DemoBanner";
 import FluxoCaixaTab from "./fluxo-caixa/FluxoCaixaTab";
 import RecebimentosCategoriaTab from "./recebimentos-categoria/RecebimentosCategoriaTab";
 import ConciliacaoTab from "./conciliacao/ConciliacaoTab";
@@ -123,6 +124,7 @@ export default function FinanceiroModule() {
 
       {/* Content */}
       <main className="flex-1 overflow-auto">
+        <DemoBanner />
         <div className="w-full">
           {renderContent()}
         </div>

@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Search, Eye, Copy, ExternalLink, Users, MousePointerClick, TrendingUp } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Globe, Search, Eye, Copy, ExternalLink, Users, MousePointerClick, TrendingUp, Phone, Mail, MapPin } from "lucide-react";
 
 const consultores = [
   { id: 1, nome: "Maria Santos", slug: "maria-santos", visitas: 1240, leads: 86, conversoes: 22, taxa: 25.6, ativa: true },
@@ -24,6 +26,7 @@ const kpis = [
 
 export default function LandingPages() {
   const [busca, setBusca] = useState("");
+  const [previewConsultor, setPreviewConsultor] = useState<typeof consultores[0] | null>(null);
   const filtered = consultores.filter(c => !busca || c.nome.toLowerCase().includes(busca.toLowerCase()));
   const baseUrl = "objetivoauto.com.br/c/";
 
@@ -103,7 +106,7 @@ export default function LandingPages() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" className="h-7 px-2" title="Visualizar"><Eye className="h-3.5 w-3.5" /></Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-2" title="Visualizar" onClick={() => setPreviewConsultor(c)}><Eye className="h-3.5 w-3.5" /></Button>
                       <Button variant="ghost" size="sm" className="h-7 px-2" title="Copiar URL"><Copy className="h-3.5 w-3.5" /></Button>
                       <Button variant="ghost" size="sm" className="h-7 px-2" title="Abrir"><ExternalLink className="h-3.5 w-3.5" /></Button>
                     </div>
@@ -117,6 +120,51 @@ export default function LandingPages() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Preview Modal */}
+      <Dialog open={!!previewConsultor} onOpenChange={() => setPreviewConsultor(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Preview — Landing Page</DialogTitle>
+          </DialogHeader>
+          {previewConsultor && (
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/30 p-6 text-center space-y-3">
+                <Avatar className="h-16 w-16 mx-auto">
+                  <AvatarFallback className="text-lg bg-primary/10 text-primary">
+                    {previewConsultor.nome.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <h3 className="text-lg font-bold">{previewConsultor.nome}</h3>
+                <p className="text-sm text-muted-foreground">Consultor(a) — Objetivo Proteção Veicular</p>
+                <div className="flex flex-col gap-1.5 items-center text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> (11) 99999-0000</span>
+                  <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> {previewConsultor.slug}@objetivoauto.com.br</span>
+                  <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> São Paulo, SP</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="rounded-lg border p-3">
+                  <p className="text-lg font-bold">{previewConsultor.visitas.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">Visitas</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-lg font-bold">{previewConsultor.leads}</p>
+                  <p className="text-xs text-muted-foreground">Leads</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-lg font-bold">{previewConsultor.conversoes}</p>
+                  <p className="text-xs text-muted-foreground">Conversões</p>
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">URL da página</p>
+                <p className="font-mono text-sm bg-muted px-3 py-1.5 rounded mt-1">{baseUrl}{previewConsultor.slug}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
