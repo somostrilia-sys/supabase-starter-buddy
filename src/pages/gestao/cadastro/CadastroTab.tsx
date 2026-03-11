@@ -259,7 +259,7 @@ function GrupoProdutos({ subView, setSubView }: { subView: number; setSubView: (
   ]);
   const [grupoModal, setGrupoModal] = useState(false);
   const [grupoEditIdx, setGrupoEditIdx] = useState<number | null>(null);
-  const [grupoForm, setGrupoForm] = useState({ Grupo: "", Produtos: "", Status: "Ativo" });
+  const [grupoForm, setGrupoForm] = useState<{ Grupo: string; Produtos: string; Status: string }>({ Grupo: "", Produtos: "", Status: "Ativo" });
   const [grupoDeleteIdx, setGrupoDeleteIdx] = useState<number | null>(null);
 
   const openGrupoNew = () => { setGrupoEditIdx(null); setGrupoForm({ Grupo: "", Produtos: "", Status: "Ativo" }); setGrupoModal(true); };
