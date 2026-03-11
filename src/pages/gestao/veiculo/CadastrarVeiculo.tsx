@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import ConsultaFipe from "@/pages/gestao/ferramentas/ConsultaFipe";
 import {
   Car, Plus, Search, Trash2, X, Copy, Eraser, Upload, DollarSign,
   FileText, MapPin, Users, Package, Settings, AlertTriangle, Landmark,
