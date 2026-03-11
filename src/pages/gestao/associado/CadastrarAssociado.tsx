@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   User, MapPin, GraduationCap, Phone, Mail, Heart, KeyRound, Landmark,
   FileText, Car, DollarSign, Gauge, Package, Radio, ClipboardCheck,
