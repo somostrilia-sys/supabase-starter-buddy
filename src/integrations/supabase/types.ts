@@ -637,6 +637,47 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicle_documents: {
+        Row: {
+          created_at: string
+          id: string
+          mime_type: string
+          nome_arquivo: string
+          storage_path: string
+          tamanho_bytes: number
+          tipo: string
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mime_type: string
+          nome_arquivo: string
+          storage_path: string
+          tamanho_bytes?: number
+          tipo?: string
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mime_type?: string
+          nome_arquivo?: string
+          storage_path?: string
+          tamanho_bytes?: number
+          tipo?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_documents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       veiculos: {
         Row: {
           ano: number | null
