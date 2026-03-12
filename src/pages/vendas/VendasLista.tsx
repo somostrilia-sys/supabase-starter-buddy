@@ -243,7 +243,7 @@ export default function VendasLista() {
                   <TableHead className="text-xs whitespace-nowrap">Regional</TableHead>
                   <TableHead className="text-xs cursor-pointer whitespace-nowrap" onClick={() => toggleSort("created_at")}><span className="flex items-center gap-1">Data Criação<ArrowUpDown className="h-3 w-3 text-muted-foreground/50" /></span></TableHead>
                   <TableHead className="text-xs whitespace-nowrap">Data Pagamento</TableHead>
-                  <TableHead className="text-xs whitespace-nowrap">Status SGA</TableHead>
+                  <TableHead className="text-xs whitespace-nowrap">Status Gestão</TableHead>
                   <TableHead className="text-xs whitespace-nowrap">Ações</TableHead>
                 </TableRow>
               </TableHeader>
