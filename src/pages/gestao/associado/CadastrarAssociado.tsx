@@ -288,8 +288,12 @@ export default function CadastrarAssociado() {
         return;
       }
 
-      const statusMap = SITUACOES.find(s => s.value === form.situacao);
-      const dbStatus = statusMap?.db || "pendente";
+      const dbStatusMap: Record<string, string> = {
+        "Ativo": "ativo", "Inativo": "inativo", "Pendente": "pendente",
+        "Pendente de Revistoria": "pendente_revistoria", "Inativo com Pendência": "inativo_pendencia",
+        "Inadimplente": "ativo", "Negado": "cancelado",
+      };
+      const dbStatus = dbStatusMap[form.situacao] || "pendente";
 
       const obsLines = [form.observacoes];
       if (needsMotivo && form.motivoInativacao) {
