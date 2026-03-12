@@ -9,7 +9,7 @@ import { toast } from "@/hooks/use-toast";
 const allFields = [
   "Nome", "CPF", "Email", "Telefone", "Placa", "Chassi",
   "Modelo", "Plano", "Etapa", "Consultor", "Cooperativa", "Regional",
-  "Data Criação", "Data Pagamento", "Forma Pagamento", "CPF Vendedor", "Valor Adesão", "Status SGA",
+  "Data Criação", "Data Pagamento", "Forma Pagamento", "CPF Vendedor", "Valor Adesão", "Status Gestão",
 ];
 
 const previewData = [
