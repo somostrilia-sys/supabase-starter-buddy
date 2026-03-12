@@ -16,14 +16,14 @@ const cooperativasOpcoes = ["Coop Central SP", "Coop ABC Paulista", "Coop Campin
 const camposApi = ["CPF Vendedor", "Nome Associado", "Placa", "Modelo", "Plano", "Valor Adesão", "Valor Mensalidade"];
 
 export default function IntegracoesTab() {
-  // SGA
-  const [tokenSga, setTokenSga] = useState("sk_sga_live_a1b2c3d4e5f6");
-  const [sgaRegionais, setSgaRegionais] = useState<string[]>(["São Paulo Capital", "Interior SP"]);
-  const [sgaCooperativas, setSgaCooperativas] = useState<string[]>(["Coop Central SP"]);
-  const [sgaFormaPagamento, setSgaFormaPagamento] = useState(true);
-  const [sgaVencimento, setSgaVencimento] = useState(true);
-  const [sgaContaBancaria, setSgaContaBancaria] = useState(false);
-  const [sgaConectado, setSgaConectado] = useState(true);
+  // Gestão
+  const [tokenGestao, setTokenGestao] = useState("sk_gestao_live_a1b2c3d4e5f6");
+  const [gestaoRegionais, setGestaoRegionais] = useState<string[]>(["São Paulo Capital", "Interior SP"]);
+  const [gestaoCooperativas, setGestaoCooperativas] = useState<string[]>(["Coop Central SP"]);
+  const [gestaoFormaPagamento, setGestaoFormaPagamento] = useState(true);
+  const [gestaoVencimento, setGestaoVencimento] = useState(true);
+  const [gestaoContaBancaria, setGestaoContaBancaria] = useState(false);
+  const [gestaoConectado, setGestaoConectado] = useState(true);
 
   // Power Sign
   const [tokenPowerSign, setTokenPowerSign] = useState("ps_token_x9y8z7");
