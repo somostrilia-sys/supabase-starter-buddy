@@ -35,7 +35,7 @@ interface VendaDeal {
   regional: string;
   created_at: string;
   data_pagamento: string | null;
-  status_sga: "Sincronizado" | "Pendente" | "Erro" | "Não Enviado";
+  status_gestao: "Sincronizado" | "Pendente" | "Erro" | "Não Enviado";
   status_pagamento: string;
 }
 
