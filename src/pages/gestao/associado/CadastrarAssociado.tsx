@@ -370,7 +370,7 @@ export default function CadastrarAssociado() {
                 <Select value={form.situacao} onValueChange={v => { set("situacao", v); if (v !== "Inativo" && v !== "Inativo com Pendência") set("motivoInativacao", ""); }}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
-                    {SITUACOES.map(s => <SelectItem key={s.value} value={s.value}>{s.value}</SelectItem>)}
+                    {situacoes.map(s => <SelectItem key={s.descricao} value={s.descricao}>{s.descricao}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
