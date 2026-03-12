@@ -180,11 +180,16 @@ const mockAssociados = [
 ];
 
 const mockBoletos = [
-  { id: "BOL-001", associado: "Carlos Eduardo Silva", valor: 189.90, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: "2025-07-08", situacao: "pago_dia" },
-  { id: "BOL-002", associado: "Maria Fernanda Oliveira", valor: 245.50, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: null, situacao: "pendente" },
-  { id: "BOL-003", associado: "José Roberto Santos", valor: 312.00, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: "2025-07-12", situacao: "pago_atraso" },
-  { id: "BOL-004", associado: "Ana Paula Costa", valor: 178.40, gerado: "2025-05-25", vencimento: "2025-06-10", pagamento: null, situacao: "vencido" },
-  { id: "BOL-005", associado: "Fernanda Rodrigues", valor: 198.30, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: "2025-07-09", situacao: "pago_dia" },
+  { id: "BOL-001", associado: "Carlos Eduardo Silva", cpf: "123.456.789-00", valor: 189.90, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: "2025-07-08", situacao: "pago_dia", unidade: "Matriz São Paulo", consultor: "Ana Oliveira", tipoCobranca: "Mensalidade", banco: "Banco do Brasil", formaPagamento: "Boleto", contrato: "CTR-2025-001" },
+  { id: "BOL-002", associado: "Maria Fernanda Oliveira", cpf: "987.654.321-00", valor: 245.50, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: null, situacao: "pendente", unidade: "Filial RJ", consultor: "Pedro Santos", tipoCobranca: "Mensalidade", banco: "Itaú", formaPagamento: "PIX", contrato: "CTR-2025-002" },
+  { id: "BOL-003", associado: "José Roberto Santos", cpf: "456.789.123-00", valor: 312.00, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: "2025-07-12", situacao: "pago_atraso", unidade: "Filial MG", consultor: "Lucas Ferreira", tipoCobranca: "Taxa administrativa", banco: "Bradesco", formaPagamento: "Boleto", contrato: "CTR-2025-003" },
+  { id: "BOL-004", associado: "Ana Paula Costa", cpf: "321.654.987-00", valor: 178.40, gerado: "2025-05-25", vencimento: "2025-06-10", pagamento: null, situacao: "vencido", unidade: "Filial RJ", consultor: "Pedro Santos", tipoCobranca: "Mensalidade", banco: "Caixa", formaPagamento: "Boleto", contrato: "CTR-2025-004" },
+  { id: "BOL-005", associado: "Fernanda Rodrigues", cpf: "789.123.456-00", valor: 198.30, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: "2025-07-09", situacao: "pago_dia", unidade: "Filial PR", consultor: "Ana Oliveira", tipoCobranca: "Mensalidade", banco: "Banco do Brasil", formaPagamento: "Cartão", contrato: "CTR-2025-005" },
+  { id: "BOL-006", associado: "Ricardo Almeida", cpf: "147.258.369-00", valor: 450.00, gerado: "2025-06-20", vencimento: "2025-07-05", pagamento: null, situacao: "vencido", unidade: "Matriz São Paulo", consultor: "Lucas Ferreira", tipoCobranca: "Multa", banco: "Itaú", formaPagamento: "Boleto", contrato: "CTR-2025-006" },
+  { id: "BOL-007", associado: "Juliana Martins", cpf: "258.369.147-00", valor: 135.00, gerado: "2025-07-01", vencimento: "2025-07-15", pagamento: null, situacao: "pendente", unidade: "Filial RJ", consultor: "Pedro Santos", tipoCobranca: "Mensalidade", banco: "Santander", formaPagamento: "PIX", contrato: "CTR-2025-007" },
+  { id: "BOL-008", associado: "Pedro Henrique Lima", cpf: "654.321.987-00", valor: 520.00, gerado: "2025-06-15", vencimento: "2025-07-01", pagamento: "2025-06-30", situacao: "pago_dia", unidade: "Filial MG", consultor: "Ana Oliveira", tipoCobranca: "Taxa administrativa", banco: "Banco do Brasil", formaPagamento: "Boleto", contrato: "CTR-2025-008" },
+  { id: "BOL-009", associado: "Carlos Eduardo Silva", cpf: "123.456.789-00", valor: 89.90, gerado: "2025-07-01", vencimento: "2025-07-20", pagamento: null, situacao: "cancelado", unidade: "Matriz São Paulo", consultor: "Ana Oliveira", tipoCobranca: "Mensalidade", banco: "Bradesco", formaPagamento: "Boleto", contrato: "CTR-2025-001" },
+  { id: "BOL-010", associado: "Marcos Vinicius Souza", cpf: "963.852.741-00", valor: 275.60, gerado: "2025-06-28", vencimento: "2025-07-12", pagamento: "2025-07-11", situacao: "pago_dia", unidade: "Filial PR", consultor: "Lucas Ferreira", tipoCobranca: "Mensalidade", banco: "Caixa", formaPagamento: "Cartão", contrato: "CTR-2025-009" },
 ];
 
 const situacaoColor: Record<string, string> = {
