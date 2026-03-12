@@ -180,11 +180,16 @@ const mockAssociados = [
 ];
 
 const mockBoletos = [
-  { id: "BOL-001", associado: "Carlos Eduardo Silva", valor: 189.90, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: "2025-07-08", situacao: "pago_dia" },
-  { id: "BOL-002", associado: "Maria Fernanda Oliveira", valor: 245.50, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: null, situacao: "pendente" },
-  { id: "BOL-003", associado: "José Roberto Santos", valor: 312.00, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: "2025-07-12", situacao: "pago_atraso" },
-  { id: "BOL-004", associado: "Ana Paula Costa", valor: 178.40, gerado: "2025-05-25", vencimento: "2025-06-10", pagamento: null, situacao: "vencido" },
-  { id: "BOL-005", associado: "Fernanda Rodrigues", valor: 198.30, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: "2025-07-09", situacao: "pago_dia" },
+  { id: "BOL-001", associado: "Carlos Eduardo Silva", cpf: "123.456.789-00", valor: 189.90, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: "2025-07-08", situacao: "pago_dia", unidade: "Matriz São Paulo", consultor: "Ana Oliveira", tipoCobranca: "Mensalidade", banco: "Banco do Brasil", formaPagamento: "Boleto", contrato: "CTR-2025-001" },
+  { id: "BOL-002", associado: "Maria Fernanda Oliveira", cpf: "987.654.321-00", valor: 245.50, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: null, situacao: "pendente", unidade: "Filial RJ", consultor: "Pedro Santos", tipoCobranca: "Mensalidade", banco: "Itaú", formaPagamento: "PIX", contrato: "CTR-2025-002" },
+  { id: "BOL-003", associado: "José Roberto Santos", cpf: "456.789.123-00", valor: 312.00, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: "2025-07-12", situacao: "pago_atraso", unidade: "Filial MG", consultor: "Lucas Ferreira", tipoCobranca: "Taxa administrativa", banco: "Bradesco", formaPagamento: "Boleto", contrato: "CTR-2025-003" },
+  { id: "BOL-004", associado: "Ana Paula Costa", cpf: "321.654.987-00", valor: 178.40, gerado: "2025-05-25", vencimento: "2025-06-10", pagamento: null, situacao: "vencido", unidade: "Filial RJ", consultor: "Pedro Santos", tipoCobranca: "Mensalidade", banco: "Caixa", formaPagamento: "Boleto", contrato: "CTR-2025-004" },
+  { id: "BOL-005", associado: "Fernanda Rodrigues", cpf: "789.123.456-00", valor: 198.30, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: "2025-07-09", situacao: "pago_dia", unidade: "Filial PR", consultor: "Ana Oliveira", tipoCobranca: "Mensalidade", banco: "Banco do Brasil", formaPagamento: "Cartão", contrato: "CTR-2025-005" },
+  { id: "BOL-006", associado: "Ricardo Almeida", cpf: "147.258.369-00", valor: 450.00, gerado: "2025-06-20", vencimento: "2025-07-05", pagamento: null, situacao: "vencido", unidade: "Matriz São Paulo", consultor: "Lucas Ferreira", tipoCobranca: "Multa", banco: "Itaú", formaPagamento: "Boleto", contrato: "CTR-2025-006" },
+  { id: "BOL-007", associado: "Juliana Martins", cpf: "258.369.147-00", valor: 135.00, gerado: "2025-07-01", vencimento: "2025-07-15", pagamento: null, situacao: "pendente", unidade: "Filial RJ", consultor: "Pedro Santos", tipoCobranca: "Mensalidade", banco: "Santander", formaPagamento: "PIX", contrato: "CTR-2025-007" },
+  { id: "BOL-008", associado: "Pedro Henrique Lima", cpf: "654.321.987-00", valor: 520.00, gerado: "2025-06-15", vencimento: "2025-07-01", pagamento: "2025-06-30", situacao: "pago_dia", unidade: "Filial MG", consultor: "Ana Oliveira", tipoCobranca: "Taxa administrativa", banco: "Banco do Brasil", formaPagamento: "Boleto", contrato: "CTR-2025-008" },
+  { id: "BOL-009", associado: "Carlos Eduardo Silva", cpf: "123.456.789-00", valor: 89.90, gerado: "2025-07-01", vencimento: "2025-07-20", pagamento: null, situacao: "cancelado", unidade: "Matriz São Paulo", consultor: "Ana Oliveira", tipoCobranca: "Mensalidade", banco: "Bradesco", formaPagamento: "Boleto", contrato: "CTR-2025-001" },
+  { id: "BOL-010", associado: "Marcos Vinicius Souza", cpf: "963.852.741-00", valor: 275.60, gerado: "2025-06-28", vencimento: "2025-07-12", pagamento: "2025-07-11", situacao: "pago_dia", unidade: "Filial PR", consultor: "Lucas Ferreira", tipoCobranca: "Mensalidade", banco: "Caixa", formaPagamento: "Cartão", contrato: "CTR-2025-009" },
 ];
 
 const situacaoColor: Record<string, string> = {
@@ -195,7 +200,16 @@ const situacaoColor: Record<string, string> = {
   pago_dia: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
   pago_atraso: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
   vencido: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+  cancelado: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
 };
+
+const statusBoleto = ["pago_dia", "pago_atraso", "pendente", "vencido", "cancelado"];
+const statusBoletoLabels: Record<string, string> = { pago_dia: "Pago em dia", pago_atraso: "Pago em atraso", pendente: "Pendente", vencido: "Vencido", cancelado: "Cancelado" };
+const unidadesBoleto = ["Matriz São Paulo", "Filial RJ", "Filial MG", "Filial PR"];
+const consultoresBoleto = ["Ana Oliveira", "Pedro Santos", "Lucas Ferreira"];
+const tiposCobranca = ["Mensalidade", "Taxa administrativa", "Multa"];
+const bancosBoleto = ["Banco do Brasil", "Itaú", "Bradesco", "Caixa", "Santander"];
+const formasPagamento = ["Boleto", "PIX", "Cartão"];
 
 const outrosRelatorios = [
   { id: "usuarios", label: "Usuários", icon: UserCog, desc: "Listagem de usuários do sistema com perfis e acessos" },
@@ -239,6 +253,21 @@ export default function RelatoriosTab() {
   const [selCota, setSelCota] = useState<Set<string>>(new Set(cotasVeiculo));
   const [selCategoria, setSelCategoria] = useState<Set<string>>(new Set(categoriasVeiculo));
 
+  // Boleto advanced filters
+  const [bolFiltroData, setBolFiltroData] = useState("vencimento");
+  const [bolDataDe, setBolDataDe] = useState("");
+  const [bolDataAte, setBolDataAte] = useState("");
+  const [bolStatus, setBolStatus] = useState("todos");
+  const [bolUnidade, setBolUnidade] = useState("todas");
+  const [bolConsultor, setBolConsultor] = useState("todos");
+  const [bolValorMin, setBolValorMin] = useState("");
+  const [bolValorMax, setBolValorMax] = useState("");
+  const [bolNumero, setBolNumero] = useState("");
+  const [bolTipoCobranca, setBolTipoCobranca] = useState("todos");
+  const [bolBanco, setBolBanco] = useState("todos");
+  const [bolFormaPgto, setBolFormaPgto] = useState("todos");
+  const [bolContrato, setBolContrato] = useState("");
+
   const toggleInSet = (set: Set<string>, setFn: React.Dispatch<React.SetStateAction<Set<string>>>, item: string) => {
     setFn(prev => { const next = new Set(prev); if (next.has(item)) next.delete(item); else next.add(item); return next; });
   };
@@ -249,7 +278,20 @@ export default function RelatoriosTab() {
   });
 
   const filteredBoletos = mockBoletos.filter(b => {
-    if (buscaBol && !b.associado.toLowerCase().includes(buscaBol.toLowerCase()) && !b.id.toLowerCase().includes(buscaBol.toLowerCase())) return false;
+    if (buscaBol && !b.associado.toLowerCase().includes(buscaBol.toLowerCase()) && !b.id.toLowerCase().includes(buscaBol.toLowerCase()) && !b.cpf.includes(buscaBol)) return false;
+    if (bolStatus !== "todos" && b.situacao !== bolStatus) return false;
+    if (bolUnidade !== "todas" && b.unidade !== bolUnidade) return false;
+    if (bolConsultor !== "todos" && b.consultor !== bolConsultor) return false;
+    if (bolTipoCobranca !== "todos" && b.tipoCobranca !== bolTipoCobranca) return false;
+    if (bolBanco !== "todos" && b.banco !== bolBanco) return false;
+    if (bolFormaPgto !== "todos" && b.formaPagamento !== bolFormaPgto) return false;
+    if (bolNumero && !b.id.toLowerCase().includes(bolNumero.toLowerCase())) return false;
+    if (bolContrato && !b.contrato.toLowerCase().includes(bolContrato.toLowerCase())) return false;
+    if (bolValorMin && b.valor < parseFloat(bolValorMin)) return false;
+    if (bolValorMax && b.valor > parseFloat(bolValorMax)) return false;
+    const dateField = bolFiltroData === "emissao" ? b.gerado : bolFiltroData === "pagamento" ? b.pagamento : b.vencimento;
+    if (bolDataDe && dateField && dateField < bolDataDe) return false;
+    if (bolDataAte && dateField && dateField > bolDataAte) return false;
     return true;
   });
 
@@ -403,53 +445,127 @@ export default function RelatoriosTab() {
 
         {/* ── BOLETOS ── */}
         <TabsContent value="boletos" className="space-y-4 mt-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold font-listing">{mockBoletos.length}</p><p className="text-xs text-muted-foreground font-listing">Total gerado</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-success font-listing">{mockBoletos.filter(b => b.situacao === "pago_dia").length}</p><p className="text-xs text-muted-foreground font-listing">Pagos em dia</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-warning font-listing">{mockBoletos.filter(b => b.situacao === "pago_atraso").length}</p><p className="text-xs text-muted-foreground font-listing">Pagos em atraso</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-destructive font-listing">{mockBoletos.filter(b => b.situacao === "vencido").length}</p><p className="text-xs text-muted-foreground font-listing">Vencidos</p></CardContent></Card>
+          {/* KPIs */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold font-listing">{filteredBoletos.length}</p><p className="text-xs text-muted-foreground font-listing">Filtrados</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-success font-listing">{filteredBoletos.filter(b => b.situacao === "pago_dia").length}</p><p className="text-xs text-muted-foreground font-listing">Pagos em dia</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-warning font-listing">{filteredBoletos.filter(b => b.situacao === "pago_atraso").length}</p><p className="text-xs text-muted-foreground font-listing">Pagos em atraso</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-destructive font-listing">{filteredBoletos.filter(b => b.situacao === "vencido").length}</p><p className="text-xs text-muted-foreground font-listing">Vencidos</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold font-listing">R$ {somaBoletosTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p><p className="text-xs text-muted-foreground font-listing">Valor total</p></CardContent></Card>
           </div>
 
-          <div className="space-y-4">
-            <div className="border border-border">
-              <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Filtros de Boletos</h4></div>
-              <div className="px-4 py-3 bg-card grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div><Label className="text-xs font-listing font-semibold">Vencimento De</Label><Input type="date" /></div>
-                <div><Label className="text-xs font-listing font-semibold">Vencimento Até</Label><Input type="date" /></div>
-                <div><Label className="text-xs font-listing font-semibold">Situação</Label>
-                  <Select defaultValue="todos"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem><SelectItem value="pago_dia">Pago em dia</SelectItem><SelectItem value="pago_atraso">Pago em atraso</SelectItem><SelectItem value="pendente">Pendente</SelectItem><SelectItem value="vencido">Vencido</SelectItem></SelectContent></Select>
+          {/* Advanced Filters */}
+          <div className="border border-border">
+            <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Filtros Avançados de Boletos</h4></div>
+            <div className="px-4 py-4 bg-card space-y-4">
+              {/* Row 1: Period */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div><Label className="text-xs font-listing font-semibold">Tipo de Data</Label>
+                  <Select value={bolFiltroData} onValueChange={setBolFiltroData}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="vencimento">Vencimento</SelectItem><SelectItem value="emissao">Emissão</SelectItem><SelectItem value="pagamento">Pagamento</SelectItem></SelectContent></Select>
                 </div>
-                <div><Label className="text-xs font-listing font-semibold">Cooperativa</Label>
-                  <Select defaultValue="todas"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{cooperativasSimples.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+                <div><Label className="text-xs font-listing font-semibold">Data De</Label><Input type="date" value={bolDataDe} onChange={e => setBolDataDe(e.target.value)} /></div>
+                <div><Label className="text-xs font-listing font-semibold">Data Até</Label><Input type="date" value={bolDataAte} onChange={e => setBolDataAte(e.target.value)} /></div>
+                <div><Label className="text-xs font-listing font-semibold">Status do Boleto</Label>
+                  <Select value={bolStatus} onValueChange={setBolStatus}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{statusBoleto.map(s => <SelectItem key={s} value={s}>{statusBoletoLabels[s]}</SelectItem>)}</SelectContent></Select>
                 </div>
-                <div><Label className="text-xs font-listing font-semibold">Regional</Label>
-                  <Select defaultValue="todas"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{regionaisSimples.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>
+              </div>
+              {/* Row 2: Entity filters */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div><Label className="text-xs font-listing font-semibold">Associado / Cliente</Label><Input placeholder="Nome ou CPF..." value={buscaBol} onChange={e => setBuscaBol(e.target.value)} /></div>
+                <div><Label className="text-xs font-listing font-semibold">Unidade (Filial)</Label>
+                  <Select value={bolUnidade} onValueChange={setBolUnidade}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{unidadesBoleto.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent></Select>
+                </div>
+                <div><Label className="text-xs font-listing font-semibold">Consultor Responsável</Label>
+                  <Select value={bolConsultor} onValueChange={setBolConsultor}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{consultoresBoleto.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+                </div>
+                <div><Label className="text-xs font-listing font-semibold">Número do Boleto</Label><Input placeholder="BOL-..." value={bolNumero} onChange={e => setBolNumero(e.target.value)} /></div>
+              </div>
+              {/* Row 3: Financial filters */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div><Label className="text-xs font-listing font-semibold">Valor Mínimo (R$)</Label><Input type="number" placeholder="0,00" value={bolValorMin} onChange={e => setBolValorMin(e.target.value)} /></div>
+                <div><Label className="text-xs font-listing font-semibold">Valor Máximo (R$)</Label><Input type="number" placeholder="0,00" value={bolValorMax} onChange={e => setBolValorMax(e.target.value)} /></div>
+                <div><Label className="text-xs font-listing font-semibold">Tipo de Cobrança</Label>
+                  <Select value={bolTipoCobranca} onValueChange={setBolTipoCobranca}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{tiposCobranca.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
+                </div>
+                <div><Label className="text-xs font-listing font-semibold">Banco Emissor</Label>
+                  <Select value={bolBanco} onValueChange={setBolBanco}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{bancosBoleto.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select>
+                </div>
+                <div><Label className="text-xs font-listing font-semibold">Forma de Pagamento</Label>
+                  <Select value={bolFormaPgto} onValueChange={setBolFormaPgto}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{formasPagamento.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select>
+                </div>
+              </div>
+              {/* Row 4 */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div><Label className="text-xs font-listing font-semibold">Contrato Vinculado</Label><Input placeholder="CTR-..." value={bolContrato} onChange={e => setBolContrato(e.target.value)} /></div>
+                <div className="flex items-end">
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
+                    setBolFiltroData("vencimento"); setBolDataDe(""); setBolDataAte(""); setBolStatus("todos");
+                    setBolUnidade("todas"); setBolConsultor("todos"); setBolValorMin(""); setBolValorMax("");
+                    setBolNumero(""); setBolTipoCobranca("todos"); setBolBanco("todos"); setBolFormaPgto("todos");
+                    setBolContrato(""); setBuscaBol(""); setPageBol(1);
+                    toast.info("Filtros limpos");
+                  }}>Limpar Filtros</Button>
                 </div>
               </div>
             </div>
-
-            <ReportActionBar
-              busca={buscaBol}
-              setBusca={setBuscaBol}
-              onGenerate={() => { setPageBol(1); toast.success("Relatório gerado"); }}
-              onExport={() => exportCsv(mockBoletos as unknown as Record<string, unknown>[], "boletos")}
-              placeholder="Buscar por associado ou ID..."
-            />
           </div>
 
+          <ReportActionBar
+            busca={buscaBol}
+            setBusca={setBuscaBol}
+            onGenerate={() => { setPageBol(1); toast.success("Relatório gerado com " + filteredBoletos.length + " resultado(s)"); }}
+            onExport={() => exportCsv(filteredBoletos as unknown as Record<string, unknown>[], "boletos")}
+            placeholder="Buscar por associado, CPF ou nº boleto..."
+          />
+
+          {/* Results Table */}
           <Card><CardContent className="p-0">
             <Table>
-              <TableHeader><TableRow><TableHead className="font-listing font-bold text-xs uppercase">ID</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Associado</TableHead><TableHead className="font-listing font-bold text-xs uppercase text-right">Valor</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Gerado</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Vencimento</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Pagamento</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Situação</TableHead></TableRow></TableHeader>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Nº Boleto</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Associado</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">CPF</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase text-right">Valor</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Emissão</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Vencimento</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Pagamento</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Status</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Unidade</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Consultor</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Tipo</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Banco</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Pagto</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Contrato</TableHead>
+                </TableRow>
+              </TableHeader>
               <TableBody>
-                {pagedBoletos.map(b => (
-                  <TableRow key={b.id}><TableCell className="font-mono text-xs">{b.id}</TableCell><TableCell className="font-medium font-listing">{b.associado}</TableCell><TableCell className="text-right font-listing">R$ {b.valor.toFixed(2)}</TableCell><TableCell className="font-listing">{new Date(b.gerado).toLocaleDateString("pt-BR")}</TableCell><TableCell className="font-listing">{new Date(b.vencimento).toLocaleDateString("pt-BR")}</TableCell><TableCell className="font-listing">{b.pagamento ? new Date(b.pagamento).toLocaleDateString("pt-BR") : "—"}</TableCell><TableCell><Badge className={situacaoColor[b.situacao]}>{b.situacao.replace("_", " ")}</Badge></TableCell></TableRow>
+                {pagedBoletos.length === 0 && (
+                  <TableRow><TableCell colSpan={14} className="text-center py-8 text-muted-foreground font-listing">Nenhum boleto encontrado com os filtros aplicados</TableCell></TableRow>
+                )}
+                {pagedBoletos.map((b, i) => (
+                  <TableRow key={b.id} className={i % 2 === 0 ? "bg-card" : "bg-[hsl(210_30%_97%)]"}>
+                    <TableCell className="font-mono text-xs">{b.id}</TableCell>
+                    <TableCell className="font-medium font-listing text-sm">{b.associado}</TableCell>
+                    <TableCell className="font-mono text-xs">{b.cpf}</TableCell>
+                    <TableCell className="text-right font-listing font-semibold">R$ {b.valor.toFixed(2)}</TableCell>
+                    <TableCell className="font-listing text-sm">{new Date(b.gerado).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell className="font-listing text-sm">{new Date(b.vencimento).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell className="font-listing text-sm">{b.pagamento ? new Date(b.pagamento).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                    <TableCell><Badge className={situacaoColor[b.situacao]}>{statusBoletoLabels[b.situacao] ?? b.situacao}</Badge></TableCell>
+                    <TableCell className="font-listing text-xs">{b.unidade}</TableCell>
+                    <TableCell className="font-listing text-xs">{b.consultor}</TableCell>
+                    <TableCell className="font-listing text-xs">{b.tipoCobranca}</TableCell>
+                    <TableCell className="font-listing text-xs">{b.banco}</TableCell>
+                    <TableCell className="font-listing text-xs">{b.formaPagamento}</TableCell>
+                    <TableCell className="font-mono text-xs">{b.contrato}</TableCell>
+                  </TableRow>
                 ))}
               </TableBody>
             </Table>
-            {/* Footer sum */}
             <div className="flex items-center justify-between px-4 py-3 bg-[hsl(210_30%_95%)] border-t border-border">
-              <span className="text-xs text-muted-foreground font-listing">{filteredBoletos.length} boleto(s)</span>
-              <span className="text-sm font-bold font-listing">Total: R$ {somaBoletosTotal.toFixed(2)}</span>
+              <span className="text-xs text-muted-foreground font-listing">{filteredBoletos.length} boleto(s) encontrado(s)</span>
+              <span className="text-sm font-bold font-listing">Total: R$ {somaBoletosTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
             </div>
             <Pagination page={pageBol} totalPages={totalPagesBol} onPageChange={setPageBol} />
           </CardContent></Card>
