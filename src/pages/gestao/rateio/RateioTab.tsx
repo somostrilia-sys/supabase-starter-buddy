@@ -629,10 +629,10 @@ function HistoricoDistribuicao() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// 4) CARGA INICIAL SGA
+// 4) CARGA INICIAL GESTÃO
 // ═══════════════════════════════════════════════════════════
 
-function CargaInicialSGA() {
+function CargaInicialGestao() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
 
