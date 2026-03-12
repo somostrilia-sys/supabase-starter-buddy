@@ -78,7 +78,7 @@ const mockHistDist = [
   { mes: "Ago/2025", valorTotal: 98500.00, qtdeVeiculos: 8750, regionais: 10, intervalos: 12, usuario: "Gerente", dataHora: "14/08/2025 15:55:00", detalhes: [] },
 ];
 
-const mockCargaSGA = regionaisData.map(r => ({
+const mockCargaGestao = regionaisData.map(r => ({
   regional: r.nome,
   totalVeiculos: r.veiculos,
   totalCotas: Math.floor(r.veiculos * 1.1),
