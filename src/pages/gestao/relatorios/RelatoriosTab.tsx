@@ -200,7 +200,16 @@ const situacaoColor: Record<string, string> = {
   pago_dia: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
   pago_atraso: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
   vencido: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+  cancelado: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
 };
+
+const statusBoleto = ["pago_dia", "pago_atraso", "pendente", "vencido", "cancelado"];
+const statusBoletoLabels: Record<string, string> = { pago_dia: "Pago em dia", pago_atraso: "Pago em atraso", pendente: "Pendente", vencido: "Vencido", cancelado: "Cancelado" };
+const unidadesBoleto = ["Matriz São Paulo", "Filial RJ", "Filial MG", "Filial PR"];
+const consultoresBoleto = ["Ana Oliveira", "Pedro Santos", "Lucas Ferreira"];
+const tiposCobranca = ["Mensalidade", "Taxa administrativa", "Multa"];
+const bancosBoleto = ["Banco do Brasil", "Itaú", "Bradesco", "Caixa", "Santander"];
+const formasPagamento = ["Boleto", "PIX", "Cartão"];
 
 const outrosRelatorios = [
   { id: "usuarios", label: "Usuários", icon: UserCog, desc: "Listagem de usuários do sistema com perfis e acessos" },
