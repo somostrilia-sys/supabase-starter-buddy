@@ -343,7 +343,7 @@ export default function Pipeline() {
                         <span className="flex items-center gap-1">{label}<ArrowUpDown className="h-3 w-3 text-muted-foreground/50" /></span>
                       </TableHead>
                     ))}
-                    <TableHead className="text-xs">SGA</TableHead>
+                    <TableHead className="text-xs">Gestão</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
