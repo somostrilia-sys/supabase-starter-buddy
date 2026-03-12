@@ -253,6 +253,21 @@ export default function RelatoriosTab() {
   const [selCota, setSelCota] = useState<Set<string>>(new Set(cotasVeiculo));
   const [selCategoria, setSelCategoria] = useState<Set<string>>(new Set(categoriasVeiculo));
 
+  // Boleto advanced filters
+  const [bolFiltroData, setBolFiltroData] = useState("vencimento");
+  const [bolDataDe, setBolDataDe] = useState("");
+  const [bolDataAte, setBolDataAte] = useState("");
+  const [bolStatus, setBolStatus] = useState("todos");
+  const [bolUnidade, setBolUnidade] = useState("todas");
+  const [bolConsultor, setBolConsultor] = useState("todos");
+  const [bolValorMin, setBolValorMin] = useState("");
+  const [bolValorMax, setBolValorMax] = useState("");
+  const [bolNumero, setBolNumero] = useState("");
+  const [bolTipoCobranca, setBolTipoCobranca] = useState("todos");
+  const [bolBanco, setBolBanco] = useState("todos");
+  const [bolFormaPgto, setBolFormaPgto] = useState("todos");
+  const [bolContrato, setBolContrato] = useState("");
+
   const toggleInSet = (set: Set<string>, setFn: React.Dispatch<React.SetStateAction<Set<string>>>, item: string) => {
     setFn(prev => { const next = new Set(prev); if (next.has(item)) next.delete(item); else next.add(item); return next; });
   };
