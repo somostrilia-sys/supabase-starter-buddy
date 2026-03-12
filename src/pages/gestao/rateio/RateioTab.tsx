@@ -636,9 +636,9 @@ function CargaInicialGestao() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const totalVeiculos = mockCargaSGA.reduce((s, r) => s + r.totalVeiculos, 0);
-  const totalCotas = mockCargaSGA.reduce((s, r) => s + r.totalCotas, 0);
-  const executadas = mockCargaSGA.filter(r => r.status === "Executada").length;
+  const totalVeiculos = mockCargaGestao.reduce((s, r) => s + r.totalVeiculos, 0);
+  const totalCotas = mockCargaGestao.reduce((s, r) => s + r.totalCotas, 0);
+  const executadas = mockCargaGestao.filter(r => r.status === "Executada").length;
 
   const executarCarga = () => {
     setLoading(true);
