@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  User, MapPin, GraduationCap, Phone, Mail, Heart, KeyRound, Landmark,
+  User, MapPin, Phone, Mail, KeyRound, Landmark,
   FileText, Car, DollarSign, Gauge, Package, Radio, ClipboardCheck,
   Upload, Shield, CreditCard, Plus, Search, Trash2, Copy, X, Eraser,
 } from "lucide-react";
@@ -75,31 +75,38 @@ const now = () => {
 interface Implemento { item: string; descricao: string; valor: string; }
 interface Documento { nome: string; tipo: string; data: string; }
 
+const SITUACOES = [
+  { value: "Pendente", db: "pendente" },
+  { value: "Pendente de Revistoria", db: "pendente_revistoria" },
+  { value: "Ativo", db: "ativo" },
+  { value: "Inativo", db: "inativo" },
+  { value: "Inativo com Pendência", db: "inativo_pendencia" },
+] as const;
+
 const initialForm = {
   idExterno: "", situacao: "Ativo", classificacao: "", nome: "", dataHora: now(),
   dataContrato: "", dataValidade: "", dataNasc: "", sexo: "", cpfCnpj: "", rg: "",
   dataExpRg: "", orgaoExp: "", profissao: "", cnh: "", categoriaCnh: "",
   dataVencCnh: "", data1aHab: "",
   cep: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "",
-  escolaridade: "",
   telResidencial: "", telComercial: "", celular: "", celularAux: "",
-  operadora: "", operadoraAux: "", idRadio: "", idRadioAux: "", numRadio: "", radioAux: "",
+  operadora: "", operadoraAux: "",
   email: "", emailAux: "", contato: "",
-  estadoCivil: "", nomeConjuge: "", nomePai: "", nomeMae: "",
   acessoArea: "", login: "", senha: "", regional: "", cooperativa: "",
   consultorResp: "", indicacao: "", nomeIndicacao: "",
   banco: "", agencia: "", contaCorrente: "", diaVencimento: "", isencao: "",
   observacoes: "",
+  motivoInativacao: "",
   placa: "", chassi: "", renavam: "", codigoFipe: "", tipoVeiculo: "",
   marca: "", modelo: "", anoFab: "", anoModelo: "", cor: "",
   combustivel: "", portas: "", cambio: "", potencia: "", cilindradas: "",
   valorFipe: "", valorDeclarado: "", valorMensalidade: "", valorAdesao: "",
   valorCota: "", valorRastreador: "",
-  uso: "", kmMedio: "", pernoite: "", cepPernoite: "",
+  tipoUtilizacao: "", kmMedio: "", pernoite: "", cepPernoite: "",
   blindado: "", kitGas: "", adaptadoPcd: "",
   rastreadorObrig: false, empresaRastreadora: "", tipoRastreador: "",
-  numSerie: "", dataInstalacao: "", statusRastreador: "Pendente",
-  tipoVistoria: "", dataAgendamento: "", statusVistoria: "Agendada", obsVistoria: "",
+  statusRastreador: "Pendente",
+  tipoVistoria: "", statusVistoria: "Agendada", obsVistoria: "",
   planoSelecionado: "",
   formaPagamento: "",
 };
@@ -126,14 +133,9 @@ const mockPreenchido1 = {
   bairro: "Bela Vista",
   cidade: "São Paulo",
   estado: "SP",
-  escolaridade: "Superior",
   celular: "(11) 99845-3210",
   telResidencial: "(11) 3254-8790",
   email: "carlos.silva@email.com",
-  estadoCivil: "Casado",
-  nomeConjuge: "Maria Helena Silva",
-  nomePai: "José Alberto Silva",
-  nomeMae: "Ana Maria Santos Silva",
   regional: "Regional Capital",
   cooperativa: "Cooperativa São Paulo",
   consultorResp: "Ana Beatriz",
@@ -159,7 +161,7 @@ const mockPreenchido1 = {
   valorMensalidade: "189,90",
   valorAdesao: "350,00",
   valorCota: "2.500,00",
-  uso: "Particular",
+  tipoUtilizacao: "Passeio",
   kmMedio: "1200",
   pernoite: "Garagem",
   planoSelecionado: "Completo",
@@ -255,16 +257,18 @@ export default function CadastrarAssociado() {
 
   const [saving, setSaving] = useState(false);
 
+  const needsMotivo = form.situacao === "Inativo" || form.situacao === "Inativo com Pendência";
+
   const handleSalvar = async () => {
-    if (!form.nome) return toast.error("Nome é obrigatório");
-    if (!form.cpfCnpj) return toast.error("CPF/CNPJ é obrigatório");
+    if (!form.nome.trim()) return toast.error("Nome é obrigatório");
+    if (!form.cpfCnpj.trim()) return toast.error("CPF/CNPJ é obrigatório");
     if (!form.dataNasc) return toast.error("Data de nascimento é obrigatória");
+    if (needsMotivo && !form.motivoInativacao.trim()) return toast.error("Motivo da inativação é obrigatório");
 
     const cpfLimpo = form.cpfCnpj.replace(/\D/g, "");
     setSaving(true);
 
     try {
-      // Check for duplicate CPF
       const { data: existing } = await supabase
         .from("associados")
         .select("id")
@@ -277,8 +281,16 @@ export default function CadastrarAssociado() {
         return;
       }
 
+      const statusMap = SITUACOES.find(s => s.value === form.situacao);
+      const dbStatus = statusMap?.db || "pendente";
+
+      const obsLines = [form.observacoes];
+      if (needsMotivo && form.motivoInativacao) {
+        obsLines.push(`Motivo da inativação: ${form.motivoInativacao}`);
+      }
+
       const { error } = await supabase.from("associados").insert({
-        nome: form.nome,
+        nome: form.nome.trim(),
         cpf: cpfLimpo,
         rg: form.rg || null,
         data_nascimento: form.dataNasc || null,
@@ -288,8 +300,9 @@ export default function CadastrarAssociado() {
         estado: form.estado || null,
         telefone: form.celular || form.telResidencial || null,
         email: form.email || null,
-        observacoes: form.observacoes || null,
-        status: (form.situacao === "Ativo" ? "ativo" : form.situacao === "Inativo" ? "inativo" : "suspenso") as "ativo" | "inativo" | "suspenso",
+        observacoes: obsLines.filter(Boolean).join("\n") || null,
+        status: dbStatus as any,
+        data_adesao: form.dataContrato || new Date().toISOString().split("T")[0],
       });
 
       if (error) throw error;
@@ -297,6 +310,7 @@ export default function CadastrarAssociado() {
       toast.success("Associado cadastrado com sucesso!", { description: `${form.nome} - ${form.cpfCnpj}` });
       handleLimpar();
     } catch (err: any) {
+      console.error("Erro ao salvar associado:", err);
       toast.error("Erro ao salvar", { description: err.message });
     } finally {
       setSaving(false);
@@ -332,7 +346,7 @@ export default function CadastrarAssociado() {
 
       <Accordion type="multiple" defaultValue={["dados-associado", "endereco", "veiculo"]} className="space-y-3">
 
-        {/* SEÇÃO 1 */}
+        {/* SEÇÃO 1 - Dados do Associado */}
         <AccordionItem value="dados-associado" className="border rounded-lg overflow-hidden">
           <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
             <div className="flex items-center gap-2"><User className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">1. Dados do Associado</span></div>
@@ -340,8 +354,22 @@ export default function CadastrarAssociado() {
           <AccordionContent className="px-4 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
               <div><Label>Id Externo</Label><Input value={form.idExterno} onChange={e => set("idExterno", e.target.value)} placeholder="Ex: EXT-00142" /></div>
-              <SelectWithAdd label="Situação" value={form.situacao} onValueChange={v => set("situacao", v)} options={["Ativo", "Inativo", "Suspenso"]} />
+              <div>
+                <Label>Situação *</Label>
+                <Select value={form.situacao} onValueChange={v => { set("situacao", v); if (v !== "Inativo" && v !== "Inativo com Pendência") set("motivoInativacao", ""); }}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {SITUACOES.map(s => <SelectItem key={s.value} value={s.value}>{s.value}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
               <SelectWithAdd label="Classificação" value={form.classificacao} onValueChange={v => set("classificacao", v)} options={["Pessoa Física", "Pessoa Jurídica", "Isento"]} />
+              {needsMotivo && (
+                <div className="lg:col-span-3">
+                  <Label>Motivo da Inativação *</Label>
+                  <Textarea value={form.motivoInativacao} onChange={e => set("motivoInativacao", e.target.value)} rows={2} placeholder="Informe o motivo da inativação do associado..." />
+                </div>
+              )}
               <div className="lg:col-span-2"><Label>Nome *</Label><Input value={form.nome} onChange={e => set("nome", e.target.value)} placeholder="Nome completo" /></div>
               <div><Label>Data/Hora</Label><Input value={form.dataHora} readOnly className="bg-muted/50" /></div>
               <div><Label>Data Contrato</Label><Input type="date" value={form.dataContrato} onChange={e => set("dataContrato", e.target.value)} /></div>
@@ -376,7 +404,7 @@ export default function CadastrarAssociado() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 2 */}
+        {/* SEÇÃO 2 - Endereço */}
         <AccordionItem value="endereco" className="border rounded-lg overflow-hidden">
           <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
             <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">2. Endereço</span></div>
@@ -406,26 +434,10 @@ export default function CadastrarAssociado() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 3 */}
-        <AccordionItem value="escolaridade" className="border rounded-lg overflow-hidden">
-          <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-            <div className="flex items-center gap-2"><GraduationCap className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">3. Escolaridade</span></div>
-          </AccordionTrigger>
-          <AccordionContent className="px-4 pb-4">
-            <div className="max-w-xs pt-2">
-              <Label>Nível de Escolaridade</Label>
-              <Select value={form.escolaridade} onValueChange={v => set("escolaridade", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>{["Fundamental","Médio","Superior","Pós-graduação","Mestrado","Doutorado"].map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* SEÇÃO 4 */}
+        {/* SEÇÃO 3 - Telefones (sem campos de rádio) */}
         <AccordionItem value="telefones" className="border rounded-lg overflow-hidden">
           <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-            <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">4. Telefones</span></div>
+            <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">3. Telefones</span></div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
@@ -435,18 +447,14 @@ export default function CadastrarAssociado() {
               <div><Label>Celular Aux</Label><Input value={form.celularAux} onChange={e => set("celularAux", maskCel(e.target.value))} placeholder="(XX) 9XXXX-XXXX" /></div>
               <SelectWithAdd label="Operadora" value={form.operadora} onValueChange={v => set("operadora", v)} options={["Vivo","Claro","Tim","Oi"]} />
               <SelectWithAdd label="Operadora Aux" value={form.operadoraAux} onValueChange={v => set("operadoraAux", v)} options={["Vivo","Claro","Tim","Oi"]} />
-              <div><Label>ID Rádio</Label><Input value={form.idRadio} onChange={e => set("idRadio", e.target.value)} /></div>
-              <div><Label>ID Rádio Aux</Label><Input value={form.idRadioAux} onChange={e => set("idRadioAux", e.target.value)} /></div>
-              <div><Label>Número Rádio</Label><Input value={form.numRadio} onChange={e => set("numRadio", e.target.value)} /></div>
-              <div><Label>Rádio Aux</Label><Input value={form.radioAux} onChange={e => set("radioAux", e.target.value)} /></div>
             </div>
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 5 */}
+        {/* SEÇÃO 4 - Emails e Contatos */}
         <AccordionItem value="emails" className="border rounded-lg overflow-hidden">
           <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-            <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">5. Emails e Contatos</span></div>
+            <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">4. Emails e Contatos</span></div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
@@ -457,31 +465,10 @@ export default function CadastrarAssociado() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 6 */}
-        <AccordionItem value="familiares" className="border rounded-lg overflow-hidden">
-          <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-            <div className="flex items-center gap-2"><Heart className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">6. Informações Familiares</span></div>
-          </AccordionTrigger>
-          <AccordionContent className="px-4 pb-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-              <div>
-                <Label>Estado Civil</Label>
-                <Select value={form.estadoCivil} onValueChange={v => set("estadoCivil", v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{["Solteiro","Casado","Divorciado","Viúvo","União Estável"].map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div><Label>Nome Cônjuge</Label><Input value={form.nomeConjuge} onChange={e => set("nomeConjuge", e.target.value)} /></div>
-              <div><Label>Nome do Pai</Label><Input value={form.nomePai} onChange={e => set("nomePai", e.target.value)} /></div>
-              <div><Label>Nome da Mãe</Label><Input value={form.nomeMae} onChange={e => set("nomeMae", e.target.value)} /></div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* SEÇÃO 7 */}
+        {/* SEÇÃO 5 - Acesso e Categorização */}
         <AccordionItem value="acesso" className="border rounded-lg overflow-hidden">
           <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-            <div className="flex items-center gap-2"><KeyRound className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">7. Acesso e Categorização</span></div>
+            <div className="flex items-center gap-2"><KeyRound className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">5. Acesso e Categorização</span></div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
@@ -515,10 +502,10 @@ export default function CadastrarAssociado() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 8 */}
+        {/* SEÇÃO 6 - Informações Financeiras */}
         <AccordionItem value="financeiras" className="border rounded-lg overflow-hidden">
           <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-            <div className="flex items-center gap-2"><Landmark className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">8. Informações Financeiras</span></div>
+            <div className="flex items-center gap-2"><Landmark className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">6. Informações Financeiras</span></div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
@@ -543,10 +530,10 @@ export default function CadastrarAssociado() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 9 */}
+        {/* SEÇÃO 7 - Dados Complementares */}
         <AccordionItem value="complementares" className="border rounded-lg overflow-hidden">
           <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-            <div className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">9. Dados Complementares</span></div>
+            <div className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">7. Dados Complementares</span></div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
             <div className="pt-2">
@@ -556,10 +543,10 @@ export default function CadastrarAssociado() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 10 */}
+        {/* SEÇÃO 8 - Dados do Veículo (sem Proprietário e Condutor) */}
         <AccordionItem value="veiculo" className="border rounded-lg overflow-hidden">
           <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-            <div className="flex items-center gap-2"><Car className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">10. Dados do Veículo</span></div>
+            <div className="flex items-center gap-2"><Car className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">8. Dados do Veículo</span></div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
@@ -648,10 +635,10 @@ export default function CadastrarAssociado() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 11 */}
+        {/* SEÇÃO 9 - Valores do Veículo */}
         <AccordionItem value="valores-veiculo" className="border rounded-lg overflow-hidden">
           <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-            <div className="flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">11. Valores do Veículo</span></div>
+            <div className="flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">9. Valores do Veículo</span></div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
@@ -665,18 +652,22 @@ export default function CadastrarAssociado() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 12 */}
+        {/* SEÇÃO 10 - Utilização */}
         <AccordionItem value="utilizacao" className="border rounded-lg overflow-hidden">
           <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-            <div className="flex items-center gap-2"><Gauge className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">12. Utilização</span></div>
+            <div className="flex items-center gap-2"><Gauge className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">10. Utilização</span></div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
               <div>
-                <Label>Uso</Label>
-                <Select value={form.uso} onValueChange={v => set("uso", v)}>
+                <Label>Tipo de Utilização</Label>
+                <Select value={form.tipoUtilizacao} onValueChange={v => set("tipoUtilizacao", v)}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{["Particular","Comercial","Misto"].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    <SelectItem value="Uber">Uber</SelectItem>
+                    <SelectItem value="Taxi">Táxi</SelectItem>
+                    <SelectItem value="Passeio">Passeio</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
               <div><Label>KM Médio Mensal</Label><Input type="number" value={form.kmMedio} onChange={e => set("kmMedio", e.target.value)} placeholder="Ex: 1200" /></div>
@@ -713,10 +704,10 @@ export default function CadastrarAssociado() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 13 */}
+        {/* SEÇÃO 11 - Implementos / Acessórios */}
         <AccordionItem value="implementos" className="border rounded-lg overflow-hidden">
           <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-            <div className="flex items-center gap-2"><Package className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">13. Implementos / Acessórios</span></div>
+            <div className="flex items-center gap-2"><Package className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">11. Implementos / Acessórios</span></div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4 pt-2">
             <Table>
@@ -743,10 +734,10 @@ export default function CadastrarAssociado() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 14 */}
+        {/* SEÇÃO 12 - Rastreador */}
         <AccordionItem value="rastreador" className="border rounded-lg overflow-hidden">
           <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-            <div className="flex items-center gap-2"><Radio className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">14. Rastreador</span></div>
+            <div className="flex items-center gap-2"><Radio className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">12. Rastreador</span></div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
@@ -754,7 +745,7 @@ export default function CadastrarAssociado() {
                 <Switch checked={form.rastreadorObrig as boolean} onCheckedChange={v => set("rastreadorObrig", v)} />
                 <Label>Rastreador Obrigatório</Label>
               </div>
-              <SelectWithAdd label="Empresa Rastreadora" value={form.empresaRastreadora} onValueChange={v => set("empresaRastreadora", v)} options={["LoJack","Ituran","Tracker","Volpato","Positron"]} />
+              <SelectWithAdd label="Empresa Rastreadora" value={form.empresaRastreadora} onValueChange={v => set("empresaRastreadora", v)} options={["Empresa Própria","LoJack","Ituran","Tracker","Volpato","Positron"]} />
               <div>
                 <Label>Tipo Rastreador</Label>
                 <Select value={form.tipoRastreador} onValueChange={v => set("tipoRastreador", v)}>
@@ -762,24 +753,24 @@ export default function CadastrarAssociado() {
                   <SelectContent>{["GPS","OBD","Portátil","Hardwired"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div><Label>Número de Série</Label><Input value={form.numSerie} onChange={e => set("numSerie", e.target.value)} /></div>
-              <div><Label>Data Instalação</Label><Input type="date" value={form.dataInstalacao} onChange={e => set("dataInstalacao", e.target.value)} /></div>
               <div>
                 <Label>Status</Label>
-                <div className="pt-1">
-                  <Badge variant={form.statusRastreador === "Instalado" ? "default" : form.statusRastreador === "Pendente" ? "secondary" : "outline"}>
-                    {form.statusRastreador}
-                  </Badge>
-                </div>
+                <Select value={form.statusRastreador} onValueChange={v => set("statusRastreador", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                    <SelectItem value="Instalado">Instalado</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 15 */}
+        {/* SEÇÃO 13 - Vistoria */}
         <AccordionItem value="vistoria" className="border rounded-lg overflow-hidden">
           <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-            <div className="flex items-center gap-2"><ClipboardCheck className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">15. Vistoria</span></div>
+            <div className="flex items-center gap-2"><ClipboardCheck className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">13. Vistoria</span></div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
@@ -787,10 +778,14 @@ export default function CadastrarAssociado() {
                 <Label>Tipo Vistoria</Label>
                 <Select value={form.tipoVistoria} onValueChange={v => set("tipoVistoria", v)}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{["Presencial","App Visto","Dispensada"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    <SelectItem value="App">App</SelectItem>
+                    <SelectItem value="Presencial">Presencial</SelectItem>
+                    <SelectItem value="Dispensada">Dispensada</SelectItem>
+                    <SelectItem value="Link">Link</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
-              <div><Label>Data Agendamento</Label><Input type="date" value={form.dataAgendamento} onChange={e => set("dataAgendamento", e.target.value)} /></div>
               <div>
                 <Label>Status Vistoria</Label>
                 <div className="pt-1">
@@ -808,10 +803,10 @@ export default function CadastrarAssociado() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 16 */}
+        {/* SEÇÃO 14 - Documentos */}
         <AccordionItem value="documentos" className="border rounded-lg overflow-hidden">
           <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-            <div className="flex items-center gap-2"><Upload className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">16. Documentos</span></div>
+            <div className="flex items-center gap-2"><Upload className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">14. Documentos</span></div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4 pt-2">
             <div className="border-2 border-dashed rounded-lg p-6 text-center mb-4 hover:border-primary/50 transition-colors cursor-pointer">
@@ -844,10 +839,10 @@ export default function CadastrarAssociado() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 17 */}
+        {/* SEÇÃO 15 - Coberturas e Plano */}
         <AccordionItem value="coberturas" className="border rounded-lg overflow-hidden">
           <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-            <div className="flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">17. Coberturas e Plano</span></div>
+            <div className="flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">15. Coberturas e Plano</span></div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4 pt-2">
             <div className="max-w-xs mb-4">
@@ -880,10 +875,10 @@ export default function CadastrarAssociado() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* SEÇÃO 18 */}
+        {/* SEÇÃO 16 - Forma de Pagamento */}
         <AccordionItem value="pagamento" className="border rounded-lg overflow-hidden">
           <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-            <div className="flex items-center gap-2"><CreditCard className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">18. Forma de Pagamento</span></div>
+            <div className="flex items-center gap-2"><CreditCard className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">16. Forma de Pagamento</span></div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
@@ -914,23 +909,6 @@ export default function CadastrarAssociado() {
             </div>
           </AccordionContent>
         </AccordionItem>
-
-        {/* SEÇÕES 19-25 */}
-        {[19, 20, 21, 22, 23, 24, 25].map(n => (
-          <AccordionItem key={n} value={`adicional-${n}`} className="border rounded-lg overflow-hidden">
-            <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span className="font-semibold text-sm text-muted-foreground">{n}. Campos Adicionais</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4 pt-2">
-              <div className="flex items-center justify-center py-8 text-muted-foreground">
-                <p className="text-sm">Campos adicionais — Em breve</p>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
 
       </Accordion>
 
