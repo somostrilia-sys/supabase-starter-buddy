@@ -739,7 +739,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      associado_status: "ativo" | "inativo" | "suspenso" | "cancelado"
+      associado_status:
+        | "ativo"
+        | "inativo"
+        | "suspenso"
+        | "cancelado"
+        | "pendente"
+        | "pendente_revistoria"
+        | "inativo_pendencia"
       deal_stage:
         | "prospeccao"
         | "qualificacao"
@@ -888,7 +895,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      associado_status: ["ativo", "inativo", "suspenso", "cancelado"],
+      associado_status: [
+        "ativo",
+        "inativo",
+        "suspenso",
+        "cancelado",
+        "pendente",
+        "pendente_revistoria",
+        "inativo_pendencia",
+      ],
       deal_stage: [
         "prospeccao",
         "qualificacao",
