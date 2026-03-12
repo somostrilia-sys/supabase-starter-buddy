@@ -97,7 +97,7 @@ export default function RateioTab() {
     { id: "estrutura" as const, label: "Estrutura de Cotas", icon: FileSpreadsheet },
     { id: "distribuicao" as const, label: "Distribuição de Rateio", icon: Calculator },
     { id: "historico" as const, label: "Histórico Distribuição", icon: Search },
-    { id: "carga" as const, label: "Carga Inicial SGA", icon: Upload },
+    { id: "carga" as const, label: "Carga Inicial Gestão", icon: Upload },
   ];
 
   return (
