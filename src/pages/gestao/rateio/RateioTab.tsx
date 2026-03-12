@@ -730,7 +730,7 @@ function CargaInicialGestao() {
           <div className="space-y-3">
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-              <span>Esta ação irá importar os dados do sistema SGA para as <strong>{mockCargaSGA.length - executadas} regionais pendentes</strong>. Os valores de cota serão zerados (R$ 0,00). Deseja continuar?</span>
+              <span>Esta ação irá importar os dados do sistema Gestão para as <strong>{mockCargaGestao.length - executadas} regionais pendentes</strong>. Os valores de cota serão zerados (R$ 0,00). Deseja continuar?</span>
             </div>
             <div className="text-xs text-muted-foreground space-y-1">
               <p>• Data Operação: 01/12/2025 16:25:52</p>
