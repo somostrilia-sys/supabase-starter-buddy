@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Edit, Trash2, Users, X } from "lucide-react";
+import { Plus, Edit, Trash2, Users, Search, Shield, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -8,47 +8,129 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Search } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+
+// ── Types ──
+
+interface ComissaoRegra {
+  tipo: string; // "venda_nova" | "renovacao" | "indicacao"
+  percentual: string;
+}
 
 interface Usuario {
   id: string;
   nome: string;
-  nomeTratamento: string;
-  cpfCnpj: string;
   email: string;
-  funcao: string;
-  telefoneComercial: string;
-  celular: string;
-  regional: string;
-  cooperativa: string;
-  grupoPermissoes: string;
-  remuneracao: string;
-  comissao: string;
-  associacao: string;
-  gerenteVinculado: string;
+  cpf: string;
+  unidade: string;
+  cargo: string;
+  gestorResponsavel: string;
+  grupoPermissao: string;
+  comissoes: ComissaoRegra[];
+  telefone: string;
   status: "ativo" | "inativo";
 }
 
-const mockUsuarios: Usuario[] = [
-  { id: "1", nome: "Carlos Silva", nomeTratamento: "Carlos", cpfCnpj: "123.456.789-00", email: "carlos@empresa.com", funcao: "Administrador", telefoneComercial: "(11) 3000-0001", celular: "(11) 99000-0001", regional: "São Paulo", cooperativa: "Cooperativa Central", grupoPermissoes: "Administrador", remuneracao: "8.500,00", comissao: "5", associacao: "2", gerenteVinculado: "", status: "ativo" },
-  { id: "2", nome: "Ana Oliveira", nomeTratamento: "Ana", cpfCnpj: "987.654.321-00", email: "ana@empresa.com", funcao: "Gerente", telefoneComercial: "(11) 3000-0002", celular: "(11) 99000-0002", regional: "São Paulo", cooperativa: "Cooperativa Central", grupoPermissoes: "Gerente", remuneracao: "6.000,00", comissao: "8", associacao: "3", gerenteVinculado: "Carlos Silva", status: "ativo" },
-  { id: "3", nome: "Pedro Santos", nomeTratamento: "Pedro", cpfCnpj: "111.222.333-44", email: "pedro@empresa.com", funcao: "Consultor", telefoneComercial: "(41) 3000-0003", celular: "(41) 99000-0003", regional: "Sul", cooperativa: "Cooperativa Sul", grupoPermissoes: "Consultor", remuneracao: "3.500,00", comissao: "12", associacao: "5", gerenteVinculado: "Ana Oliveira", status: "ativo" },
-  { id: "4", nome: "Maria Costa", nomeTratamento: "Maria", cpfCnpj: "444.555.666-77", email: "maria@empresa.com", funcao: "Financeiro", telefoneComercial: "(11) 3000-0004", celular: "(11) 99000-0004", regional: "São Paulo", cooperativa: "Cooperativa Central", grupoPermissoes: "Consultor", remuneracao: "4.200,00", comissao: "0", associacao: "0", gerenteVinculado: "Carlos Silva", status: "inativo" },
-  { id: "5", nome: "Lucas Ferreira", nomeTratamento: "Lucas", cpfCnpj: "777.888.999-00", email: "lucas@empresa.com", funcao: "Vistoriador", telefoneComercial: "(92) 3000-0005", celular: "(92) 99000-0005", regional: "Norte", cooperativa: "Cooperativa Norte", grupoPermissoes: "Vistoriador", remuneracao: "3.000,00", comissao: "3", associacao: "1", gerenteVinculado: "Ana Oliveira", status: "ativo" },
+// ── Permission Groups Config ──
+
+interface PermissaoItem {
+  key: string;
+  label: string;
+}
+
+interface GrupoPermissao {
+  id: string;
+  label: string;
+  descricao: string;
+  badgeColor: string;
+  permissoes: PermissaoItem[];
+}
+
+const gruposPermissao: GrupoPermissao[] = [
+  {
+    id: "consultor",
+    label: "Consultor",
+    descricao: "Acesso operacional básico — atendimento, cotações e vendas",
+    badgeColor: "bg-blue-100 text-blue-800",
+    permissoes: [
+      { key: "atendimento", label: "Atendimento ao cliente" },
+      { key: "cotacoes", label: "Criar e gerenciar cotações" },
+      { key: "vendas", label: "Registrar vendas" },
+      { key: "pipeline", label: "Visualizar pipeline próprio" },
+      { key: "contatos", label: "Gerenciar contatos" },
+    ],
+  },
+  {
+    id: "gestor",
+    label: "Gestor",
+    descricao: "Acesso intermediário — equipe, relatórios e aprovações",
+    badgeColor: "bg-amber-100 text-amber-800",
+    permissoes: [
+      { key: "equipe", label: "Gerenciar equipe" },
+      { key: "relatorios", label: "Relatórios de desempenho" },
+      { key: "aprovacoes", label: "Aprovar cotações e vistorias" },
+      { key: "pipeline_equipe", label: "Pipeline da equipe" },
+      { key: "metas", label: "Definir metas da equipe" },
+      { key: "comissoes_equipe", label: "Visualizar comissões da equipe" },
+    ],
+  },
+  {
+    id: "diretor",
+    label: "Diretor",
+    descricao: "Acesso amplo — metas, configurações estratégicas",
+    badgeColor: "bg-purple-100 text-purple-800",
+    permissoes: [
+      { key: "metas_globais", label: "Metas globais" },
+      { key: "config_estrategicas", label: "Configurações estratégicas" },
+      { key: "relatorios_gerenciais", label: "Relatórios gerenciais" },
+      { key: "auditoria", label: "Log de auditoria" },
+      { key: "usuarios", label: "Gerenciar todos os usuários" },
+      { key: "planos_precos", label: "Tabelas de preços e planos" },
+    ],
+  },
+  {
+    id: "administrativo",
+    label: "Administrativo",
+    descricao: "Acesso financeiro e operacional — boletos, contratos, cadastros",
+    badgeColor: "bg-green-100 text-green-800",
+    permissoes: [
+      { key: "boletos", label: "Emissão e gestão de boletos" },
+      { key: "contratos", label: "Contratos de adesão" },
+      { key: "cadastros", label: "Cadastros gerais" },
+      { key: "financeiro", label: "Módulo financeiro" },
+      { key: "conciliacao", label: "Conciliação bancária" },
+      { key: "notas_fiscais", label: "Notas fiscais" },
+    ],
+  },
 ];
 
-const emptyUsuario: Omit<Usuario, "id"> = {
-  nome: "", nomeTratamento: "", cpfCnpj: "", email: "", funcao: "", telefoneComercial: "",
-  celular: "", regional: "", cooperativa: "", grupoPermissoes: "", remuneracao: "",
-  comissao: "", associacao: "", gerenteVinculado: "", status: "ativo",
+// ── Mock Data ──
+
+const unidades = ["Matriz São Paulo", "Filial Sul", "Filial Norte", "Filial Nordeste", "Filial Centro-Oeste"];
+const cargos = ["Consultor", "Gestor", "Diretor", "Administrativo", "Vistoriador", "Financeiro"];
+
+const mockUsuarios: Usuario[] = [
+  { id: "1", nome: "Carlos Silva", email: "carlos@empresa.com", cpf: "123.456.789-00", unidade: "Matriz São Paulo", cargo: "Diretor", gestorResponsavel: "", grupoPermissao: "diretor", comissoes: [{ tipo: "venda_nova", percentual: "5" }], telefone: "(11) 99000-0001", status: "ativo" },
+  { id: "2", nome: "Ana Oliveira", email: "ana@empresa.com", cpf: "987.654.321-00", unidade: "Matriz São Paulo", cargo: "Gestor", gestorResponsavel: "Carlos Silva", grupoPermissao: "gestor", comissoes: [{ tipo: "venda_nova", percentual: "8" }, { tipo: "renovacao", percentual: "3" }], telefone: "(11) 99000-0002", status: "ativo" },
+  { id: "3", nome: "Pedro Santos", email: "pedro@empresa.com", cpf: "111.222.333-44", unidade: "Filial Sul", cargo: "Consultor", gestorResponsavel: "Ana Oliveira", grupoPermissao: "consultor", comissoes: [{ tipo: "venda_nova", percentual: "12" }, { tipo: "indicacao", percentual: "2" }], telefone: "(41) 99000-0003", status: "ativo" },
+  { id: "4", nome: "Maria Costa", email: "maria@empresa.com", cpf: "444.555.666-77", unidade: "Matriz São Paulo", cargo: "Administrativo", gestorResponsavel: "Carlos Silva", grupoPermissao: "administrativo", comissoes: [], telefone: "(11) 99000-0004", status: "inativo" },
+  { id: "5", nome: "Lucas Ferreira", email: "lucas@empresa.com", cpf: "777.888.999-00", unidade: "Filial Norte", cargo: "Consultor", gestorResponsavel: "Ana Oliveira", grupoPermissao: "consultor", comissoes: [{ tipo: "venda_nova", percentual: "10" }], telefone: "(92) 99000-0005", status: "ativo" },
+];
+
+const emptyForm: Omit<Usuario, "id"> = {
+  nome: "", email: "", cpf: "", unidade: "", cargo: "", gestorResponsavel: "",
+  grupoPermissao: "", comissoes: [{ tipo: "venda_nova", percentual: "" }], telefone: "", status: "ativo",
 };
 
-const funcoes = ["Administrador", "Gerente", "Consultor", "Vistoriador", "Financeiro", "Operacional"];
-const regionais = ["São Paulo", "Sul", "Norte", "Nordeste", "Centro-Oeste"];
-const cooperativas = ["Cooperativa Central", "Cooperativa Sul", "Cooperativa Norte"];
-const gruposPermissoes = ["Administrador", "Gerente", "Consultor", "Vistoriador"];
-const gerentes = ["Carlos Silva", "Ana Oliveira"];
+const tiposComissao = [
+  { value: "venda_nova", label: "Venda nova" },
+  { value: "renovacao", label: "Renovação" },
+  { value: "indicacao", label: "Indicação" },
+];
+
+// ── Helpers ──
 
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -59,42 +141,58 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
+function getGrupoConfig(id: string) {
+  return gruposPermissao.find(g => g.id === id);
+}
+
+// ── Component ──
+
 export default function UsuariosTab() {
   const [usuarios, setUsuarios] = useState<Usuario[]>(mockUsuarios);
   const [search, setSearch] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<Omit<Usuario, "id">>(emptyUsuario);
+  const [form, setForm] = useState<Omit<Usuario, "id">>(emptyForm);
+  const [showPermissoes, setShowPermissoes] = useState(false);
 
   const filtered = usuarios.filter(u =>
     u.nome.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
+    u.email.toLowerCase().includes(search.toLowerCase()) ||
+    u.cpf.includes(search)
   );
 
+  const gestoresDisponiveis = usuarios.filter(u => u.status === "ativo" && u.id !== editingId);
+
   const openCreate = () => {
-    setForm({ ...emptyUsuario });
+    setForm({ ...emptyForm, comissoes: [{ tipo: "venda_nova", percentual: "" }] });
     setEditingId(null);
+    setShowPermissoes(false);
     setSheetOpen(true);
   };
 
   const openEdit = (u: Usuario) => {
     const { id, ...rest } = u;
-    setForm(rest);
+    setForm({ ...rest, comissoes: rest.comissoes.length ? rest.comissoes : [{ tipo: "venda_nova", percentual: "" }] });
     setEditingId(id);
+    setShowPermissoes(false);
     setSheetOpen(true);
   };
 
   const handleSave = () => {
-    if (!form.nome || !form.email) {
-      toast.error("Preencha nome e e-mail");
+    if (!form.nome.trim() || !form.email.trim() || !form.cpf.trim()) {
+      toast.error("Preencha Nome, E-mail e CPF");
       return;
     }
+    if (!form.unidade) { toast.error("Selecione a Unidade"); return; }
+    if (!form.cargo) { toast.error("Selecione o Cargo/Função"); return; }
+    if (!form.grupoPermissao) { toast.error("Selecione o Grupo de Permissão"); return; }
+
     if (editingId) {
       setUsuarios(prev => prev.map(u => u.id === editingId ? { ...form, id: editingId } : u));
-      toast.success("Usuário atualizado");
+      toast.success("Usuário atualizado com sucesso");
     } else {
       setUsuarios(prev => [...prev, { ...form, id: String(Date.now()) }]);
-      toast.success("Usuário criado");
+      toast.success("Usuário criado com sucesso");
     }
     setSheetOpen(false);
   };
@@ -104,12 +202,62 @@ export default function UsuariosTab() {
     toast.success("Usuário excluído");
   };
 
-  const updateForm = (field: keyof Omit<Usuario, "id">, value: string) => {
+  const updateForm = (field: keyof Omit<Usuario, "id">, value: unknown) => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
+  const addComissao = () => {
+    setForm(prev => ({ ...prev, comissoes: [...prev.comissoes, { tipo: "venda_nova", percentual: "" }] }));
+  };
+
+  const removeComissao = (idx: number) => {
+    setForm(prev => ({ ...prev, comissoes: prev.comissoes.filter((_, i) => i !== idx) }));
+  };
+
+  const updateComissao = (idx: number, field: keyof ComissaoRegra, value: string) => {
+    setForm(prev => ({
+      ...prev,
+      comissoes: prev.comissoes.map((c, i) => i === idx ? { ...c, [field]: value } : c),
+    }));
+  };
+
+  const grupoSelecionado = getGrupoConfig(form.grupoPermissao);
+
   return (
     <div className="space-y-4">
+      {/* ── Permission Groups Overview ── */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-3 cursor-pointer" onClick={() => setShowPermissoes(!showPermissoes)}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              <CardTitle className="text-base">Grupos de Permissão</CardTitle>
+            </div>
+            {showPermissoes ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </div>
+        </CardHeader>
+        {showPermissoes && (
+          <CardContent className="pt-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {gruposPermissao.map(g => (
+                <div key={g.id} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Badge className={`${g.badgeColor} border-0`}>{g.label}</Badge>
+                    <span className="text-xs text-muted-foreground">{g.descricao}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {g.permissoes.map(p => (
+                      <span key={p.key} className="text-[10px] bg-muted px-2 py-0.5 rounded-full">{p.label}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* ── Users Table ── */}
       <Card className="border-0 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-4">
           <div>
@@ -117,12 +265,12 @@ export default function UsuariosTab() {
               <Users className="h-5 w-5 text-primary" />
               Usuários
             </CardTitle>
-            <CardDescription>Gerencie os usuários da empresa</CardDescription>
+            <CardDescription>Gerencie os usuários e permissões da empresa</CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar usuário..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
+              <Input placeholder="Buscar por nome, e-mail ou CPF..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
             </div>
             <Button size="sm" className="gap-2" onClick={openCreate}><Plus className="h-4 w-4" /> Novo Usuário</Button>
           </div>
@@ -133,106 +281,178 @@ export default function UsuariosTab() {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>E-mail</TableHead>
-                <TableHead>Função</TableHead>
-                <TableHead>Cooperativa</TableHead>
-                <TableHead>Grupo Permissões</TableHead>
+                <TableHead>CPF</TableHead>
+                <TableHead>Unidade</TableHead>
+                <TableHead>Cargo</TableHead>
+                <TableHead>Permissão</TableHead>
+                <TableHead>Gestor</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell className="font-medium">{u.nome}</TableCell>
-                  <TableCell>{u.email}</TableCell>
-                  <TableCell>{u.funcao}</TableCell>
-                  <TableCell>{u.cooperativa}</TableCell>
-                  <TableCell><Badge variant="outline">{u.grupoPermissoes}</Badge></TableCell>
-                  <TableCell>
-                    <Badge variant={u.status === "ativo" ? "default" : "secondary"}>{u.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(u)}><Edit className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(u.id)}><Trash2 className="h-4 w-4" /></Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filtered.map((u) => {
+                const gc = getGrupoConfig(u.grupoPermissao);
+                return (
+                  <TableRow key={u.id}>
+                    <TableCell className="font-medium">{u.nome}</TableCell>
+                    <TableCell className="text-sm">{u.email}</TableCell>
+                    <TableCell className="font-mono text-sm">{u.cpf}</TableCell>
+                    <TableCell className="text-sm">{u.unidade}</TableCell>
+                    <TableCell className="text-sm">{u.cargo}</TableCell>
+                    <TableCell>
+                      <Badge className={`border-0 ${gc?.badgeColor ?? "bg-muted"}`}>{gc?.label ?? u.grupoPermissao}</Badge>
+                    </TableCell>
+                    <TableCell className="text-sm">{u.gestorResponsavel || "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant={u.status === "ativo" ? "default" : "secondary"}>{u.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(u)}><Edit className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(u.id)}><Trash2 className="h-4 w-4" /></Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {filtered.length === 0 && (
+                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Nenhum usuário encontrado</TableCell></TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
+      {/* ── Create/Edit Sheet ── */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent className="sm:max-w-lg overflow-y-auto">
           <SheetHeader>
             <SheetTitle>{editingId ? "Editar Usuário" : "Novo Usuário"}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 py-4">
-            <FormField label="Nome completo">
-              <Input value={form.nome} onChange={e => updateForm("nome", e.target.value)} placeholder="Nome completo" />
+            {/* Basic Info */}
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dados Pessoais</p>
+            <FormField label="Nome Completo *">
+              <Input value={form.nome} onChange={e => updateForm("nome", e.target.value)} placeholder="Nome completo do usuário" />
             </FormField>
-            <FormField label="Nome de tratamento">
-              <Input value={form.nomeTratamento} onChange={e => updateForm("nomeTratamento", e.target.value)} placeholder="Como deseja ser chamado" />
-            </FormField>
-            <FormField label="CPF/CNPJ">
-              <Input value={form.cpfCnpj} onChange={e => updateForm("cpfCnpj", e.target.value)} placeholder="000.000.000-00" />
-            </FormField>
-            <FormField label="E-mail">
+            <FormField label="E-mail *">
               <Input type="email" value={form.email} onChange={e => updateForm("email", e.target.value)} placeholder="email@empresa.com" />
             </FormField>
-            <FormField label="Função">
-              <Select value={form.funcao} onValueChange={v => updateForm("funcao", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>{funcoes.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
-              </Select>
-            </FormField>
             <div className="grid grid-cols-2 gap-3">
-              <FormField label="Telefone comercial">
-                <Input value={form.telefoneComercial} onChange={e => updateForm("telefoneComercial", e.target.value)} placeholder="(00) 0000-0000" />
+              <FormField label="CPF *">
+                <Input value={form.cpf} onChange={e => updateForm("cpf", e.target.value)} placeholder="000.000.000-00" />
               </FormField>
-              <FormField label="Celular / WhatsApp">
-                <Input value={form.celular} onChange={e => updateForm("celular", e.target.value)} placeholder="(00) 00000-0000" />
-              </FormField>
-            </div>
-            <FormField label="Regional">
-              <Select value={form.regional} onValueChange={v => updateForm("regional", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>{regionais.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-              </Select>
-            </FormField>
-            <FormField label="Cooperativa">
-              <Select value={form.cooperativa} onValueChange={v => updateForm("cooperativa", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>{cooperativas.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-              </Select>
-            </FormField>
-            <FormField label="Grupo de permissões">
-              <Select value={form.grupoPermissoes} onValueChange={v => updateForm("grupoPermissoes", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>{gruposPermissoes.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
-              </Select>
-            </FormField>
-            <div className="grid grid-cols-3 gap-3">
-              <FormField label="Remuneração (R$)">
-                <Input value={form.remuneracao} onChange={e => updateForm("remuneracao", e.target.value)} placeholder="0,00" />
-              </FormField>
-              <FormField label="Comissão (%)">
-                <Input type="number" value={form.comissao} onChange={e => updateForm("comissao", e.target.value)} placeholder="0" />
-              </FormField>
-              <FormField label="Associação (%)">
-                <Input type="number" value={form.associacao} onChange={e => updateForm("associacao", e.target.value)} placeholder="0" />
+              <FormField label="Telefone">
+                <Input value={form.telefone} onChange={e => updateForm("telefone", e.target.value)} placeholder="(00) 00000-0000" />
               </FormField>
             </div>
-            <FormField label="Vincular gerente">
-              <Select value={form.gerenteVinculado} onValueChange={v => updateForm("gerenteVinculado", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecione (opcional)" /></SelectTrigger>
-                <SelectContent>{gerentes.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+
+            <Separator />
+
+            {/* Organization */}
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Organização</p>
+            <FormField label="Unidade *">
+              <Select value={form.unidade} onValueChange={v => updateForm("unidade", v)}>
+                <SelectTrigger><SelectValue placeholder="Selecione a unidade" /></SelectTrigger>
+                <SelectContent>{unidades.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
               </Select>
             </FormField>
+            <FormField label="Cargo / Função *">
+              <Select value={form.cargo} onValueChange={v => updateForm("cargo", v)}>
+                <SelectTrigger><SelectValue placeholder="Selecione o cargo" /></SelectTrigger>
+                <SelectContent>{cargos.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              </Select>
+            </FormField>
+            <FormField label="Gestor Responsável">
+              <Select value={form.gestorResponsavel} onValueChange={v => updateForm("gestorResponsavel", v)}>
+                <SelectTrigger><SelectValue placeholder="Quem está acima na hierarquia" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nenhum">Nenhum (topo da hierarquia)</SelectItem>
+                  {gestoresDisponiveis.map(g => <SelectItem key={g.id} value={g.nome}>{g.nome} — {g.cargo}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            <Separator />
+
+            {/* Permissions */}
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Permissões</p>
+            <FormField label="Grupo de Permissão *">
+              <Select value={form.grupoPermissao} onValueChange={v => updateForm("grupoPermissao", v)}>
+                <SelectTrigger><SelectValue placeholder="Selecione o grupo" /></SelectTrigger>
+                <SelectContent>
+                  {gruposPermissao.map(g => (
+                    <SelectItem key={g.id} value={g.id}>
+                      <span className="flex items-center gap-2">
+                        <span>{g.label}</span>
+                        <span className="text-xs text-muted-foreground">— {g.descricao}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+            {grupoSelecionado && (
+              <div className="border rounded-lg p-3 bg-muted/30 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-medium">Permissões do grupo {grupoSelecionado.label}:</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {grupoSelecionado.permissoes.map(p => (
+                    <span key={p.key} className="text-[10px] bg-background border px-2 py-0.5 rounded-full">{p.label}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Commission */}
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Comissionamento</p>
+              <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={addComissao}>
+                <Plus className="h-3 w-3" /> Regra
+              </Button>
+            </div>
+            {form.comissoes.map((c, idx) => (
+              <div key={idx} className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Label className="text-[10px] text-muted-foreground">Tipo</Label>
+                  <Select value={c.tipo} onValueChange={v => updateComissao(idx, "tipo", v)}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>{tiposComissao.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="w-24">
+                  <Label className="text-[10px] text-muted-foreground">% Comissão</Label>
+                  <Input className="h-9" type="number" min="0" max="100" value={c.percentual} onChange={e => updateComissao(idx, "percentual", e.target.value)} placeholder="0" />
+                </div>
+                {form.comissoes.length > 1 && (
+                  <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={() => removeComissao(idx)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            ))}
+
+            <Separator />
+
+            {/* Status */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Status do usuário</p>
+                <p className="text-xs text-muted-foreground">{form.status === "ativo" ? "Usuário ativo no sistema" : "Usuário desativado"}</p>
+              </div>
+              <Switch
+                checked={form.status === "ativo"}
+                onCheckedChange={v => updateForm("status", v ? "ativo" : "inativo")}
+              />
+            </div>
           </div>
+
           <SheetFooter className="flex gap-2 pt-4">
             <Button variant="outline" onClick={() => setSheetOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave}>Salvar</Button>
+            <Button onClick={handleSave}>{editingId ? "Salvar Alterações" : "Criar Usuário"}</Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>
