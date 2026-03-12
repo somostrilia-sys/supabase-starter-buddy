@@ -157,6 +157,8 @@ export default function CotacaoTab({ deal }: Props) {
     obsInterna: "",
   });
   const [planoSelecionado, setPlanoSelecionado] = useState("Completo");
+  const [fipeLoading, setFipeLoading] = useState(false);
+  const [fipeFetched, setFipeFetched] = useState(false);
 
   const modelos = modelosPorMarca[marca] || [];
   const modeloAtual = modelos[modeloIdx] || modelos[0];
@@ -176,8 +178,63 @@ export default function CotacaoTab({ deal }: Props) {
     return Array.from({ length: 15 }, (_, i) => String(cur - i));
   }, []);
 
+  // FIPE auto-lookup when plate is complete (7 chars: ABC-1D23)
+  const consultarFipe = useCallback((placa: string) => {
+    const cleanPlaca = placa.replace("-", "");
+    if (cleanPlaca.length !== 7) return;
+
+    const veiculo = placaVeiculoMap[placa];
+    if (!veiculo) {
+      toast.error("Placa não encontrada na base FIPE. Selecione marca/modelo manualmente.");
+      return;
+    }
+
+    setFipeLoading(true);
+    setFipeFetched(false);
+
+    // Simulate API call delay
+    setTimeout(() => {
+      setMarca(veiculo.marca);
+      setModeloIdx(veiculo.modeloIdx);
+      setForm(prev => ({
+        ...prev,
+        anoFab: veiculo.ano,
+        cor: veiculo.cor,
+        combustivel: veiculo.combustivel,
+        chassi: veiculo.chassi,
+      }));
+      setFipeLoading(false);
+      setFipeFetched(true);
+
+      const modelo = modelosPorMarca[veiculo.marca]?.[veiculo.modeloIdx];
+      toast.success(`FIPE: ${veiculo.marca} ${modelo?.modelo || ""} — ${formatCurrency(modelo?.valorFipe || 0)}`);
+    }, 800);
+  }, []);
+
+  const handlePlacaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const masked = maskPlaca(e.target.value);
+    set("placa", masked);
+    setFipeFetched(false);
+    // Auto-trigger when plate is complete
+    if (masked.replace("-", "").length === 7) {
+      consultarFipe(masked);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* FIPE result banner */}
+      {fipeFetched && (
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-green-200 bg-green-50">
+          <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-green-800">Dados FIPE preenchidos automaticamente</p>
+            <p className="text-xs text-green-700">{marca} {modeloAtual?.modelo} — {formatCurrency(valorFipe)} — Ref. Março/2026</p>
+          </div>
+          <Badge className="bg-green-600 text-white text-[10px]">Tabela FIPE</Badge>
+        </div>
+      )}
+
       {/* SEÇÃO 1 - DADOS DO VEÍCULO */}
       <fieldset className="space-y-3">
         <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">DADOS DO VEÍCULO</legend>
@@ -191,7 +248,15 @@ export default function CotacaoTab({ deal }: Props) {
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Placa</Label>
-            <Input className="rounded-none font-mono" value={form.placa} onChange={e => set("placa", maskPlaca(e.target.value))} />
+            <div className="relative">
+              <Input className="rounded-none font-mono pr-8" value={form.placa} onChange={handlePlacaChange} />
+              {fipeLoading ? (
+                <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin text-primary" />
+              ) : (
+                <Search className="absolute right-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
+            <p className="text-[10px] text-muted-foreground">Ao digitar a placa, a consulta FIPE é automática</p>
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Chassi</Label>
