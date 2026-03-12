@@ -707,9 +707,9 @@ function CargaInicialGestao() {
               <TableCell className="text-sm">TOTAL</TableCell>
               <TableCell className="text-sm text-right">{totalVeiculos.toLocaleString("pt-BR")}</TableCell>
               <TableCell className="text-sm text-right">{totalCotas.toLocaleString("pt-BR")}</TableCell>
-              <TableCell className="text-sm text-right">{mockCargaSGA.reduce((s, r) => s + r.automoveis, 0).toLocaleString("pt-BR")}</TableCell>
-              <TableCell className="text-sm text-right">{mockCargaSGA.reduce((s, r) => s + r.motos, 0).toLocaleString("pt-BR")}</TableCell>
-              <TableCell className="text-sm text-right">{mockCargaSGA.reduce((s, r) => s + r.pesados, 0).toLocaleString("pt-BR")}</TableCell>
+              <TableCell className="text-sm text-right">{mockCargaGestao.reduce((s, r) => s + r.automoveis, 0).toLocaleString("pt-BR")}</TableCell>
+              <TableCell className="text-sm text-right">{mockCargaGestao.reduce((s, r) => s + r.motos, 0).toLocaleString("pt-BR")}</TableCell>
+              <TableCell className="text-sm text-right">{mockCargaGestao.reduce((s, r) => s + r.pesados, 0).toLocaleString("pt-BR")}</TableCell>
               <TableCell></TableCell>
             </TableRow>
           </TableBody>
