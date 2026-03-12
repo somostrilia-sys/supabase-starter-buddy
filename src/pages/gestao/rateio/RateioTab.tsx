@@ -656,8 +656,8 @@ function CargaInicialGestao() {
         <CardContent className="p-4 flex items-start gap-3">
           <Info className="h-5 w-5 text-[hsl(212_55%_40%)] mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-[hsl(212_35%_18%)]">Carga Inicial — Sistema SGA</p>
-            <p className="text-xs text-muted-foreground mt-1">Dados referentes a <strong>01/12/2025</strong> do sistema legado SGA. Esta operação importa a estrutura de veículos e cotas para o novo sistema.</p>
+            <p className="text-sm font-semibold text-[hsl(212_35%_18%)]">Carga Inicial — Sistema Gestão</p>
+            <p className="text-xs text-muted-foreground mt-1">Dados referentes a <strong>01/12/2025</strong> do sistema legado Gestão. Esta operação importa a estrutura de veículos e cotas para o novo sistema.</p>
             <div className="flex gap-4 mt-2 text-xs">
               <span><strong>Valor Cota:</strong> R$ 0,00 (zerado)</span>
               <span><strong>Data Limite:</strong> 31/12/2058</span>
