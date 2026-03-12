@@ -210,6 +210,19 @@ const coberturasMock = [
 
 export default function CadastrarAssociado() {
   const [form, setForm] = useState(initialForm);
+  const [situacoes, setSituacoes] = useState<{ descricao: string }[]>([]);
+
+  useEffect(() => {
+    const fetchSituacoes = async () => {
+      const { data } = await supabase
+        .from("member_statuses" as any)
+        .select("descricao")
+        .eq("ativo", true)
+        .order("codigo", { ascending: true });
+      if (data) setSituacoes(data as any);
+    };
+    fetchSituacoes();
+  }, []);
   const [implementos, setImplementos] = useState<Implemento[]>([
     { item: "Som Automotivo", descricao: "Pioneer AVH-Z9290TV", valor: "2.800,00" },
     { item: "Rodas Liga Leve", descricao: "Aro 18 TSW", valor: "4.200,00" },
