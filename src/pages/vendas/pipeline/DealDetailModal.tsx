@@ -30,7 +30,7 @@ interface Props {
 
 const tipoIcons: Record<string, React.ElementType> = { "Ligação": Phone, Email: Mail, WhatsApp: MessageSquare, Reunião: Video, Visita: User };
 
-const mockSGAHistory = [
+const mockGestaoHistory = [
   { campo: "Associado", status: "Enviado", data: "01/03/2026 14:30", erro: null },
   { campo: "Veículo", status: "Erro", data: "01/03/2026 14:31", erro: "Placa não encontrada" },
   { campo: "Financeiro", status: "Pendente", data: "—", erro: null },
@@ -46,7 +46,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
     { v: "vistoria", l: "Vistoria", i: ClipboardCheck },
     { v: "assinatura", l: "Assinatura", i: PenTool },
     { v: "financeiro", l: "Financeiro", i: Wallet },
-    { v: "sga", l: "SGA", i: Send },
+    { v: "sga", l: "Gestão", i: Send },
     { v: "atividades", l: "Atividades", i: Activity },
   ];
 
@@ -110,7 +110,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
               <div className="border-t pt-4 space-y-3">
                 <h4 className="text-sm font-semibold font-['Source_Serif_4']">Envio para Sistemas</h4>
                 <div className="flex gap-2">
-                  <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white"><Send className="h-3.5 w-3.5 mr-1" />Enviar para SGA</Button>
+                  <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white"><Send className="h-3.5 w-3.5 mr-1" />Enviar para Gestão</Button>
                   <Button size="sm" variant="outline" className="rounded-none"><MessageSquare className="h-3.5 w-3.5 mr-1" />WhatsApp</Button>
                   <Button size="sm" variant="outline" className="rounded-none"><Mail className="h-3.5 w-3.5 mr-1" />E-mail</Button>
                 </div>
@@ -135,12 +135,12 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
             {/* TAB 7 - SGA */}
             <TabsContent value="sga" className="mt-0 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Regional SGA</Label>
+                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Regional Gestão</Label>
                   <Select defaultValue={deal.regional}><SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
                     <SelectContent>{["SP Capital", "Interior SP", "RJ", "MG"].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Cooperativa SGA</Label>
+                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Cooperativa Gestão</Label>
                   <Select defaultValue={deal.cooperativa}><SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
                     <SelectContent>{["Coop Norte", "Coop Sul", "Coop Leste"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
@@ -161,7 +161,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
                   </Select>
                 </div>
               </div>
-              <Button className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white"><Send className="h-3.5 w-3.5 mr-1" />Enviar para SGA</Button>
+              <Button className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white"><Send className="h-3.5 w-3.5 mr-1" />Enviar para Gestão</Button>
               <Table>
                 <TableHeader><TableRow>
                   <TableHead className="text-xs font-['Source_Serif_4']">Campo</TableHead>
@@ -171,7 +171,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
                   <TableHead className="text-xs font-['Source_Serif_4']">Ação</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
-                  {mockSGAHistory.map((h, i) => (
+                  {mockGestaoHistory.map((h, i) => (
                     <TableRow key={i}>
                       <TableCell className="text-sm font-['Source_Serif_4']">{h.campo}</TableCell>
                       <TableCell><Badge variant={h.status === "Enviado" ? "default" : h.status === "Erro" ? "destructive" : "outline"} className="text-[10px] rounded-none">{h.status}</Badge></TableCell>

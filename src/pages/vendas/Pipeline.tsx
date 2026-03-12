@@ -124,6 +124,7 @@ export default function Pipeline() {
       veiculo_modelo: form.modelo, veiculo_placa: form.placa, plano: form.plano || "Básico", valor_plano: 149.90, stage: "cotacoes_recebidas",
       consultor: form.consultor || consultores[0], cooperativa: form.cooperativa || cooperativas[0], regional: form.regional || regionais[0],
       gerente: gerentes[0], origem: "Manual", observacoes: form.observacoes, enviado_sga: false, visualizacoes_proposta: 0,
+
       status_icons: { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false },
       created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     };
@@ -278,7 +279,7 @@ export default function Pipeline() {
                                 <Tooltip><TooltipTrigger><CheckCircle className={`h-3.5 w-3.5 ${si.aceita ? "text-green-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Aceita</TooltipContent></Tooltip>
                                 <Tooltip><TooltipTrigger><AlertCircle className={`h-3.5 w-3.5 ${si.pendente ? "text-amber-500" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Pendente</TooltipContent></Tooltip>
                                 <Tooltip><TooltipTrigger><Shield className={`h-3.5 w-3.5 ${si.aprovada ? "text-blue-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Aprovada</TooltipContent></Tooltip>
-                                <Tooltip><TooltipTrigger><Send className={`h-3.5 w-3.5 ${si.sga ? "text-green-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">SGA</TooltipContent></Tooltip>
+                                <Tooltip><TooltipTrigger><Send className={`h-3.5 w-3.5 ${si.sga ? "text-green-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Gestão</TooltipContent></Tooltip>
                                 <Tooltip><TooltipTrigger><Radio className={`h-3.5 w-3.5 ${si.rastreador ? "text-blue-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Rastreador</TooltipContent></Tooltip>
                                 <Tooltip><TooltipTrigger><AlertTriangle className={`h-3.5 w-3.5 ${si.inadimplencia ? "text-red-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Inadimplência</TooltipContent></Tooltip>
                               </div>
@@ -342,7 +343,7 @@ export default function Pipeline() {
                         <span className="flex items-center gap-1">{label}<ArrowUpDown className="h-3 w-3 text-muted-foreground/50" /></span>
                       </TableHead>
                     ))}
-                    <TableHead className="text-xs">SGA</TableHead>
+                    <TableHead className="text-xs">Gestão</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -365,7 +366,7 @@ export default function Pipeline() {
                       <TableCell className="text-xs">{deal.regional}</TableCell>
                       <TableCell className="text-xs">{new Date(deal.created_at).toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell className="text-xs">{new Date(deal.updated_at).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell>{deal.enviado_sga ? <Badge className="bg-green-600 text-white text-[9px]">SGA</Badge> : <span className="text-muted-foreground text-xs">—</span>}</TableCell>
+                      <TableCell>{deal.enviado_sga ? <Badge className="bg-green-600 text-white text-[9px]">Gestão</Badge> : <span className="text-muted-foreground text-xs">—</span>}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -78,7 +78,7 @@ const mockHistDist = [
   { mes: "Ago/2025", valorTotal: 98500.00, qtdeVeiculos: 8750, regionais: 10, intervalos: 12, usuario: "Gerente", dataHora: "14/08/2025 15:55:00", detalhes: [] },
 ];
 
-const mockCargaSGA = regionaisData.map(r => ({
+const mockCargaGestao = regionaisData.map(r => ({
   regional: r.nome,
   totalVeiculos: r.veiculos,
   totalCotas: Math.floor(r.veiculos * 1.1),
@@ -97,7 +97,7 @@ export default function RateioTab() {
     { id: "estrutura" as const, label: "Estrutura de Cotas", icon: FileSpreadsheet },
     { id: "distribuicao" as const, label: "Distribuição de Rateio", icon: Calculator },
     { id: "historico" as const, label: "Histórico Distribuição", icon: Search },
-    { id: "carga" as const, label: "Carga Inicial SGA", icon: Upload },
+    { id: "carga" as const, label: "Carga Inicial Gestão", icon: Upload },
   ];
 
   return (
@@ -127,7 +127,7 @@ export default function RateioTab() {
       {subTab === "estrutura" && <EstruturaCotas />}
       {subTab === "distribuicao" && <DistribuicaoRateio />}
       {subTab === "historico" && <HistoricoDistribuicao />}
-      {subTab === "carga" && <CargaInicialSGA />}
+      {subTab === "carga" && <CargaInicialGestao />}
     </div>
   );
 }
@@ -629,16 +629,16 @@ function HistoricoDistribuicao() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// 4) CARGA INICIAL SGA
+// 4) CARGA INICIAL GESTÃO
 // ═══════════════════════════════════════════════════════════
 
-function CargaInicialSGA() {
+function CargaInicialGestao() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const totalVeiculos = mockCargaSGA.reduce((s, r) => s + r.totalVeiculos, 0);
-  const totalCotas = mockCargaSGA.reduce((s, r) => s + r.totalCotas, 0);
-  const executadas = mockCargaSGA.filter(r => r.status === "Executada").length;
+  const totalVeiculos = mockCargaGestao.reduce((s, r) => s + r.totalVeiculos, 0);
+  const totalCotas = mockCargaGestao.reduce((s, r) => s + r.totalCotas, 0);
+  const executadas = mockCargaGestao.filter(r => r.status === "Executada").length;
 
   const executarCarga = () => {
     setLoading(true);
@@ -656,8 +656,8 @@ function CargaInicialSGA() {
         <CardContent className="p-4 flex items-start gap-3">
           <Info className="h-5 w-5 text-[hsl(212_55%_40%)] mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-[hsl(212_35%_18%)]">Carga Inicial — Sistema SGA</p>
-            <p className="text-xs text-muted-foreground mt-1">Dados referentes a <strong>01/12/2025</strong> do sistema legado SGA. Esta operação importa a estrutura de veículos e cotas para o novo sistema.</p>
+            <p className="text-sm font-semibold text-[hsl(212_35%_18%)]">Carga Inicial — Sistema Gestão</p>
+            <p className="text-xs text-muted-foreground mt-1">Dados referentes a <strong>01/12/2025</strong> do sistema legado Gestão. Esta operação importa a estrutura de veículos e cotas para o novo sistema.</p>
             <div className="flex gap-4 mt-2 text-xs">
               <span><strong>Valor Cota:</strong> R$ 0,00 (zerado)</span>
               <span><strong>Data Limite:</strong> 31/12/2058</span>
@@ -671,8 +671,8 @@ function CargaInicialSGA() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-[hsl(212_35%_18%)]">{totalVeiculos.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Veículos</p></CardContent></Card>
         <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-[hsl(212_35%_18%)]">{totalCotas.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Cotas</p></CardContent></Card>
-        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-green-700">{executadas}/{mockCargaSGA.length}</p><p className="text-xs text-muted-foreground">Regionais Executadas</p></CardContent></Card>
-        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-yellow-700">{mockCargaSGA.length - executadas}</p><p className="text-xs text-muted-foreground">Pendentes</p></CardContent></Card>
+        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-green-700">{executadas}/{mockCargaGestao.length}</p><p className="text-xs text-muted-foreground">Regionais Executadas</p></CardContent></Card>
+        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-yellow-700">{mockCargaGestao.length - executadas}</p><p className="text-xs text-muted-foreground">Pendentes</p></CardContent></Card>
       </div>
 
       {/* Table */}
@@ -690,7 +690,7 @@ function CargaInicialSGA() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockCargaSGA.map((r, i) => (
+            {mockCargaGestao.map((r, i) => (
               <TableRow key={i}>
                 <TableCell className="text-sm font-medium">{r.regional}</TableCell>
                 <TableCell className="text-sm text-right">{r.totalVeiculos.toLocaleString("pt-BR")}</TableCell>
@@ -707,9 +707,9 @@ function CargaInicialSGA() {
               <TableCell className="text-sm">TOTAL</TableCell>
               <TableCell className="text-sm text-right">{totalVeiculos.toLocaleString("pt-BR")}</TableCell>
               <TableCell className="text-sm text-right">{totalCotas.toLocaleString("pt-BR")}</TableCell>
-              <TableCell className="text-sm text-right">{mockCargaSGA.reduce((s, r) => s + r.automoveis, 0).toLocaleString("pt-BR")}</TableCell>
-              <TableCell className="text-sm text-right">{mockCargaSGA.reduce((s, r) => s + r.motos, 0).toLocaleString("pt-BR")}</TableCell>
-              <TableCell className="text-sm text-right">{mockCargaSGA.reduce((s, r) => s + r.pesados, 0).toLocaleString("pt-BR")}</TableCell>
+              <TableCell className="text-sm text-right">{mockCargaGestao.reduce((s, r) => s + r.automoveis, 0).toLocaleString("pt-BR")}</TableCell>
+              <TableCell className="text-sm text-right">{mockCargaGestao.reduce((s, r) => s + r.motos, 0).toLocaleString("pt-BR")}</TableCell>
+              <TableCell className="text-sm text-right">{mockCargaGestao.reduce((s, r) => s + r.pesados, 0).toLocaleString("pt-BR")}</TableCell>
               <TableCell></TableCell>
             </TableRow>
           </TableBody>
@@ -730,12 +730,12 @@ function CargaInicialSGA() {
           <div className="space-y-3">
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-              <span>Esta ação irá importar os dados do sistema SGA para as <strong>{mockCargaSGA.length - executadas} regionais pendentes</strong>. Os valores de cota serão zerados (R$ 0,00). Deseja continuar?</span>
+              <span>Esta ação irá importar os dados do sistema Gestão para as <strong>{mockCargaGestao.length - executadas} regionais pendentes</strong>. Os valores de cota serão zerados (R$ 0,00). Deseja continuar?</span>
             </div>
             <div className="text-xs text-muted-foreground space-y-1">
               <p>• Data Operação: 01/12/2025 16:25:52</p>
               <p>• Data Limite: 31/12/2058</p>
-              <p>• Regionais pendentes: {mockCargaSGA.filter(r => r.status === "Pendente").map(r => r.regional).join(", ")}</p>
+              <p>• Regionais pendentes: {mockCargaGestao.filter(r => r.status === "Pendente").map(r => r.regional).join(", ")}</p>
             </div>
           </div>
           <DialogFooter>
