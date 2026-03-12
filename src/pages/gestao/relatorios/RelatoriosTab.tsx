@@ -445,53 +445,127 @@ export default function RelatoriosTab() {
 
         {/* ── BOLETOS ── */}
         <TabsContent value="boletos" className="space-y-4 mt-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold font-listing">{mockBoletos.length}</p><p className="text-xs text-muted-foreground font-listing">Total gerado</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-success font-listing">{mockBoletos.filter(b => b.situacao === "pago_dia").length}</p><p className="text-xs text-muted-foreground font-listing">Pagos em dia</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-warning font-listing">{mockBoletos.filter(b => b.situacao === "pago_atraso").length}</p><p className="text-xs text-muted-foreground font-listing">Pagos em atraso</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-destructive font-listing">{mockBoletos.filter(b => b.situacao === "vencido").length}</p><p className="text-xs text-muted-foreground font-listing">Vencidos</p></CardContent></Card>
+          {/* KPIs */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold font-listing">{filteredBoletos.length}</p><p className="text-xs text-muted-foreground font-listing">Filtrados</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-success font-listing">{filteredBoletos.filter(b => b.situacao === "pago_dia").length}</p><p className="text-xs text-muted-foreground font-listing">Pagos em dia</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-warning font-listing">{filteredBoletos.filter(b => b.situacao === "pago_atraso").length}</p><p className="text-xs text-muted-foreground font-listing">Pagos em atraso</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-destructive font-listing">{filteredBoletos.filter(b => b.situacao === "vencido").length}</p><p className="text-xs text-muted-foreground font-listing">Vencidos</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold font-listing">R$ {somaBoletosTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p><p className="text-xs text-muted-foreground font-listing">Valor total</p></CardContent></Card>
           </div>
 
-          <div className="space-y-4">
-            <div className="border border-border">
-              <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Filtros de Boletos</h4></div>
-              <div className="px-4 py-3 bg-card grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div><Label className="text-xs font-listing font-semibold">Vencimento De</Label><Input type="date" /></div>
-                <div><Label className="text-xs font-listing font-semibold">Vencimento Até</Label><Input type="date" /></div>
-                <div><Label className="text-xs font-listing font-semibold">Situação</Label>
-                  <Select defaultValue="todos"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem><SelectItem value="pago_dia">Pago em dia</SelectItem><SelectItem value="pago_atraso">Pago em atraso</SelectItem><SelectItem value="pendente">Pendente</SelectItem><SelectItem value="vencido">Vencido</SelectItem></SelectContent></Select>
+          {/* Advanced Filters */}
+          <div className="border border-border">
+            <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Filtros Avançados de Boletos</h4></div>
+            <div className="px-4 py-4 bg-card space-y-4">
+              {/* Row 1: Period */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div><Label className="text-xs font-listing font-semibold">Tipo de Data</Label>
+                  <Select value={bolFiltroData} onValueChange={setBolFiltroData}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="vencimento">Vencimento</SelectItem><SelectItem value="emissao">Emissão</SelectItem><SelectItem value="pagamento">Pagamento</SelectItem></SelectContent></Select>
                 </div>
-                <div><Label className="text-xs font-listing font-semibold">Cooperativa</Label>
-                  <Select defaultValue="todas"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{cooperativasSimples.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+                <div><Label className="text-xs font-listing font-semibold">Data De</Label><Input type="date" value={bolDataDe} onChange={e => setBolDataDe(e.target.value)} /></div>
+                <div><Label className="text-xs font-listing font-semibold">Data Até</Label><Input type="date" value={bolDataAte} onChange={e => setBolDataAte(e.target.value)} /></div>
+                <div><Label className="text-xs font-listing font-semibold">Status do Boleto</Label>
+                  <Select value={bolStatus} onValueChange={setBolStatus}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{statusBoleto.map(s => <SelectItem key={s} value={s}>{statusBoletoLabels[s]}</SelectItem>)}</SelectContent></Select>
                 </div>
-                <div><Label className="text-xs font-listing font-semibold">Regional</Label>
-                  <Select defaultValue="todas"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{regionaisSimples.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>
+              </div>
+              {/* Row 2: Entity filters */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div><Label className="text-xs font-listing font-semibold">Associado / Cliente</Label><Input placeholder="Nome ou CPF..." value={buscaBol} onChange={e => setBuscaBol(e.target.value)} /></div>
+                <div><Label className="text-xs font-listing font-semibold">Unidade (Filial)</Label>
+                  <Select value={bolUnidade} onValueChange={setBolUnidade}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{unidadesBoleto.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent></Select>
+                </div>
+                <div><Label className="text-xs font-listing font-semibold">Consultor Responsável</Label>
+                  <Select value={bolConsultor} onValueChange={setBolConsultor}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{consultoresBoleto.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+                </div>
+                <div><Label className="text-xs font-listing font-semibold">Número do Boleto</Label><Input placeholder="BOL-..." value={bolNumero} onChange={e => setBolNumero(e.target.value)} /></div>
+              </div>
+              {/* Row 3: Financial filters */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div><Label className="text-xs font-listing font-semibold">Valor Mínimo (R$)</Label><Input type="number" placeholder="0,00" value={bolValorMin} onChange={e => setBolValorMin(e.target.value)} /></div>
+                <div><Label className="text-xs font-listing font-semibold">Valor Máximo (R$)</Label><Input type="number" placeholder="0,00" value={bolValorMax} onChange={e => setBolValorMax(e.target.value)} /></div>
+                <div><Label className="text-xs font-listing font-semibold">Tipo de Cobrança</Label>
+                  <Select value={bolTipoCobranca} onValueChange={setBolTipoCobranca}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{tiposCobranca.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
+                </div>
+                <div><Label className="text-xs font-listing font-semibold">Banco Emissor</Label>
+                  <Select value={bolBanco} onValueChange={setBolBanco}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{bancosBoleto.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select>
+                </div>
+                <div><Label className="text-xs font-listing font-semibold">Forma de Pagamento</Label>
+                  <Select value={bolFormaPgto} onValueChange={setBolFormaPgto}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{formasPagamento.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select>
+                </div>
+              </div>
+              {/* Row 4 */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div><Label className="text-xs font-listing font-semibold">Contrato Vinculado</Label><Input placeholder="CTR-..." value={bolContrato} onChange={e => setBolContrato(e.target.value)} /></div>
+                <div className="flex items-end">
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
+                    setBolFiltroData("vencimento"); setBolDataDe(""); setBolDataAte(""); setBolStatus("todos");
+                    setBolUnidade("todas"); setBolConsultor("todos"); setBolValorMin(""); setBolValorMax("");
+                    setBolNumero(""); setBolTipoCobranca("todos"); setBolBanco("todos"); setBolFormaPgto("todos");
+                    setBolContrato(""); setBuscaBol(""); setPageBol(1);
+                    toast.info("Filtros limpos");
+                  }}>Limpar Filtros</Button>
                 </div>
               </div>
             </div>
-
-            <ReportActionBar
-              busca={buscaBol}
-              setBusca={setBuscaBol}
-              onGenerate={() => { setPageBol(1); toast.success("Relatório gerado"); }}
-              onExport={() => exportCsv(mockBoletos as unknown as Record<string, unknown>[], "boletos")}
-              placeholder="Buscar por associado ou ID..."
-            />
           </div>
 
+          <ReportActionBar
+            busca={buscaBol}
+            setBusca={setBuscaBol}
+            onGenerate={() => { setPageBol(1); toast.success("Relatório gerado com " + filteredBoletos.length + " resultado(s)"); }}
+            onExport={() => exportCsv(filteredBoletos as unknown as Record<string, unknown>[], "boletos")}
+            placeholder="Buscar por associado, CPF ou nº boleto..."
+          />
+
+          {/* Results Table */}
           <Card><CardContent className="p-0">
             <Table>
-              <TableHeader><TableRow><TableHead className="font-listing font-bold text-xs uppercase">ID</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Associado</TableHead><TableHead className="font-listing font-bold text-xs uppercase text-right">Valor</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Gerado</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Vencimento</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Pagamento</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Situação</TableHead></TableRow></TableHeader>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Nº Boleto</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Associado</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">CPF</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase text-right">Valor</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Emissão</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Vencimento</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Pagamento</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Status</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Unidade</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Consultor</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Tipo</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Banco</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Pagto</TableHead>
+                  <TableHead className="font-listing font-bold text-xs uppercase">Contrato</TableHead>
+                </TableRow>
+              </TableHeader>
               <TableBody>
-                {pagedBoletos.map(b => (
-                  <TableRow key={b.id}><TableCell className="font-mono text-xs">{b.id}</TableCell><TableCell className="font-medium font-listing">{b.associado}</TableCell><TableCell className="text-right font-listing">R$ {b.valor.toFixed(2)}</TableCell><TableCell className="font-listing">{new Date(b.gerado).toLocaleDateString("pt-BR")}</TableCell><TableCell className="font-listing">{new Date(b.vencimento).toLocaleDateString("pt-BR")}</TableCell><TableCell className="font-listing">{b.pagamento ? new Date(b.pagamento).toLocaleDateString("pt-BR") : "—"}</TableCell><TableCell><Badge className={situacaoColor[b.situacao]}>{b.situacao.replace("_", " ")}</Badge></TableCell></TableRow>
+                {pagedBoletos.length === 0 && (
+                  <TableRow><TableCell colSpan={14} className="text-center py-8 text-muted-foreground font-listing">Nenhum boleto encontrado com os filtros aplicados</TableCell></TableRow>
+                )}
+                {pagedBoletos.map((b, i) => (
+                  <TableRow key={b.id} className={i % 2 === 0 ? "bg-card" : "bg-[hsl(210_30%_97%)]"}>
+                    <TableCell className="font-mono text-xs">{b.id}</TableCell>
+                    <TableCell className="font-medium font-listing text-sm">{b.associado}</TableCell>
+                    <TableCell className="font-mono text-xs">{b.cpf}</TableCell>
+                    <TableCell className="text-right font-listing font-semibold">R$ {b.valor.toFixed(2)}</TableCell>
+                    <TableCell className="font-listing text-sm">{new Date(b.gerado).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell className="font-listing text-sm">{new Date(b.vencimento).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell className="font-listing text-sm">{b.pagamento ? new Date(b.pagamento).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                    <TableCell><Badge className={situacaoColor[b.situacao]}>{statusBoletoLabels[b.situacao] ?? b.situacao}</Badge></TableCell>
+                    <TableCell className="font-listing text-xs">{b.unidade}</TableCell>
+                    <TableCell className="font-listing text-xs">{b.consultor}</TableCell>
+                    <TableCell className="font-listing text-xs">{b.tipoCobranca}</TableCell>
+                    <TableCell className="font-listing text-xs">{b.banco}</TableCell>
+                    <TableCell className="font-listing text-xs">{b.formaPagamento}</TableCell>
+                    <TableCell className="font-mono text-xs">{b.contrato}</TableCell>
+                  </TableRow>
                 ))}
               </TableBody>
             </Table>
-            {/* Footer sum */}
             <div className="flex items-center justify-between px-4 py-3 bg-[hsl(210_30%_95%)] border-t border-border">
-              <span className="text-xs text-muted-foreground font-listing">{filteredBoletos.length} boleto(s)</span>
-              <span className="text-sm font-bold font-listing">Total: R$ {somaBoletosTotal.toFixed(2)}</span>
+              <span className="text-xs text-muted-foreground font-listing">{filteredBoletos.length} boleto(s) encontrado(s)</span>
+              <span className="text-sm font-bold font-listing">Total: R$ {somaBoletosTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
             </div>
             <Pagination page={pageBol} totalPages={totalPagesBol} onPageChange={setPageBol} />
           </CardContent></Card>
