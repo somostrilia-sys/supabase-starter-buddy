@@ -186,7 +186,7 @@ export default function VendasLista() {
               </div>
               <div className="space-y-1"><Label className="text-xs">Tipo Data</Label>
                 <Select value={fDateType} onValueChange={setFDateType}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="created_at">Data Cadastro SGA</SelectItem><SelectItem value="data_pagamento">Data Pagamento</SelectItem></SelectContent>
+                  <SelectContent><SelectItem value="created_at">Data Cadastro Gestão</SelectItem><SelectItem value="data_pagamento">Data Pagamento</SelectItem></SelectContent>
                 </Select>
               </div>
               <div className="space-y-1"><Label className="text-xs">Data Início</Label>
