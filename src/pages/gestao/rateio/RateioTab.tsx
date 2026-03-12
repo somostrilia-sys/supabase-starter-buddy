@@ -127,7 +127,7 @@ export default function RateioTab() {
       {subTab === "estrutura" && <EstruturaCotas />}
       {subTab === "distribuicao" && <DistribuicaoRateio />}
       {subTab === "historico" && <HistoricoDistribuicao />}
-      {subTab === "carga" && <CargaInicialSGA />}
+      {subTab === "carga" && <CargaInicialGestao />}
     </div>
   );
 }
