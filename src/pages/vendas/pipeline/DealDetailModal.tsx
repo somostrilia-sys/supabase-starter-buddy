@@ -171,7 +171,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
                   <TableHead className="text-xs font-['Source_Serif_4']">Ação</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
-                  {mockSGAHistory.map((h, i) => (
+                  {mockGestaoHistory.map((h, i) => (
                     <TableRow key={i}>
                       <TableCell className="text-sm font-['Source_Serif_4']">{h.campo}</TableCell>
                       <TableCell><Badge variant={h.status === "Enviado" ? "default" : h.status === "Erro" ? "destructive" : "outline"} className="text-[10px] rounded-none">{h.status}</Badge></TableCell>

@@ -79,7 +79,7 @@ export default function PersonalizacaoTab() {
                   { label: "Esconder Valor Opcionais", value: esconderOpcionais, set: setEsconderOpcionais },
                   { label: "Envio Automático Laudo Vistoria", value: envioLaudo, set: setEnvioLaudo },
                   { label: "Troca Titularidade Cotação", value: trocaTitularidade, set: setTrocaTitularidade },
-                  { label: "Seleção Conta Bancária no envio SGA", value: selecaoConta, set: setSelecaoConta },
+                  { label: "Seleção Conta Bancária no envio Gestão", value: selecaoConta, set: setSelecaoConta },
                 ].map(item => (
                   <div key={item.label} className="flex items-center justify-between p-3 rounded-lg border">
                     <Label className="cursor-pointer">{item.label}</Label>

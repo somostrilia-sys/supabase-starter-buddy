@@ -50,28 +50,28 @@ export default function IntegracoesTab() {
         <p className="text-sm text-muted-foreground">Configure as integrações com sistemas externos</p>
       </div>
 
-      <Accordion type="multiple" defaultValue={["sga"]} className="space-y-3">
-        {/* SGA */}
-        <AccordionItem value="sga" className="border rounded-lg px-4">
+      <Accordion type="multiple" defaultValue={["gestao"]} className="space-y-3">
+        {/* Gestão */}
+        <AccordionItem value="gestao" className="border rounded-lg px-4">
           <AccordionTrigger className="hover:no-underline">
             <div className="flex items-center gap-3">
-              <span className="font-semibold">SGA - Sistema de Gestão</span>
-              <Badge className={sgaConectado ? "bg-emerald-500/10 text-emerald-600 border-emerald-200" : "bg-red-500/10 text-red-600 border-red-200"}>
-                {sgaConectado ? <><Wifi className="h-3 w-3 mr-1" /> Conectado</> : <><WifiOff className="h-3 w-3 mr-1" /> Desconectado</>}
+              <span className="font-semibold">Gestão - Sistema de Gestão</span>
+              <Badge className={gestaoConectado ? "bg-emerald-500/10 text-emerald-600 border-emerald-200" : "bg-red-500/10 text-red-600 border-red-200"}>
+                {gestaoConectado ? <><Wifi className="h-3 w-3 mr-1" /> Conectado</> : <><WifiOff className="h-3 w-3 mr-1" /> Desconectado</>}
               </Badge>
             </div>
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pb-4">
             <div>
-              <Label>Token SGA</Label>
-              <Input type="password" value={tokenSga} onChange={e => setTokenSga(e.target.value)} />
+              <Label>Token Gestão</Label>
+              <Input type="password" value={tokenGestao} onChange={e => setTokenGestao(e.target.value)} />
             </div>
             <div>
               <Label className="mb-2 block">Regionais Habilitadas</Label>
               <div className="grid grid-cols-2 gap-2">
                 {regionaisOpcoes.map(r => (
                   <div key={r} className="flex items-center gap-2">
-                    <Checkbox checked={sgaRegionais.includes(r)} onCheckedChange={() => toggleList(sgaRegionais, setSgaRegionais, r)} />
+                    <Checkbox checked={gestaoRegionais.includes(r)} onCheckedChange={() => toggleList(gestaoRegionais, setGestaoRegionais, r)} />
                     <span className="text-sm">{r}</span>
                   </div>
                 ))}
@@ -82,7 +82,7 @@ export default function IntegracoesTab() {
               <div className="grid grid-cols-2 gap-2">
                 {cooperativasOpcoes.map(c => (
                   <div key={c} className="flex items-center gap-2">
-                    <Checkbox checked={sgaCooperativas.includes(c)} onCheckedChange={() => toggleList(sgaCooperativas, setSgaCooperativas, c)} />
+                    <Checkbox checked={gestaoCooperativas.includes(c)} onCheckedChange={() => toggleList(gestaoCooperativas, setGestaoCooperativas, c)} />
                     <span className="text-sm">{c}</span>
                   </div>
                 ))}
@@ -92,9 +92,9 @@ export default function IntegracoesTab() {
               <Label className="mb-2 block">Campos Obrigatórios</Label>
               <div className="space-y-2">
                 {[
-                  { label: "Forma de Pagamento", value: sgaFormaPagamento, set: setSgaFormaPagamento },
-                  { label: "Vencimento Mensalidade", value: sgaVencimento, set: setSgaVencimento },
-                  { label: "Conta Bancária", value: sgaContaBancaria, set: setSgaContaBancaria },
+                  { label: "Forma de Pagamento", value: gestaoFormaPagamento, set: setGestaoFormaPagamento },
+                  { label: "Vencimento Mensalidade", value: gestaoVencimento, set: setGestaoVencimento },
+                  { label: "Conta Bancária", value: gestaoContaBancaria, set: setGestaoContaBancaria },
                 ].map(item => (
                   <div key={item.label} className="flex items-center gap-2">
                     <Checkbox checked={item.value} onCheckedChange={(v) => item.set(!!v)} />
@@ -104,7 +104,7 @@ export default function IntegracoesTab() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => toast.success("Conexão SGA testada com sucesso!")} className="gap-2">
+              <Button variant="outline" onClick={() => toast.success("Conexão Gestão testada com sucesso!")} className="gap-2">
                 <RefreshCw className="h-4 w-4" /> Testar Conexão
               </Button>
               <Button className="gap-2"><Save className="h-4 w-4" /> Salvar</Button>
