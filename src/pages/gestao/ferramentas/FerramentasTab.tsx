@@ -30,6 +30,7 @@ export default function FerramentasTab() {
 
   if (view === "planos") return <PlanosProtecao onBack={() => setView(null)} />;
   if (view === "tabela-cotas") return <TabelaCotas onBack={() => setView(null)} />;
+  if (view === "situacoes") return <SituacoesAssociado onBack={() => setView(null)} />;
   if (view === "distribuicao-rateio") return <DistribuicaoRateioFerramenta onBack={() => setView(null)} />;
   if (view === "lote") return <AlteracoesLote onBack={() => setView(null)} />;
   if (view === "replicar") return <ReplicarItens onBack={() => setView(null)} />;
