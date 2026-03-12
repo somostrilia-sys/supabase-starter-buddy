@@ -354,6 +354,42 @@ export type Database = {
         }
         Relationships: []
       }
+      member_statuses: {
+        Row: {
+          ativo: boolean
+          codigo: number
+          created_at: string
+          descricao: string
+          id: string
+          modulo: string
+          participa_fechamento: boolean
+          participa_rateio: boolean
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo?: number
+          created_at?: string
+          descricao: string
+          id?: string
+          modulo?: string
+          participa_fechamento?: boolean
+          participa_rateio?: boolean
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: number
+          created_at?: string
+          descricao?: string
+          id?: string
+          modulo?: string
+          participa_fechamento?: boolean
+          participa_rateio?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mensalidades: {
         Row: {
           associado_id: string
