@@ -278,7 +278,20 @@ export default function RelatoriosTab() {
   });
 
   const filteredBoletos = mockBoletos.filter(b => {
-    if (buscaBol && !b.associado.toLowerCase().includes(buscaBol.toLowerCase()) && !b.id.toLowerCase().includes(buscaBol.toLowerCase())) return false;
+    if (buscaBol && !b.associado.toLowerCase().includes(buscaBol.toLowerCase()) && !b.id.toLowerCase().includes(buscaBol.toLowerCase()) && !b.cpf.includes(buscaBol)) return false;
+    if (bolStatus !== "todos" && b.situacao !== bolStatus) return false;
+    if (bolUnidade !== "todas" && b.unidade !== bolUnidade) return false;
+    if (bolConsultor !== "todos" && b.consultor !== bolConsultor) return false;
+    if (bolTipoCobranca !== "todos" && b.tipoCobranca !== bolTipoCobranca) return false;
+    if (bolBanco !== "todos" && b.banco !== bolBanco) return false;
+    if (bolFormaPgto !== "todos" && b.formaPagamento !== bolFormaPgto) return false;
+    if (bolNumero && !b.id.toLowerCase().includes(bolNumero.toLowerCase())) return false;
+    if (bolContrato && !b.contrato.toLowerCase().includes(bolContrato.toLowerCase())) return false;
+    if (bolValorMin && b.valor < parseFloat(bolValorMin)) return false;
+    if (bolValorMax && b.valor > parseFloat(bolValorMax)) return false;
+    const dateField = bolFiltroData === "emissao" ? b.gerado : bolFiltroData === "pagamento" ? b.pagamento : b.vencimento;
+    if (bolDataDe && dateField && dateField < bolDataDe) return false;
+    if (bolDataAte && dateField && dateField > bolDataAte) return false;
     return true;
   });
 
