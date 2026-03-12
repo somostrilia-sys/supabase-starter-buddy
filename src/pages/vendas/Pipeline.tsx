@@ -366,7 +366,7 @@ export default function Pipeline() {
                       <TableCell className="text-xs">{deal.regional}</TableCell>
                       <TableCell className="text-xs">{new Date(deal.created_at).toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell className="text-xs">{new Date(deal.updated_at).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell>{deal.enviado_sga ? <Badge className="bg-green-600 text-white text-[9px]">SGA</Badge> : <span className="text-muted-foreground text-xs">—</span>}</TableCell>
+                      <TableCell>{deal.enviado_sga ? <Badge className="bg-green-600 text-white text-[9px]">Gestão</Badge> : <span className="text-muted-foreground text-xs">—</span>}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -460,7 +460,7 @@ export default function Atividades() {
                       <TableCell className="text-xs">{a.responsavel}</TableCell>
                       <TableCell className="text-xs whitespace-nowrap">{new Date(a.data + "T00:00:00").toLocaleDateString("pt-BR")} {a.hora}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={cn("text-[10px]", statusColors[a.status], a.status === "Atrasada" && "animate-pulse")}>
+                        <Badge variant="outline" className={cn("text-[10px]", statusColors[a.status])}>
                           {a.status}
                         </Badge>
                       </TableCell>
