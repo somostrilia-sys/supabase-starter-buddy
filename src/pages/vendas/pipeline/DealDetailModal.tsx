@@ -140,7 +140,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
                     <SelectContent>{["SP Capital", "Interior SP", "RJ", "MG"].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Cooperativa SGA</Label>
+                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Cooperativa Gestão</Label>
                   <Select defaultValue={deal.cooperativa}><SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
                     <SelectContent>{["Coop Norte", "Coop Sul", "Coop Leste"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
