@@ -56,6 +56,18 @@ const modelosPorMarca: Record<string, { modelo: string; codFipe: string; valorFi
   ],
 };
 
+/* ─── Mock plate → vehicle mapping for FIPE auto-lookup ─── */
+const placaVeiculoMap: Record<string, { marca: string; modeloIdx: number; ano: string; cor: string; combustivel: string; chassi: string }> = {
+  "ABC-1D23": { marca: "Honda", modeloIdx: 0, ano: "2022", cor: "Prata", combustivel: "Flex", chassi: "9BWZZZ377VT004251" },
+  "DEF-2G34": { marca: "Volkswagen", modeloIdx: 0, ano: "2023", cor: "Branco", combustivel: "Flex", chassi: "9BWAB45U5KT123456" },
+  "GHI-3J45": { marca: "Fiat", modeloIdx: 0, ano: "2024", cor: "Vermelho", combustivel: "Flex", chassi: "9BD195227L0123456" },
+  "JKL-4M56": { marca: "Toyota", modeloIdx: 0, ano: "2023", cor: "Preto", combustivel: "Flex", chassi: "9BR53ZEC5L1234567" },
+  "MNO-5P67": { marca: "Hyundai", modeloIdx: 0, ano: "2024", cor: "Cinza", combustivel: "Flex", chassi: "9BHBG51DBLP123456" },
+  "QRS-6T78": { marca: "Chevrolet", modeloIdx: 1, ano: "2024", cor: "Azul", combustivel: "Flex", chassi: "9BGKS48B0LG123456" },
+  "UVW-7X89": { marca: "Jeep", modeloIdx: 0, ano: "2024", cor: "Branco", combustivel: "Flex", chassi: "9BFBXXLCALM123456" },
+  "YZA-8B01": { marca: "Honda", modeloIdx: 1, ano: "2023", cor: "Prata", combustivel: "Flex", chassi: "93HRV850LLH123456" },
+};
+
 const cores = ["Branco", "Prata", "Preto", "Cinza", "Vermelho", "Azul", "Marrom"];
 const cambios = ["Automático", "Manual", "CVT", "Automatizado"];
 const combustiveis = ["Flex", "Gasolina", "Etanol", "Diesel", "Elétrico", "Híbrido"];
