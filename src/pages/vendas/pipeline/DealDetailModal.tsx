@@ -30,7 +30,7 @@ interface Props {
 
 const tipoIcons: Record<string, React.ElementType> = { "Ligação": Phone, Email: Mail, WhatsApp: MessageSquare, Reunião: Video, Visita: User };
 
-const mockSGAHistory = [
+const mockGestaoHistory = [
   { campo: "Associado", status: "Enviado", data: "01/03/2026 14:30", erro: null },
   { campo: "Veículo", status: "Erro", data: "01/03/2026 14:31", erro: "Placa não encontrada" },
   { campo: "Financeiro", status: "Pendente", data: "—", erro: null },
