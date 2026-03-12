@@ -39,7 +39,7 @@ interface VendaDeal {
   status_pagamento: string;
 }
 
-const sgaColors: Record<string, string> = {
+const gestaoColors: Record<string, string> = {
   Sincronizado: "bg-green-500/15 text-green-700 border-green-300",
   Pendente: "bg-amber-500/15 text-amber-700 border-amber-300",
   Erro: "bg-red-500/15 text-red-700 border-red-300",
