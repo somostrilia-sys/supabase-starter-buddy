@@ -690,7 +690,7 @@ function CargaInicialGestao() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockCargaSGA.map((r, i) => (
+            {mockCargaGestao.map((r, i) => (
               <TableRow key={i}>
                 <TableCell className="text-sm font-medium">{r.regional}</TableCell>
                 <TableCell className="text-sm text-right">{r.totalVeiculos.toLocaleString("pt-BR")}</TableCell>
