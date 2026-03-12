@@ -135,7 +135,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
             {/* TAB 7 - SGA */}
             <TabsContent value="sga" className="mt-0 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Regional SGA</Label>
+                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Regional Gestão</Label>
                   <Select defaultValue={deal.regional}><SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
                     <SelectContent>{["SP Capital", "Interior SP", "RJ", "MG"].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                   </Select>
