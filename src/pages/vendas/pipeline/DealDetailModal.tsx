@@ -161,7 +161,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
                   </Select>
                 </div>
               </div>
-              <Button className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white"><Send className="h-3.5 w-3.5 mr-1" />Enviar para SGA</Button>
+              <Button className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white"><Send className="h-3.5 w-3.5 mr-1" />Enviar para Gestão</Button>
               <Table>
                 <TableHeader><TableRow>
                   <TableHead className="text-xs font-['Source_Serif_4']">Campo</TableHead>
