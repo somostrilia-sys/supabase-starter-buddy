@@ -1,4 +1,5 @@
 import { useState } from "react";
+import VistoriaFotoSelector from "@/components/VistoriaFotoSelector";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -61,6 +62,10 @@ export default function VistoriaTab({ deal }: Props) {
   const [codigo] = useState("VST-2026-0042");
   const [status, setStatus] = useState<VistoriaStatus>("em_aprovacao");
   const [prazo, setPrazo] = useState("7");
+  const [selectedFotos, setSelectedFotos] = useState<string[]>([
+    "frente","traseira","lateral_esquerda","lateral_direita","interior_painel",
+    "banco_dianteiro","banco_traseiro","teto","motor_capo","porta_malas","rodas_pneus","documentos"
+  ]);
   const [tentativa] = useState(2);
 
   const st = statusConfig[status];
@@ -170,6 +175,13 @@ export default function VistoriaTab({ deal }: Props) {
               </>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Seleção de fotos */}
+      <Card className="rounded-none border-2 border-[hsl(210_30%_88%)]">
+        <CardContent className="p-5">
+          <VistoriaFotoSelector selected={selectedFotos} onChange={setSelectedFotos} />
         </CardContent>
       </Card>
 
