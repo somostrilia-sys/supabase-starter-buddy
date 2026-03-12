@@ -671,8 +671,8 @@ function CargaInicialGestao() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-[hsl(212_35%_18%)]">{totalVeiculos.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Veículos</p></CardContent></Card>
         <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-[hsl(212_35%_18%)]">{totalCotas.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Cotas</p></CardContent></Card>
-        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-green-700">{executadas}/{mockCargaSGA.length}</p><p className="text-xs text-muted-foreground">Regionais Executadas</p></CardContent></Card>
-        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-yellow-700">{mockCargaSGA.length - executadas}</p><p className="text-xs text-muted-foreground">Pendentes</p></CardContent></Card>
+        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-green-700">{executadas}/{mockCargaGestao.length}</p><p className="text-xs text-muted-foreground">Regionais Executadas</p></CardContent></Card>
+        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-yellow-700">{mockCargaGestao.length - executadas}</p><p className="text-xs text-muted-foreground">Pendentes</p></CardContent></Card>
       </div>
 
       {/* Table */}
