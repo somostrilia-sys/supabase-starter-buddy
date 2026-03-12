@@ -62,6 +62,10 @@ export default function VistoriaTab({ deal }: Props) {
   const [codigo] = useState("VST-2026-0042");
   const [status, setStatus] = useState<VistoriaStatus>("em_aprovacao");
   const [prazo, setPrazo] = useState("7");
+  const [selectedFotos, setSelectedFotos] = useState<string[]>([
+    "frente","traseira","lateral_esquerda","lateral_direita","interior_painel",
+    "banco_dianteiro","banco_traseiro","teto","motor_capo","porta_malas","rodas_pneus","documentos"
+  ]);
   const [tentativa] = useState(2);
 
   const st = statusConfig[status];
