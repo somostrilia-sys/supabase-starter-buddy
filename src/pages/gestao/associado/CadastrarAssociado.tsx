@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,13 +75,7 @@ const now = () => {
 interface Implemento { item: string; descricao: string; valor: string; }
 interface Documento { nome: string; tipo: string; data: string; }
 
-const SITUACOES = [
-  { value: "Pendente", db: "pendente" },
-  { value: "Pendente de Revistoria", db: "pendente_revistoria" },
-  { value: "Ativo", db: "ativo" },
-  { value: "Inativo", db: "inativo" },
-  { value: "Inativo com Pendência", db: "inativo_pendencia" },
-] as const;
+// Situações are now fetched dynamically from member_statuses table
 
 const initialForm = {
   idExterno: "", situacao: "Ativo", classificacao: "", nome: "", dataHora: now(),
@@ -216,6 +210,19 @@ const coberturasMock = [
 
 export default function CadastrarAssociado() {
   const [form, setForm] = useState(initialForm);
+  const [situacoes, setSituacoes] = useState<{ descricao: string }[]>([]);
+
+  useEffect(() => {
+    const fetchSituacoes = async () => {
+      const { data } = await supabase
+        .from("member_statuses" as any)
+        .select("descricao")
+        .eq("ativo", true)
+        .order("codigo", { ascending: true });
+      if (data) setSituacoes(data as any);
+    };
+    fetchSituacoes();
+  }, []);
   const [implementos, setImplementos] = useState<Implemento[]>([
     { item: "Som Automotivo", descricao: "Pioneer AVH-Z9290TV", valor: "2.800,00" },
     { item: "Rodas Liga Leve", descricao: "Aro 18 TSW", valor: "4.200,00" },
@@ -281,8 +288,12 @@ export default function CadastrarAssociado() {
         return;
       }
 
-      const statusMap = SITUACOES.find(s => s.value === form.situacao);
-      const dbStatus = statusMap?.db || "pendente";
+      const dbStatusMap: Record<string, string> = {
+        "Ativo": "ativo", "Inativo": "inativo", "Pendente": "pendente",
+        "Pendente de Revistoria": "pendente_revistoria", "Inativo com Pendência": "inativo_pendencia",
+        "Inadimplente": "ativo", "Negado": "cancelado",
+      };
+      const dbStatus = dbStatusMap[form.situacao] || "pendente";
 
       const obsLines = [form.observacoes];
       if (needsMotivo && form.motivoInativacao) {
@@ -359,7 +370,7 @@ export default function CadastrarAssociado() {
                 <Select value={form.situacao} onValueChange={v => { set("situacao", v); if (v !== "Inativo" && v !== "Inativo com Pendência") set("motivoInativacao", ""); }}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
-                    {SITUACOES.map(s => <SelectItem key={s.value} value={s.value}>{s.value}</SelectItem>)}
+                    {situacoes.map(s => <SelectItem key={s.descricao} value={s.descricao}>{s.descricao}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

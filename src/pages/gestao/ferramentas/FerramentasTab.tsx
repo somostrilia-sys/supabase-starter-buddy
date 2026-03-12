@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Upload, Copy, Plug, Wrench, ChevronRight, Shield, FileSpreadsheet } from "lucide-react";
+import { ArrowLeft, Upload, Copy, Plug, Wrench, ChevronRight, Shield, FileSpreadsheet, Settings2 } from "lucide-react";
 import AlteracoesLote from "./AlteracoesLote";
 import ReplicarItens from "./ReplicarItens";
 import Integracoes from "./Integracoes";
@@ -10,10 +10,12 @@ import AlteracaoCotaMassa from "../AlteracaoCotaMassa";
 import SPCSerasa from "../SPCSerasa";
 import GestorSPCSerasa from "../GestorSPCSerasa";
 import DistribuicaoRateioFerramenta from "./DistribuicaoRateioFerramenta";
+import SituacoesAssociado from "./SituacoesAssociado";
 
 const actions = [
   { id: "planos", title: "Planos de Proteção", desc: "Gerencie planos, coberturas, regionais e categorias de veículo", icon: Shield },
   { id: "tabela-cotas", title: "Tabela de Cotas", desc: "Visualize, edite e importe faixas FIPE com valores de cota e taxa", icon: FileSpreadsheet },
+  { id: "situacoes", title: "Situações do Associado", desc: "CRUD de situações cadastrais com fechamento e rateio", icon: Settings2 },
   { id: "distribuicao-rateio", title: "Distribuição de Rateio", desc: "Calcule e distribua o rateio por categoria e regional", icon: Upload },
   { id: "lote", title: "Alterações em Lote", desc: "Importar, remover ou substituir produtos em massa", icon: Upload },
   { id: "replicar", title: "Replicar Itens em Lote", desc: "Copiar cotas e itens entre regionais e cooperativas", icon: Copy },
@@ -28,6 +30,7 @@ export default function FerramentasTab() {
 
   if (view === "planos") return <PlanosProtecao onBack={() => setView(null)} />;
   if (view === "tabela-cotas") return <TabelaCotas onBack={() => setView(null)} />;
+  if (view === "situacoes") return <SituacoesAssociado onBack={() => setView(null)} />;
   if (view === "distribuicao-rateio") return <DistribuicaoRateioFerramenta onBack={() => setView(null)} />;
   if (view === "lote") return <AlteracoesLote onBack={() => setView(null)} />;
   if (view === "replicar") return <ReplicarItens onBack={() => setView(null)} />;
