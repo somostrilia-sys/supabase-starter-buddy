@@ -173,6 +173,13 @@ export default function VistoriaTab({ deal }: Props) {
         </CardContent>
       </Card>
 
+      {/* Seleção de fotos */}
+      <Card className="rounded-none border-2 border-[hsl(210_30%_88%)]">
+        <CardContent className="p-5">
+          <VistoriaFotoSelector selected={selectedFotos} onChange={setSelectedFotos} />
+        </CardContent>
+      </Card>
+
       {/* Fluxo Web info */}
       <Card className="rounded-none bg-blue-50/50 border-blue-200">
         <CardContent className="p-4 flex items-start gap-3">
