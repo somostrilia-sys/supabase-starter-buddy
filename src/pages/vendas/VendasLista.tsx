@@ -260,7 +260,7 @@ export default function VendasLista() {
                     <TableCell className="text-xs">{d.regional}</TableCell>
                     <TableCell className="text-xs">{new Date(d.created_at).toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell className="text-xs">{d.data_pagamento ? new Date(d.data_pagamento).toLocaleDateString("pt-BR") : "—"}</TableCell>
-                    <TableCell><Badge variant="outline" className={cn("text-[10px]", sgaColors[d.status_sga])}>{d.status_sga}</Badge></TableCell>
+                    <TableCell><Badge variant="outline" className={cn("text-[10px]", gestaoColors[d.status_gestao])}>{d.status_gestao}</Badge></TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical className="h-3.5 w-3.5" /></Button></DropdownMenuTrigger>
