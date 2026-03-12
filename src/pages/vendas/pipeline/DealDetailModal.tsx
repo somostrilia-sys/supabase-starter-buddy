@@ -110,7 +110,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
               <div className="border-t pt-4 space-y-3">
                 <h4 className="text-sm font-semibold font-['Source_Serif_4']">Envio para Sistemas</h4>
                 <div className="flex gap-2">
-                  <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white"><Send className="h-3.5 w-3.5 mr-1" />Enviar para SGA</Button>
+                  <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white"><Send className="h-3.5 w-3.5 mr-1" />Enviar para Gestão</Button>
                   <Button size="sm" variant="outline" className="rounded-none"><MessageSquare className="h-3.5 w-3.5 mr-1" />WhatsApp</Button>
                   <Button size="sm" variant="outline" className="rounded-none"><Mail className="h-3.5 w-3.5 mr-1" />E-mail</Button>
                 </div>
