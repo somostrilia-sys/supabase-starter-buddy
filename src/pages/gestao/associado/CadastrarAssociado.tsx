@@ -75,13 +75,7 @@ const now = () => {
 interface Implemento { item: string; descricao: string; valor: string; }
 interface Documento { nome: string; tipo: string; data: string; }
 
-const SITUACOES = [
-  { value: "Pendente", db: "pendente" },
-  { value: "Pendente de Revistoria", db: "pendente_revistoria" },
-  { value: "Ativo", db: "ativo" },
-  { value: "Inativo", db: "inativo" },
-  { value: "Inativo com Pendência", db: "inativo_pendencia" },
-] as const;
+// Situações are now fetched dynamically from member_statuses table
 
 const initialForm = {
   idExterno: "", situacao: "Ativo", classificacao: "", nome: "", dataHora: now(),
