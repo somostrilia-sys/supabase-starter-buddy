@@ -86,7 +86,7 @@ export default function DashboardTab() {
         <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-amber-600">2</p><p className="text-xs text-muted-foreground">Vistorias Pendentes</p></CardContent></Card>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-blue-600">45</p><p className="text-xs text-muted-foreground">Cadastros SGA Sincronizados</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-blue-600">45</p><p className="text-xs text-muted-foreground">Cadastros Gestão Sincronizados</p></CardContent></Card>
         <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold">89</p><p className="text-xs text-muted-foreground">Atividades Criadas</p></CardContent></Card>
         <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-green-600">72</p><p className="text-xs text-muted-foreground">Atividades Concluídas</p></CardContent></Card>
         <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-red-600">17</p><p className="text-xs text-muted-foreground">Atividades Atrasadas</p></CardContent></Card>

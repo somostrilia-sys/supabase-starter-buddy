@@ -735,7 +735,7 @@ function CargaInicialGestao() {
             <div className="text-xs text-muted-foreground space-y-1">
               <p>• Data Operação: 01/12/2025 16:25:52</p>
               <p>• Data Limite: 31/12/2058</p>
-              <p>• Regionais pendentes: {mockCargaSGA.filter(r => r.status === "Pendente").map(r => r.regional).join(", ")}</p>
+              <p>• Regionais pendentes: {mockCargaGestao.filter(r => r.status === "Pendente").map(r => r.regional).join(", ")}</p>
             </div>
           </div>
           <DialogFooter>
