@@ -126,18 +126,7 @@ const produtosRegional = [
   { id: "5", nome: "Vidros", grupo: "Proteção" },
 ];
 
-const statusColor = (s: string) => {
-  switch (s) {
-    case "Ativo": return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
-    case "Inativo": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-    case "Pendente": return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
-    case "Pago": return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
-    case "Atrasado": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-    case "Aprovada": return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
-    case "Reprovada": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-    default: return "bg-muted text-muted-foreground";
-  }
-};
+// statusColor replaced by StatusBadge component
 
 export default function ConsultarAgregado() {
   const [searchPlaca, setSearchPlaca] = useState("");
