@@ -387,7 +387,7 @@ export default function ConsultarVeiculo() {
         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"><Car className="h-5 w-5 text-primary" /></div>
         <div>
           <h2 className="text-lg font-bold">{sel.placa} — {sel.modelo}</h2>
-          <p className="text-sm text-muted-foreground">{sel.marca} {sel.anoFab}/{sel.anoMod} • {sel.nome} • <Badge variant="outline" className={sitBadge(sel.sitVeiculo)}>{sel.sitVeiculo}</Badge></p>
+          <p className="text-sm text-muted-foreground flex items-center gap-1.5">{sel.marca} {sel.anoFab}/{sel.anoMod} • {sel.nome} • <StatusBadge status={sel.sitVeiculo} /></p>
         </div>
       </div>
 
