@@ -123,9 +123,7 @@ export default function SituacoesAssociado({ onBack }: { onBack: () => void }) {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge className={`text-[11px] ${r.ativo ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}`}>
-                    {r.ativo ? "Ativo" : "Inativo"}
-                  </Badge>
+                  <StatusBadge status={r.ativo ? "Ativo" : "Inativo"} />
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
