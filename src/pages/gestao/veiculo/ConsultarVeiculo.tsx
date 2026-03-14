@@ -544,7 +544,7 @@ export default function ConsultarVeiculo() {
                   </div>
                   <div className="pb-4 flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className={v.resultado === "Aprovada" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : v.resultado === "Pendente" ? "bg-amber-100 text-amber-700 border-amber-200" : "bg-red-100 text-red-700 border-red-200"}>{v.resultado}</Badge>
+                      <StatusBadge status={v.resultado} />
                       <span className="text-xs text-muted-foreground">{new Date(v.data).toLocaleDateString("pt-BR")}</span>
                     </div>
                     <p className="text-sm"><span className="font-medium">Tipo:</span> {v.tipo}</p>
