@@ -596,7 +596,7 @@ export default function AlterarAssociado() {
         </div>
         <div>
           <h2 className="text-lg font-bold">{selected.nome}</h2>
-          <p className="text-sm text-muted-foreground">{selected.codigo} • {selected.cpf} • <Badge variant="outline" className={statusBadge(selected.status)}>{selected.status}</Badge></p>
+          <p className="text-sm text-muted-foreground flex items-center gap-1.5">{selected.codigo} • {selected.cpf} • <StatusBadge status={selected.status} /></p>
         </div>
       </div>
 
