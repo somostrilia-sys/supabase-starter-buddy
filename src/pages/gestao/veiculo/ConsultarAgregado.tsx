@@ -590,7 +590,7 @@ export default function ConsultarAgregado() {
                       <TableCell className="text-sm">R$ {f.desconto}</TableCell>
                       <TableCell className="text-sm">R$ {f.juros}</TableCell>
                       <TableCell className="text-sm font-medium">R$ {f.total}</TableCell>
-                      <TableCell><Badge className={statusColor(f.situacao)}>{f.situacao}</Badge></TableCell>
+                      <TableCell><StatusBadge status={f.situacao} /></TableCell>
                       <TableCell><Button variant="ghost" size="icon" className="h-7 w-7"><Settings className="h-3.5 w-3.5" /></Button></TableCell>
                       <TableCell><Button variant="ghost" size="icon" className="h-7 w-7"><Clock className="h-3.5 w-3.5" /></Button></TableCell>
                       <TableCell><Button variant="ghost" size="icon" className="h-7 w-7"><Printer className="h-3.5 w-3.5" /></Button></TableCell>

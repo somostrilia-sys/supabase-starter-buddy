@@ -454,7 +454,7 @@ function TabClassificacao() {
           {items.map(it => (
             <TableRow key={it.id}>
               <TableCell className="text-sm font-medium">{it.descricao}</TableCell>
-              <TableCell><Badge className={statusColor(it.situacao)}>{it.situacao}</Badge></TableCell>
+              <TableCell><StatusBadge status={it.situacao} /></TableCell>
               <TableCell>{it.padrao ? <Badge variant="outline">Sim</Badge> : <span className="text-xs text-muted-foreground">Não</span>}</TableCell>
               <TableCell className="flex gap-1">
                 <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-3.5 w-3.5" /></Button>
