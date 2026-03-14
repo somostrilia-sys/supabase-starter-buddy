@@ -446,7 +446,7 @@ export default function ConsultarVeiculo() {
                     <TableCell className="text-sm">{c.cnh}</TableCell>
                     <TableCell className="text-sm">{new Date(c.dataNasc).toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell className="text-sm">{calcIdade(c.dataNasc)} anos</TableCell>
-                    <TableCell><Badge variant="outline" className={sitBadge(c.situacao)}>{c.situacao}</Badge></TableCell>
+                    <TableCell><StatusBadge status={c.situacao} /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
