@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/StatusBadge";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -234,17 +235,7 @@ const mockVeiculos: Veiculo[] = [
   },
 ];
 
-const sitBadge = (s: string) => {
-  const m: Record<string,string> = {
-    "Ativo": "bg-emerald-100 text-emerald-700 border-emerald-200",
-    "Inativo": "bg-muted text-muted-foreground",
-    "Suspenso": "bg-amber-100 text-amber-700 border-amber-200",
-    "Inadimplente": "bg-red-100 text-red-700 border-red-200",
-    "Pendente": "bg-blue-100 text-blue-700 border-blue-200",
-    "Negado": "bg-red-100 text-red-700 border-red-200",
-  };
-  return m[s] || "bg-muted text-muted-foreground";
-};
+// sitBadge replaced by StatusBadge component
 
 const finBadge = (s: string) => {
   const m: Record<string,string> = { "Pago": "bg-emerald-100 text-emerald-700 border-emerald-200", "Pendente": "bg-amber-100 text-amber-700 border-amber-200", "Atrasado": "bg-red-100 text-red-700 border-red-200" };
@@ -349,8 +340,8 @@ export default function ConsultarVeiculo() {
                             <TableCell className="text-xs">Dia {v.diaVenc}</TableCell>
                             <TableCell className="text-xs">R$ {v.valorFipe.toLocaleString("pt-BR")}</TableCell>
                             <TableCell className="text-xs">{v.cota}</TableCell>
-                            <TableCell><Badge variant="outline" className={`${sitBadge(v.sitVeiculo)} text-xs`}>{v.sitVeiculo}</Badge></TableCell>
-                            <TableCell><Badge variant="outline" className={`${sitBadge(v.sitAssociado)} text-xs`}>{v.sitAssociado}</Badge></TableCell>
+                            <TableCell><StatusBadge status={v.sitVeiculo} /></TableCell>
+                            <TableCell><StatusBadge status={v.sitAssociado} /></TableCell>
                             <TableCell className="text-xs">{v.cooperativa}</TableCell>
                             <TableCell className="text-xs">{v.tipoAdesao}</TableCell>
                             <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelected(v)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
@@ -396,7 +387,7 @@ export default function ConsultarVeiculo() {
         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"><Car className="h-5 w-5 text-primary" /></div>
         <div>
           <h2 className="text-lg font-bold">{sel.placa} — {sel.modelo}</h2>
-          <p className="text-sm text-muted-foreground">{sel.marca} {sel.anoFab}/{sel.anoMod} • {sel.nome} • <Badge variant="outline" className={sitBadge(sel.sitVeiculo)}>{sel.sitVeiculo}</Badge></p>
+          <p className="text-sm text-muted-foreground flex items-center gap-1.5">{sel.marca} {sel.anoFab}/{sel.anoMod} • {sel.nome} • <StatusBadge status={sel.sitVeiculo} /></p>
         </div>
       </div>
 
@@ -455,7 +446,7 @@ export default function ConsultarVeiculo() {
                     <TableCell className="text-sm">{c.cnh}</TableCell>
                     <TableCell className="text-sm">{new Date(c.dataNasc).toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell className="text-sm">{calcIdade(c.dataNasc)} anos</TableCell>
-                    <TableCell><Badge variant="outline" className={sitBadge(c.situacao)}>{c.situacao}</Badge></TableCell>
+                    <TableCell><StatusBadge status={c.situacao} /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -479,7 +470,7 @@ export default function ConsultarVeiculo() {
         <TabsContent value="financeiro" className="mt-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Total</p><p className="text-xl font-bold text-primary">R$ {totalLanc.toFixed(2).replace(".",",")}</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Pagos</p><p className="text-xl font-bold text-emerald-600">{pagos}</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Pagos</p><p className="text-xl font-bold text-success">{pagos}</p></CardContent></Card>
             <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Atrasados</p><p className="text-xl font-bold text-destructive">{atrasados}</p></CardContent></Card>
           </div>
           <Card><CardContent className="p-0">
@@ -532,7 +523,7 @@ export default function ConsultarVeiculo() {
                     <TableCell className="text-sm">{a.marcaModelo}</TableCell>
                     <TableCell className="text-sm">R$ {a.valor.toLocaleString("pt-BR")}</TableCell>
                     <TableCell className="text-sm">{new Date(a.data).toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell><Badge variant="outline" className={sitBadge(a.situacao)}>{a.situacao}</Badge></TableCell>
+                    <TableCell><StatusBadge status={a.situacao} /></TableCell>
                     <TableCell><Button variant="ghost" size="icon" className="h-7 w-7"><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
                   </TableRow>
                 ))}
@@ -553,7 +544,7 @@ export default function ConsultarVeiculo() {
                   </div>
                   <div className="pb-4 flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className={v.resultado === "Aprovada" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : v.resultado === "Pendente" ? "bg-amber-100 text-amber-700 border-amber-200" : "bg-red-100 text-red-700 border-red-200"}>{v.resultado}</Badge>
+                      <StatusBadge status={v.resultado} />
                       <span className="text-xs text-muted-foreground">{new Date(v.data).toLocaleDateString("pt-BR")}</span>
                     </div>
                     <p className="text-sm"><span className="font-medium">Tipo:</span> {v.tipo}</p>
@@ -633,7 +624,7 @@ export default function ConsultarVeiculo() {
                       <TableCell className="text-sm">{f.produto}</TableCell>
                       <TableCell className="text-sm">{f.servico}</TableCell>
                       <TableCell className="text-sm">{f.motivo}</TableCell>
-                      <TableCell><Badge variant="outline" className={f.situacao === "Concluído" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-amber-100 text-amber-700 border-amber-200"}>{f.situacao}</Badge></TableCell>
+                      <TableCell><StatusBadge status={f.situacao} /></TableCell>
                       <TableCell className="text-xs">{new Date(f.dataAbertura).toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell className="text-xs">{f.dataFechamento ? new Date(f.dataFechamento).toLocaleDateString("pt-BR") : "-"}</TableCell>
                     </TableRow>
@@ -655,7 +646,7 @@ export default function ConsultarVeiculo() {
                   <TableRow key={i}>
                     <TableCell className="font-mono text-xs">{c.contrato}</TableCell>
                     <TableCell className="text-sm">{c.termo}</TableCell>
-                    <TableCell><Badge variant="outline" className={c.status === "Assinado" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : c.status === "Pendente" ? "bg-amber-100 text-amber-700 border-amber-200" : "bg-red-100 text-red-700 border-red-200"}>{c.status}</Badge></TableCell>
+                    <TableCell><StatusBadge status={c.status} /></TableCell>
                     <TableCell className="text-xs font-mono">{c.ip || "-"}</TableCell>
                     <TableCell className="text-xs">{c.dataHoraEnvio || "-"}</TableCell>
                     <TableCell>{c.arquivo ? <Button variant="ghost" size="sm" className="h-7 text-xs gap-1"><Download className="h-3 w-3" />{c.arquivo}</Button> : "-"}</TableCell>

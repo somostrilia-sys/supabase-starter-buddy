@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/StatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -122,9 +123,7 @@ export default function SituacoesAssociado({ onBack }: { onBack: () => void }) {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge className={`text-[11px] ${r.ativo ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}`}>
-                    {r.ativo ? "Ativo" : "Inativo"}
-                  </Badge>
+                  <StatusBadge status={r.ativo ? "Ativo" : "Inativo"} />
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
@@ -170,7 +169,7 @@ export default function SituacoesAssociado({ onBack }: { onBack: () => void }) {
             <div className="flex items-center justify-between">
               <Label>Situação</Label>
               <Switch checked={form.ativo} onCheckedChange={v => setForm(f => ({ ...f, ativo: v }))} />
-              <Badge className={`ml-2 text-[11px] ${form.ativo ? "bg-emerald-600" : "bg-red-600"}`}>{form.ativo ? "Ativo" : "Inativo"}</Badge>
+              <StatusBadge status={form.ativo ? "Ativo" : "Inativo"} className="ml-2" />
             </div>
           </div>
           <DialogFooter>

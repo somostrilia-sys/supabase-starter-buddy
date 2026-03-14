@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/StatusBadge";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -389,15 +390,7 @@ const mockAssociados: Associado[] = [
   },
 ];
 
-const statusBadge = (s: string) => {
-  const map: Record<string, string> = {
-    "Ativo": "bg-emerald-100 text-emerald-700 border-emerald-200",
-    "Inativo": "bg-muted text-muted-foreground",
-    "Suspenso": "bg-amber-100 text-amber-700 border-amber-200",
-    "Cancelado": "bg-red-100 text-red-700 border-red-200",
-  };
-  return map[s] || "bg-muted text-muted-foreground";
-};
+// statusBadge replaced by StatusBadge component
 
 const finBadge = (s: string) => {
   const map: Record<string, string> = {
@@ -552,7 +545,7 @@ export default function AlterarAssociado() {
                           <TableCell className="font-mono text-xs">{a.codigo}</TableCell>
                           <TableCell className="font-medium text-sm">{a.nome}</TableCell>
                           <TableCell className="text-sm">{a.cpf}</TableCell>
-                          <TableCell><Badge variant="outline" className={statusBadge(a.status)}>{a.status}</Badge></TableCell>
+                          <TableCell><StatusBadge status={a.status} /></TableCell>
                           <TableCell className="text-sm">{a.regional}</TableCell>
                           <TableCell className="text-sm">{a.celular}</TableCell>
                           <TableCell className="text-sm font-mono">{a.veiculos[0]?.placa || "-"}</TableCell>
@@ -603,7 +596,7 @@ export default function AlterarAssociado() {
         </div>
         <div>
           <h2 className="text-lg font-bold">{selected.nome}</h2>
-          <p className="text-sm text-muted-foreground">{selected.codigo} • {selected.cpf} • <Badge variant="outline" className={statusBadge(selected.status)}>{selected.status}</Badge></p>
+          <p className="text-sm text-muted-foreground flex items-center gap-1.5">{selected.codigo} • {selected.cpf} • <StatusBadge status={selected.status} /></p>
         </div>
       </div>
 
@@ -818,7 +811,7 @@ export default function AlterarAssociado() {
                       <TableCell className="text-sm">{v.marca}</TableCell>
                       <TableCell className="text-sm">{v.ano}</TableCell>
                       <TableCell className="text-sm">{v.cor}</TableCell>
-                      <TableCell><Badge variant="outline" className={statusBadge(v.situacao)}>{v.situacao}</Badge></TableCell>
+                      <TableCell><StatusBadge status={v.situacao} /></TableCell>
                       <TableCell className="text-sm">{v.plano}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">

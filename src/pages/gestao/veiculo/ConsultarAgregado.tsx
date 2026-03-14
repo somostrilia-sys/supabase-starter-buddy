@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -125,18 +126,7 @@ const produtosRegional = [
   { id: "5", nome: "Vidros", grupo: "Proteção" },
 ];
 
-const statusColor = (s: string) => {
-  switch (s) {
-    case "Ativo": return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
-    case "Inativo": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-    case "Pendente": return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
-    case "Pago": return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
-    case "Atrasado": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-    case "Aprovada": return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
-    case "Reprovada": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-    default: return "bg-muted text-muted-foreground";
-  }
-};
+// statusColor replaced by StatusBadge component
 
 export default function ConsultarAgregado() {
   const [searchPlaca, setSearchPlaca] = useState("");
@@ -470,7 +460,7 @@ export default function ConsultarAgregado() {
                     <CardContent className="p-3">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium">{v.tipo}</span>
-                        <Badge className={statusColor(v.resultado)}>{v.resultado}</Badge>
+                        <StatusBadge status={v.resultado} />
                       </div>
                       <p className="text-xs text-muted-foreground">{v.data} • Inspetor: {v.inspetor}</p>
                       <p className="text-xs mt-1">{v.obs}</p>
@@ -600,7 +590,7 @@ export default function ConsultarAgregado() {
                       <TableCell className="text-sm">R$ {f.desconto}</TableCell>
                       <TableCell className="text-sm">R$ {f.juros}</TableCell>
                       <TableCell className="text-sm font-medium">R$ {f.total}</TableCell>
-                      <TableCell><Badge className={statusColor(f.situacao)}>{f.situacao}</Badge></TableCell>
+                      <TableCell><StatusBadge status={f.situacao} /></TableCell>
                       <TableCell><Button variant="ghost" size="icon" className="h-7 w-7"><Settings className="h-3.5 w-3.5" /></Button></TableCell>
                       <TableCell><Button variant="ghost" size="icon" className="h-7 w-7"><Clock className="h-3.5 w-3.5" /></Button></TableCell>
                       <TableCell><Button variant="ghost" size="icon" className="h-7 w-7"><Printer className="h-3.5 w-3.5" /></Button></TableCell>

@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/StatusBadge";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -105,7 +106,7 @@ const allColumns = [
   "Tel. Associado","Classificação Condutor",
 ];
 
-const statusColor = (s: string) => s === "Ativo" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+// statusColor replaced by StatusBadge component
 
 // ===================== TAB 1: CADASTRAR =====================
 function TabCadastrar() {
@@ -354,7 +355,7 @@ function TabConsultar() {
                   {selectedCols.includes("Cidade") && <TableCell className="text-sm">{c.cidade}</TableCell>}
                   {selectedCols.includes("Tel. Celular") && <TableCell className="text-sm">{c.celular}</TableCell>}
                   {selectedCols.includes("Placa") && <TableCell className="text-sm font-mono">{c.placa}</TableCell>}
-                  {selectedCols.includes("Situação") && <TableCell><Badge className={statusColor(c.situacao)}>{c.situacao}</Badge></TableCell>}
+                  {selectedCols.includes("Situação") && <TableCell><StatusBadge status={c.situacao} /></TableCell>}
                   {selectedCols.includes("Classificação Condutor") && <TableCell className="text-sm">{c.classificacao}</TableCell>}
                   <TableCell><Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-3.5 w-3.5" /></Button></TableCell>
                 </TableRow>
@@ -453,7 +454,7 @@ function TabClassificacao() {
           {items.map(it => (
             <TableRow key={it.id}>
               <TableCell className="text-sm font-medium">{it.descricao}</TableCell>
-              <TableCell><Badge className={statusColor(it.situacao)}>{it.situacao}</Badge></TableCell>
+              <TableCell><StatusBadge status={it.situacao} /></TableCell>
               <TableCell>{it.padrao ? <Badge variant="outline">Sim</Badge> : <span className="text-xs text-muted-foreground">Não</span>}</TableCell>
               <TableCell className="flex gap-1">
                 <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-3.5 w-3.5" /></Button>
