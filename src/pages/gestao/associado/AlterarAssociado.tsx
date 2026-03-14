@@ -390,15 +390,7 @@ const mockAssociados: Associado[] = [
   },
 ];
 
-const statusBadge = (s: string) => {
-  const map: Record<string, string> = {
-    "Ativo": "bg-emerald-100 text-emerald-700 border-emerald-200",
-    "Inativo": "bg-muted text-muted-foreground",
-    "Suspenso": "bg-amber-100 text-amber-700 border-amber-200",
-    "Cancelado": "bg-red-100 text-red-700 border-red-200",
-  };
-  return map[s] || "bg-muted text-muted-foreground";
-};
+// statusBadge replaced by StatusBadge component
 
 const finBadge = (s: string) => {
   const map: Record<string, string> = {
