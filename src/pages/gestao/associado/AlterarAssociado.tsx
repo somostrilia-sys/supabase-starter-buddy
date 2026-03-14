@@ -545,7 +545,7 @@ export default function AlterarAssociado() {
                           <TableCell className="font-mono text-xs">{a.codigo}</TableCell>
                           <TableCell className="font-medium text-sm">{a.nome}</TableCell>
                           <TableCell className="text-sm">{a.cpf}</TableCell>
-                          <TableCell><Badge variant="outline" className={statusBadge(a.status)}>{a.status}</Badge></TableCell>
+                          <TableCell><StatusBadge status={a.status} /></TableCell>
                           <TableCell className="text-sm">{a.regional}</TableCell>
                           <TableCell className="text-sm">{a.celular}</TableCell>
                           <TableCell className="text-sm font-mono">{a.veiculos[0]?.placa || "-"}</TableCell>
