@@ -470,7 +470,7 @@ export default function ConsultarVeiculo() {
         <TabsContent value="financeiro" className="mt-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Total</p><p className="text-xl font-bold text-primary">R$ {totalLanc.toFixed(2).replace(".",",")}</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Pagos</p><p className="text-xl font-bold text-emerald-600">{pagos}</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Pagos</p><p className="text-xl font-bold text-success">{pagos}</p></CardContent></Card>
             <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Atrasados</p><p className="text-xl font-bold text-destructive">{atrasados}</p></CardContent></Card>
           </div>
           <Card><CardContent className="p-0">
