@@ -62,15 +62,24 @@ const mockHistorico: HistoricoItem[] = [
 ];
 
 const statusBadge = (s: RowStatus) => {
-  if (s === "novo") return <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-200 hover:bg-emerald-500/15">Novo</Badge>;
-  if (s === "atualizar") return <Badge className="bg-primary/15 text-primary border-primary/20 hover:bg-primary/15">Atualizar</Badge>;
-  return <Badge variant="destructive">Erro</Badge>;
+  const map: Record<RowStatus, { status: string; label: string }> = {
+    novo: { status: "ativo", label: "Novo" },
+    atualizar: { status: "suspenso", label: "Atualizar" },
+    erro: { status: "inadimplente", label: "Erro" },
+  };
+  const c = map[s];
+  return <StatusBadge status={c.status} label={c.label} />;
 };
 
 const histStatusBadge = (s: HistoricoItem["status"]) => {
-  if (s === "sucesso") return <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-200 hover:bg-emerald-500/15">Sucesso</Badge>;
-  if (s === "parcial") return <Badge className="bg-amber-500/15 text-amber-700 border-amber-200 hover:bg-amber-500/15">Parcial</Badge>;
-  return <Badge variant="destructive">Falha</Badge>;
+  const map: Record<string, { status: string; label: string }> = {
+    sucesso: { status: "ativo", label: "Sucesso" },
+    parcial: { status: "pendente", label: "Parcial" },
+    falha: { status: "inadimplente", label: "Falha" },
+  };
+  const c = map[s];
+  return <StatusBadge status={c.status} label={c.label} />;
+};
 };
 
 export default function AlteracaoCotaMassa({ onBack }: { onBack: () => void }) {
