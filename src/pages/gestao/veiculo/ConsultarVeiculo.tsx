@@ -340,8 +340,8 @@ export default function ConsultarVeiculo() {
                             <TableCell className="text-xs">Dia {v.diaVenc}</TableCell>
                             <TableCell className="text-xs">R$ {v.valorFipe.toLocaleString("pt-BR")}</TableCell>
                             <TableCell className="text-xs">{v.cota}</TableCell>
-                            <TableCell><Badge variant="outline" className={`${sitBadge(v.sitVeiculo)} text-xs`}>{v.sitVeiculo}</Badge></TableCell>
-                            <TableCell><Badge variant="outline" className={`${sitBadge(v.sitAssociado)} text-xs`}>{v.sitAssociado}</Badge></TableCell>
+                            <TableCell><StatusBadge status={v.sitVeiculo} /></TableCell>
+                            <TableCell><StatusBadge status={v.sitAssociado} /></TableCell>
                             <TableCell className="text-xs">{v.cooperativa}</TableCell>
                             <TableCell className="text-xs">{v.tipoAdesao}</TableCell>
                             <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelected(v)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
