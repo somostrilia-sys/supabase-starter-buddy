@@ -169,7 +169,7 @@ export default function SituacoesAssociado({ onBack }: { onBack: () => void }) {
             <div className="flex items-center justify-between">
               <Label>Situação</Label>
               <Switch checked={form.ativo} onCheckedChange={v => setForm(f => ({ ...f, ativo: v }))} />
-              <Badge className={`ml-2 text-[11px] ${form.ativo ? "bg-emerald-600" : "bg-red-600"}`}>{form.ativo ? "Ativo" : "Inativo"}</Badge>
+              <StatusBadge status={form.ativo ? "Ativo" : "Inativo"} className="ml-2" />
             </div>
           </div>
           <DialogFooter>

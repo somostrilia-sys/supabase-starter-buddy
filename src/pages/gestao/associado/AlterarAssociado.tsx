@@ -811,7 +811,7 @@ export default function AlterarAssociado() {
                       <TableCell className="text-sm">{v.marca}</TableCell>
                       <TableCell className="text-sm">{v.ano}</TableCell>
                       <TableCell className="text-sm">{v.cor}</TableCell>
-                      <TableCell><Badge variant="outline" className={statusBadge(v.situacao)}>{v.situacao}</Badge></TableCell>
+                      <TableCell><StatusBadge status={v.situacao} /></TableCell>
                       <TableCell className="text-sm">{v.plano}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
