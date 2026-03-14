@@ -646,7 +646,7 @@ export default function ConsultarVeiculo() {
                   <TableRow key={i}>
                     <TableCell className="font-mono text-xs">{c.contrato}</TableCell>
                     <TableCell className="text-sm">{c.termo}</TableCell>
-                    <TableCell><Badge variant="outline" className={c.status === "Assinado" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : c.status === "Pendente" ? "bg-amber-100 text-amber-700 border-amber-200" : "bg-red-100 text-red-700 border-red-200"}>{c.status}</Badge></TableCell>
+                    <TableCell><StatusBadge status={c.status} /></TableCell>
                     <TableCell className="text-xs font-mono">{c.ip || "-"}</TableCell>
                     <TableCell className="text-xs">{c.dataHoraEnvio || "-"}</TableCell>
                     <TableCell>{c.arquivo ? <Button variant="ghost" size="sm" className="h-7 text-xs gap-1"><Download className="h-3 w-3" />{c.arquivo}</Button> : "-"}</TableCell>
