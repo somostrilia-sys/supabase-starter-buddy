@@ -523,7 +523,7 @@ export default function ConsultarVeiculo() {
                     <TableCell className="text-sm">{a.marcaModelo}</TableCell>
                     <TableCell className="text-sm">R$ {a.valor.toLocaleString("pt-BR")}</TableCell>
                     <TableCell className="text-sm">{new Date(a.data).toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell><Badge variant="outline" className={sitBadge(a.situacao)}>{a.situacao}</Badge></TableCell>
+                    <TableCell><StatusBadge status={a.situacao} /></TableCell>
                     <TableCell><Button variant="ghost" size="icon" className="h-7 w-7"><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
                   </TableRow>
                 ))}
