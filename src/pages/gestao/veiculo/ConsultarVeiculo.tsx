@@ -624,7 +624,7 @@ export default function ConsultarVeiculo() {
                       <TableCell className="text-sm">{f.produto}</TableCell>
                       <TableCell className="text-sm">{f.servico}</TableCell>
                       <TableCell className="text-sm">{f.motivo}</TableCell>
-                      <TableCell><Badge variant="outline" className={f.situacao === "Concluído" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-amber-100 text-amber-700 border-amber-200"}>{f.situacao}</Badge></TableCell>
+                      <TableCell><StatusBadge status={f.situacao} /></TableCell>
                       <TableCell className="text-xs">{new Date(f.dataAbertura).toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell className="text-xs">{f.dataFechamento ? new Date(f.dataFechamento).toLocaleDateString("pt-BR") : "-"}</TableCell>
                     </TableRow>
