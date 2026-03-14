@@ -106,7 +106,7 @@ const allColumns = [
   "Tel. Associado","Classificação Condutor",
 ];
 
-const statusColor = (s: string) => s === "Ativo" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+// statusColor replaced by StatusBadge component
 
 // ===================== TAB 1: CADASTRAR =====================
 function TabCadastrar() {
