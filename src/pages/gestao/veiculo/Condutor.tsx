@@ -355,7 +355,7 @@ function TabConsultar() {
                   {selectedCols.includes("Cidade") && <TableCell className="text-sm">{c.cidade}</TableCell>}
                   {selectedCols.includes("Tel. Celular") && <TableCell className="text-sm">{c.celular}</TableCell>}
                   {selectedCols.includes("Placa") && <TableCell className="text-sm font-mono">{c.placa}</TableCell>}
-                  {selectedCols.includes("Situação") && <TableCell><Badge className={statusColor(c.situacao)}>{c.situacao}</Badge></TableCell>}
+                  {selectedCols.includes("Situação") && <TableCell><StatusBadge status={c.situacao} /></TableCell>}
                   {selectedCols.includes("Classificação Condutor") && <TableCell className="text-sm">{c.classificacao}</TableCell>}
                   <TableCell><Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-3.5 w-3.5" /></Button></TableCell>
                 </TableRow>
