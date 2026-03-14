@@ -80,7 +80,6 @@ const histStatusBadge = (s: HistoricoItem["status"]) => {
   const c = map[s];
   return <StatusBadge status={c.status} label={c.label} />;
 };
-};
 
 export default function AlteracaoCotaMassa({ onBack }: { onBack: () => void }) {
   const [step, setStep] = useState<Step>("upload");
