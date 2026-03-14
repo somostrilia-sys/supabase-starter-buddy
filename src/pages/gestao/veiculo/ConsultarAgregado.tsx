@@ -460,7 +460,7 @@ export default function ConsultarAgregado() {
                     <CardContent className="p-3">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium">{v.tipo}</span>
-                        <Badge className={statusColor(v.resultado)}>{v.resultado}</Badge>
+                        <StatusBadge status={v.resultado} />
                       </div>
                       <p className="text-xs text-muted-foreground">{v.data} • Inspetor: {v.inspetor}</p>
                       <p className="text-xs mt-1">{v.obs}</p>
