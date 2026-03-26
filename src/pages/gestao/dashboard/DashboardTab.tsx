@@ -1,5 +1,12 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { subDays } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Car, FileText, CheckCircle, CalendarCheck, Users, Snowflake, TrendingUp, TrendingDown, BarChart3, PieChart } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Car, FileText, CheckCircle, CalendarCheck, Users, AlertTriangle, Loader2, BarChart3 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, AreaChart, Area } from "recharts";
 
 const boletosDoMesData = [
@@ -19,10 +26,6 @@ const veiculosDiaData = [
   { dia: "Dom", cadastrados: 1 },
 ];
 
-const fechamentoData = [
-  { name: "Participantes", value: 1342, color: "hsl(var(--primary))" },
-  { name: "Congelados", value: 89, color: "hsl(var(--muted-foreground))" },
-];
 
 const recebimentoDiarioData = [
   { hora: "08h", valor: 1200 },
@@ -46,47 +49,236 @@ function SectionDivider({ title }: { title: string }) {
   );
 }
 
-const kpisCadastro = [
-  { title: "Veículos Cadastrados Hoje", value: 12, icon: Car, trend: +8 },
-  { title: "Veículos no Fechamento", value: 1342, icon: Users, trend: +1.5 },
-  { title: "Veículos Congelados", value: 89, icon: Snowflake, trend: -2 },
-];
 
-const kpisFinanceiro = [
-  { title: "Boletos Gerados no Mês", value: 847, icon: FileText, trend: +3.2 },
-  { title: "Boletos Recebidos no Mês", value: 623, icon: CheckCircle, trend: +12 },
-  { title: "Boletos Recebidos Hoje", value: 18, icon: CalendarCheck, trend: -5 },
-];
+type InadimplenteRow = {
+  id: string;
+  vencimento: string;
+  valor: number;
+  contratos?: {
+    associado_id: string;
+    associados?: {
+      id: string;
+      nome: string;
+      revistoria_status?: string;
+    } | null;
+  } | null;
+};
+
+function diasAtraso(vencimento: string) {
+  const v = new Date(vencimento + "T12:00:00");
+  return Math.floor((Date.now() - v.getTime()) / 86400000);
+}
 
 export default function DashboardTab() {
-  const totalFechamento = 1342 + 89;
-  const pctParticipantes = ((1342 / totalFechamento) * 100).toFixed(1);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  const renderKpi = (kpi: { title: string; value: number; icon: React.ElementType; trend: number }) => {
-    const isPositive = kpi.trend >= 0;
+  // Inadimplência +5 dias — associados SÓ saem quando revistoria_status = "realizada"
+  const { data: inadimplentes = [], isLoading: loadingInad } = useQuery({
+    queryKey: ["inadimplentes"],
+    queryFn: async () => {
+      const corte = subDays(new Date(), 5).toISOString().split("T")[0];
+      const { data, error } = await (supabase as any)
+        .from("mensalidades")
+        .select("*, contratos(associado_id, associados(id, nome, revistoria_status))")
+        .eq("status", "em_aberto")
+        .lt("vencimento", corte);
+      if (error) throw error;
+      return (data || []) as InadimplenteRow[];
+    },
+  });
+
+  // Group by associado — só mostra quem NÃO tem revistoria_status = "realizada"
+  const porAssociado = Object.values(
+    inadimplentes.reduce<Record<string, { nome: string; associado_id: string; boletos: InadimplenteRow[]; revistoria_status: string }>>((acc, m) => {
+      const assId = m.contratos?.associado_id ?? "unknown";
+      const assNome = m.contratos?.associados?.nome ?? "—";
+      const revStatus = m.contratos?.associados?.revistoria_status ?? "pendente";
+      if (!acc[assId]) acc[assId] = { nome: assNome, associado_id: assId, boletos: [], revistoria_status: revStatus };
+      acc[assId].boletos.push(m);
+      return acc;
+    }, {})
+  ).filter(a => a.revistoria_status !== "realizada");
+
+  // ── Real KPIs ──
+  const mesAtual = new Date().toISOString().slice(0, 7);
+
+  const { data: totalAtivos = 0, isLoading: loadingAtivos } = useQuery({
+    queryKey: ["kpi_associados_ativos"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("associados").select("id", { count: "exact", head: true }).eq("status", "ativo");
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
+  const { data: totalInadimpl = 0, isLoading: loadingInadimpl } = useQuery({
+    queryKey: ["kpi_inadimpl_count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("associados").select("id", { count: "exact", head: true }).in("status", ["inativo", "inativo_pendencia"]);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
+  const { data: receitaMes = 0, isLoading: loadingReceita } = useQuery({
+    queryKey: ["kpi_receita_mes", mesAtual],
+    queryFn: async () => {
+      const mesInicio = mesAtual + "-01";
+      const proximoMes = mesAtual.slice(0, 4) + "-" + String(Number(mesAtual.slice(5, 7)) % 12 + 1).padStart(2, "0") + "-01";
+      const { data, error } = await (supabase
+        .from("mensalidades").select("valor").eq("status", "pago")
+        .gte("data_pagamento", mesInicio).lt("data_pagamento", proximoMes) as any);
+      if (error) throw error;
+      return (data || []).reduce((s: number, m: { valor: number }) => s + (m.valor ?? 0), 0);
+    },
+  });
+
+  const { data: sinistrosPend = 0, isLoading: loadingSinistros } = useQuery({
+    queryKey: ["kpi_sinistros_pendentes"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("sinistros").select("id", { count: "exact", head: true }).in("status", ["aberto", "em_analise"]);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
+  const { data: totalVeiculos = 0 } = useQuery({
+    queryKey: ["kpi_veiculos_total"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("veiculos").select("id", { count: "exact", head: true });
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
+  const { data: boletosMes = { gerados: 0, recebidos: 0 } } = useQuery({
+    queryKey: ["kpi_boletos_mes", mesAtual],
+    queryFn: async () => {
+      const { data, error } = await (supabase
+        .from("mensalidades").select("status").gte("created_at", mesAtual + "-01T00:00:00Z") as any);
+      if (error) throw error;
+      const rows = (data || []) as { status: string }[];
+      return { gerados: rows.length, recebidos: rows.filter(r => r.status === "pago").length };
+    },
+  });
+
+  const fechamentoData = [
+    { name: "Ativos", value: totalAtivos, color: "hsl(var(--primary))" },
+    { name: "Inativos", value: totalInadimpl, color: "hsl(var(--muted-foreground))" },
+  ];
+  const totalFechamento = totalAtivos + totalInadimpl;
+  const pctParticipantes = totalFechamento > 0 ? ((totalAtivos / totalFechamento) * 100).toFixed(1) : "0.0";
+
+  function KpiCard({ title, value, icon: Icon, loading, format = "number" }: {
+    title: string; value: number; icon: React.ElementType; loading?: boolean; format?: "number" | "currency";
+  }) {
+    const disp = format === "currency"
+      ? "R$ " + value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })
+      : value.toLocaleString("pt-BR");
     return (
-      <Card key={kpi.title} className="shadow-none">
+      <Card className="shadow-none">
         <CardContent className="p-3.5">
           <div className="flex items-center justify-between mb-1.5">
-            <kpi.icon className="w-4 h-4 text-muted-foreground" />
-            <span className={`text-[11px] font-medium flex items-center gap-0.5 ${isPositive ? "text-accent" : "text-destructive"}`}>
-              {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-              {isPositive ? "+" : ""}{kpi.trend}%
-            </span>
+            <Icon className="w-4 h-4 text-muted-foreground" />
           </div>
-          <p className="text-xl font-bold tracking-tight leading-tight">{kpi.value.toLocaleString("pt-BR")}</p>
-          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-1 leading-tight">{kpi.title}</p>
+          {loading ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> : (
+            <p className="text-xl font-bold tracking-tight leading-tight">{disp}</p>
+          )}
+          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-1 leading-tight">{title}</p>
         </CardContent>
       </Card>
     );
-  };
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-5 min-h-full">
+      {/* ═══ INADIMPLÊNCIA ═══ */}
+      <SectionDivider title="Inadimplência & Revistoria" />
+      <Card
+        className="shadow-none border-red-200 bg-red-50/40 cursor-pointer hover:bg-red-50/70 transition-colors"
+        onClick={() => setModalOpen(true)}
+      >
+        <CardContent className="p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-red-700">
+                {loadingInad ? <Loader2 className="w-5 h-5 animate-spin inline" /> : porAssociado.length}
+              </p>
+              <p className="text-[10px] font-medium text-red-500 uppercase tracking-wider">
+                Inadimplência +5 dias / Pendentes de Revistoria
+              </p>
+            </div>
+          </div>
+          <span className="text-xs text-red-400">Clique para ver lista →</span>
+        </CardContent>
+      </Card>
+
+      {/* Modal inadimplentes */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
+              Inadimplência +5 dias / Pendentes de Revistoria
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground mb-3">
+            Associados saem desta lista somente quando <strong>revistoria_status = "realizada"</strong>.
+          </p>
+          {loadingInad ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+          ) : porAssociado.length === 0 ? (
+            <p className="text-center py-8 text-sm text-muted-foreground">Nenhum associado inadimplente +5 dias encontrado.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead className="text-center">Boletos Abertos</TableHead>
+                  <TableHead className="text-center">Dias Atraso (máx)</TableHead>
+                  <TableHead>Status Revistoria</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {porAssociado.map(a => {
+                  const maxDias = Math.max(...a.boletos.map(b => diasAtraso(b.vencimento)));
+                  return (
+                    <TableRow key={a.associado_id}>
+                      <TableCell className="font-medium text-sm">{a.nome}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">
+                          {a.boletos.length}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center text-sm font-mono">{maxDias} dias</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={a.revistoria_status === "realizada" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-amber-100 text-amber-700 border-amber-200"}>
+                          {a.revistoria_status === "realizada" ? "✅ Realizada" : "⏳ Pendente"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* ═══ CADASTRO & VEÍCULOS ═══ */}
       <SectionDivider title="Cadastro & Veículos" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {kpisCadastro.map(renderKpi)}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <KpiCard title="Associados Ativos" value={totalAtivos} icon={Users} loading={loadingAtivos} />
+        <KpiCard title="Inadimplentes / Inativos" value={totalInadimpl} icon={AlertTriangle} loading={loadingInadimpl} />
+        <KpiCard title="Veículos Cadastrados" value={totalVeiculos} icon={Car} />
+        <KpiCard title="Sinistros em Aberto" value={sinistrosPend} icon={BarChart3} loading={loadingSinistros} />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <Card className="shadow-none">
@@ -111,8 +303,8 @@ export default function DashboardTab() {
         <Card className="shadow-none">
           <CardHeader className="pb-2 pt-3 px-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold">Fechamento</CardTitle>
-              <span className="text-xs text-muted-foreground">{pctParticipantes}% participando</span>
+              <CardTitle className="text-sm font-semibold">Ativos vs Inativos</CardTitle>
+              <span className="text-xs text-muted-foreground">{pctParticipantes}% ativos</span>
             </div>
           </CardHeader>
           <CardContent className="flex flex-col items-center pb-3">
@@ -129,11 +321,11 @@ export default function DashboardTab() {
             <div className="flex gap-4 mt-1">
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-primary" />
-                <span className="text-xs text-muted-foreground">Participantes ({(1342).toLocaleString("pt-BR")})</span>
+                <span className="text-xs text-muted-foreground">Ativos ({totalAtivos.toLocaleString("pt-BR")})</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Congelados ({89})</span>
+                <span className="text-xs text-muted-foreground">Inativos ({totalInadimpl})</span>
               </div>
             </div>
           </CardContent>
@@ -143,7 +335,9 @@ export default function DashboardTab() {
       {/* ═══ FINANCEIRO ═══ */}
       <SectionDivider title="Financeiro" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {kpisFinanceiro.map(renderKpi)}
+        <KpiCard title="Receita do Mês" value={receitaMes} icon={CheckCircle} loading={loadingReceita} format="currency" />
+        <KpiCard title="Boletos Gerados no Mês" value={boletosMes.gerados} icon={FileText} />
+        <KpiCard title="Boletos Recebidos no Mês" value={boletosMes.recebidos} icon={CalendarCheck} />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <Card className="shadow-none">

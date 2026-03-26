@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { registrarAuditoria } from "@/lib/auditoria";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,7 +36,7 @@ interface Associado {
   nomeConjuge: string; nomePai: string; nomeMae: string;
   regional: string; cooperativa: string; consultorResp: string;
   banco: string; agencia: string; contaCorrente: string; diaVencimento: string;
-  observacoes: string; status: string; plano: string; dataAdesao: string;
+  observacoes: string; status: string; plano: string; dataAdesao: string; revistoria_status?: string;
   veiculos: { placa: string; modelo: string; marca: string; ano: number; cor: string; situacao: string; plano: string }[];
   lancamentos: { data: string; tipo: string; valor: number; status: string; vencimento: string }[];
   documentos: { nome: string; tipo: string; dataUpload: string }[];
@@ -425,6 +426,7 @@ export default function AlterarAssociado() {
   const [page, setPage] = useState(1);
   const [ocModal, setOcModal] = useState(false);
   const [newOc, setNewOc] = useState({ tipo: "", veiculo: "", data: "", descricao: "", valor: "" });
+  const [savingRevistoria, setSavingRevistoria] = useState(false);
 
   const setF = (k: string, v: string) => setFilters(p => ({ ...p, [k]: v }));
 
@@ -490,6 +492,7 @@ export default function AlterarAssociado() {
           contaCorrente: "",
           diaVencimento: "10",
           observacoes: a.observacoes || "",
+          revistoria_status: a.revistoria_status || "pendente",
           status: a.status === "ativo" ? "Ativo" : a.status === "suspenso" ? "Suspenso" : a.status === "cancelado" ? "Cancelado" : (a.status === "inativo" || a.status === "inativo_pendencia") ? "Inadimplente" : "Ativo",
           plano: a.planos?.nome || "",
           dataAdesao: a.data_adesao || "",
@@ -559,6 +562,7 @@ export default function AlterarAssociado() {
       regional: a.regional, cooperativa: a.cooperativa, consultorResp: a.consultorResp,
       banco: a.banco, agencia: a.agencia, contaCorrente: a.contaCorrente,
       diaVencimento: a.diaVencimento, observacoes: a.observacoes, status: a.status, plano: a.plano,
+      revistoria_status: a.revistoria_status || "pendente",
     });
   };
 
@@ -596,6 +600,39 @@ export default function AlterarAssociado() {
       toast.error(err.message || "Erro ao salvar alterações");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRevistoria = async (novoStatus: "realizada" | "pendente") => {
+    if (!selected) return;
+    const isRealId = selected.id.includes("-") && selected.id.length > 10;
+    if (!isRealId) {
+      toast.error("Operação disponível apenas para associados reais (banco de dados).");
+      return;
+    }
+    setSavingRevistoria(true);
+    try {
+      const valorAntigo = editForm.revistoria_status || "pendente";
+      const { error } = await supabase
+        .from("associados")
+        .update({ revistoria_status: novoStatus } as any)
+        .eq("id", selected.id);
+      if (error) throw error;
+      setE("revistoria_status", novoStatus);
+      await registrarAuditoria(supabase, {
+        entidade: "associados",
+        entidade_id: selected.id,
+        associado_id: selected.id,
+        campo_alterado: "revistoria_status",
+        valor_antigo: valorAntigo,
+        valor_novo: novoStatus,
+        origem_modulo: "gestao_associado",
+      });
+      toast.success(novoStatus === "realizada" ? "Revistoria marcada como realizada!" : "Revistoria marcada como pendente!");
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao atualizar revistoria");
+    } finally {
+      setSavingRevistoria(false);
     }
   };
 
@@ -907,9 +944,38 @@ export default function AlterarAssociado() {
               <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30">
                 <div className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">Dados Complementares</span></div>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4 pt-2">
-                <Label className="text-xs">Observações</Label>
-                <Textarea value={editForm.observacoes||""} onChange={e => setE("observacoes", e.target.value)} rows={3} />
+              <AccordionContent className="px-4 pb-4 pt-2 space-y-4">
+                <div>
+                  <Label className="text-xs">Observações</Label>
+                  <Textarea value={editForm.observacoes||""} onChange={e => setE("observacoes", e.target.value)} rows={3} />
+                </div>
+                <div>
+                  <Label className="text-xs mb-2 block">Status de Revistoria</Label>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-sm font-medium px-3 py-1 rounded-full border ${editForm.revistoria_status === "realizada" ? "bg-emerald-100 text-emerald-700 border-emerald-300" : "bg-amber-100 text-amber-700 border-amber-300"}`}>
+                      {editForm.revistoria_status === "realizada" ? "✅ Realizada" : "⏳ Pendente"}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={savingRevistoria || editForm.revistoria_status === "realizada"}
+                      onClick={() => handleRevistoria("realizada")}
+                      className="gap-1.5 text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                    >
+                      {savingRevistoria ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                      ✅ Marcar Revistoria Feita
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={savingRevistoria || editForm.revistoria_status === "pendente"}
+                      onClick={() => handleRevistoria("pendente")}
+                      className="gap-1.5 text-amber-700 border-amber-300 hover:bg-amber-50"
+                    >
+                      ⏳ Marcar Pendente
+                    </Button>
+                  </div>
+                </div>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
