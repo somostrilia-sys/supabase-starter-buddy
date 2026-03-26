@@ -1,73 +1,54 @@
-# Welcome to your Lovable project
+# supabase-starter-buddy
 
-## Project info
+Template Supabase reutilizável para projetos do Grupo WALK.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Como usar
 
-## How can I edit this code?
+1. Clone este repo
+2. Copie `.env.example` para `.env` e preencha suas credenciais
+3. Execute `scripts/setup.sh` para aplicar as migrations
+4. Configure seu projeto Supabase conforme necessário
 
-There are several ways of editing your application.
+## Estrutura
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+supabase-starter-buddy/
+├── README.md
+├── supabase/
+│   ├── migrations/
+│   │   ├── 00001_init.sql       # Schema base GIA
+│   │   └── 00002_rls_policies.sql
+│   └── functions/
+│       └── health-check/
+│           └── index.ts
+├── .env.example
+└── scripts/
+    └── setup.sh
 ```
 
-**Edit a file directly in GitHub**
+## Projetos usando este template
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- **GIA** (Gestão Integrada de Associações) — CRM da Objetivo Auto Benefícios
+  - Ref: `dxuoppekxgvdqnytftho`
+  - URL: https://dxuoppekxgvdqnytftho.supabase.co
 
-**Use GitHub Codespaces**
+## Módulos GIA
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. Dashboard / Home
+2. Cadastro de Associados + Veículos
+3. Pipeline Comercial
+4. Cotação (com integração FIPE)
+5. Vistorias (com fotos por parte do veículo)
+6. Minha Empresa + Módulo de Usuários (4 grupos de permissão)
+7. Relatório de Boletos
+8. Atividades
+9. Produtos e Benefícios
 
-## What technologies are used for this project?
+## Grupos de permissão
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+| Grupo | Descrição |
+|-------|-----------|
+| admin | Acesso total |
+| gerente | Acesso operacional + relatórios |
+| operacional | Cadastros e operações |
+| consultor | Somente leitura |
