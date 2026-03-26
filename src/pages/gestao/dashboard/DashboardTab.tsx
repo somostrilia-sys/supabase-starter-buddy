@@ -155,6 +155,16 @@ export default function DashboardTab() {
     },
   });
 
+  const { data: vistoriasPend = 0, isLoading: loadingVistoria } = useQuery({
+    queryKey: ["kpi_vistorias_pendentes"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("vistorias").select("id", { count: "exact", head: true }).eq("status", "pendente");
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
   const { data: boletosMes = { gerados: 0, recebidos: 0 } } = useQuery({
     queryKey: ["kpi_boletos_mes", mesAtual],
     queryFn: async () => {
@@ -274,9 +284,10 @@ export default function DashboardTab() {
 
       {/* ═══ CADASTRO & VEÍCULOS ═══ */}
       <SectionDivider title="Cadastro & Veículos" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <KpiCard title="Associados Ativos" value={totalAtivos} icon={Users} loading={loadingAtivos} />
         <KpiCard title="Inadimplentes / Inativos" value={totalInadimpl} icon={AlertTriangle} loading={loadingInadimpl} />
+        <KpiCard title="Vistorias Pendentes" value={vistoriasPend} icon={CalendarCheck} loading={loadingVistoria} />
         <KpiCard title="Veículos Cadastrados" value={totalVeiculos} icon={Car} />
         <KpiCard title="Sinistros em Aberto" value={sinistrosPend} icon={BarChart3} loading={loadingSinistros} />
       </div>

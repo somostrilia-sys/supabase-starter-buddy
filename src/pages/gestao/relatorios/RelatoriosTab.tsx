@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import RelatoriosGeraisTab from "./RelatoriosGeraisTab";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -131,9 +133,9 @@ function ReportActionBar({
         {loading === "print" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
         Imprimir
       </Button>
-      <Button variant="outline" onClick={() => handleAction("excel", () => { onExport(); toast.success("Excel exportado"); })} disabled={loading === "excel"}>
+      <Button variant="outline" onClick={() => handleAction("excel", () => { onExport(); toast.success("CSV exportado"); })} disabled={loading === "excel"}>
         {loading === "excel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
-        Excel
+        Exportar CSV
       </Button>
       <Button variant="outline" onClick={() => handleAction("pdf", () => toast.success("PDF gerado"))} disabled={loading === "pdf"}>
         {loading === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
