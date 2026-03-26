@@ -1,5 +1,5 @@
 -- Migration 00002: RLS Policies
--- Habilitar Row Level Security em todas as tabelas
+-- Habilita Row Level Security e cria políticas básicas para usuários autenticados
 
 ALTER TABLE associados ENABLE ROW LEVEL SECURITY;
 ALTER TABLE veiculos ENABLE ROW LEVEL SECURITY;
@@ -12,7 +12,7 @@ ALTER TABLE boletos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE atividades ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_configs ENABLE ROW LEVEL SECURITY;
 
--- Políticas básicas: authenticated pode tudo (refinar por grupo depois)
+-- Políticas básicas (authenticated pode tudo)
 CREATE POLICY "authenticated_all_associados" ON associados FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "authenticated_all_veiculos" ON veiculos FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "authenticated_all_pipeline" ON pipeline FOR ALL TO authenticated USING (true) WITH CHECK (true);
