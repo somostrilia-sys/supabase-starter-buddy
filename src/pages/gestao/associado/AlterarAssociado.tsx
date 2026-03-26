@@ -13,11 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Search, User, Car, DollarSign, FileText, Clock, AlertTriangle,
   Eye, Pencil, History, ArrowLeft, Save, Upload, Trash2, Plus,
   Download, ChevronLeft, ChevronRight, X, MapPin, Phone, Mail,
-  Heart, KeyRound, Landmark, GraduationCap,
+  Heart, KeyRound, Landmark, GraduationCap, Loader2,
 } from "lucide-react";
 
 // ─── Mock Data ───
@@ -416,6 +417,8 @@ export default function AlterarAssociado() {
   const [filters, setFilters] = useState({ cpf: "", nome: "", placa: "", situacao: "Todos", regional: "Todos", cooperativa: "Todos" });
   const [results, setResults] = useState<Associado[]>([]);
   const [searched, setSearched] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState<Associado | null>(null);
   const [editForm, setEditForm] = useState<Record<string, string>>({});
   const [perPage, setPerPage] = useState(10);
@@ -425,15 +428,107 @@ export default function AlterarAssociado() {
 
   const setF = (k: string, v: string) => setFilters(p => ({ ...p, [k]: v }));
 
-  const buscar = () => {
-    let r = [...mockAssociados];
-    if (filters.cpf) r = r.filter(a => a.cpf.replace(/\D/g, "").includes(filters.cpf.replace(/\D/g, "")));
-    if (filters.nome) r = r.filter(a => a.nome.toLowerCase().includes(filters.nome.toLowerCase()));
-    if (filters.placa) r = r.filter(a => a.veiculos.some(v => v.placa.toLowerCase().replace("-","").includes(filters.placa.toLowerCase().replace("-",""))));
-    if (filters.situacao !== "Todos") r = r.filter(a => a.status === filters.situacao);
-    if (filters.regional !== "Todos") r = r.filter(a => a.regional === filters.regional);
-    if (filters.cooperativa !== "Todos") r = r.filter(a => a.cooperativa === filters.cooperativa);
-    setResults(r);
+  const buscar = async () => {
+    setSearching(true);
+    try {
+      let query = supabase
+        .from("associados")
+        .select("*, planos(*), veiculos(*), mensalidades(*)")
+        .order("nome")
+        .limit(50);
+
+      if (filters.cpf) query = query.ilike("cpf", `%${filters.cpf.replace(/\D/g, "")}%`);
+      if (filters.nome) query = query.ilike("nome", `%${filters.nome}%`);
+      if (filters.situacao !== "Todos") query = query.eq("status", filters.situacao.toLowerCase() as any);
+
+      const { data: supabaseData, error } = await query;
+
+      if (error) throw error;
+
+      if (supabaseData && supabaseData.length > 0) {
+        // Map Supabase data to Associado format
+        const mapped: Associado[] = supabaseData.map((a: any) => ({
+          id: a.id,
+          codigo: a.id.slice(0, 6).toUpperCase(),
+          nome: a.nome,
+          cpf: a.cpf,
+          rg: "",
+          dataNasc: a.data_nascimento || "",
+          sexo: "",
+          estadoCivil: "",
+          profissao: "",
+          cnh: "",
+          categoriaCnh: "",
+          escolaridade: "",
+          celular: a.telefone || "",
+          telResidencial: "",
+          telComercial: "",
+          email: a.email || "",
+          emailAux: "",
+          contato: "",
+          cep: a.cep || "",
+          logradouro: a.endereco || "",
+          numero: "",
+          complemento: "",
+          bairro: "",
+          cidade: a.cidade || "",
+          estado: a.estado || "",
+          nomeConjuge: "",
+          nomePai: "",
+          nomeMae: "",
+          regional: "",
+          cooperativa: "",
+          consultorResp: "",
+          banco: "",
+          agencia: "",
+          contaCorrente: "",
+          diaVencimento: "10",
+          observacoes: a.observacoes || "",
+          status: a.status === "ativo" ? "Ativo" : a.status === "inativo" ? "Inativo" : a.status === "suspenso" ? "Suspenso" : "Ativo",
+          plano: a.planos?.nome || "",
+          dataAdesao: a.data_adesao || "",
+          veiculos: (a.veiculos || []).map((v: any) => ({
+            placa: v.placa,
+            modelo: v.modelo,
+            marca: v.marca,
+            ano: v.ano || 0,
+            cor: v.cor || "",
+            situacao: "Ativo",
+            plano: a.planos?.nome || "",
+          })),
+          lancamentos: (a.mensalidades || []).map((m: any) => ({
+            data: m.created_at?.split("T")[0] || m.data_vencimento,
+            tipo: "Mensalidade",
+            valor: m.valor,
+            status: m.status === "pago" ? "Pago" : m.status === "atrasado" ? "Atrasado" : "Pendente",
+            vencimento: m.data_vencimento,
+          })),
+          documentos: [],
+          historico: [],
+          ocorrencias: [],
+        }));
+        setResults(mapped);
+      } else {
+        // Fallback to mock data
+        let r = [...mockAssociados];
+        if (filters.cpf) r = r.filter(a => a.cpf.replace(/\D/g, "").includes(filters.cpf.replace(/\D/g, "")));
+        if (filters.nome) r = r.filter(a => a.nome.toLowerCase().includes(filters.nome.toLowerCase()));
+        if (filters.placa) r = r.filter(a => a.veiculos.some(v => v.placa.toLowerCase().replace("-","").includes(filters.placa.toLowerCase().replace("-",""))));
+        if (filters.situacao !== "Todos") r = r.filter(a => a.status === filters.situacao);
+        if (filters.regional !== "Todos") r = r.filter(a => a.regional === filters.regional);
+        if (filters.cooperativa !== "Todos") r = r.filter(a => a.cooperativa === filters.cooperativa);
+        setResults(r);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao buscar associados");
+      // fallback to mock
+      let r = [...mockAssociados];
+      if (filters.cpf) r = r.filter(a => a.cpf.replace(/\D/g, "").includes(filters.cpf.replace(/\D/g, "")));
+      if (filters.nome) r = r.filter(a => a.nome.toLowerCase().includes(filters.nome.toLowerCase()));
+      setResults(r);
+    } finally {
+      setSearching(false);
+    }
     setSearched(true);
     setPage(1);
   };
@@ -462,8 +557,34 @@ export default function AlterarAssociado() {
 
   const setE = (k: string, v: string) => setEditForm(p => ({ ...p, [k]: v }));
 
-  const handleSave = () => {
-    toast.success("Alterações salvas com sucesso!", { description: `${editForm.nome} - Histórico registrado automaticamente.` });
+  const handleSave = async () => {
+    if (!selected) return;
+    setSaving(true);
+    try {
+      // Only attempt Supabase save if it looks like a real UUID
+      const isRealId = selected.id.includes("-") && selected.id.length > 10;
+      if (isRealId) {
+        const { error } = await supabase
+          .from("associados")
+          .update({
+            nome: editForm.nome,
+            telefone: editForm.celular || null,
+            email: editForm.email || null,
+            endereco: editForm.logradouro || null,
+            cidade: editForm.cidade || null,
+            estado: editForm.estado || null,
+            cep: editForm.cep || null,
+            observacoes: editForm.observacoes || null,
+          })
+          .eq("id", selected.id);
+        if (error) throw error;
+      }
+      toast.success("Alterações salvas com sucesso!", { description: `${editForm.nome} - Histórico registrado automaticamente.` });
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao salvar alterações");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const paged = results.slice((page - 1) * perPage, page * perPage);
@@ -512,7 +633,10 @@ export default function AlterarAssociado() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button onClick={buscar} className="gap-1.5"><Search className="h-4 w-4" />Buscar</Button>
+              <Button onClick={buscar} disabled={searching} className="gap-1.5">
+                {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                {searching ? "Buscando..." : "Buscar"}
+              </Button>
               <Button variant="outline" onClick={limpar}>Limpar Filtros</Button>
             </div>
           </CardContent>
@@ -779,7 +903,10 @@ export default function AlterarAssociado() {
           </Accordion>
 
           <div className="flex justify-end mt-4">
-            <Button onClick={handleSave} className="gap-1.5"><Save className="h-4 w-4" />Salvar Alterações</Button>
+            <Button onClick={handleSave} disabled={saving} className="gap-1.5">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {saving ? "Salvando..." : "Salvar Alterações"}
+            </Button>
           </div>
         </TabsContent>
 

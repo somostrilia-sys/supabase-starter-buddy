@@ -12,8 +12,39 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Play, FileText, XCircle, Eye, Loader2 } from "lucide-react";
 import { mockBoletos, cooperativas, regionais, statusColors, type StatusBoleto } from "./mockFinanceiro";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function BoletosSimulacao({ onBack }: { onBack: () => void }) {
+  const queryClient = useQueryClient();
+  const { data: mensalidades } = useQuery({
+    queryKey: ["mensalidades"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("mensalidades")
+        .select("*, associados(nome, cpf)")
+        .order("data_vencimento", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const marcarPago = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("mensalidades")
+        .update({ status: "pago", data_pagamento: new Date().toISOString().split("T")[0] })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["mensalidades"] });
+      toast.success("Mensalidade marcada como paga!");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const [filtroCooperativa, setFiltroCooperativa] = useState("todas");
   const [filtroRegional, setFiltroRegional] = useState("todas");
   const [filtroStatus, setFiltroStatus] = useState("todos");
@@ -61,6 +92,63 @@ export default function BoletosSimulacao({ onBack }: { onBack: () => void }) {
           <p className="text-sm text-muted-foreground">Simulação, geração e gestão de lotes de boletos</p>
         </div>
       </div>
+
+      {/* Real mensalidades from Supabase */}
+      {mensalidades && mensalidades.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">Mensalidades — Dados Reais</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Associado</TableHead>
+                  <TableHead className="text-xs">Vencimento</TableHead>
+                  <TableHead className="text-xs">Valor</TableHead>
+                  <TableHead className="text-xs">Referência</TableHead>
+                  <TableHead className="text-xs">Status</TableHead>
+                  <TableHead className="text-xs">Ação</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mensalidades.map(m => (
+                  <TableRow key={m.id}>
+                    <TableCell className="text-xs">
+                      <div>{(m.associados as any)?.nome || "-"}</div>
+                      <span className="text-muted-foreground font-mono text-[10px]">{(m.associados as any)?.cpf || ""}</span>
+                    </TableCell>
+                    <TableCell className="text-xs">{new Date(m.data_vencimento + "T00:00:00").toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell className="text-xs font-medium">R$ {m.valor.toFixed(2).replace(".", ",")}</TableCell>
+                    <TableCell className="text-xs">{m.referencia || "-"}</TableCell>
+                    <TableCell>
+                      <Badge className={`text-[10px] ${
+                        m.status === "pago" ? "bg-green-100 text-green-800" :
+                        m.status === "atrasado" ? "bg-red-100 text-red-800" :
+                        m.status === "cancelado" ? "bg-gray-100 text-gray-800" :
+                        "bg-amber-100 text-amber-800"
+                      }`}>{m.status}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {(m.status === "pendente" || m.status === "atrasado") && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={() => marcarPago.mutate(m.id)}
+                          disabled={marcarPago.isPending}
+                        >
+                          {marcarPago.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Marcar Pago"}
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Ações rápidas */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">

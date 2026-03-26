@@ -181,6 +181,7 @@ const categoriasMap: Record<string, CategoriaVeiculo> = {
 const initialForm = {
   classificacao: "", tipoAdesao: "", chassi: "", placa: "", zeroKm: false, renavam: "",
   cilindrada: "", modelo: "", montadora: "", anoFab: "", anoMod: "", tipo: "", categoria: "",
+  categoria_uso: "", classificacao_uso: "",
   codFipe: "", depreciacao: "", valorFipe: "", valorProtegido: "", pctFipe: "",
   cota: "", codAvaliacao: "", tabelaAvaliacao: "", combustivel: "", cor: "",
   nMotor: "", km: "", cambio: "", nPassageiros: "", nPortas: "", alienado: "",
@@ -376,6 +377,8 @@ export default function CadastrarVeiculo() {
     if (!form.placa && !form.zeroKm) return toast.error("Placa é obrigatória");
     if (!form.modelo) return toast.error("Modelo é obrigatório");
     if (!form.montadora) return toast.error("Montadora é obrigatória");
+    if (!form.categoria_uso) return toast.error("Categoria de uso é obrigatória");
+    if (!form.classificacao_uso) return toast.error("Classificação de uso é obrigatória");
 
     setSavingVeiculo(true);
     try {
@@ -392,7 +395,9 @@ export default function CadastrarVeiculo() {
         ano: anoNum,
         cor: form.cor || null,
         valor_fipe: valorFipeNum,
-      }).select("id").single();
+        categoria_uso: form.categoria_uso || null,
+        classificacao_uso: form.classificacao_uso || null,
+      } as any).select("id").single();
       if (error) throw error;
 
       // Upload pending files
@@ -680,6 +685,24 @@ export default function CadastrarVeiculo() {
               <div><Label className="text-xs">Nº Portas</Label>
                 <Select value={form.nPortas} onValueChange={v => set("nPortas", v)}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>{["2","3","4","5"].map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}</SelectContent></Select>
+              </div>
+              <div className="col-span-1">
+                <Label className="text-xs">Categoria de Uso *</Label>
+                <Select value={form.categoria_uso} onValueChange={v => set("categoria_uso", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {["Passeio","Trabalho","Aluguel","Frota","Uso do Associado"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-1">
+                <Label className="text-xs">Classificação de Uso *</Label>
+                <Select value={form.classificacao_uso} onValueChange={v => set("classificacao_uso", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {["Rastreador Sim","Rastreador Não"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <SelectWithAdd label="Alienado" value={form.alienado} onValueChange={v => set("alienado", v)} options={["Nenhum","Bradesco","Itaú","Santander","BV","Pan"]} />
               <div><Label className="text-xs">Valor Adesão (R$)</Label><Input value={form.valorAdesao} onChange={e => set("valorAdesao", e.target.value)} placeholder="0,00" /></div>

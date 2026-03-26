@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          acao: string
+          created_at: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          id: string
+          registro_id: string | null
+          tabela: string
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          registro_id?: string | null
+          tabela: string
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          registro_id?: string | null
+          tabela?: string
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
       associados: {
         Row: {
           cep: string | null
@@ -138,6 +171,70 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      contratos: {
+        Row: {
+          associado_id: string
+          created_at: string
+          data_fim: string | null
+          data_inicio: string
+          id: string
+          numero: string
+          plano_id: string | null
+          status: string
+          updated_at: string
+          valor_mensal: number
+          veiculo_id: string | null
+        }
+        Insert: {
+          associado_id: string
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string
+          id?: string
+          numero: string
+          plano_id?: string | null
+          status?: string
+          updated_at?: string
+          valor_mensal?: number
+          veiculo_id?: string | null
+        }
+        Update: {
+          associado_id?: string
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string
+          id?: string
+          numero?: string
+          plano_id?: string | null
+          status?: string
+          updated_at?: string
+          valor_mensal?: number
+          veiculo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_associado_id_fkey"
+            columns: ["associado_id"]
+            isOneToOne: false
+            referencedRelation: "associados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deal_activities: {
         Row: {
@@ -323,6 +420,86 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lead_atividades: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          lead_id: string
+          tipo: string
+          usuario_nome: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          id?: string
+          lead_id: string
+          tipo?: string
+          usuario_nome?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          lead_id?: string
+          tipo?: string
+          usuario_nome?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_atividades_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          consultor_nome: string | null
+          cpf: string | null
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          plano_interesse: string | null
+          status: string
+          telefone: string
+          updated_at: string
+          veiculo_interesse: string | null
+        }
+        Insert: {
+          consultor_nome?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          plano_interesse?: string | null
+          status?: string
+          telefone: string
+          updated_at?: string
+          veiculo_interesse?: string | null
+        }
+        Update: {
+          consultor_nome?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          plano_interesse?: string | null
+          status?: string
+          telefone?: string
+          updated_at?: string
+          veiculo_interesse?: string | null
+        }
+        Relationships: []
       }
       lead_forms: {
         Row: {
@@ -513,6 +690,7 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          role: string
           updated_at: string
           user_id: string
         }
@@ -522,6 +700,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          role?: string
           updated_at?: string
           user_id: string
         }
@@ -531,6 +710,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          role?: string
           updated_at?: string
           user_id?: string
         }
@@ -714,11 +894,46 @@ export type Database = {
           },
         ]
       }
+      vistorias: {
+        Row: {
+          associado_id: string | null
+          contrato_id: string | null
+          created_at: string
+          id: string
+          observacoes: string | null
+          status: string
+          updated_at: string
+          veiculo_id: string | null
+        }
+        Insert: {
+          associado_id?: string | null
+          contrato_id?: string | null
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          veiculo_id?: string | null
+        }
+        Update: {
+          associado_id?: string | null
+          contrato_id?: string | null
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          veiculo_id?: string | null
+        }
+        Relationships: []
+      }
       veiculos: {
         Row: {
           ano: number | null
           associado_id: string
+          categoria_uso: string | null
           chassi: string | null
+          classificacao_uso: string | null
           cor: string | null
           created_at: string
           id: string
@@ -732,7 +947,9 @@ export type Database = {
         Insert: {
           ano?: number | null
           associado_id: string
+          categoria_uso?: string | null
           chassi?: string | null
+          classificacao_uso?: string | null
           cor?: string | null
           created_at?: string
           id?: string
@@ -746,7 +963,9 @@ export type Database = {
         Update: {
           ano?: number | null
           associado_id?: string
+          categoria_uso?: string | null
           chassi?: string | null
+          classificacao_uso?: string | null
           cor?: string | null
           created_at?: string
           id?: string

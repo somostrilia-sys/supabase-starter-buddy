@@ -22,6 +22,11 @@ import {
   consultores, gerentes, cooperativas, regionais, planos,
 } from "./pipeline/mockData";
 import DealDetailModal from "./pipeline/DealDetailModal";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { usePermission } from "@/hooks/usePermission";
+import ConcretizarVendaModal from "./ConcretizarVendaModal";
 
 function daysStalled(updated: string) {
   return Math.floor((Date.now() - new Date(updated).getTime()) / 86400000);
@@ -36,7 +41,9 @@ function StalledBadge({ days }: { days: number }) {
 type SortKey = "id" | "lead_nome" | "veiculo_modelo" | "plano" | "stage" | "consultor" | "cooperativa" | "regional" | "created_at" | "updated_at";
 
 export default function Pipeline() {
-  const [deals, setDeals] = useState<PipelineDeal[]>(mockDeals);
+  const { canLiberarCadastro, canConcretizarVenda } = usePermission();
+  const queryClient = useQueryClient();
+  const [concretizarDeal, setConcretizarDeal] = useState<PipelineDeal | null>(null);
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [newDealOpen, setNewDealOpen] = useState(false);
   const [detailDeal, setDetailDeal] = useState<PipelineDeal | null>(null);
@@ -62,14 +69,88 @@ export default function Pipeline() {
   const [form, setForm] = useState({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
   const [formTouched, setFormTouched] = useState({ lead_nome: false, telefone: false });
 
-  // Drag state
+  // Drag state (for mock fallback)
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
+  const [localDeals, setLocalDeals] = useState<PipelineDeal[]>(mockDeals);
+
+  // Supabase leads query
+  const { data: leadsData } = useQuery({
+    queryKey: ["leads"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
+      if (error) return [];
+      return data || [];
+    },
+  });
+
+  const updateLeadStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      if (id.startsWith("p")) return;
+      const { error } = await supabase.from("leads").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["leads"] }),
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const createLead = useMutation({
+    mutationFn: async (data: typeof form) => {
+      const { error } = await supabase.from("leads").insert({
+        nome: data.lead_nome,
+        telefone: data.telefone,
+        email: data.email || null,
+        cpf: data.cpf_cnpj || null,
+        veiculo_interesse: data.modelo || null,
+        plano_interesse: data.plano || null,
+        consultor_nome: data.consultor || null,
+        observacoes: data.observacoes || null,
+        status: "novo_lead",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      setNewDealOpen(false);
+      toast.success("Lead criado com sucesso!");
+      setForm({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
+      setFormTouched({ lead_nome: false, telefone: false });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  // Map leads data or use mock
+  const dealsToShow: PipelineDeal[] = leadsData && leadsData.length > 0
+    ? leadsData.map(l => ({
+        id: l.id,
+        codigo: `NEG-${new Date(l.created_at).getFullYear()}-${l.id.slice(-3).toUpperCase()}`,
+        lead_nome: l.nome,
+        cpf_cnpj: l.cpf || "",
+        telefone: l.telefone,
+        email: l.email || "",
+        veiculo_modelo: l.veiculo_interesse || "",
+        veiculo_placa: "",
+        plano: l.plano_interesse || "",
+        valor_plano: 0,
+        stage: (l.status as PipelineStage) || "novo_lead",
+        consultor: l.consultor_nome || "",
+        cooperativa: "",
+        regional: "",
+        gerente: "",
+        origem: "Manual",
+        observacoes: l.observacoes || "",
+        enviado_sga: false,
+        visualizacoes_proposta: 0,
+        status_icons: { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false },
+        created_at: l.created_at,
+        updated_at: l.updated_at,
+      }))
+    : localDeals;
 
   const activeFilterCount = [fConsultor !== "all", fGerente !== "all", fCoop !== "all", fRegional !== "all", fEtapa !== "all", !!fDateStart, !!fDateEnd].filter(Boolean).length;
 
   const filtered = useMemo(() => {
-    return deals.filter(d => {
+    return dealsToShow.filter(d => {
       if (fConsultor !== "all" && d.consultor !== fConsultor) return false;
       if (fGerente !== "all" && d.gerente !== fGerente) return false;
       if (fCoop !== "all" && d.cooperativa !== fCoop) return false;
@@ -80,7 +161,7 @@ export default function Pipeline() {
       if (fDateEnd && dateField > fDateEnd + "T23:59:59") return false;
       return true;
     });
-  }, [deals, fConsultor, fGerente, fCoop, fRegional, fEtapa, fDateStart, fDateEnd, fDateType]);
+  }, [dealsToShow, fConsultor, fGerente, fCoop, fRegional, fEtapa, fDateStart, fDateEnd, fDateType]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -107,9 +188,24 @@ export default function Pipeline() {
 
   function handleDragStart(e: React.DragEvent, id: string) { setDraggedId(id); e.dataTransfer.effectAllowed = "move"; }
   function handleDragOver(e: React.DragEvent, stage: PipelineStage) { e.preventDefault(); setDragOverStage(stage); }
-  function handleDrop(stage: PipelineStage) {
-    if (draggedId) setDeals(prev => prev.map(d => d.id === draggedId ? { ...d, stage, updated_at: new Date().toISOString() } : d));
+  async function handleDrop(stage: PipelineStage) {
+    if (draggedId) {
+      if (draggedId.startsWith("p")) {
+        setLocalDeals(prev => prev.map(d => d.id === draggedId ? { ...d, stage, updated_at: new Date().toISOString() } : d));
+      } else {
+        await updateLeadStatus.mutateAsync({ id: draggedId, status: stage });
+      }
+    }
     setDraggedId(null); setDragOverStage(null);
+  }
+
+  async function handleLiberarCadastro(deal: PipelineDeal) {
+    if (!deal.id.startsWith("p")) {
+      await updateLeadStatus.mutateAsync({ id: deal.id, status: "liberado_cadastro" });
+    } else {
+      setLocalDeals(prev => prev.map(d => d.id === deal.id ? { ...d, stage: "liberado_cadastro" } : d));
+    }
+    toast.success("Lead liberado para cadastro!");
   }
 
   const formNomeInvalid = formTouched.lead_nome && !form.lead_nome.trim();
@@ -119,19 +215,7 @@ export default function Pipeline() {
   function handleNewDeal() {
     setFormTouched({ lead_nome: true, telefone: true });
     if (!canCreateDeal) return;
-    const newDeal: PipelineDeal = {
-      id: `p${Date.now()}`, codigo: `NEG-2026-${String(Date.now()).slice(-3)}`, lead_nome: form.lead_nome.trim(), cpf_cnpj: form.cpf_cnpj, telefone: form.telefone.trim(), email: form.email,
-      veiculo_modelo: form.modelo, veiculo_placa: form.placa, plano: form.plano || "Básico", valor_plano: 149.90, stage: "cotacoes_recebidas",
-      consultor: form.consultor || consultores[0], cooperativa: form.cooperativa || cooperativas[0], regional: form.regional || regionais[0],
-      gerente: gerentes[0], origem: "Manual", observacoes: form.observacoes, enviado_sga: false, visualizacoes_proposta: 0,
-
-      status_icons: { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false },
-      created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-    };
-    setDeals(prev => [newDeal, ...prev]);
-    setNewDealOpen(false);
-    setForm({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
-    setFormTouched({ lead_nome: false, telefone: false });
+    createLead.mutate(form);
   }
 
   const stageLabel = (s: PipelineStage) => stageColumns.find(c => c.key === s)?.label || s;
@@ -256,6 +340,16 @@ export default function Pipeline() {
                                   <DropdownMenuItem><ArrowRight className="h-3.5 w-3.5 mr-2" />Mover Etapa</DropdownMenuItem>
                                   <DropdownMenuItem><User className="h-3.5 w-3.5 mr-2" />Transferir Consultor</DropdownMenuItem>
                                   <DropdownMenuItem><Archive className="h-3.5 w-3.5 mr-2" />Arquivar</DropdownMenuItem>
+                                  {canLiberarCadastro && deal.stage !== "liberado_cadastro" && deal.stage !== "concluido" && deal.stage !== "perdido" && (
+                                    <DropdownMenuItem onClick={e => { e.stopPropagation(); handleLiberarCadastro(deal); }}>
+                                      <CheckCircle className="h-3.5 w-3.5 mr-2 text-green-600" />Liberar p/ Cadastro
+                                    </DropdownMenuItem>
+                                  )}
+                                  {canConcretizarVenda && (deal.stage === "liberado_cadastro" || deal.stage === "concluido") && (
+                                    <DropdownMenuItem onClick={e => { e.stopPropagation(); setConcretizarDeal(deal); }}>
+                                      <DollarSign className="h-3.5 w-3.5 mr-2 text-green-600" />Concretizar Venda
+                                    </DropdownMenuItem>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>
@@ -294,7 +388,7 @@ export default function Pipeline() {
                               <StalledBadge days={days} />
                             </div>
 
-                            {/* Footer: Consultor (responsável comercial) */}
+                            {/* Footer: Consultor */}
                             <div className="flex items-center justify-end gap-1.5 pt-0.5 border-t border-muted/40 mt-1">
                               <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                                 <span className="text-[9px] font-bold text-primary">{deal.consultor.charAt(0)}</span>
@@ -458,7 +552,9 @@ export default function Pipeline() {
             <div className="space-y-1.5"><Label>Observações</Label><Textarea value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} rows={3} /></div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => { setNewDealOpen(false); setFormTouched({ lead_nome: false, telefone: false }); }}>Cancelar</Button>
-              <Button onClick={handleNewDeal} disabled={!canCreateDeal}>Criar Negociação</Button>
+              <Button onClick={handleNewDeal} disabled={!canCreateDeal || createLead.isPending}>
+                {createLead.isPending ? "Criando..." : "Criar Negociação"}
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -467,6 +563,17 @@ export default function Pipeline() {
       {/* Deal detail modal */}
       {detailDeal && (
         <DealDetailModal deal={detailDeal} open={!!detailDeal} onOpenChange={o => { if (!o) setDetailDeal(null); }} />
+      )}
+
+      {/* Concretizar Venda Modal */}
+      {concretizarDeal && (
+        <ConcretizarVendaModal
+          open={!!concretizarDeal}
+          onOpenChange={o => { if (!o) setConcretizarDeal(null); }}
+          leadNome={concretizarDeal.lead_nome}
+          leadTelefone={concretizarDeal.telefone}
+          onSuccess={() => setConcretizarDeal(null)}
+        />
       )}
     </div>
   );
