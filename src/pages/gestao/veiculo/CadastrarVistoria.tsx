@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import {
   ClipboardCheck, Search, Plus, X, Eraser, Save, Upload, Car, FileText, Trash2, Check,
 } from "lucide-react";
-import { mockVeiculos, type MockVeiculo } from "./mockVeiculos";
+import { supabase } from "@/integrations/supabase/client";
 
 const SelectWithAdd = ({ label, value, onValueChange, options, placeholder }: {
   label: string; value: string; onValueChange: (v: string) => void;
@@ -56,11 +56,23 @@ const acessoriosItems = [
   "Farol de milha", "Teto solar", "GPS integrado",
 ];
 
+interface VeiculoDB {
+  id: string;
+  placa: string;
+  chassi: string | null;
+  marca: string;
+  modelo: string;
+  associado_id: string | null;
+  associados: { nome: string } | null;
+}
+
 export default function CadastrarVistoria() {
   const [searchPlaca, setSearchPlaca] = useState("");
   const [searchChassi, setSearchChassi] = useState("");
   const [zeroKm, setZeroKm] = useState(false);
-  const [selectedVeic, setSelectedVeic] = useState<MockVeiculo | null>(null);
+  const [selectedVeic, setSelectedVeic] = useState<VeiculoDB | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [searchingVeic, setSearchingVeic] = useState(false);
 
   const [form, setForm] = useState({
     tipo: "", data: new Date().toISOString().split("T")[0], vistoriador: "",
@@ -78,19 +90,50 @@ export default function CadastrarVistoria() {
 
   const set = (f: string, v: string) => setForm(p => ({ ...p, [f]: v }));
 
-  const buscarVeiculo = () => {
-    const found = mockVeiculos.find(v =>
-      (searchPlaca && v.placa.toLowerCase().replace("-", "").includes(searchPlaca.toLowerCase().replace("-", ""))) ||
-      (searchChassi && v.chassi.toLowerCase().includes(searchChassi.toLowerCase()))
-    );
-    if (found) { setSelectedVeic(found); toast.success("Veículo encontrado!"); }
-    else toast.error("Veículo não encontrado.");
+  const buscarVeiculo = async () => {
+    if (!searchPlaca && !searchChassi) return toast.error("Informe placa ou chassi");
+    setSearchingVeic(true);
+    try {
+      let q = supabase
+        .from("veiculos")
+        .select("id, placa, chassi, marca, modelo, associado_id, associados(nome)")
+        .limit(1);
+      if (searchPlaca) q = q.ilike("placa", `%${searchPlaca.replace("-", "")}%`);
+      else q = q.ilike("chassi", `%${searchChassi}%`);
+      const { data, error } = await q;
+      if (error) throw error;
+      if (!data || data.length === 0) { toast.error("Veículo não encontrado."); return; }
+      setSelectedVeic(data[0] as unknown as VeiculoDB);
+      toast.success("Veículo encontrado!");
+    } catch (e: any) {
+      toast.error(e.message || "Veículo não encontrado.");
+    } finally {
+      setSearchingVeic(false);
+    }
   };
 
-  const salvar = () => {
+  const salvar = async () => {
     if (!selectedVeic) { toast.error("Selecione um veículo."); return; }
     if (!form.tipo) { toast.error("Selecione o tipo de vistoria."); return; }
-    toast.success("Vistoria salva com sucesso!", { description: `${form.tipo} - ${selectedVeic.placa}` });
+    setLoading(true);
+    try {
+      const { error } = await supabase.from("vistorias").insert({
+        veiculo_id: selectedVeic.id,
+        associado_id: selectedVeic.associado_id,
+        tipo: form.tipo,
+        status: "pendente",
+        data_vistoria: form.data || null,
+        vistoriador: form.vistoriador || null,
+        observacoes: form.observacoes || null,
+      } as any);
+      if (error) throw error;
+      toast.success("Vistoria salva com sucesso!", { description: `${form.tipo} - ${selectedVeic.placa}` });
+      limpar();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const limpar = () => {
@@ -132,7 +175,7 @@ export default function CadastrarVistoria() {
                 <Label className="text-xs">Chassi</Label>
                 <Input value={searchChassi} onChange={e => setSearchChassi(e.target.value.toUpperCase())} placeholder="Chassi" />
               </div>
-              <Button onClick={buscarVeiculo} className="gap-1"><Search className="h-4 w-4" /> Buscar</Button>
+              <Button onClick={buscarVeiculo} disabled={searchingVeic} className="gap-1"><Search className="h-4 w-4" /> {searchingVeic ? "Buscando..." : "Buscar"}</Button>
             </div>
             {selectedVeic && (
               <Card className="border-primary">
@@ -141,7 +184,7 @@ export default function CadastrarVistoria() {
                     <div><span className="text-muted-foreground text-xs">Cód. Veículo</span><p className="font-medium">{selectedVeic.id}</p></div>
                     <div><span className="text-muted-foreground text-xs">Placa</span><p className="font-medium font-mono">{selectedVeic.placa}</p></div>
                     <div><span className="text-muted-foreground text-xs">Modelo</span><p className="font-medium">{selectedVeic.marca} {selectedVeic.modelo}</p></div>
-                    <div><span className="text-muted-foreground text-xs">Associado</span><p className="font-medium">{selectedVeic.associadoNome}</p></div>
+                    <div><span className="text-muted-foreground text-xs">Associado</span><p className="font-medium">{selectedVeic.associados?.nome ?? "—"}</p></div>
                   </div>
                 </CardContent>
               </Card>
@@ -340,7 +383,7 @@ export default function CadastrarVistoria() {
       <div className="sticky bottom-0 bg-background border-t py-3 flex justify-end gap-3 -mx-6 px-6">
         <Button variant="outline" className="gap-1"><X className="h-4 w-4" /> Voltar</Button>
         <Button variant="outline" onClick={limpar} className="gap-1"><Eraser className="h-4 w-4" /> Limpar</Button>
-        <Button onClick={salvar} className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"><Save className="h-4 w-4" /> Salvar Vistoria</Button>
+        <Button onClick={salvar} disabled={loading} className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"><Save className="h-4 w-4" /> {loading ? "Salvando..." : "Salvar Vistoria"}</Button>
       </div>
     </div>
   );

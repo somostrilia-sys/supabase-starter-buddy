@@ -572,6 +572,7 @@ export default function Pipeline() {
           onOpenChange={o => { if (!o) setConcretizarDeal(null); }}
           leadNome={concretizarDeal.lead_nome}
           leadTelefone={concretizarDeal.telefone}
+          leadId={concretizarDeal.id}
           onSuccess={() => setConcretizarDeal(null)}
         />
       )}

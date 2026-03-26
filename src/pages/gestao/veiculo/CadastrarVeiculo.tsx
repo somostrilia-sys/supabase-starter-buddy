@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import ConsultaFipe from "@/pages/gestao/ferramentas/ConsultaFipe";
 import {
   Car, Plus, Search, Trash2, X, Copy, Eraser, Upload, DollarSign,
@@ -227,6 +228,7 @@ const initialNovoAssociado = {
 
 export default function CadastrarVeiculo() {
   const [form, setForm] = useState(initialForm);
+  const queryClient = useQueryClient();
   const [produtosVinculados, setProdutosVinculados] = useState<ProdutoVinculado[]>([
     { nome: "Proteção Roubo/Furto", valor: "89,90" },
     { nome: "Assistência 24h", valor: "29,90" },
@@ -425,6 +427,7 @@ export default function CadastrarVeiculo() {
       }
 
       toast.success("Veículo cadastrado com sucesso!", { description: `${form.modelo} - ${form.placa || "0KM"}` });
+      queryClient.invalidateQueries({ queryKey: ["veiculos"] });
       handleLimpar();
       setPendingFiles([]);
       setUploadedDocs([]);

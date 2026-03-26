@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   User, MapPin, Phone, Mail, KeyRound, Landmark,
@@ -210,6 +211,7 @@ const coberturasMock = [
 
 export default function CadastrarAssociado() {
   const [form, setForm] = useState(initialForm);
+  const queryClient = useQueryClient();
   const [situacoes, setSituacoes] = useState<{ descricao: string }[]>([]);
 
   useEffect(() => {
@@ -319,6 +321,7 @@ export default function CadastrarAssociado() {
       if (error) throw error;
 
       toast.success("Associado cadastrado com sucesso!", { description: `${form.nome} - ${form.cpfCnpj}` });
+      queryClient.invalidateQueries({ queryKey: ["associados"] });
       handleLimpar();
     } catch (err: any) {
       console.error("Erro ao salvar associado:", err);

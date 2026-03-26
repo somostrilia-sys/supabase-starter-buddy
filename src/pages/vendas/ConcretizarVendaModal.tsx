@@ -49,6 +49,7 @@ interface Props {
   onOpenChange: (o: boolean) => void;
   leadNome?: string;
   leadTelefone?: string;
+  leadId?: string;
   onSuccess?: () => void;
 }
 
@@ -62,7 +63,7 @@ const STEPS = [
 const CATEGORIAS_USO = ["Passeio", "Trabalho", "Aluguel", "Frota", "Uso do Associado"];
 const CLASSIFICACOES_USO = ["Rastreador Sim", "Rastreador Não"];
 
-export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "", leadTelefone = "", onSuccess }: Props) {
+export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "", leadTelefone = "", leadId, onSuccess }: Props) {
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -216,6 +217,10 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
         dados_novos: { associado_id: assoc.id, veiculo_id: veic.id, numero },
       } as any);
 
+      if (leadId && !leadId.startsWith("p")) {
+        await supabase.from("leads").update({ status: "concluido" }).eq("id", leadId);
+      }
+      await queryClient.invalidateQueries({ queryKey: ["leads"] });
       await queryClient.invalidateQueries({ queryKey: ["associados"] });
       await queryClient.invalidateQueries({ queryKey: ["veiculos"] });
       await queryClient.invalidateQueries({ queryKey: ["contratos"] });
