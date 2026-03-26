@@ -12,13 +12,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Receipt, Search, Download, CheckCircle, Loader2 } from "lucide-react";
 
-type MensalidadeStatus = "pendente" | "pago" | "atrasado" | "cancelado";
+type MensalidadeStatus = "pendente" | "pago" | "atrasado" | "cancelado" | "negociado";
 
 const statusColor: Record<MensalidadeStatus, string> = {
-  pendente:  "bg-yellow-100 text-yellow-800",
-  pago:      "bg-green-100 text-green-800",
-  atrasado:  "bg-red-100 text-red-800",
-  cancelado: "bg-gray-100 text-gray-800",
+  pendente:   "bg-yellow-100 text-yellow-800",
+  pago:       "bg-green-100 text-green-800",
+  atrasado:   "bg-red-100 text-red-800",
+  cancelado:  "bg-gray-100 text-gray-800",
+  negociado:  "bg-blue-100 text-blue-800",
 };
 
 const statusLabel: Record<MensalidadeStatus, string> = {
@@ -26,6 +27,7 @@ const statusLabel: Record<MensalidadeStatus, string> = {
   pago:      "Pago",
   atrasado:  "Vencido",
   cancelado: "Cancelado",
+  negociado: "Negociado",
 };
 
 type MensalidadeRow = {
@@ -101,9 +103,10 @@ export default function BoletosTab() {
     return true;
   });
 
-  const totalPendente  = filtered.filter(b => b.status === "pendente").reduce((s, b) => s + b.valor, 0);
-  const totalPago      = filtered.filter(b => b.status === "pago").reduce((s, b) => s + b.valor, 0);
-  const totalVencido   = filtered.filter(b => b.status === "atrasado").reduce((s, b) => s + b.valor, 0);
+  const mesAtual = new Date().toISOString().slice(0, 7);
+  const totalPendente  = mensalidades.filter(b => b.status === "pendente").reduce((s, b) => s + b.valor, 0);
+  const totalVencido   = mensalidades.filter(b => b.status === "atrasado").reduce((s, b) => s + b.valor, 0);
+  const totalPago      = mensalidades.filter(b => b.status === "pago" && b.data_pagamento?.startsWith(mesAtual)).reduce((s, b) => s + b.valor, 0);
 
   return (
     <div className="p-6 lg:px-8 space-y-6">
@@ -126,7 +129,7 @@ export default function BoletosTab() {
           <p className="text-lg font-bold text-yellow-600">R$ {totalPendente.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
         </CardContent></Card>
         <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-4">
-          <p className="text-xs text-muted-foreground">Pago</p>
+          <p className="text-xs text-muted-foreground">Pago no Mês</p>
           <p className="text-lg font-bold text-green-600">R$ {totalPago.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
         </CardContent></Card>
         <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-4">
