@@ -438,8 +438,14 @@ export default function AlterarAssociado() {
         .limit(50);
 
       if (filters.cpf) query = query.ilike("cpf", `%${filters.cpf.replace(/\D/g, "")}%`);
-      if (filters.nome) query = query.ilike("nome", `%${filters.nome}%`);
-      if (filters.situacao !== "Todos") query = query.eq("status", filters.situacao.toLowerCase() as any);
+      if (filters.nome && filters.nome.trim().length >= 3) query = query.ilike("nome", `%${filters.nome.trim()}%`);
+      if (filters.situacao === "Inadimplente") {
+        query = query.in("status", ["inativo", "inativo_pendencia"] as any[]);
+      } else if (filters.situacao === "Cancelado") {
+        query = query.eq("status", "cancelado" as any);
+      } else if (filters.situacao !== "Todos") {
+        query = query.eq("status", filters.situacao.toLowerCase() as any);
+      }
 
       const { data: supabaseData, error } = await query;
 
@@ -484,7 +490,7 @@ export default function AlterarAssociado() {
           contaCorrente: "",
           diaVencimento: "10",
           observacoes: a.observacoes || "",
-          status: a.status === "ativo" ? "Ativo" : a.status === "inativo" ? "Inativo" : a.status === "suspenso" ? "Suspenso" : "Ativo",
+          status: a.status === "ativo" ? "Ativo" : a.status === "suspenso" ? "Suspenso" : a.status === "cancelado" ? "Cancelado" : (a.status === "inativo" || a.status === "inativo_pendencia") ? "Inadimplente" : "Ativo",
           plano: a.planos?.nome || "",
           dataAdesao: a.data_adesao || "",
           veiculos: (a.veiculos || []).map((v: any) => ({
@@ -512,9 +518,10 @@ export default function AlterarAssociado() {
         // Fallback to mock data
         let r = [...mockAssociados];
         if (filters.cpf) r = r.filter(a => a.cpf.replace(/\D/g, "").includes(filters.cpf.replace(/\D/g, "")));
-        if (filters.nome) r = r.filter(a => a.nome.toLowerCase().includes(filters.nome.toLowerCase()));
+        if (filters.nome && filters.nome.trim().length >= 3) r = r.filter(a => a.nome.toLowerCase().includes(filters.nome.toLowerCase()));
         if (filters.placa) r = r.filter(a => a.veiculos.some(v => v.placa.toLowerCase().replace("-","").includes(filters.placa.toLowerCase().replace("-",""))));
-        if (filters.situacao !== "Todos") r = r.filter(a => a.status === filters.situacao);
+        if (filters.situacao === "Inadimplente") r = r.filter(a => a.status === "Inativo" || a.status === "Inadimplente");
+        else if (filters.situacao !== "Todos") r = r.filter(a => a.status === filters.situacao);
         if (filters.regional !== "Todos") r = r.filter(a => a.regional === filters.regional);
         if (filters.cooperativa !== "Todos") r = r.filter(a => a.cooperativa === filters.cooperativa);
         setResults(r);
@@ -524,7 +531,7 @@ export default function AlterarAssociado() {
       // fallback to mock
       let r = [...mockAssociados];
       if (filters.cpf) r = r.filter(a => a.cpf.replace(/\D/g, "").includes(filters.cpf.replace(/\D/g, "")));
-      if (filters.nome) r = r.filter(a => a.nome.toLowerCase().includes(filters.nome.toLowerCase()));
+      if (filters.nome && filters.nome.trim().length >= 3) r = r.filter(a => a.nome.toLowerCase().includes(filters.nome.toLowerCase()));
       setResults(r);
     } finally {
       setSearching(false);
@@ -564,6 +571,10 @@ export default function AlterarAssociado() {
       // Only attempt Supabase save if it looks like a real UUID
       const isRealId = selected.id.includes("-") && selected.id.length > 10;
       if (isRealId) {
+        const statusDbMap: Record<string, string> = {
+          "Ativo": "ativo", "Inadimplente": "inativo", "Cancelado": "cancelado", "Suspenso": "suspenso",
+          "Inativo": "inativo",
+        };
         const { error } = await supabase
           .from("associados")
           .update({
@@ -575,6 +586,7 @@ export default function AlterarAssociado() {
             estado: editForm.estado || null,
             cep: editForm.cep || null,
             observacoes: editForm.observacoes || null,
+            status: (statusDbMap[editForm.status] || "ativo") as any,
           })
           .eq("id", selected.id);
         if (error) throw error;
@@ -614,7 +626,7 @@ export default function AlterarAssociado() {
                 <Label className="text-xs">Situação</Label>
                 <Select value={filters.situacao} onValueChange={v => setF("situacao", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{["Todos","Ativo","Inativo","Suspenso"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                  <SelectContent>{["Todos","Ativo","Inadimplente","Cancelado","Suspenso"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>

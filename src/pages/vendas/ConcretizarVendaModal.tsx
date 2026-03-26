@@ -423,9 +423,21 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
                     {contratoForm.formState.errors.valor_mensal && <p className="text-xs text-destructive">{contratoForm.formState.errors.valor_mensal.message}</p>}
                   </div>
                 </div>
-                <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900 text-xs text-blue-800 dark:text-blue-300">
-                  <strong>Cálculo proporcional:</strong> O primeiro boleto será calculado proporcionalmente aos dias restantes do mês atual.
-                </div>
+                {(() => {
+                  const vm = parseFloat((contratoForm.watch("valor_mensal") || "0").replace(/[^0-9.,]/g, "").replace(",", ".")) || 0;
+                  if (vm <= 0) return null;
+                  const today = new Date();
+                  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+                  const daysRemaining = daysInMonth - today.getDate() + 1;
+                  const proporcional = ((vm / 30) * daysRemaining).toFixed(2);
+                  return (
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900 text-xs text-blue-800 dark:text-blue-300 space-y-1">
+                      <p><strong>Cálculo proporcional (1º boleto):</strong></p>
+                      <p>R$ {vm.toFixed(2).replace(".", ",")} / 30 dias × {daysRemaining} dias restantes = <strong>R$ {Number(proporcional).toFixed(2).replace(".", ",")}</strong></p>
+                      <p className="text-blue-600">Vencimento: dia 10 do próximo mês</p>
+                    </div>
+                  );
+                })()}
                 <div className="flex justify-between">
                   <Button variant="outline" onClick={() => setStep(2)}>Voltar</Button>
                   <Button onClick={handleNextStep3}>Próximo <ChevronRight className="h-4 w-4 ml-1" /></Button>
