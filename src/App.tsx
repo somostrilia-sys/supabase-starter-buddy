@@ -91,7 +91,7 @@ const App = () => (
 
             {/* Gestão - New */}
             <Route path="/gestao/*" element={<ProtectedRoute><GestaoModule /></ProtectedRoute>} />
-            <Route path="/financeiro/*" element={<ProtectedRoute><FinanceiroModule /></ProtectedRoute>} />
+            <Route path="/financeiro/*" element={<ProtectedRoute permission="canVerFinanceiro"><FinanceiroModule /></ProtectedRoute>} />
 
             {/* Gestão (legacy) */}
             <Route path="/associados" element={<M><Associados /></M>} />

@@ -13,8 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import ConsultaFipe from "@/pages/gestao/ferramentas/ConsultaFipe";
+import { useCategoriaVeiculo, useProdutosPorCategoria } from "@/hooks/useElegibilidade";
 import {
   Car, Plus, Search, Trash2, X, Copy, Eraser, Upload, DollarSign,
   FileText, MapPin, Users, Package, Settings, AlertTriangle, Landmark,
@@ -241,6 +242,8 @@ export default function CadastrarVeiculo() {
     { nome: "CRLV_BRA2E19.pdf", tipo: "CRLV", data: "05/03/2026" },
   ]);
   const [produtosSelecionados, setProdutosSelecionados] = useState<string[]>([]);
+  // GIA elegibility
+  const [giaSelecionados, setGiaSelecionados] = useState<string[]>([]);
 
   // Associate linking states
   const [associadoId, setAssociadoId] = useState<string | null>(null);
@@ -265,6 +268,21 @@ export default function CadastrarVeiculo() {
   const [showFipeModal, setShowFipeModal] = useState(false);
 
   const set = (f: string, v: string | boolean) => setForm(p => ({ ...p, [f]: v }));
+
+  // Detect GIA categoria from classificacao
+  const categoriaGiaNome = (() => {
+    const cl = (form.classificacao || "").toLowerCase();
+    if (cl.includes("moto") || cl.includes("ciclo")) return "motocicleta";
+    if (cl.includes("caminhão") || cl.includes("onibus") || cl.includes("pesado") || cl.includes("reboque") || cl.includes("ônibus")) return "pesado";
+    if (cl) return "automovel";
+    return undefined;
+  })();
+
+  const { data: categoriaGia } = useCategoriaVeiculo(categoriaGiaNome);
+  const { data: produtosGia } = useProdutosPorCategoria(categoriaGia?.id);
+  const produtosPrincipais = (produtosGia || []).filter(p => p.tipo === 'principal');
+  const produtosOpcionais = (produtosGia || []).filter(p => p.tipo === 'opcional');
+  const toggleGiaProduto = (id: string) => setGiaSelecionados(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
 
   // Debounced search
   useEffect(() => {
@@ -387,6 +405,12 @@ export default function CadastrarVeiculo() {
       const valorFipeNum = form.valorFipe ? parseFloat(form.valorFipe.replace(/\./g, "").replace(",", ".")) : null;
       const anoNum = form.anoFab ? parseInt(form.anoFab) : null;
 
+      // Validate GIA principal product if products are available
+      if (produtosPrincipais.length > 0) {
+        const temPrincipal = giaSelecionados.some(id => produtosPrincipais.some(p => p.id === id));
+        if (!temPrincipal) return toast.error("Selecione ao menos 1 produto principal GIA");
+      }
+
       const { data: veiculoData, error } = await supabase.from("veiculos").insert({
         associado_id: associadoId,
         placa: form.placa.replace("-", "") || "0KM",
@@ -401,6 +425,16 @@ export default function CadastrarVeiculo() {
         classificacao_uso: form.classificacao_uso || null,
       } as any).select("id").single();
       if (error) throw error;
+
+      // INSERT veiculo_produtos for GIA selected products
+      if (veiculoData && giaSelecionados.length > 0) {
+        const rows = giaSelecionados.map(produto_id => ({
+          veiculo_id: veiculoData.id,
+          produto_id,
+          tipo: produtosPrincipais.some(p => p.id === produto_id) ? 'principal' : 'opcional',
+        }));
+        await supabase.from("veiculo_produtos" as any).insert(rows);
+      }
 
       // Upload pending files
       if (veiculoData && pendingFiles.length > 0) {
@@ -439,7 +473,7 @@ export default function CadastrarVeiculo() {
     }
   };
 
-  const handleLimpar = () => { setForm({ ...initialForm }); toast.info("Formulário limpo"); };
+  const handleLimpar = () => { setForm({ ...initialForm }); setGiaSelecionados([]); toast.info("Formulário limpo"); };
   const carregarMock = () => { setForm(mockPreenchido); toast.info("Dados de exemplo carregados"); };
 
   const toggleProduto = (id: string) => {
@@ -936,6 +970,53 @@ export default function CadastrarVeiculo() {
                         <p className="text-sm font-semibold mt-3 text-right">
                           Subtotal Proteções: R$ {subtotalProtecoes.toFixed(2).replace(".", ",")}
                         </p>
+                      </div>
+                    )}
+
+                    {/* --- PRODUTOS GIA ELEGÍVEIS --- */}
+                    {categoriaGiaNome && (
+                      <div className="mt-6">
+                        <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-muted-foreground">
+                          Produtos GIA Elegíveis
+                          {categoriaGia && <Badge variant="outline" className="ml-2 text-[10px]">{categoriaGia.nome}</Badge>}
+                        </p>
+                        {(produtosGia || []).length === 0 ? (
+                          <p className="text-xs text-muted-foreground italic">Nenhum produto GIA cadastrado para esta categoria.</p>
+                        ) : (
+                          <div className="border rounded-lg p-3 bg-muted/20 space-y-3">
+                            {produtosPrincipais.length > 0 && (
+                              <div>
+                                <p className="text-xs font-medium mb-1 text-foreground">Principais <span className="text-destructive">*</span></p>
+                                {produtosPrincipais.map(p => (
+                                  <div key={p.id} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox checked={giaSelecionados.includes(p.id)} onCheckedChange={() => toggleGiaProduto(p.id)} />
+                                      <span className="text-sm">{p.nome}</span>
+                                    </div>
+                                    <span className="text-sm font-medium text-muted-foreground">R$ {p.valor_base.toFixed(2).replace(".", ",")}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {produtosOpcionais.length > 0 && (
+                              <div>
+                                <p className="text-xs font-medium mb-1 text-muted-foreground">Opcionais</p>
+                                {produtosOpcionais.map(p => (
+                                  <div key={p.id} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox checked={giaSelecionados.includes(p.id)} onCheckedChange={() => toggleGiaProduto(p.id)} />
+                                      <span className="text-sm">{p.nome}</span>
+                                    </div>
+                                    <span className="text-sm font-medium text-muted-foreground">R$ {p.valor_base.toFixed(2).replace(".", ",")}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {produtosPrincipais.length > 0 && !giaSelecionados.some(id => produtosPrincipais.some(p => p.id === id)) && (
+                              <p className="text-xs text-destructive">Selecione ao menos 1 produto principal</p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
 

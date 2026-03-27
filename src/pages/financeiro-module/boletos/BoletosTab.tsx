@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Receipt, Search, Download, CheckCircle, Loader2, Plus } from "lucide-react";
+import { Receipt, Search, Download, CheckCircle, Loader2, Plus, Snowflake } from "lucide-react";
 
 type MensalidadeStatus = "pendente" | "pago" | "atrasado" | "cancelado";
 
@@ -431,44 +431,57 @@ export default function BoletosTab() {
                       Nenhuma mensalidade encontrada
                     </TableCell>
                   </TableRow>
-                ) : filtered.map((b, i) => (
-                  <TableRow
-                    key={b.id}
-                    className={`${i % 2 === 0 ? 'bg-card' : 'bg-[hsl(210_30%_97%)]'} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}
-                  >
-                    <TableCell className="font-medium text-sm">{b.associados?.nome ?? "—"}</TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">{b.associados?.cpf ?? "—"}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{b.referencia ?? "—"}</TableCell>
-                    <TableCell className="text-sm font-mono">
-                      {new Date(b.data_vencimento + "T12:00:00").toLocaleDateString("pt-BR")}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      R$ {b.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={statusColor[b.status] ?? "bg-gray-100 text-gray-800"}>
-                        {statusLabel[b.status] ?? b.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {b.status !== "pago" && b.status !== "cancelado" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs gap-1 text-green-700 border-green-300 hover:bg-green-50"
-                          disabled={pagandoId === b.id}
-                          onClick={() => marcarPago.mutate(b.id)}
-                        >
-                          {pagandoId === b.id
-                            ? <Loader2 className="h-3 w-3 animate-spin" />
-                            : <CheckCircle className="h-3 w-3" />
-                          }
-                          Marcar Pago
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                ) : filtered.map((b, i) => {
+                  const congelado = congeladosSet.has(b.associado_id);
+                  return (
+                    <TableRow
+                      key={b.id}
+                      className={`${i % 2 === 0 ? 'bg-card' : 'bg-[hsl(210_30%_97%)]'} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}
+                    >
+                      <TableCell className="font-medium text-sm">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {b.associados?.nome ?? "—"}
+                          {congelado && (
+                            <Badge className="bg-blue-100 text-blue-800 text-[10px] px-1.5 h-4 gap-0.5 shrink-0">
+                              <Snowflake className="h-2.5 w-2.5" />
+                              CONGELADO
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{b.associados?.cpf ?? "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{b.referencia ?? "—"}</TableCell>
+                      <TableCell className="text-sm font-mono">
+                        {new Date(b.data_vencimento + "T12:00:00").toLocaleDateString("pt-BR")}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">
+                        R$ {b.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={statusColor[b.status] ?? "bg-gray-100 text-gray-800"}>
+                          {statusLabel[b.status] ?? b.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {b.status !== "pago" && b.status !== "cancelado" && !congelado && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs gap-1 text-green-700 border-green-300 hover:bg-green-50"
+                            disabled={pagandoId === b.id}
+                            onClick={() => marcarPago.mutate(b.id)}
+                          >
+                            {pagandoId === b.id
+                              ? <Loader2 className="h-3 w-3 animate-spin" />
+                              : <CheckCircle className="h-3 w-3" />
+                            }
+                            Marcar Pago
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

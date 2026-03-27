@@ -12,6 +12,7 @@ export function usePermission() {
 
   return {
     role,
+    profile,
     // canonical names
     canConcretizarVenda,
     canLiberarCadastro,
@@ -24,4 +25,14 @@ export function usePermission() {
     canVerFinanceiro: canAcessarFinanceiro,
     canVerRelatorios: ['supervisor', 'financeiro', 'administrativo', 'diretor'].includes(role),
   };
+}
+
+// CONSULTOR: só vê seus leads (usuario_id = user.id)
+// GESTOR: vê todos da sua unidade (unidade_id = user.unidade_id)
+// ADMIN/DIRETOR: vê todos
+export function useLeadScope() {
+  const { role, profile } = usePermission();
+  if (role === 'consultor') return { usuario_id: profile?.id };
+  if (role === 'gestor') return { unidade_id: (profile as any)?.unidade_id };
+  return {} as Record<string, string | undefined>;
 }

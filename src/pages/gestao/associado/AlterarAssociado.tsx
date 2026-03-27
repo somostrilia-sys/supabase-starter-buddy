@@ -439,7 +439,10 @@ export default function AlterarAssociado() {
         .order("nome")
         .limit(50);
 
-      if (filters.cpf) query = query.ilike("cpf", `%${filters.cpf.replace(/\D/g, "")}%`);
+      if (filters.cpf) {
+        const docClean = filters.cpf.replace(/\D/g, "");
+        if (docClean.length >= 3) query = query.eq("cpf", docClean as any);
+      }
       if (filters.nome && filters.nome.trim().length >= 3) query = query.ilike("nome", `%${filters.nome.trim()}%`);
       if (filters.situacao === "Inadimplente") {
         query = query.in("status", ["inativo", "inativo_pendencia"] as any[]);

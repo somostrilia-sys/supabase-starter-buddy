@@ -25,7 +25,7 @@ import DealDetailModal from "./pipeline/DealDetailModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { usePermission } from "@/hooks/usePermission";
+import { usePermission, useLeadScope } from "@/hooks/usePermission";
 import ConcretizarVendaModal from "./ConcretizarVendaModal";
 
 function daysStalled(updated: string) {
@@ -42,11 +42,15 @@ type SortKey = "id" | "lead_nome" | "veiculo_modelo" | "plano" | "stage" | "cons
 
 export default function Pipeline() {
   const { canLiberarCadastro, canConcretizarVenda } = usePermission();
+  const leadScope = useLeadScope();
   const queryClient = useQueryClient();
   const [concretizarDeal, setConcretizarDeal] = useState<PipelineDeal | null>(null);
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [newDealOpen, setNewDealOpen] = useState(false);
   const [detailDeal, setDetailDeal] = useState<PipelineDeal | null>(null);
+
+  // Busca multi-critério
+  const [busca, setBusca] = useState({ placa: "", nome: "", codigo: "" });
 
   // Filters
   const [fConsultor, setFConsultor] = useState("all");
@@ -74,11 +78,17 @@ export default function Pipeline() {
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
   const [localDeals, setLocalDeals] = useState<PipelineDeal[]>(mockDeals);
 
-  // Supabase leads query
+  // Supabase leads query with busca + RBAC scope
   const { data: leadsData } = useQuery({
-    queryKey: ["leads"],
+    queryKey: ["leads", busca, leadScope],
     queryFn: async () => {
-      const { data, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
+      let query = supabase.from("leads").select("*").order("created_at", { ascending: false });
+      if (busca.placa) query = query.eq("placa", busca.placa.toUpperCase().replace(/\s/g, '') as any);
+      if (busca.nome && busca.nome.length >= 3) query = query.ilike("nome", `%${busca.nome}%` as any);
+      if (busca.codigo) query = query.eq("codigo_negociacao", busca.codigo as any);
+      if (leadScope.usuario_id) query = query.eq("usuario_id", leadScope.usuario_id as any);
+      if (leadScope.unidade_id) query = query.eq("unidade_id", leadScope.unidade_id as any);
+      const { data, error } = await query;
       if (error) return [];
       return data || [];
     },
@@ -123,7 +133,7 @@ export default function Pipeline() {
   const dealsToShow: PipelineDeal[] = leadsData && leadsData.length > 0
     ? leadsData.map(l => ({
         id: l.id,
-        codigo: `NEG-${new Date(l.created_at).getFullYear()}-${l.id.slice(-3).toUpperCase()}`,
+        codigo: (l as any).codigo_negociacao || `NEG-${new Date(l.created_at).getFullYear()}-${l.id.slice(-3).toUpperCase()}`,
         lead_nome: l.nome,
         cpf_cnpj: l.cpf || "",
         telefone: l.telefone,
@@ -240,6 +250,46 @@ export default function Pipeline() {
           </div>
         </div>
       </div>
+
+      {/* Busca multi-critério */}
+      <Card>
+        <CardContent className="p-3">
+          <div className="flex flex-wrap gap-2 items-end">
+            <div className="flex-1 min-w-[140px] space-y-1">
+              <Label className="text-xs">Placa</Label>
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input className="h-8 text-xs pl-7" placeholder="ABC1234" value={busca.placa}
+                  onChange={e => setBusca(b => ({ ...b, placa: e.target.value }))} />
+              </div>
+            </div>
+            <div className="flex-1 min-w-[160px] space-y-1">
+              <Label className="text-xs">Nome do Associado</Label>
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input className="h-8 text-xs pl-7" placeholder="Mín. 3 caracteres" value={busca.nome}
+                  onChange={e => setBusca(b => ({ ...b, nome: e.target.value }))} />
+              </div>
+            </div>
+            <div className="flex-1 min-w-[160px] space-y-1">
+              <Label className="text-xs">Código Negociação</Label>
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input className="h-8 text-xs pl-7 font-mono" placeholder="NEG-20260326-0001" value={busca.codigo}
+                  onChange={e => setBusca(b => ({ ...b, codigo: e.target.value }))} />
+              </div>
+            </div>
+            {(busca.placa || busca.nome || busca.codigo) && (
+              <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setBusca({ placa: "", nome: "", codigo: "" })}>
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+          {busca.nome && busca.nome.length < 3 && (
+            <p className="text-xs text-muted-foreground mt-1">Digite ao menos 3 caracteres para buscar por nome</p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Filters */}
       {showFilters && (

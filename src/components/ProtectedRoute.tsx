@@ -1,10 +1,32 @@
+import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermission } from "@/hooks/usePermission";
 import { Navigate } from "react-router-dom";
+import { toast } from "sonner";
 
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth();
+type PermissionKey = "canVerFinanceiro" | "canConcretizar";
 
-  if (loading) {
+export function ProtectedRoute({
+  children,
+  permission,
+}: {
+  children: React.ReactNode;
+  permission?: PermissionKey;
+}) {
+  const { session, profile, loading } = useAuth();
+  const perms = usePermission();
+
+  // Profile is still loading if session exists but profile hasn't resolved yet
+  const profileLoading = !loading && !!session && profile === null;
+  const hasPermission = !permission || perms[permission];
+
+  useEffect(() => {
+    if (!loading && !profileLoading && session && permission && !hasPermission) {
+      toast.error("Sem permissão");
+    }
+  }, [loading, profileLoading, session, permission, hasPermission]);
+
+  if (loading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -14,6 +36,10 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!session) {
     return <Navigate to="/auth" replace />;
+  }
+
+  if (permission && !hasPermission) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
