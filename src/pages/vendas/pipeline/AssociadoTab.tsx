@@ -98,14 +98,14 @@ export default function AssociadoTab({ deal }: Props) {
     toast.success("Dados do associado salvos com sucesso!");
   };
 
-  const lbl = "text-sm font-semibold font-['Source_Serif_4']";
+  const lbl = "text-sm font-semibold";
   const reqMark = <span className="text-destructive ml-0.5">*</span>;
 
   return (
     <div className="space-y-6">
       {/* DADOS PESSOAIS */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">DADOS PESSOAIS</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">DADOS PESSOAIS</legend>
         <div className="grid grid-cols-3 gap-x-4 gap-y-3">
           <div className="col-span-2 space-y-1">
             <Label className={lbl}>Nome{reqMark}</Label>
@@ -168,7 +168,7 @@ export default function AssociadoTab({ deal }: Props) {
 
       {/* DADOS DE CONTATO */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">DADOS DE CONTATO</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">DADOS DE CONTATO</legend>
         <div className="grid grid-cols-3 gap-x-4 gap-y-3">
           <div className="space-y-1">
             <Label className={lbl}>Telefone Principal{reqMark}</Label>
@@ -187,7 +187,7 @@ export default function AssociadoTab({ deal }: Props) {
 
       {/* ENDEREÇO */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">ENDEREÇO</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">ENDEREÇO</legend>
         <div className="grid grid-cols-3 gap-x-4 gap-y-3">
           <div className="space-y-1">
             <Label className={lbl}>CEP</Label>

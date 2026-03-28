@@ -171,7 +171,7 @@ export default function CotacaoTab({ deal }: Props) {
 
   const handleEnviar = (tipo: string) => toast.success(`Cotação enviada via ${tipo}!`);
 
-  const lbl = "text-sm font-semibold font-['Source_Serif_4']";
+  const lbl = "text-sm font-semibold";
 
   const anosDisp = useMemo(() => {
     const cur = new Date().getFullYear();
@@ -237,7 +237,7 @@ export default function CotacaoTab({ deal }: Props) {
 
       {/* SEÇÃO 1 - DADOS DO VEÍCULO */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">DADOS DO VEÍCULO</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">DADOS DO VEÍCULO</legend>
         <div className="grid grid-cols-3 gap-x-4 gap-y-3">
           <div className="space-y-1">
             <Label className={lbl}>Tipo do Veículo</Label>
@@ -351,21 +351,21 @@ export default function CotacaoTab({ deal }: Props) {
         <div className="grid grid-cols-2 gap-4 pt-2">
           <div className="flex items-center gap-2">
             <Switch checked={form.veiculoTrabalho} onCheckedChange={v => set("veiculoTrabalho", v)} />
-            <span className="text-sm font-['Source_Serif_4']">Veículo de trabalho / Táxi / Uber</span>
+            <span className="text-sm">Veículo de trabalho / Táxi / Uber</span>
           </div>
           <div className="flex items-center gap-2">
             <Switch checked={form.depreciacao} onCheckedChange={v => set("depreciacao", v)} />
-            <span className="text-sm font-['Source_Serif_4']">Depreciação</span>
+            <span className="text-sm">Depreciação</span>
           </div>
         </div>
         <div className="flex gap-6 pt-1">
-          <label className="flex items-center gap-2 text-sm font-['Source_Serif_4'] cursor-pointer">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
             <Checkbox checked={form.taxi} onCheckedChange={v => set("taxi", !!v)} />Táxi
           </label>
-          <label className="flex items-center gap-2 text-sm font-['Source_Serif_4'] cursor-pointer">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
             <Checkbox checked={form.chassiRemarcado} onCheckedChange={v => set("chassiRemarcado", !!v)} />Chassi remarcado
           </label>
-          <label className="flex items-center gap-2 text-sm font-['Source_Serif_4'] cursor-pointer">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
             <Checkbox checked={form.leilao} onCheckedChange={v => set("leilao", !!v)} />Leilão
           </label>
         </div>
@@ -388,7 +388,7 @@ export default function CotacaoTab({ deal }: Props) {
 
       {/* SEÇÃO 2 - PLANOS E ENVIO */}
       <fieldset className="space-y-4">
-        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">PLANOS E ENVIO</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">PLANOS E ENVIO</legend>
 
         <div className="grid grid-cols-3 gap-3">
           {planosConfig.map(p => {
@@ -403,12 +403,12 @@ export default function CotacaoTab({ deal }: Props) {
                 <CardHeader className="pb-2 pt-4 px-4">
                   <div className="flex items-center gap-2">
                     <p.icon className={`h-5 w-5 ${selected ? "text-[#1A3A5C]" : "text-muted-foreground"}`} />
-                    <CardTitle className="text-sm font-['Source_Serif_4']">{p.nome}</CardTitle>
+                    <CardTitle className="text-sm">{p.nome}</CardTitle>
                     {selected && <CheckCircle className="h-4 w-4 text-[#1A3A5C] ml-auto" />}
                   </div>
                 </CardHeader>
                 <CardContent className="px-4 pb-4 space-y-2">
-                  <div className="text-2xl font-bold font-['Source_Serif_4'] text-[#1A3A5C]">{formatCurrency(mensal)}<span className="text-xs font-normal text-muted-foreground">/mês</span></div>
+                  <div className="text-2xl font-bold text-[#1A3A5C]">{formatCurrency(mensal)}<span className="text-xs font-normal text-muted-foreground">/mês</span></div>
                   <ul className="space-y-1">
                     {p.coberturas.map(c => (
                       <li key={c} className="text-[11px] text-muted-foreground flex items-start gap-1">
@@ -423,9 +423,9 @@ export default function CotacaoTab({ deal }: Props) {
         </div>
 
         <div className="flex items-center gap-3 pt-1">
-          <span className="text-sm text-muted-foreground font-['Source_Serif_4']">Plano selecionado:</span>
+          <span className="text-sm text-muted-foreground">Plano selecionado:</span>
           <Badge className="rounded-none bg-[#1A3A5C] text-white">{planoSelecionado}</Badge>
-          <span className="text-sm font-semibold font-['Source_Serif_4']">
+          <span className="text-sm font-semibold">
             {formatCurrency(Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0)))}/mês
           </span>
         </div>

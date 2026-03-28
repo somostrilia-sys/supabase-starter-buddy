@@ -82,7 +82,7 @@ export default function AssinaturaTab({ deal }: Props) {
     toast.success("Assinatura confirmada! Negociação avançada para Vendas Concretizadas.", { duration: 5000 });
   };
 
-  const lbl = "text-sm font-semibold font-['Source_Serif_4']";
+  const lbl = "text-sm font-semibold";
 
   return (
     <div className="space-y-5">
@@ -94,7 +94,7 @@ export default function AssinaturaTab({ deal }: Props) {
               <StIcon className="h-5 w-5" style={{ color: status === "assinado" ? "#16a34a" : status === "expirado" ? "#dc2626" : "#1A3A5C" }} />
             </div>
             <div>
-              <h3 className="text-lg font-bold font-['Source_Serif_4']">Assinatura Digital</h3>
+              <h3 className="text-lg font-bold">Assinatura Digital</h3>
               <p className="text-xs text-muted-foreground">Integração Autentic</p>
             </div>
             <Badge className={`rounded-none border ml-auto text-xs ${st.color}`}>{st.label}</Badge>
@@ -130,7 +130,7 @@ export default function AssinaturaTab({ deal }: Props) {
 
       {/* Documento selecionado */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">DOCUMENTO PARA ASSINATURA</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">DOCUMENTO PARA ASSINATURA</legend>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label className={lbl}>Documento</Label>
@@ -162,7 +162,7 @@ export default function AssinaturaTab({ deal }: Props) {
             <div className="flex items-center gap-3">
               <FileText className="h-8 w-8 text-muted-foreground" />
               <div>
-                <p className="text-sm font-semibold font-['Source_Serif_4']">{doc.nome}</p>
+                <p className="text-sm font-semibold">{doc.nome}</p>
                 <p className="text-xs text-muted-foreground">PDF • 2 páginas • 145 KB</p>
               </div>
             </div>
@@ -175,7 +175,7 @@ export default function AssinaturaTab({ deal }: Props) {
 
       {/* Botões de envio */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">ENVIAR PARA ASSINATURA</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">ENVIAR PARA ASSINATURA</legend>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" className="rounded-none" onClick={() => handleEnviar("email")}>
             <Mail className="h-3.5 w-3.5 mr-1" />Enviar por E-mail
@@ -202,7 +202,7 @@ export default function AssinaturaTab({ deal }: Props) {
             <CardContent className="p-3 flex items-center gap-3">
               <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
               <div>
-                <p className="text-sm font-semibold font-['Source_Serif_4'] text-green-900">Documento assinado com sucesso!</p>
+                <p className="text-sm font-semibold text-green-900">Documento assinado com sucesso!</p>
                 <p className="text-xs text-green-700">Negociação movida automaticamente para "Vendas Concretizadas".</p>
               </div>
             </CardContent>
@@ -212,7 +212,7 @@ export default function AssinaturaTab({ deal }: Props) {
 
       {/* Timeline */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">HISTÓRICO DA ASSINATURA</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">HISTÓRICO DA ASSINATURA</legend>
         <div className="relative pl-6 space-y-0">
           {mockTimeline.map((ev, i) => {
             const Icon = tipoIcons[ev.tipo] || Clock;
@@ -226,7 +226,7 @@ export default function AssinaturaTab({ deal }: Props) {
                 </div>
                 <div>
                   <span className="text-xs font-mono text-muted-foreground">{ev.data}</span>
-                  <p className="text-sm font-['Source_Serif_4'] mt-0.5">{ev.descricao}</p>
+                  <p className="text-sm mt-0.5">{ev.descricao}</p>
                 </div>
               </div>
             );

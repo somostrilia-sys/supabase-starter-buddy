@@ -357,7 +357,7 @@ export default function Pipeline() {
                       <div className={`w-2.5 h-2.5 rounded-full ${col.dot}`} />
                       <span className="text-[11px] font-bold uppercase tracking-wider text-foreground/80">{col.label}</span>
                     </div>
-                    <Badge variant="outline" className="text-[10px] h-5">{colDeals.length}</Badge>
+                    <Badge className="text-[10px] h-5 px-1.5" style={{ backgroundColor: `${col.color}20`, color: col.color, border: `1px solid ${col.color}40` }}>{colDeals.length}</Badge>
                   </div>
                 </div>
                 <ScrollArea className="flex-1 px-2 pb-2">
@@ -371,14 +371,14 @@ export default function Pipeline() {
                           draggable
                           onDragStart={e => handleDragStart(e, deal.id)}
                           onClick={() => setDetailDeal(deal)}
-                          className={`group bg-card border cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] ${draggedId === deal.id ? "opacity-40" : ""}`}
+                          className={`group bg-card border rounded-lg cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 ${draggedId === deal.id ? "opacity-40" : ""}`}
                           style={{ borderLeft: `3px solid ${col.color}` }}
                         >
                           <div className="p-3 space-y-1.5">
                             {/* Header: nome + código + menu */}
                             <div className="flex items-start justify-between">
                               <div>
-                                <p className="text-[13px] font-semibold leading-tight font-['Source_Serif_4']">{deal.lead_nome}</p>
+                                <p className="text-[13px] font-semibold leading-tight">{deal.lead_nome}</p>
                                 <span className="text-[10px] font-mono text-muted-foreground">{deal.codigo}</span>
                               </div>
                               <DropdownMenu>
@@ -407,14 +407,14 @@ export default function Pipeline() {
                             {/* Veículo + Placa */}
                             <div className="flex items-center gap-1.5 text-muted-foreground">
                               <Car className="h-3 w-3 shrink-0" />
-                              <span className="text-[11px] truncate font-['Source_Serif_4']">{deal.veiculo_modelo}</span>
+                              <span className="text-[11px] truncate">{deal.veiculo_modelo}</span>
                               <Badge variant="outline" className="text-[9px] font-mono px-1 py-0 rounded-none">{deal.veiculo_placa}</Badge>
                             </div>
 
                             {/* Plano + Valor */}
                             <div className="flex items-center justify-between">
                               <Badge variant="outline" className="text-[9px] px-1.5 py-0 rounded-none">{deal.plano}</Badge>
-                              <span className="text-[11px] font-bold text-foreground font-['Source_Serif_4']">R$ {deal.valor_plano.toFixed(2).replace(".", ",")}</span>
+                              <span className="text-[11px] font-bold text-foreground">R$ {deal.valor_plano.toFixed(2).replace(".", ",")}</span>
                             </div>
 
                             {/* Status icons row */}
@@ -440,10 +440,10 @@ export default function Pipeline() {
 
                             {/* Footer: Consultor */}
                             <div className="flex items-center justify-end gap-1.5 pt-0.5 border-t border-muted/40 mt-1">
-                              <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                              <div className="w-5 h-5 rounded-full bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center shrink-0">
                                 <span className="text-[9px] font-bold text-primary">{deal.consultor.charAt(0)}</span>
                               </div>
-                              <span className="text-[10px] text-muted-foreground font-['Source_Serif_4']">{deal.consultor}</span>
+                              <span className="text-[10px] text-muted-foreground">{deal.consultor}</span>
                             </div>
                           </div>
                         </div>
@@ -531,7 +531,7 @@ export default function Pipeline() {
 
       {/* Floating button */}
       <Button
-        className="fixed bottom-6 right-6 h-12 px-5 rounded-full shadow-xl z-50"
+        className="fixed bottom-6 right-6 h-12 px-5 rounded-full shadow-2xl shadow-primary/20 z-50 transition-all hover:scale-105"
         onClick={() => setNewDealOpen(true)}
       >
         <Plus className="h-5 w-5 mr-2" />Nova Negociação

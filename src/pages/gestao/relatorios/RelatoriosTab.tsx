@@ -81,7 +81,7 @@ function FilterSection({
   return (
     <div className="border border-border">
       <div className={`${bgMap[color]} px-4 py-2`}>
-        <h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">{title}</h4>
+        <h4 className="text-sm font-bold text-white uppercase tracking-wider">{title}</h4>
       </div>
       <div className="px-4 py-3 bg-card">
         <div className="mb-2">
@@ -96,7 +96,7 @@ function FilterSection({
             return (
               <label key={item} className="inline-flex items-center gap-2 cursor-pointer py-0.5">
                 <Checkbox checked={isChecked} onCheckedChange={() => onToggle(item)} className="h-4 w-4" />
-                <span className={`text-xs font-listing ${isChecked ? "text-primary font-medium" : "text-muted-foreground"}`}>{item}</span>
+                <span className={`text-xs ${isChecked ? "text-primary font-medium" : "text-muted-foreground"}`}>{item}</span>
               </label>
             );
           })}
@@ -320,8 +320,8 @@ export default function RelatoriosTab() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold font-listing">Central de Relatórios</h2>
-          <p className="text-sm text-muted-foreground font-listing">Relatórios completos com filtros avançados, visualização em tela e exportação</p>
+          <h2 className="text-xl font-bold">Central de Relatórios</h2>
+          <p className="text-sm text-muted-foreground">Relatórios completos com filtros avançados, visualização em tela e exportação</p>
         </div>
       </div>
 
@@ -338,12 +338,12 @@ export default function RelatoriosTab() {
         <TabsContent value="associados" className="space-y-0 mt-4">
           <div className="space-y-4 mb-6">
             <div className="border border-border">
-              <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Período</h4></div>
+              <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider">Período</h4></div>
               <div className="px-4 py-3 bg-card grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div><Label className="text-xs font-listing font-semibold">Data Cadastro De</Label><Input type="date" /></div>
-                <div><Label className="text-xs font-listing font-semibold">Data Cadastro Até</Label><Input type="date" /></div>
-                <div><Label className="text-xs font-listing font-semibold">Data Contrato De</Label><Input type="date" /></div>
-                <div><Label className="text-xs font-listing font-semibold">Data Contrato Até</Label><Input type="date" /></div>
+                <div><Label className="text-xs font-semibold">Data Cadastro De</Label><Input type="date" /></div>
+                <div><Label className="text-xs font-semibold">Data Cadastro Até</Label><Input type="date" /></div>
+                <div><Label className="text-xs font-semibold">Data Contrato De</Label><Input type="date" /></div>
+                <div><Label className="text-xs font-semibold">Data Contrato Até</Label><Input type="date" /></div>
               </div>
             </div>
             <FilterSection title="Situação ATUAL do Veículo" items={situacoesVeiculo} selected={selSitVeiculo} onToggle={(item) => toggleInSet(selSitVeiculo, setSelSitVeiculo, item)} color="success" />
@@ -355,13 +355,13 @@ export default function RelatoriosTab() {
             <FilterSection title="Categoria do Veículo" items={categoriasVeiculo} selected={selCategoria} onToggle={(item) => toggleInSet(selCategoria, setSelCategoria, item)} columns={3} color="warning" />
 
             <div className="border border-border">
-              <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Colunas Visíveis no Resultado</h4></div>
+              <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider">Colunas Visíveis no Resultado</h4></div>
               <div className="px-4 py-3 bg-card">
                 <div className="grid grid-cols-3 md:grid-cols-5 gap-x-6 gap-y-1.5">
                   {allColumns.map(c => (
                     <label key={c.key} className="inline-flex items-center gap-2 cursor-pointer py-0.5">
                       <Checkbox checked={selectedCols.includes(c.key)} onCheckedChange={() => toggleCol(c.key)} className="h-4 w-4" />
-                      <span className={`text-xs font-listing ${selectedCols.includes(c.key) ? "text-primary font-medium" : "text-muted-foreground"}`}>{c.label}</span>
+                      <span className={`text-xs ${selectedCols.includes(c.key) ? "text-primary font-medium" : "text-muted-foreground"}`}>{c.label}</span>
                     </label>
                   ))}
                 </div>
@@ -382,12 +382,12 @@ export default function RelatoriosTab() {
               <Card>
                 <CardContent className="p-0">
                   <Table>
-                    <TableHeader><TableRow>{selectedCols.map(k => <TableHead key={k} className="font-listing font-bold text-xs uppercase">{allColumns.find(c => c.key === k)?.label}</TableHead>)}<TableHead></TableHead></TableRow></TableHeader>
+                    <TableHeader><TableRow>{selectedCols.map(k => <TableHead key={k} className="font-bold text-xs uppercase">{allColumns.find(c => c.key === k)?.label}</TableHead>)}<TableHead></TableHead></TableRow></TableHeader>
                     <TableBody>
                       {pagedAssoc.map(a => (
                         <TableRow key={a.id} className="cursor-pointer" onClick={() => setDetalhe(a)}>
                           {selectedCols.map(k => (
-                            <TableCell key={k} className="font-listing">
+                            <TableCell key={k} className="">
                               {k === "situacao" ? <Badge className={situacaoColor[a.situacao]}>{a.situacao}</Badge>
                                : k === "dataCadastro" ? new Date(a.dataCadastro).toLocaleDateString("pt-BR")
                                : String((a as Record<string, unknown>)[k] ?? "")}
@@ -401,7 +401,7 @@ export default function RelatoriosTab() {
                   <Pagination page={pageAssoc} totalPages={totalPagesAssoc} onPageChange={setPageAssoc} />
                 </CardContent>
               </Card>
-              <p className="text-xs text-muted-foreground font-listing mt-2">{filteredAssoc.length} registros encontrados</p>
+              <p className="text-xs text-muted-foreground mt-2">{filteredAssoc.length} registros encontrados</p>
             </>
           )}
         </TabsContent>
@@ -410,12 +410,12 @@ export default function RelatoriosTab() {
         <TabsContent value="veiculos" className="space-y-0 mt-4">
           <div className="space-y-4 mb-6">
             <div className="border border-border">
-              <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Período</h4></div>
+              <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider">Período</h4></div>
               <div className="px-4 py-3 bg-card grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div><Label className="text-xs font-listing font-semibold">Data Cadastro De</Label><Input type="date" /></div>
-                <div><Label className="text-xs font-listing font-semibold">Data Cadastro Até</Label><Input type="date" /></div>
-                <div><Label className="text-xs font-listing font-semibold">Ano Fabricação De</Label><Input type="number" placeholder="2020" /></div>
-                <div><Label className="text-xs font-listing font-semibold">Ano Fabricação Até</Label><Input type="number" placeholder="2025" /></div>
+                <div><Label className="text-xs font-semibold">Data Cadastro De</Label><Input type="date" /></div>
+                <div><Label className="text-xs font-semibold">Data Cadastro Até</Label><Input type="date" /></div>
+                <div><Label className="text-xs font-semibold">Ano Fabricação De</Label><Input type="number" placeholder="2020" /></div>
+                <div><Label className="text-xs font-semibold">Ano Fabricação Até</Label><Input type="number" placeholder="2025" /></div>
               </div>
             </div>
             <FilterSection title="Situação ATUAL do Veículo" items={situacoesVeiculo} selected={selSitVeiculo} onToggle={(item) => toggleInSet(selSitVeiculo, setSelSitVeiculo, item)} color="success" />
@@ -435,10 +435,10 @@ export default function RelatoriosTab() {
 
           <Card><CardContent className="p-0">
             <Table>
-              <TableHeader><TableRow><TableHead className="font-listing font-bold text-xs uppercase">Placa</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Modelo</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Ano</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Tipo</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Categoria</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Cota</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Associado</TableHead><TableHead className="font-listing font-bold text-xs uppercase">Cooperativa</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead className="font-bold text-xs uppercase">Placa</TableHead><TableHead className="font-bold text-xs uppercase">Modelo</TableHead><TableHead className="font-bold text-xs uppercase">Ano</TableHead><TableHead className="font-bold text-xs uppercase">Tipo</TableHead><TableHead className="font-bold text-xs uppercase">Categoria</TableHead><TableHead className="font-bold text-xs uppercase">Cota</TableHead><TableHead className="font-bold text-xs uppercase">Associado</TableHead><TableHead className="font-bold text-xs uppercase">Cooperativa</TableHead></TableRow></TableHeader>
               <TableBody>
                 {mockAssociados.map(a => (
-                  <TableRow key={a.id}><TableCell className="font-mono">{a.placa}</TableCell><TableCell className="font-listing">{a.modelo}</TableCell><TableCell className="font-listing">{a.ano}</TableCell><TableCell><Badge variant="outline">{a.tipo}</Badge></TableCell><TableCell className="font-listing">{a.categoria}</TableCell><TableCell className="font-listing">{a.cota}</TableCell><TableCell className="font-medium font-listing">{a.nome}</TableCell><TableCell className="font-listing">{a.cooperativa}</TableCell></TableRow>
+                  <TableRow key={a.id}><TableCell className="font-mono">{a.placa}</TableCell><TableCell className="">{a.modelo}</TableCell><TableCell className="">{a.ano}</TableCell><TableCell><Badge variant="outline">{a.tipo}</Badge></TableCell><TableCell className="">{a.categoria}</TableCell><TableCell className="">{a.cota}</TableCell><TableCell className="font-medium">{a.nome}</TableCell><TableCell className="">{a.cooperativa}</TableCell></TableRow>
                 ))}
               </TableBody>
             </Table>
@@ -449,56 +449,56 @@ export default function RelatoriosTab() {
         <TabsContent value="boletos" className="space-y-4 mt-4">
           {/* KPIs */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold font-listing">{filteredBoletos.length}</p><p className="text-xs text-muted-foreground font-listing">Filtrados</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-success font-listing">{filteredBoletos.filter(b => b.situacao === "pago_dia").length}</p><p className="text-xs text-muted-foreground font-listing">Pagos em dia</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-warning font-listing">{filteredBoletos.filter(b => b.situacao === "pago_atraso").length}</p><p className="text-xs text-muted-foreground font-listing">Pagos em atraso</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-destructive font-listing">{filteredBoletos.filter(b => b.situacao === "vencido").length}</p><p className="text-xs text-muted-foreground font-listing">Vencidos</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold font-listing">R$ {somaBoletosTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p><p className="text-xs text-muted-foreground font-listing">Valor total</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{filteredBoletos.length}</p><p className="text-xs text-muted-foreground">Filtrados</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-success">{filteredBoletos.filter(b => b.situacao === "pago_dia").length}</p><p className="text-xs text-muted-foreground">Pagos em dia</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-warning">{filteredBoletos.filter(b => b.situacao === "pago_atraso").length}</p><p className="text-xs text-muted-foreground">Pagos em atraso</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-destructive">{filteredBoletos.filter(b => b.situacao === "vencido").length}</p><p className="text-xs text-muted-foreground">Vencidos</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">R$ {somaBoletosTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p><p className="text-xs text-muted-foreground">Valor total</p></CardContent></Card>
           </div>
 
           {/* Advanced Filters */}
           <div className="border border-border">
-            <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">Filtros Avançados de Boletos</h4></div>
+            <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider">Filtros Avançados de Boletos</h4></div>
             <div className="px-4 py-4 bg-card space-y-4">
               {/* Row 1: Period */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div><Label className="text-xs font-listing font-semibold">Tipo de Data</Label>
+                <div><Label className="text-xs font-semibold">Tipo de Data</Label>
                   <Select value={bolFiltroData} onValueChange={setBolFiltroData}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="vencimento">Vencimento</SelectItem><SelectItem value="emissao">Emissão</SelectItem><SelectItem value="pagamento">Pagamento</SelectItem></SelectContent></Select>
                 </div>
-                <div><Label className="text-xs font-listing font-semibold">Data De</Label><Input type="date" value={bolDataDe} onChange={e => setBolDataDe(e.target.value)} /></div>
-                <div><Label className="text-xs font-listing font-semibold">Data Até</Label><Input type="date" value={bolDataAte} onChange={e => setBolDataAte(e.target.value)} /></div>
-                <div><Label className="text-xs font-listing font-semibold">Status do Boleto</Label>
+                <div><Label className="text-xs font-semibold">Data De</Label><Input type="date" value={bolDataDe} onChange={e => setBolDataDe(e.target.value)} /></div>
+                <div><Label className="text-xs font-semibold">Data Até</Label><Input type="date" value={bolDataAte} onChange={e => setBolDataAte(e.target.value)} /></div>
+                <div><Label className="text-xs font-semibold">Status do Boleto</Label>
                   <Select value={bolStatus} onValueChange={setBolStatus}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{statusBoleto.map(s => <SelectItem key={s} value={s}>{statusBoletoLabels[s]}</SelectItem>)}</SelectContent></Select>
                 </div>
               </div>
               {/* Row 2: Entity filters */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div><Label className="text-xs font-listing font-semibold">Associado / Cliente</Label><Input placeholder="Nome ou CPF..." value={buscaBol} onChange={e => setBuscaBol(e.target.value)} /></div>
-                <div><Label className="text-xs font-listing font-semibold">Unidade (Filial)</Label>
+                <div><Label className="text-xs font-semibold">Associado / Cliente</Label><Input placeholder="Nome ou CPF..." value={buscaBol} onChange={e => setBuscaBol(e.target.value)} /></div>
+                <div><Label className="text-xs font-semibold">Unidade (Filial)</Label>
                   <Select value={bolUnidade} onValueChange={setBolUnidade}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{unidadesBoleto.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent></Select>
                 </div>
-                <div><Label className="text-xs font-listing font-semibold">Consultor Responsável</Label>
+                <div><Label className="text-xs font-semibold">Consultor Responsável</Label>
                   <Select value={bolConsultor} onValueChange={setBolConsultor}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{consultoresBoleto.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
                 </div>
-                <div><Label className="text-xs font-listing font-semibold">Número do Boleto</Label><Input placeholder="BOL-..." value={bolNumero} onChange={e => setBolNumero(e.target.value)} /></div>
+                <div><Label className="text-xs font-semibold">Número do Boleto</Label><Input placeholder="BOL-..." value={bolNumero} onChange={e => setBolNumero(e.target.value)} /></div>
               </div>
               {/* Row 3: Financial filters */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                <div><Label className="text-xs font-listing font-semibold">Valor Mínimo (R$)</Label><Input type="number" placeholder="0,00" value={bolValorMin} onChange={e => setBolValorMin(e.target.value)} /></div>
-                <div><Label className="text-xs font-listing font-semibold">Valor Máximo (R$)</Label><Input type="number" placeholder="0,00" value={bolValorMax} onChange={e => setBolValorMax(e.target.value)} /></div>
-                <div><Label className="text-xs font-listing font-semibold">Tipo de Cobrança</Label>
+                <div><Label className="text-xs font-semibold">Valor Mínimo (R$)</Label><Input type="number" placeholder="0,00" value={bolValorMin} onChange={e => setBolValorMin(e.target.value)} /></div>
+                <div><Label className="text-xs font-semibold">Valor Máximo (R$)</Label><Input type="number" placeholder="0,00" value={bolValorMax} onChange={e => setBolValorMax(e.target.value)} /></div>
+                <div><Label className="text-xs font-semibold">Tipo de Cobrança</Label>
                   <Select value={bolTipoCobranca} onValueChange={setBolTipoCobranca}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{tiposCobranca.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
                 </div>
-                <div><Label className="text-xs font-listing font-semibold">Banco Emissor</Label>
+                <div><Label className="text-xs font-semibold">Banco Emissor</Label>
                   <Select value={bolBanco} onValueChange={setBolBanco}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{bancosBoleto.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select>
                 </div>
-                <div><Label className="text-xs font-listing font-semibold">Forma de Pagamento</Label>
+                <div><Label className="text-xs font-semibold">Forma de Pagamento</Label>
                   <Select value={bolFormaPgto} onValueChange={setBolFormaPgto}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{formasPagamento.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select>
                 </div>
               </div>
               {/* Row 4 */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div><Label className="text-xs font-listing font-semibold">Contrato Vinculado</Label><Input placeholder="CTR-..." value={bolContrato} onChange={e => setBolContrato(e.target.value)} /></div>
+                <div><Label className="text-xs font-semibold">Contrato Vinculado</Label><Input placeholder="CTR-..." value={bolContrato} onChange={e => setBolContrato(e.target.value)} /></div>
                 <div className="flex items-end">
                   <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
                     setBolFiltroData("vencimento"); setBolDataDe(""); setBolDataAte(""); setBolStatus("todos");
@@ -525,49 +525,49 @@ export default function RelatoriosTab() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="font-listing font-bold text-xs uppercase">Nº Boleto</TableHead>
-                  <TableHead className="font-listing font-bold text-xs uppercase">Associado</TableHead>
-                  <TableHead className="font-listing font-bold text-xs uppercase">CPF</TableHead>
-                  <TableHead className="font-listing font-bold text-xs uppercase text-right">Valor</TableHead>
-                  <TableHead className="font-listing font-bold text-xs uppercase">Emissão</TableHead>
-                  <TableHead className="font-listing font-bold text-xs uppercase">Vencimento</TableHead>
-                  <TableHead className="font-listing font-bold text-xs uppercase">Pagamento</TableHead>
-                  <TableHead className="font-listing font-bold text-xs uppercase">Status</TableHead>
-                  <TableHead className="font-listing font-bold text-xs uppercase">Unidade</TableHead>
-                  <TableHead className="font-listing font-bold text-xs uppercase">Consultor</TableHead>
-                  <TableHead className="font-listing font-bold text-xs uppercase">Tipo</TableHead>
-                  <TableHead className="font-listing font-bold text-xs uppercase">Banco</TableHead>
-                  <TableHead className="font-listing font-bold text-xs uppercase">Pagto</TableHead>
-                  <TableHead className="font-listing font-bold text-xs uppercase">Contrato</TableHead>
+                  <TableHead className="font-bold text-xs uppercase">Nº Boleto</TableHead>
+                  <TableHead className="font-bold text-xs uppercase">Associado</TableHead>
+                  <TableHead className="font-bold text-xs uppercase">CPF</TableHead>
+                  <TableHead className="font-bold text-xs uppercase text-right">Valor</TableHead>
+                  <TableHead className="font-bold text-xs uppercase">Emissão</TableHead>
+                  <TableHead className="font-bold text-xs uppercase">Vencimento</TableHead>
+                  <TableHead className="font-bold text-xs uppercase">Pagamento</TableHead>
+                  <TableHead className="font-bold text-xs uppercase">Status</TableHead>
+                  <TableHead className="font-bold text-xs uppercase">Unidade</TableHead>
+                  <TableHead className="font-bold text-xs uppercase">Consultor</TableHead>
+                  <TableHead className="font-bold text-xs uppercase">Tipo</TableHead>
+                  <TableHead className="font-bold text-xs uppercase">Banco</TableHead>
+                  <TableHead className="font-bold text-xs uppercase">Pagto</TableHead>
+                  <TableHead className="font-bold text-xs uppercase">Contrato</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {pagedBoletos.length === 0 && (
-                  <TableRow><TableCell colSpan={14} className="text-center py-8 text-muted-foreground font-listing">Nenhum boleto encontrado com os filtros aplicados</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={14} className="text-center py-8 text-muted-foreground">Nenhum boleto encontrado com os filtros aplicados</TableCell></TableRow>
                 )}
                 {pagedBoletos.map((b, i) => (
                   <TableRow key={b.id} className={i % 2 === 0 ? "bg-card" : "bg-[hsl(210_30%_97%)]"}>
                     <TableCell className="font-mono text-xs">{b.id}</TableCell>
-                    <TableCell className="font-medium font-listing text-sm">{b.associado}</TableCell>
+                    <TableCell className="font-medium text-sm">{b.associado}</TableCell>
                     <TableCell className="font-mono text-xs">{b.cpf}</TableCell>
-                    <TableCell className="text-right font-listing font-semibold">R$ {b.valor.toFixed(2)}</TableCell>
-                    <TableCell className="font-listing text-sm">{new Date(b.gerado).toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell className="font-listing text-sm">{new Date(b.vencimento).toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell className="font-listing text-sm">{b.pagamento ? new Date(b.pagamento).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                    <TableCell className="text-right font-semibold">R$ {b.valor.toFixed(2)}</TableCell>
+                    <TableCell className="text-sm">{new Date(b.gerado).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell className="text-sm">{new Date(b.vencimento).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell className="text-sm">{b.pagamento ? new Date(b.pagamento).toLocaleDateString("pt-BR") : "—"}</TableCell>
                     <TableCell><Badge className={situacaoColor[b.situacao]}>{statusBoletoLabels[b.situacao] ?? b.situacao}</Badge></TableCell>
-                    <TableCell className="font-listing text-xs">{b.unidade}</TableCell>
-                    <TableCell className="font-listing text-xs">{b.consultor}</TableCell>
-                    <TableCell className="font-listing text-xs">{b.tipoCobranca}</TableCell>
-                    <TableCell className="font-listing text-xs">{b.banco}</TableCell>
-                    <TableCell className="font-listing text-xs">{b.formaPagamento}</TableCell>
+                    <TableCell className="text-xs">{b.unidade}</TableCell>
+                    <TableCell className="text-xs">{b.consultor}</TableCell>
+                    <TableCell className="text-xs">{b.tipoCobranca}</TableCell>
+                    <TableCell className="text-xs">{b.banco}</TableCell>
+                    <TableCell className="text-xs">{b.formaPagamento}</TableCell>
                     <TableCell className="font-mono text-xs">{b.contrato}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
             <div className="flex items-center justify-between px-4 py-3 bg-[hsl(210_30%_95%)] border-t border-border">
-              <span className="text-xs text-muted-foreground font-listing">{filteredBoletos.length} boleto(s) encontrado(s)</span>
-              <span className="text-sm font-bold font-listing">Total: R$ {somaBoletosTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+              <span className="text-xs text-muted-foreground">{filteredBoletos.length} boleto(s) encontrado(s)</span>
+              <span className="text-sm font-bold">Total: R$ {somaBoletosTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
             </div>
             <Pagination page={pageBol} totalPages={totalPagesBol} onPageChange={setPageBol} />
           </CardContent></Card>
@@ -591,8 +591,8 @@ export default function RelatoriosTab() {
                   <r.icon className="h-6 w-6 text-[hsl(210_55%_70%)]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-base font-listing">{r.label}</h3>
-                  <p className="text-sm text-muted-foreground font-listing mt-1">{r.desc}</p>
+                  <h3 className="font-semibold text-base">{r.label}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">{r.desc}</p>
                 </div>
               </button>
             ))}
@@ -601,17 +601,17 @@ export default function RelatoriosTab() {
             <div className="space-y-4">
               <div className="border border-border">
                 <div className="bg-primary px-4 py-2">
-                  <h4 className="text-sm font-bold text-white uppercase tracking-wider font-listing">
+                  <h4 className="text-sm font-bold text-white uppercase tracking-wider">
                     Filtros — {outrosRelatorios.find(r => r.id === outroAtivo)?.label}
                   </h4>
                 </div>
                 <div className="px-4 py-3 bg-card grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div><Label className="text-xs font-listing font-semibold">Data início</Label><Input type="date" /></div>
-                  <div><Label className="text-xs font-listing font-semibold">Data fim</Label><Input type="date" /></div>
-                  <div><Label className="text-xs font-listing font-semibold">Cooperativa</Label>
+                  <div><Label className="text-xs font-semibold">Data início</Label><Input type="date" /></div>
+                  <div><Label className="text-xs font-semibold">Data fim</Label><Input type="date" /></div>
+                  <div><Label className="text-xs font-semibold">Cooperativa</Label>
                     <Select defaultValue="todas"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{cooperativasSimples.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
                   </div>
-                  <div><Label className="text-xs font-listing font-semibold">Regional</Label>
+                  <div><Label className="text-xs font-semibold">Regional</Label>
                     <Select defaultValue="todas"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{regionaisSimples.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>
                   </div>
                 </div>
@@ -630,7 +630,7 @@ export default function RelatoriosTab() {
 
               <div className="p-8 bg-muted text-center text-muted-foreground border">
                 <BarChart3 className="h-8 w-8 mx-auto mb-2" />
-                <p className="text-sm font-listing">Aplique os filtros e clique em "Visualizar Tela"</p>
+                <p className="text-sm">Aplique os filtros e clique em "Visualizar Tela"</p>
               </div>
             </div>
           )}
@@ -640,10 +640,10 @@ export default function RelatoriosTab() {
       {/* Detalhe Sheet */}
       <Sheet open={!!detalhe} onOpenChange={() => setDetalhe(null)}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader><SheetTitle className="font-listing">Cadastro Completo</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle className="">Cadastro Completo</SheetTitle></SheetHeader>
           {detalhe && (
             <div className="space-y-4 mt-4">
-              <div className="space-y-2 text-sm font-listing">
+              <div className="space-y-2 text-sm">
                 {([
                   ["Nome", detalhe.nome], ["CPF", detalhe.cpf], ["Nascimento", new Date(detalhe.nascimento).toLocaleDateString("pt-BR")],
                   ["Telefone", detalhe.telefone], ["E-mail", detalhe.email], ["Endereço", detalhe.endereco],
@@ -655,7 +655,7 @@ export default function RelatoriosTab() {
                 ))}
                 <div className="flex justify-between"><span className="text-muted-foreground">Situação:</span><Badge className={situacaoColor[detalhe.situacao]}>{detalhe.situacao}</Badge></div>
               </div>
-              <div className="border-t pt-3 space-y-2 text-sm font-listing">
+              <div className="border-t pt-3 space-y-2 text-sm">
                 <h4 className="font-bold">Veículo</h4>
                 {([
                   ["Placa", detalhe.placa], ["Modelo", detalhe.modelo], ["Ano", String(detalhe.ano)],

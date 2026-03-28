@@ -131,7 +131,7 @@ export default function VistoriaTab({ deal }: Props) {
 
   // handleAprovar and handleReprovar defined above (with template validation)
 
-  const lbl = "text-sm font-semibold font-['Source_Serif_4']";
+  const lbl = "text-sm font-semibold";
 
   return (
     <div className="space-y-5">
@@ -142,7 +142,7 @@ export default function VistoriaTab({ deal }: Props) {
             <div className="space-y-3 flex-1">
               <div className="flex items-center gap-3">
                 <StIcon className="h-6 w-6" style={{ color: status === "aprovada" ? "#16a34a" : status === "reprovada" ? "#dc2626" : "#1A3A5C" }} />
-                <h3 className="text-lg font-bold font-['Source_Serif_4']">Vistoria da Negociação</h3>
+                <h3 className="text-lg font-bold">Vistoria da Negociação</h3>
                 <Badge className={`rounded-none border ${st.color}`}>{st.label}</Badge>
               </div>
 
@@ -229,7 +229,7 @@ export default function VistoriaTab({ deal }: Props) {
       <Card className="rounded-none border-2 border-[hsl(210_30%_88%)]">
         <CardContent className="p-5 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <p className="text-sm font-bold font-['Source_Serif_4']">Template de Vistoria</p>
+            <p className="text-sm font-bold">Template de Vistoria</p>
             <div className="flex items-center gap-2">
               <Label className="text-xs">Categoria:</Label>
               <Select value={categoriaVistoria} onValueChange={setCategoriaVistoria}>
@@ -279,7 +279,7 @@ export default function VistoriaTab({ deal }: Props) {
         <CardContent className="p-4 flex items-start gap-3">
           <Globe className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-semibold font-['Source_Serif_4'] text-blue-900">Fluxo Web Alternativo</p>
+            <p className="text-sm font-semibold text-blue-900">Fluxo Web Alternativo</p>
             <p className="text-xs text-blue-700 mt-0.5">O cliente pode acessar o link abaixo, tirar fotos pelo navegador e submeter diretamente — sem necessidade de instalar o aplicativo.</p>
             <div className="flex items-center gap-2 mt-2">
               <code className="text-[11px] bg-white border px-2 py-1 font-mono text-blue-800">https://vistoria.objetiva.app/v/{codigo}</code>
@@ -293,7 +293,7 @@ export default function VistoriaTab({ deal }: Props) {
 
       {/* Timeline de eventos */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">HISTÓRICO DA VISTORIA</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">HISTÓRICO DA VISTORIA</legend>
         <div className="relative pl-6 space-y-0">
           {mockTimeline.map((ev, i) => {
             const Icon = tipoIconMap[ev.tipo] || Clock;
@@ -312,7 +312,7 @@ export default function VistoriaTab({ deal }: Props) {
                     <span className="text-xs font-mono text-muted-foreground">{ev.data}</span>
                     {ev.usuario && <span className="text-[10px] text-muted-foreground">• {ev.usuario}</span>}
                   </div>
-                  <p className="text-sm font-['Source_Serif_4'] mt-0.5">{ev.descricao}</p>
+                  <p className="text-sm mt-0.5">{ev.descricao}</p>
                 </div>
               </div>
             );

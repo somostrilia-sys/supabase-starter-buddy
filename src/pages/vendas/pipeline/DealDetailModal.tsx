@@ -56,7 +56,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
         {/* Header com nome e código */}
         <DialogHeader className="px-6 pt-5 pb-3 border-b" style={{ backgroundColor: "#1A3A5C" }}>
           <DialogTitle className="flex items-center gap-3 text-white">
-            <span className="font-['Source_Serif_4']">{deal.lead_nome}</span>
+            <span className="">{deal.lead_nome}</span>
             <Badge variant="outline" className="text-[10px] font-mono border-white/30 text-white/80 rounded-none">{deal.codigo}</Badge>
             <Badge variant="outline" className="text-xs border-white/30 text-white/80 rounded-none">{deal.veiculo_modelo}</Badge>
             <Badge className="text-[10px] font-mono bg-white/15 text-white rounded-none">{deal.veiculo_placa}</Badge>
@@ -84,10 +84,10 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
             {/* TAB 3 - Veículo + planos + envio */}
             <TabsContent value="veiculo" className="mt-0 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Placa</Label>
-                  <div className="flex gap-2"><Input className="rounded-none font-['Source_Serif_4']" defaultValue={deal.veiculo_placa} /><Button size="sm" variant="outline" className="rounded-none">Buscar</Button></div>
+                <div className="space-y-1.5"><Label className="">Placa</Label>
+                  <div className="flex gap-2"><Input className="rounded-none" defaultValue={deal.veiculo_placa} /><Button size="sm" variant="outline" className="rounded-none">Buscar</Button></div>
                 </div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Tipo Veículo</Label>
+                <div className="space-y-1.5"><Label className="">Tipo Veículo</Label>
                   <Select defaultValue="auto"><SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
                     <SelectContent><SelectItem value="auto">Automóvel</SelectItem><SelectItem value="moto">Motocicleta</SelectItem><SelectItem value="caminhao">Caminhão</SelectItem></SelectContent>
                   </Select>
@@ -99,16 +99,16 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
                   ["Cód. FIPE", "015267-0"], ["Valor FIPE", "R$ 85.000,00"], ["Valor Protegido", "R$ 85.000,00"],
                 ].map(([label, val]) => (
                   <div key={label} className="space-y-1.5">
-                    <Label className="font-['Source_Serif_4']">{label}</Label>
-                    <Input className="rounded-none font-['Source_Serif_4']" defaultValue={val} />
+                    <Label className="">{label}</Label>
+                    <Input className="rounded-none" defaultValue={val} />
                   </div>
                 ))}
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Chassi</Label>
-                  <div className="flex gap-2"><Input className="rounded-none font-['Source_Serif_4']" defaultValue="9BWZZZ377VT004251" /><Badge variant="outline" className="rounded-none">Nacional</Badge></div>
+                <div className="space-y-1.5"><Label className="">Chassi</Label>
+                  <div className="flex gap-2"><Input className="rounded-none" defaultValue="9BWZZZ377VT004251" /><Badge variant="outline" className="rounded-none">Nacional</Badge></div>
                 </div>
               </div>
               <div className="border-t pt-4 space-y-3">
-                <h4 className="text-sm font-semibold font-['Source_Serif_4']">Envio para Sistemas</h4>
+                <h4 className="text-sm font-semibold">Envio para Sistemas</h4>
                 <div className="flex gap-2">
                   <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white"><Send className="h-3.5 w-3.5 mr-1" />Enviar para Gestão</Button>
                   <Button size="sm" variant="outline" className="rounded-none"><MessageSquare className="h-3.5 w-3.5 mr-1" />WhatsApp</Button>
@@ -135,27 +135,27 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
             {/* TAB 7 - SGA */}
             <TabsContent value="sga" className="mt-0 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Regional Gestão</Label>
+                <div className="space-y-1.5"><Label className="">Regional Gestão</Label>
                   <Select defaultValue={deal.regional}><SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
                     <SelectContent>{["SP Capital", "Interior SP", "RJ", "MG"].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Cooperativa Gestão</Label>
+                <div className="space-y-1.5"><Label className="">Cooperativa Gestão</Label>
                   <Select defaultValue={deal.cooperativa}><SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
                     <SelectContent>{["Coop Norte", "Coop Sul", "Coop Leste"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Conta Bancária</Label>
+                <div className="space-y-1.5"><Label className="">Conta Bancária</Label>
                   <Select><SelectTrigger className="rounded-none"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent><SelectItem value="bb">Banco do Brasil - CC 12345-6</SelectItem><SelectItem value="itau">Itaú - CC 78901-2</SelectItem></SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Vencimento Mensalidade</Label>
+                <div className="space-y-1.5"><Label className="">Vencimento Mensalidade</Label>
                   <Select><SelectTrigger className="rounded-none"><SelectValue placeholder="Dia" /></SelectTrigger>
                     <SelectContent>{[5,10,15,20,25].map(d => <SelectItem key={d} value={String(d)}>Dia {d}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5"><Label className="font-['Source_Serif_4']">Forma Pagamento</Label>
+                <div className="space-y-1.5"><Label className="">Forma Pagamento</Label>
                   <Select><SelectTrigger className="rounded-none"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent><SelectItem value="boleto">Boleto</SelectItem><SelectItem value="cartao">Cartão</SelectItem><SelectItem value="pix">PIX</SelectItem></SelectContent>
                   </Select>
@@ -164,16 +164,16 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
               <Button className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white"><Send className="h-3.5 w-3.5 mr-1" />Enviar para Gestão</Button>
               <Table>
                 <TableHeader><TableRow>
-                  <TableHead className="text-xs font-['Source_Serif_4']">Campo</TableHead>
-                  <TableHead className="text-xs font-['Source_Serif_4']">Status</TableHead>
-                  <TableHead className="text-xs font-['Source_Serif_4']">Data/Hora</TableHead>
-                  <TableHead className="text-xs font-['Source_Serif_4']">Erro</TableHead>
-                  <TableHead className="text-xs font-['Source_Serif_4']">Ação</TableHead>
+                  <TableHead className="text-xs">Campo</TableHead>
+                  <TableHead className="text-xs">Status</TableHead>
+                  <TableHead className="text-xs">Data/Hora</TableHead>
+                  <TableHead className="text-xs">Erro</TableHead>
+                  <TableHead className="text-xs">Ação</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {mockGestaoHistory.map((h, i) => (
                     <TableRow key={i}>
-                      <TableCell className="text-sm font-['Source_Serif_4']">{h.campo}</TableCell>
+                      <TableCell className="text-sm">{h.campo}</TableCell>
                       <TableCell><Badge variant={h.status === "Enviado" ? "default" : h.status === "Erro" ? "destructive" : "outline"} className="text-[10px] rounded-none">{h.status}</Badge></TableCell>
                       <TableCell className="text-xs text-muted-foreground">{h.data}</TableCell>
                       <TableCell className="text-xs text-destructive">{h.erro || "—"}</TableCell>
@@ -200,7 +200,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
                           <Badge variant="outline" className="text-[10px] rounded-none">{a.tipo}</Badge>
                           <span className="text-xs text-muted-foreground">{new Date(a.data).toLocaleDateString("pt-BR")} {new Date(a.data).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
                         </div>
-                        <p className="text-sm mt-1 font-['Source_Serif_4']">{a.descricao}</p>
+                        <p className="text-sm mt-1">{a.descricao}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">por {a.usuario}</p>
                       </div>
                     </div>

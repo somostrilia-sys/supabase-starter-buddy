@@ -61,7 +61,7 @@ export default function VistoriaFotoSelector({ selected: controlledSelected, onC
   return (
     <fieldset className="space-y-3">
       <div className="flex items-center justify-between">
-        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[hsl(212_35%_18%)] border-b pb-1 flex items-center gap-2">
+        <legend className="text-sm font-bold text-[hsl(212_35%_18%)] border-b pb-1 flex items-center gap-2">
           <Camera className="h-4 w-4" />
           FOTOS OBRIGATÓRIAS DA VISTORIA
         </legend>

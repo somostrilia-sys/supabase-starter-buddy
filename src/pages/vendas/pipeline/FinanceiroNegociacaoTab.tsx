@@ -72,7 +72,7 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <c.icon className="h-3.5 w-3.5" />{c.label}
               </div>
-              <p className="text-xl font-bold font-['Source_Serif_4']" style={{ color: c.color }}>
+              <p className="text-xl font-bold" style={{ color: c.color }}>
                 {fmt(c.valor)}{c.sub && <span className="text-xs font-normal text-muted-foreground ml-1">{c.sub}</span>}
               </p>
             </CardContent>
@@ -82,7 +82,7 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
 
       {/* Forma de pagamento */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">FORMA DE PAGAMENTO</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">FORMA DE PAGAMENTO</legend>
         <div className="flex gap-2">
           {formasPgto.map(f => {
             const selected = formaPgto === f.id;
@@ -90,7 +90,7 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
               <button
                 key={f.id}
                 onClick={() => setFormaPgto(f.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 border-2 text-sm font-['Source_Serif_4'] transition-all ${
+                className={`flex items-center gap-2 px-4 py-2.5 border-2 text-sm transition-all ${
                   selected ? "border-[#1A3A5C] bg-[#1A3A5C]/5 font-semibold" : "border-border hover:border-muted-foreground/40"
                 }`}
               >
@@ -101,19 +101,19 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
           })}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground font-['Source_Serif_4']">Status geral:</span>
+          <span className="text-sm text-muted-foreground">Status geral:</span>
           <Badge className={`rounded-none border ${statusBadge.pendente.cls}`}>{statusBadge.pendente.label}</Badge>
         </div>
       </fieldset>
 
       {/* Split de Pagamento */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">SPLIT DE PAGAMENTO (COMISSÃO)</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">SPLIT DE PAGAMENTO (COMISSÃO)</legend>
         <div className="p-4 rounded border bg-muted/30 space-y-2">
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center p-3 rounded bg-background border">
               <p className="text-[10px] text-muted-foreground uppercase">Valor Total Adesão</p>
-              <p className="text-lg font-bold font-['Source_Serif_4'] text-[#1A3A5C]">{fmt(taxaAdesao)}</p>
+              <p className="text-lg font-bold text-[#1A3A5C]">{fmt(taxaAdesao)}</p>
             </div>
             <div className="text-center p-3 rounded bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
               <p className="text-[10px] text-muted-foreground uppercase">Comissão Consultor</p>
@@ -122,7 +122,7 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
             </div>
             <div className="text-center p-3 rounded bg-background border">
               <p className="text-[10px] text-muted-foreground uppercase">Líquido Associação</p>
-              <p className="text-lg font-bold font-['Source_Serif_4'] text-[#1A3A5C]">{fmt(taxaAdesao * 0.85)}</p>
+              <p className="text-lg font-bold text-[#1A3A5C]">{fmt(taxaAdesao * 0.85)}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
@@ -134,12 +134,12 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
 
       {/* Tabela de faturas */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold font-['Source_Serif_4'] text-[#1A3A5C] border-b pb-1 w-full">FATURAS E RECIBOS</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">FATURAS E RECIBOS</legend>
         <Table>
           <TableHeader>
             <TableRow>
               {["Data", "Descrição", "Valor", "Status", "Ação"].map(h => (
-                <TableHead key={h} className="text-xs font-['Source_Serif_4']">{h}</TableHead>
+                <TableHead key={h} className="text-xs">{h}</TableHead>
               ))}
             </TableRow>
           </TableHeader>
@@ -149,7 +149,7 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
               return (
                 <TableRow key={f.id}>
                   <TableCell className="text-xs font-mono">{f.data}</TableCell>
-                  <TableCell className="text-sm font-['Source_Serif_4']">{f.descricao}</TableCell>
+                  <TableCell className="text-sm">{f.descricao}</TableCell>
                   <TableCell className="text-sm font-semibold">{fmt(f.valor)}</TableCell>
                   <TableCell><Badge className={`rounded-none border text-[10px] ${st.cls}`}>{st.label}</Badge></TableCell>
                   <TableCell>

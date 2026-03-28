@@ -82,9 +82,9 @@ function ModuleGroup({ label, icon: ModIcon, items, collapsed, pathname }: Modul
   };
 
   const activeColorMap: Record<string, string> = {
-    "Gestão": "bg-sidebar-accent text-sidebar-primary border-l-[3px] border-sidebar-primary",
-    "Financeiro": "bg-[hsl(38_20%_15%)] text-[hsl(38_70%_70%)] border-l-[3px] border-[hsl(38_70%_60%)]",
-    "Vendas": "bg-[hsl(152_20%_15%)] text-[hsl(152_50%_65%)] border-l-[3px] border-[hsl(152_50%_55%)]",
+    "Gestão": "bg-sidebar-accent/80 text-sidebar-primary font-medium rounded-md",
+    "Financeiro": "bg-[hsl(38_20%_15%)] text-[hsl(38_70%_70%)] font-medium rounded-md",
+    "Vendas": "bg-[hsl(152_20%_15%)] text-[hsl(152_50%_65%)] font-medium rounded-md",
   };
 
   return (
@@ -159,7 +159,7 @@ export function AppSidebar() {
                 to="/"
                 end
                 className="rounded-md hover:bg-sidebar-accent text-sidebar-foreground/80"
-                activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold border-l-[3px] border-sidebar-primary"
+                activeClassName="bg-sidebar-accent/80 text-sidebar-primary font-medium rounded-md"
               >
                 <LayoutDashboard className="mr-2 h-4 w-4" />
                 {!collapsed && <span>Dashboard</span>}
@@ -168,6 +168,7 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
 
+        <div className="h-px bg-sidebar-border mx-2 mt-2" />
         <ModuleGroup
           label="Gestão"
           icon={Shield}
@@ -176,6 +177,7 @@ export function AppSidebar() {
           pathname={location.pathname}
         />
 
+        <div className="h-px bg-sidebar-border mx-2 my-1" />
         <ModuleGroup
           label="Financeiro"
           icon={DollarSign}
@@ -184,6 +186,7 @@ export function AppSidebar() {
           pathname={location.pathname}
         />
 
+        <div className="h-px bg-sidebar-border mx-2 my-1" />
         <ModuleGroup
           label="Vendas"
           icon={Target}
