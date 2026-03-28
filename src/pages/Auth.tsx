@@ -65,16 +65,16 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left side - Dark hero */}
-      <div className="hidden lg:flex lg:w-[58%] relative bg-gray-900 overflow-hidden">
-        {/* Subtle orbs */}
+      {/* Left side - Hero with gradient */}
+      <div className="hidden lg:flex lg:w-[58%] relative gradient-hero overflow-hidden">
+        {/* Animated orbs */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="orb orb-1" />
           <div className="orb orb-2" />
           <div className="orb orb-3" />
           {/* Grid pattern overlay */}
-          <div className="absolute inset-0 opacity-[0.04]" style={{
-            backgroundImage: 'linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)',
+          <div className="absolute inset-0 opacity-[0.03]" style={{
+            backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
             backgroundSize: '60px 60px'
           }} />
         </div>
@@ -94,13 +94,13 @@ export default function Auth() {
           {/* Center - Main content */}
           <div className="space-y-10 max-w-xl">
             <div className="space-y-5">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs text-white/70 font-medium">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass text-xs text-accent font-medium">
                 <Zap className="w-3.5 h-3.5" />
                 Plataforma Inteligente de Gestão
               </div>
               <h2 className="text-4xl xl:text-5xl font-bold text-white leading-[1.1] tracking-tight">
                 Software completo para
-                <span className="text-gray-300"> proteção veicular</span>
+                <span className="text-accent"> proteção veicular</span>
               </h2>
               <p className="text-base text-white/50 leading-relaxed max-w-md">
                 Unifique vendas, financeiro e gestão com uma plataforma moderna, segura e escalável.
@@ -110,9 +110,9 @@ export default function Auth() {
             {/* Feature cards - 2x2 grid */}
             <div className="grid grid-cols-2 gap-3">
               {features.map((f) => (
-                <div key={f.title} className="bg-white/8 border border-white/10 rounded-xl p-4 space-y-2.5 hover:bg-white/12 transition-colors group cursor-default">
-                  <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center">
-                    <f.icon className="w-4 h-4 text-white" />
+                <div key={f.title} className="glass rounded-xl p-4 space-y-2.5 hover:bg-white/10 transition-colors group cursor-default">
+                  <div className="w-9 h-9 rounded-lg gradient-accent flex items-center justify-center">
+                    <f.icon className="w-4.5 h-4.5 text-white" />
                   </div>
                   <h3 className="font-semibold text-sm text-white">{f.title}</h3>
                   <p className="text-xs text-white/40 leading-relaxed">{f.desc}</p>
@@ -123,8 +123,8 @@ export default function Auth() {
             {/* Differential highlight */}
             <div className="flex items-center gap-4 pt-2">
               {differentials.map((d) => (
-                <div key={d.title} className="flex items-center gap-3 bg-white/8 border border-white/10 rounded-xl px-5 py-3">
-                  <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center">
+                <div key={d.title} className="flex items-center gap-3 glass rounded-xl px-5 py-3">
+                  <div className="w-10 h-10 rounded-lg gradient-accent flex items-center justify-center">
                     <d.icon className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -144,8 +144,13 @@ export default function Auth() {
       </div>
 
       {/* Right side - Login form */}
-      <div className="flex-1 flex items-center justify-center bg-white p-6 sm:p-10 relative overflow-hidden">
-        <div className="w-full max-w-[380px] space-y-8 relative z-10">
+      <div className="flex-1 flex items-center justify-center bg-background p-6 sm:p-10 relative overflow-hidden">
+        {/* Subtle orbs on right side too */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none lg:hidden">
+          <div className="orb orb-1" />
+          <div className="orb orb-2" />
+        </div>
+        <div className="w-full max-w-[380px] space-y-8 relative z-10 login-glow">
           {/* Mobile logo */}
           <div className="text-center lg:hidden space-y-3">
             {brand.logoUrl && (
@@ -197,7 +202,7 @@ export default function Auth() {
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Senha</Label>
                 {isLogin && (
-                  <button type="button" className="text-xs text-gray-500 hover:text-gray-900 hover:underline">
+                  <button type="button" className="text-xs text-accent hover:underline">
                     Esqueceu a senha?
                   </button>
                 )}
@@ -213,7 +218,7 @@ export default function Auth() {
                 className="h-11"
               />
             </div>
-            <Button type="submit" className="w-full h-11" disabled={loading}>
+            <Button type="submit" className="w-full h-11 gradient-accent border-0 text-white font-semibold shadow-lg shadow-accent/25 hover:shadow-accent/40 transition-all btn-shimmer" disabled={loading}>
               {loading ? "Aguarde..." : isLogin ? (
                 <><LogIn className="mr-2 h-4 w-4" /> Entrar</>
               ) : (
@@ -227,7 +232,7 @@ export default function Auth() {
               <div className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-3 text-gray-400">ou</span>
+              <span className="bg-background px-3 text-muted-foreground">ou</span>
             </div>
           </div>
 
@@ -235,7 +240,7 @@ export default function Auth() {
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-gray-600 hover:text-gray-900 hover:underline font-medium"
+              className="text-sm text-accent hover:underline font-medium"
             >
               {isLogin ? "Não tem conta? Cadastre-se" : "Já tem conta? Faça login"}
             </button>

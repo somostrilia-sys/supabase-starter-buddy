@@ -93,35 +93,35 @@ export function ModuleLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Top header bar */}
-      <header className="shrink-0 bg-white border-b border-gray-100">
-        <div className="flex items-center h-12 px-4 gap-3">
+      <header className="shrink-0 gradient-hero border-b border-white/10">
+        <div className="flex items-center h-14 px-4 gap-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate("/")}
-            className="gap-1.5 text-gray-500 hover:text-gray-900"
+            className="gap-1.5 text-white/50 hover:text-white hover:bg-white/10"
           >
             <ChevronLeft className="h-4 w-4" />
             <LayoutDashboard className="h-4 w-4" />
           </Button>
 
-          <div className="h-5 w-px bg-gray-200" />
+          <div className="h-6 w-px bg-white/15" />
 
           <div className="flex items-center gap-2.5">
             {brand.logoUrl && (
-              <img src={brand.logoUrl} alt={brand.name} className="h-7 object-contain" />
+              <img src={brand.logoUrl} alt={brand.name} className="h-7 object-contain brightness-0 invert opacity-80" />
             )}
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center">
-                <activeMod.icon className="h-4 w-4 text-gray-600" />
+              <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center shadow-lg shadow-accent/20">
+                <activeMod.icon className="h-4 w-4 text-white" />
               </div>
-              <span className="font-semibold text-sm text-gray-900">{activeMod.label}</span>
+              <span className="font-bold text-sm tracking-wide text-white">{activeMod.label}</span>
             </div>
           </div>
 
           <div className="ml-auto flex items-center gap-3">
-            <span className="text-xs text-gray-400 hidden sm:block">{user?.email}</span>
-            <Button variant="ghost" size="icon" onClick={signOut} className="text-gray-400 hover:text-gray-700 h-8 w-8">
+            <span className="text-xs text-white/40 hidden sm:block">{user?.email}</span>
+            <Button variant="ghost" size="icon" onClick={signOut} className="text-white/40 hover:text-white hover:bg-white/10 h-8 w-8">
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
@@ -129,7 +129,7 @@ export function ModuleLayout({ children }: { children: ReactNode }) {
       </header>
 
       {/* Module navigation */}
-      <nav className="border-b border-gray-100 bg-white shrink-0">
+      <nav className="border-b bg-card shrink-0 shadow-sm">
         <ScrollArea className="w-full">
           <div className="flex items-center gap-0.5 px-4 py-1">
             {activeMod.items.map((item) => {
@@ -138,17 +138,17 @@ export function ModuleLayout({ children }: { children: ReactNode }) {
                 <NavLink
                   key={item.url}
                   to={item.url}
-                  className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm transition-colors whitespace-nowrap rounded-md ${
+                  className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm transition-colors whitespace-nowrap rounded-t-lg ${
                     isActive
-                      ? "text-gray-900 font-semibold"
-                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                      ? "text-accent font-semibold"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
                   activeClassName=""
                 >
                   <item.icon className="h-3.5 w-3.5" />
                   <span>{item.title}</span>
                   {isActive && (
-                    <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-gray-900 rounded-full" />
+                    <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-accent rounded-full" />
                   )}
                 </NavLink>
               );
@@ -159,7 +159,7 @@ export function ModuleLayout({ children }: { children: ReactNode }) {
       </nav>
 
       {/* Content */}
-      <main className="flex-1 overflow-auto p-6 bg-gray-50">
+      <main className="flex-1 overflow-auto p-6">
         {children}
       </main>
     </div>
