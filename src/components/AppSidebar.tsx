@@ -76,22 +76,22 @@ function ModuleGroup({ label, icon: ModIcon, items, collapsed, pathname }: Modul
   const isActive = items.some((i) => pathname === i.url || pathname.startsWith(i.url + "/"));
 
   const labelColorMap: Record<string, string> = {
-    "Gestão": "text-sidebar-primary",
-    "Financeiro": "text-[hsl(38_70%_60%)]",
-    "Vendas": "text-[hsl(152_50%_55%)]",
+    "Gestão": "text-gray-500",
+    "Financeiro": "text-gray-500",
+    "Vendas": "text-gray-500",
   };
 
   const activeColorMap: Record<string, string> = {
-    "Gestão": "bg-sidebar-accent/80 text-sidebar-primary font-medium rounded-md",
-    "Financeiro": "bg-[hsl(38_20%_15%)] text-[hsl(38_70%_70%)] font-medium rounded-md",
-    "Vendas": "bg-[hsl(152_20%_15%)] text-[hsl(152_50%_65%)] font-medium rounded-md",
+    "Gestão": "bg-gray-100 text-gray-900 font-medium rounded-md",
+    "Financeiro": "bg-gray-100 text-gray-900 font-medium rounded-md",
+    "Vendas": "bg-gray-100 text-gray-900 font-medium rounded-md",
   };
 
   return (
     <Collapsible defaultOpen={isActive} className="mt-1">
       <SidebarGroup className="p-0">
         <CollapsibleTrigger className="w-full group">
-          <SidebarGroupLabel className={`flex items-center justify-between w-full cursor-pointer text-[10px] uppercase tracking-widest px-3 py-2 hover:text-sidebar-foreground ${labelColorMap[label] || "text-sidebar-foreground/60"}`}>
+          <SidebarGroupLabel className={`flex items-center justify-between w-full cursor-pointer text-[10px] uppercase tracking-widest px-3 py-2 hover:text-gray-700 ${labelColorMap[label] || "text-gray-500"}`}>
             <span className="flex items-center gap-2">
               <ModIcon className="h-3.5 w-3.5" />
               {!collapsed && label}
@@ -109,8 +109,8 @@ function ModuleGroup({ label, icon: ModIcon, items, collapsed, pathname }: Modul
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
-                      className="rounded-md hover:bg-sidebar-accent text-sidebar-foreground/70 text-[13px]"
-                      activeClassName={`font-semibold ${activeColorMap[label] || "bg-sidebar-accent text-sidebar-primary border-l-[3px] border-sidebar-primary"}`}
+                      className="rounded-md hover:bg-gray-50 hover:text-gray-900 text-gray-500 text-[13px] transition-colors"
+                      activeClassName={`${activeColorMap[label] || "bg-gray-100 text-gray-900 font-medium rounded-md"}`}
                     >
                       <item.icon className="mr-2 h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
@@ -135,15 +135,15 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="p-4 border-b border-sidebar-border bg-sidebar">
+      <SidebarHeader className="px-4 py-3 border-b border-gray-100 bg-white">
         <div className="flex items-center gap-2.5">
-          {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="h-8 object-contain shrink-0 brightness-0 invert" />}
+          {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="h-8 object-contain shrink-0" />}
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="font-semibold text-sm text-white tracking-tight">
+              <span className="font-semibold text-sm text-gray-900 tracking-tight">
                 {brand.name}
               </span>
-              <span className="text-[10px] text-sidebar-foreground/40 leading-tight uppercase tracking-wider">
+              <span className="text-[10px] text-gray-400 leading-tight uppercase tracking-wider">
                 {brand.subtitle}
               </span>
             </div>
@@ -151,15 +151,15 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-3 overflow-y-auto">
+      <SidebarContent className="px-2 py-3 overflow-y-auto bg-white">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <NavLink
                 to="/"
                 end
-                className="rounded-md hover:bg-sidebar-accent text-sidebar-foreground/80"
-                activeClassName="bg-sidebar-accent/80 text-sidebar-primary font-medium rounded-md"
+                className="rounded-md hover:bg-gray-50 hover:text-gray-900 text-gray-500 transition-colors"
+                activeClassName="bg-gray-100 text-gray-900 font-medium rounded-md"
               >
                 <LayoutDashboard className="mr-2 h-4 w-4" />
                 {!collapsed && <span>Dashboard</span>}
@@ -168,7 +168,7 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
 
-        <div className="border-t border-sidebar-border/50 mx-3 my-2" />
+        <div className="border-t border-gray-100 mx-3 my-1" />
         <ModuleGroup
           label="Gestão"
           icon={Shield}
@@ -177,7 +177,7 @@ export function AppSidebar() {
           pathname={location.pathname}
         />
 
-        <div className="border-t border-sidebar-border/50 mx-3 my-2" />
+        <div className="border-t border-gray-100 mx-3 my-1" />
         <ModuleGroup
           label="Financeiro"
           icon={DollarSign}
@@ -186,7 +186,7 @@ export function AppSidebar() {
           pathname={location.pathname}
         />
 
-        <div className="border-t border-sidebar-border/50 mx-3 my-2" />
+        <div className="border-t border-gray-100 mx-3 my-1" />
         <ModuleGroup
           label="Vendas"
           icon={Target}
@@ -196,9 +196,9 @@ export function AppSidebar() {
         />
       </SidebarContent>
 
-      <SidebarFooter className="p-3 border-t border-sidebar-border bg-[hsl(222_50%_8%)]">
+      <SidebarFooter className="p-3 border-t border-gray-100 bg-white">
         {!collapsed && (
-          <div className="text-[11px] text-sidebar-foreground/30 truncate mb-2 px-2">
+          <div className="text-[11px] text-gray-400 truncate mb-2 px-2">
             {user?.email}
           </div>
         )}
@@ -206,7 +206,7 @@ export function AppSidebar() {
           variant="ghost"
           size="sm"
           onClick={signOut}
-          className="w-full justify-start text-sidebar-foreground/50 hover:text-white hover:bg-white/10"
+          className="w-full justify-start text-gray-500 hover:text-gray-900 hover:bg-gray-100"
         >
           <LogOut className="mr-2 h-4 w-4" />
           {!collapsed && "Sair"}

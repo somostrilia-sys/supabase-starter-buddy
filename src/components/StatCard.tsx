@@ -13,21 +13,21 @@ interface StatCardProps {
 
 export function StatCard({ title, value, subtitle, icon: Icon, trend, className }: StatCardProps) {
   return (
-    <Card className={cn("border-0 shadow-sm card-premium card-glow animate-fade-in-up", className)}>
+    <Card className={cn("animate-fade-in-up", className)}>
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
-            <p className="text-2xl font-bold tracking-tight">{value}</p>
-            {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{title}</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-1">{value}</p>
+            {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
             {trend && (
-              <p className={cn("text-xs font-medium", trend.value >= 0 ? "text-success" : "text-destructive")}>
+              <p className={cn("text-xs font-medium", trend.value >= 0 ? "text-emerald-600" : "text-red-500")}>
                 {trend.value >= 0 ? "+" : ""}{trend.value}% {trend.label}
               </p>
             )}
           </div>
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
-            <Icon className="w-5 h-5 text-primary" />
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100">
+            <Icon className="w-4 h-4 text-gray-600" />
           </div>
         </div>
       </CardContent>

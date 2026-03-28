@@ -109,7 +109,7 @@ function ModuleSection({
         {action && onAction && (
           <button
             onClick={onAction}
-            className="flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent/80 transition-colors border border-accent/20 rounded-lg px-3 py-1.5 hover:bg-accent/5 btn-shimmer"
+            className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 transition-colors border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50"
           >
             {action}
             <ChevronRight className="h-3.5 w-3.5" />
@@ -138,22 +138,22 @@ function KpiCard({
   const animatedValue = useCountUp(numericValue ?? 0);
 
   return (
-    <Card className={`shadow-sm border card-premium card-glow animate-fade-in-up animate-fade-in-up-${animDelay ?? 1}`}>
+    <Card className={`animate-fade-in-up animate-fade-in-up-${animDelay ?? 1}`}>
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider leading-tight">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide leading-tight">
               {label}
             </p>
-            <p className="text-2xl font-bold tracking-tight text-foreground">
+            <p className="text-2xl font-semibold text-gray-900">
               {numericValue !== null ? animatedValue : value}
             </p>
             {subtitle && (
-              <p className="text-[11px] text-muted-foreground leading-tight">{subtitle}</p>
+              <p className="text-[11px] text-gray-500 leading-tight">{subtitle}</p>
             )}
           </div>
-          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
-            <Icon className="w-5 h-5 text-accent" />
+          <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+            <Icon className="w-4 h-4 text-gray-600" />
           </div>
         </div>
       </CardContent>
@@ -236,26 +236,25 @@ export default function Dashboard() {
   ].filter((d) => d.value > 0);
 
   return (
-    <div className="min-h-screen bg-background dot-pattern relative">
-      <BackgroundEffects />
+    <div className="min-h-screen bg-gray-50 relative">
       {/* ══════════ HEADER ══════════ */}
-      <header className="border-b border-white/10 sticky top-0 z-20 gradient-header shadow-lg relative relative">
-        <div className="px-6 lg:px-8 h-16 flex items-center justify-between">
+      <header className="border-b border-gray-100 sticky top-0 z-20 bg-white relative">
+        <div className="px-6 lg:px-8 h-12 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="h-9 object-contain brightness-0 invert" />}
+            {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="h-8 object-contain" />}
             <div>
-              <span className="font-bold text-sm tracking-tight text-white">{brand.name}</span>
-              <span className="text-xs text-white/30 ml-2 hidden sm:inline uppercase tracking-wider">{brand.subtitle}</span>
+              <span className="font-semibold text-sm tracking-tight text-gray-900">{brand.name}</span>
+              <span className="text-xs text-gray-400 ml-2 hidden sm:inline uppercase tracking-wider">{brand.subtitle}</span>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-xs text-white/40 hidden md:block">{user?.email}</span>
-            <div className="h-4 w-px bg-white/15 hidden md:block" />
+            <span className="text-xs text-gray-400 hidden md:block">{user?.email}</span>
+            <div className="h-4 w-px bg-gray-200 hidden md:block" />
             <Button
               variant="ghost"
               size="sm"
               onClick={signOut}
-              className="text-white/50 hover:text-white hover:bg-white/10 h-8 gap-1.5 text-xs"
+              className="text-gray-500 hover:text-gray-900 h-8 gap-1.5 text-xs"
             >
               <LogOut className="h-3.5 w-3.5" />
               Sair
@@ -264,15 +263,15 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="px-6 lg:px-8 py-8 s relative z-10pace-y-10">
+      <div className="px-6 lg:px-8 py-8 relative z-10 space-y-10">
         {/* ══════════ PAGE TITLE ══════════ */}
         <div className="flex items-center gap-3 animate-fade-in-up">
-          <div className="w-10 h-10 rounded-xl gradient-accent flex items-center justify-center shadow-lg shadow-accent/25">
-            <Zap className="h-5 w-5 text-white" />
+          <div className="w-9 h-9 rounded-lg bg-gray-900 flex items-center justify-center">
+            <Zap className="h-4 w-4 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Painel Principal</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-xl font-semibold text-gray-900">Painel Principal</h1>
+            <p className="text-sm text-gray-500">
               Visão consolidada da sua associação de proteção veicular
             </p>
           </div>
@@ -284,19 +283,19 @@ export default function Dashboard() {
             <button
               key={mod.title}
               onClick={() => navigate(mod.route)}
-              className={`group relative flex items-center gap-5 rounded-xl border bg-card card-premium card-glow p-6 text-left transition-all duration-300 animate-fade-in-up animate-fade-in-up-${i + 1}`}
+              className={`group relative flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 text-left hover:shadow-sm transition-all duration-150 animate-fade-in-up animate-fade-in-up-${i + 1}`}
             >
               <div
-                className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
-                style={{ backgroundColor: mod.color, boxShadow: `0 4px 14px -3px ${mod.color}50` }}
+                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: mod.color }}
               >
-                <mod.icon className="w-6 h-6 text-white" />
+                <mod.icon className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="font-semibold text-base text-foreground">{mod.title}</h2>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{mod.subtitle}</p>
+                <h2 className="font-semibold text-sm text-gray-900">{mod.title}</h2>
+                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{mod.subtitle}</p>
               </div>
-              <ArrowRight className="h-5 w-5 text-border group-hover:text-accent transition-colors shrink-0" />
+              <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-gray-600 transition-colors shrink-0" />
             </button>
           ))}
         </div>
@@ -327,7 +326,7 @@ export default function Dashboard() {
             />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-            <Card className="shadow-sm border card-premium card-glow animate-fade-in-up animate-fade-in-up-5">
+            <Card className="animate-fade-in-up animate-fade-in-up-5">
               <CardHeader className="pb-2 pt-5 px-5">
                 <CardTitle className="text-sm font-semibold text-foreground">Crescimento Mensal</CardTitle>
                 <p className="text-xs text-muted-foreground">Associados e veículos cadastrados</p>
@@ -345,7 +344,7 @@ export default function Dashboard() {
                 </ChartContainer>
               </CardContent>
             </Card>
-            <Card className="shadow-sm border card-premium card-glow animate-fade-in-up animate-fade-in-up-6">
+            <Card className="animate-fade-in-up animate-fade-in-up-6">
               <CardHeader className="pb-2 pt-5 px-5">
                 <CardTitle className="text-sm font-semibold text-foreground">Status dos Associados</CardTitle>
                 <p className="text-xs text-muted-foreground">Distribuição atual da base</p>
@@ -411,7 +410,7 @@ export default function Dashboard() {
             <KpiCard label="Boletos em Aberto" value="124" icon={FileText} subtitle="Vencendo este mês" animDelay={4} />
           </div>
           <div className="mt-4">
-            <Card className="shadow-sm border card-premium card-glow animate-fade-in-up animate-fade-in-up-5">
+            <Card className="animate-fade-in-up animate-fade-in-up-5">
               <CardHeader className="pb-2 pt-5 px-5">
                 <CardTitle className="text-sm font-semibold text-foreground">Receitas da Semana</CardTitle>
                 <p className="text-xs text-muted-foreground">Recebimentos diários acumulados</p>

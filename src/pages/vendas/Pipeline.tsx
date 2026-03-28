@@ -345,29 +345,26 @@ export default function Pipeline() {
 
       {/* KANBAN VIEW */}
       {viewMode === "kanban" ? (
-        <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0" style={{ minHeight: "70vh" }}>
+        <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0" style={{ minHeight: "70vh" }}>
           {stageColumns.map(col => {
             const colDeals = filtered.filter(d => d.stage === col.key);
             const isOver = dragOverStage === col.key;
             return (
               <div
                 key={col.key}
-                className={`flex flex-col rounded-xl overflow-hidden min-w-[260px] w-[260px] shrink-0 transition-all ${col.bg} ${isOver ? "ring-2 shadow-lg" : "shadow-sm"}`}
-                style={{ borderTop: `4px solid ${col.color}` }}
+                className={`flex flex-col rounded-xl min-w-[280px] w-[280px] shrink-0 transition-all p-3 gap-2 ${col.bg} ${isOver ? "ring-2 ring-gray-300 shadow-md" : ""}`}
                 onDragOver={e => handleDragOver(e, col.key)}
                 onDragLeave={() => setDragOverStage(null)}
                 onDrop={() => handleDrop(col.key)}
               >
-                <div className="px-3 pt-3 pb-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2.5 h-2.5 rounded-full ${col.dot}`} />
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground/80">{col.label}</span>
-                    </div>
-                    <Badge className="text-[10px] h-5 px-1.5" style={{ backgroundColor: `${col.color}20`, color: col.color, border: `1px solid ${col.color}40` }}>{colDeals.length}</Badge>
+                <div className="flex items-center justify-between px-1 pb-2 border-b border-gray-200">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${col.dot}`} />
+                    <span className="text-sm font-semibold text-gray-700">{col.label}</span>
                   </div>
+                  <span className="bg-gray-200 text-gray-600 rounded-full text-xs px-2 py-0.5 font-medium">{colDeals.length}</span>
                 </div>
-                <ScrollArea className="flex-1 px-2 pb-2">
+                <ScrollArea className="flex-1">
                   <div className="space-y-2">
                     {colDeals.map(deal => {
                       const days = daysStalled(deal.updated_at);
@@ -378,15 +375,14 @@ export default function Pipeline() {
                           draggable
                           onDragStart={e => handleDragStart(e, deal.id)}
                           onClick={() => setDetailDeal(deal)}
-                          className={`kanban-card group bg-card border rounded-lg cursor-pointer ${draggedId === deal.id ? "opacity-40" : ""}`}
-                          style={{ borderLeft: `3px solid ${col.color}` }}
+                          className={`kanban-card group bg-white border border-gray-200 rounded-lg p-3 cursor-pointer shadow-none ${draggedId === deal.id ? "opacity-40" : ""}`}
                         >
-                          <div className="p-3 space-y-1.5">
+                          <div className="space-y-1.5">
                             {/* Header: nome + código + menu */}
                             <div className="flex items-start justify-between">
                               <div>
-                                <p className="text-[13px] font-semibold leading-tight">{deal.lead_nome}</p>
-                                <span className="text-[10px] font-mono text-muted-foreground">{deal.codigo}</span>
+                                <p className="text-sm font-medium text-gray-900 leading-tight">{deal.lead_nome}</p>
+                                <span className="text-[10px] font-mono text-gray-400">{deal.codigo}</span>
                               </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -412,16 +408,16 @@ export default function Pipeline() {
                             </div>
 
                             {/* Veículo + Placa */}
-                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <div className="flex items-center gap-1.5 text-gray-500">
                               <Car className="h-3 w-3 shrink-0" />
-                              <span className="text-[11px] truncate">{deal.veiculo_modelo}</span>
-                              <Badge variant="outline" className="text-[9px] font-mono px-1 py-0 rounded-none">{deal.veiculo_placa}</Badge>
+                              <span className="text-xs truncate">{deal.veiculo_modelo}</span>
+                              <Badge variant="outline" className="text-[9px] font-mono px-1 py-0">{deal.veiculo_placa}</Badge>
                             </div>
 
                             {/* Plano + Valor */}
                             <div className="flex items-center justify-between">
-                              <Badge variant="outline" className="text-[9px] px-1.5 py-0 rounded-none">{deal.plano}</Badge>
-                              <span className="text-[11px] font-bold text-foreground">R$ {deal.valor_plano.toFixed(2).replace(".", ",")}</span>
+                              <Badge variant="outline" className="text-[9px] px-1.5 py-0">{deal.plano}</Badge>
+                              <span className="text-xs font-semibold text-gray-900">R$ {deal.valor_plano.toFixed(2).replace(".", ",")}</span>
                             </div>
 
                             {/* Status icons row */}
@@ -438,7 +434,7 @@ export default function Pipeline() {
 
                             {/* Data + Stalled */}
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1 text-muted-foreground">
+                              <div className="flex items-center gap-1 text-gray-400">
                                 <Calendar className="h-3 w-3" />
                                 <span className="text-[10px]">{new Date(deal.created_at).toLocaleDateString("pt-BR")} {new Date(deal.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
                               </div>
@@ -446,19 +442,19 @@ export default function Pipeline() {
                             </div>
 
                             {/* Footer: Consultor */}
-                            <div className="flex items-center justify-end gap-1.5 pt-0.5 border-t border-muted/40 mt-1">
-                              <div className="w-5 h-5 rounded-full bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center shrink-0">
-                                <span className="text-[9px] font-bold text-primary">{deal.consultor.charAt(0)}</span>
+                            <div className="flex items-center justify-end gap-1.5 pt-0.5 border-t border-gray-100 mt-1">
+                              <div className="w-5 h-5 rounded-full bg-gray-900 flex items-center justify-center shrink-0">
+                                <span className="text-[9px] font-bold text-white">{deal.consultor.charAt(0)}</span>
                               </div>
-                              <span className="text-[10px] text-muted-foreground">{deal.consultor}</span>
+                              <span className="text-[10px] text-gray-500">{deal.consultor}</span>
                             </div>
                           </div>
                         </div>
                       );
                     })}
                     {colDeals.length === 0 && (
-                      <div className="flex flex-col items-center justify-center h-20 gap-1 select-none">
-                        <div className="w-8 h-1 rounded-full bg-border/50" />
+                      <div className="flex flex-col items-center justify-center h-16 gap-1 select-none">
+                        <div className="w-8 h-1 rounded-full bg-gray-200" />
                       </div>
                     )}
                   </div>
@@ -538,7 +534,7 @@ export default function Pipeline() {
 
       {/* Floating button */}
       <Button
-        className="fixed bottom-6 right-6 h-12 px-5 rounded-full shadow-2xl shadow-primary/25 transition-all hover:scale-[1.03] gap-2 z-50"
+        className="fixed bottom-6 right-6 h-11 px-5 rounded-full shadow-lg shadow-gray-900/20 transition-all hover:scale-[1.03] gap-2 z-50"
         onClick={() => setNewDealOpen(true)}
       >
         <Plus className="h-5 w-5" />
@@ -549,7 +545,7 @@ export default function Pipeline() {
       <Dialog open={newDealOpen} onOpenChange={setNewDealOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Nova Negociação</DialogTitle></DialogHeader>
-          <div className="space-y-4">
+          <div className="px-6 py-5 space-y-4">
             <div className="p-3 rounded-lg border border-warning/25 bg-warning/8 text-warning text-xs">
               <strong>Dados mínimos para cotação:</strong> Preencha Nome e Telefone para criar a negociação.
             </div>
@@ -608,7 +604,7 @@ export default function Pipeline() {
               </div>
             </div>
             <div className="space-y-1.5"><Label>Observações</Label><Textarea value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} rows={3} /></div>
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => { setNewDealOpen(false); setFormTouched({ lead_nome: false, telefone: false }); }}>Cancelar</Button>
               <Button onClick={handleNewDeal} disabled={!canCreateDeal || createLead.isPending}>
                 {createLead.isPending ? "Criando..." : "Criar Negociação"}

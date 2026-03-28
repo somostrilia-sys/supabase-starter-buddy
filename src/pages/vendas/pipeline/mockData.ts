@@ -35,13 +35,13 @@ export interface PipelineDeal {
 }
 
 export const stageColumns: { key: PipelineStage; label: string; color: string; bg: string; dot: string }[] = [
-  { key: "novo_lead", label: "Novo Lead", color: "#6366F1", bg: "bg-muted/20", dot: "bg-indigo-500" },
-  { key: "em_contato", label: "Em Contato", color: "#3B82F6", bg: "bg-muted/20", dot: "bg-blue-500" },
-  { key: "proposta_enviada", label: "Proposta Enviada", color: "#F59E0B", bg: "bg-muted/20", dot: "bg-amber-500" },
-  { key: "em_negociacao", label: "Em Negociação", color: "#F97316", bg: "bg-muted/20", dot: "bg-orange-500" },
-  { key: "liberado_cadastro", label: "Liberado p/ Cadastro", color: "#84CC16", bg: "bg-muted/20", dot: "bg-lime-500" },
-  { key: "concluido", label: "Concluído", color: "#22C55E", bg: "bg-muted/20", dot: "bg-green-500" },
-  { key: "perdido", label: "Perdido", color: "#EF4444", bg: "bg-muted/20", dot: "bg-red-500" },
+  { key: "novo_lead", label: "Novo Lead", color: "#6366F1", bg: "bg-gray-50 border border-gray-200", dot: "bg-indigo-400" },
+  { key: "em_contato", label: "Em Contato", color: "#3B82F6", bg: "bg-gray-50 border border-gray-200", dot: "bg-blue-400" },
+  { key: "proposta_enviada", label: "Proposta Enviada", color: "#F59E0B", bg: "bg-gray-50 border border-gray-200", dot: "bg-amber-400" },
+  { key: "em_negociacao", label: "Em Negociação", color: "#F97316", bg: "bg-gray-50 border border-gray-200", dot: "bg-orange-400" },
+  { key: "liberado_cadastro", label: "Liberado p/ Cadastro", color: "#84CC16", bg: "bg-gray-50 border border-gray-200", dot: "bg-lime-500" },
+  { key: "concluido", label: "Concluído", color: "#059669", bg: "bg-gray-50 border border-gray-200", dot: "bg-emerald-500" },
+  { key: "perdido", label: "Perdido", color: "#EF4444", bg: "bg-gray-50 border border-gray-200", dot: "bg-red-400" },
 ];
 
 export const consultores = ["Ana Silva", "Carlos Souza", "Maria Lima"];
