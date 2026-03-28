@@ -33,10 +33,10 @@ const totalAtual = consultores.reduce((s, v) => s + v.atualContratos, 0);
 const taxa = totalMeta > 0 ? (totalAtual / totalMeta) * 100 : 0;
 
 const kpis = [
-  { label: "Meta do Mês", value: `${totalMeta} contratos`, icon: Target, color: "text-[hsl(212_55%_40%)]", bg: "bg-[hsl(210_40%_95%)]" },
-  { label: "Atingido", value: `${totalAtual} contratos`, icon: TrendingUp, color: "text-green-600", bg: "bg-green-50" },
-  { label: "Faltam", value: `${totalMeta - totalAtual} contratos`, icon: AlertCircle, color: "text-red-500", bg: "bg-red-50" },
-  { label: "% Atingimento", value: `${taxa.toFixed(1)}%`, icon: Percent, color: "text-yellow-600", bg: "bg-yellow-50" },
+  { label: "Meta do Mês", value: `${totalMeta} contratos`, icon: Target, color: "text-primary", bg: "bg-primary/8" },
+  { label: "Atingido", value: `${totalAtual} contratos`, icon: TrendingUp, color: "text-success", bg: "bg-success/10" },
+  { label: "Faltam", value: `${totalMeta - totalAtual} contratos`, icon: AlertCircle, color: "text-destructive", bg: "bg-destructive/8" },
+  { label: "% Atingimento", value: `${taxa.toFixed(1)}%`, icon: Percent, color: "text-warning", bg: "bg-warning/10" },
 ];
 
 export default function Metas() {
@@ -68,7 +68,7 @@ export default function Metas() {
           </Select>
           <Dialog open={modalOpen} onOpenChange={setModalOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="gap-1.5 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white"><Plus className="h-4 w-4" />Nova Meta</Button>
+              <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />Nova Meta</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Criar Nova Meta</DialogTitle></DialogHeader>
@@ -80,7 +80,7 @@ export default function Metas() {
                 </div>
                 <div><Label className="text-xs">Meta de Contratos</Label><Input className="mt-1" type="number" placeholder="0" /></div>
                 <div><Label className="text-xs">Meta de Faturamento (R$)</Label><Input className="mt-1" type="number" placeholder="0" /></div>
-                <Button className="w-full bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={() => setModalOpen(false)}>Criar Meta</Button>
+                <Button className="w-full" onClick={() => setModalOpen(false)}>Criar Meta</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -90,7 +90,7 @@ export default function Metas() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map(k => (
-          <Card key={k.label} className="border-[hsl(210_30%_88%)]">
+          <Card key={k.label} className="border-border">
             <CardContent className="p-4 flex items-center gap-3">
               <div className={`w-10 h-10 rounded-lg ${k.bg} flex items-center justify-center`}>
                 <k.icon className={`h-5 w-5 ${k.color}`} />
@@ -106,20 +106,19 @@ export default function Metas() {
 
       {/* Table */}
       <Card className="border-border overflow-hidden">
-        <div className="h-1 gradient-hero" />
         <CardContent className="p-0 overflow-x-auto">
           <Table className="min-w-[800px]">
             <TableHeader>
-              <TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">#</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Consultor</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-center">Meta Contr.</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-center">Atual</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Meta Fat.</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Atual Fat.</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-center">Conversão</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-center">Tempo Médio</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">% Atingimento</TableHead>
+              <TableRow className="bg-muted/60 hover:bg-muted/60 border-b border-border">
+                <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em]">#</TableHead>
+                <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em]">Consultor</TableHead>
+                <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Meta Contr.</TableHead>
+                <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Atual</TableHead>
+                <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-right">Meta Fat.</TableHead>
+                <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-right">Atual Fat.</TableHead>
+                <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Conversão</TableHead>
+                <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Tempo Médio</TableHead>
+                <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em]">% Atingimento</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -127,11 +126,11 @@ export default function Metas() {
                 const pctContratos = c.metaContratos > 0 ? (c.atualContratos / c.metaContratos) * 100 : 0;
                 const barColor = pctContratos >= 80 ? "bg-green-500" : pctContratos >= 50 ? "bg-yellow-500" : "bg-red-500";
                 return (
-                  <TableRow key={c.nome} className={`${i % 2 === 0 ? 'bg-card' : 'bg-[hsl(210_30%_97%)]'} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}>
+                  <TableRow key={c.nome} className="hover:bg-muted/30 transition-colors border-b border-border/40">
                     <TableCell>
                       <div className="flex items-center gap-1">
                         {c.ranking <= 3 && <Trophy className={`h-4 w-4 ${c.ranking === 1 ? "text-yellow-500" : c.ranking === 2 ? "text-gray-400" : "text-amber-700"}`} />}
-                        <span className="font-bold text-[hsl(212_35%_25%)]">{c.ranking}º</span>
+                        <span className="font-bold text-foreground">{c.ranking}º</span>
                       </div>
                     </TableCell>
                     <TableCell className="font-medium">{c.nome}</TableCell>
@@ -161,7 +160,7 @@ export default function Metas() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="border-[hsl(210_30%_88%)]">
+        <Card className="border-border">
           <CardContent className="p-4">
             <p className="text-sm font-semibold text-foreground mb-3">Evolução Meta vs Realizado</p>
             <ResponsiveContainer width="100%" height={280}>
@@ -171,14 +170,14 @@ export default function Metas() {
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="meta" fill="hsl(210, 30%, 75%)" name="Meta" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="realizado" fill="hsl(212, 35%, 28%)" name="Realizado" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="meta" fill="hsl(var(--muted-foreground) / 0.35)" name="Meta" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="realizado" fill="hsl(var(--primary))" name="Realizado" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card className="border-[hsl(210_30%_88%)]">
+        <Card className="border-border">
           <CardContent className="p-4">
             <p className="text-sm font-semibold text-foreground mb-3">Faturamento Mensal</p>
             <ResponsiveContainer width="100%" height={280}>
@@ -188,7 +187,7 @@ export default function Metas() {
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(v: number) => `R$ ${v.toLocaleString()}`} />
                 <Legend />
-                <Line type="monotone" dataKey="faturamento" stroke="hsl(212, 55%, 40%)" strokeWidth={2} name="Faturamento" />
+                <Line type="monotone" dataKey="faturamento" stroke="hsl(var(--accent))" strokeWidth={2} name="Faturamento" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
