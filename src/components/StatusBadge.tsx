@@ -2,36 +2,36 @@ import { cn } from "@/lib/utils";
 
 type StatusType = "ativo" | "inativo" | "pendente" | "inadimplente" | "suspenso" | "cancelado" | "negado" | "pendente_revistoria" | "inativo_pendencia" | "pago" | "atrasado" | "aberto" | "em_analise" | "aprovado" | "reprovado" | "concluido" | "vencido";
 
-const statusConfig: Record<string, { dot: string; label?: string; pulse: boolean }> = {
-  ativo:                { dot: "bg-[hsl(110_58%_36%)]",  pulse: true },
-  pago:                 { dot: "bg-[hsl(110_58%_36%)]",  pulse: true },
-  aprovado:             { dot: "bg-[hsl(110_58%_36%)]",  pulse: true },
-  aprovada:             { dot: "bg-[hsl(110_58%_36%)]",  pulse: true },
-  concluido:            { dot: "bg-[hsl(110_58%_36%)]",  pulse: false },
-  "concluído":          { dot: "bg-[hsl(110_58%_36%)]",  pulse: false },
-  assinado:             { dot: "bg-[hsl(110_58%_36%)]",  pulse: false },
+const statusConfig: Record<string, { dot: string; bg: string; pulse: boolean }> = {
+  ativo:                { dot: "bg-success",         bg: "bg-success/10 text-success",         pulse: false },
+  pago:                 { dot: "bg-success",         bg: "bg-success/10 text-success",         pulse: false },
+  aprovado:             { dot: "bg-success",         bg: "bg-success/10 text-success",         pulse: false },
+  aprovada:             { dot: "bg-success",         bg: "bg-success/10 text-success",         pulse: false },
+  concluido:            { dot: "bg-success",         bg: "bg-success/10 text-success",         pulse: false },
+  "concluído":          { dot: "bg-success",         bg: "bg-success/10 text-success",         pulse: false },
+  assinado:             { dot: "bg-success",         bg: "bg-success/10 text-success",         pulse: false },
 
-  inadimplente:         { dot: "bg-[hsl(0_70%_55%)]",    pulse: true },
-  atrasado:             { dot: "bg-[hsl(0_70%_55%)]",    pulse: true },
-  cancelado:            { dot: "bg-[hsl(0_70%_55%)]",    pulse: true },
-  negado:               { dot: "bg-[hsl(0_70%_55%)]",    pulse: true },
-  reprovado:            { dot: "bg-[hsl(0_70%_55%)]",    pulse: true },
-  reprovada:            { dot: "bg-[hsl(0_70%_55%)]",    pulse: true },
-  vencido:              { dot: "bg-[hsl(0_70%_55%)]",    pulse: true },
+  inadimplente:         { dot: "bg-destructive",     bg: "bg-destructive/8 text-destructive",  pulse: false },
+  atrasado:             { dot: "bg-destructive",     bg: "bg-destructive/8 text-destructive",  pulse: false },
+  cancelado:            { dot: "bg-destructive",     bg: "bg-destructive/8 text-destructive",  pulse: false },
+  negado:               { dot: "bg-destructive",     bg: "bg-destructive/8 text-destructive",  pulse: false },
+  reprovado:            { dot: "bg-destructive",     bg: "bg-destructive/8 text-destructive",  pulse: false },
+  reprovada:            { dot: "bg-destructive",     bg: "bg-destructive/8 text-destructive",  pulse: false },
+  vencido:              { dot: "bg-destructive",     bg: "bg-destructive/8 text-destructive",  pulse: false },
 
-  pendente:             { dot: "bg-[hsl(38_85%_50%)]",   pulse: true },
-  pendente_revistoria:  { dot: "bg-[hsl(38_85%_50%)]",   pulse: true },
-  "pendente de revistoria": { dot: "bg-[hsl(38_85%_50%)]", pulse: true },
-  em_analise:           { dot: "bg-[hsl(38_85%_50%)]",   pulse: true },
-  "em análise":         { dot: "bg-[hsl(38_85%_50%)]",   pulse: true },
-  aberto:               { dot: "bg-[hsl(38_85%_50%)]",   pulse: true },
+  pendente:             { dot: "bg-warning",         bg: "bg-warning/10 text-warning",         pulse: false },
+  pendente_revistoria:  { dot: "bg-warning",         bg: "bg-warning/10 text-warning",         pulse: false },
+  "pendente de revistoria": { dot: "bg-warning",     bg: "bg-warning/10 text-warning",         pulse: false },
+  em_analise:           { dot: "bg-warning",         bg: "bg-warning/10 text-warning",         pulse: false },
+  "em análise":         { dot: "bg-warning",         bg: "bg-warning/10 text-warning",         pulse: false },
+  aberto:               { dot: "bg-warning",         bg: "bg-warning/10 text-warning",         pulse: false },
 
-  suspenso:             { dot: "bg-accent",  pulse: true },
+  suspenso:             { dot: "bg-accent",          bg: "bg-accent/10 text-accent",           pulse: false },
 
-  inativo:              { dot: "bg-[hsl(40_5%_55%)]",    pulse: false },
-  inativo_pendencia:    { dot: "bg-[hsl(40_5%_55%)]",    pulse: false },
-  "inativo com pendência": { dot: "bg-[hsl(40_5%_55%)]", pulse: false },
-  "inativo com pendencia":  { dot: "bg-[hsl(40_5%_55%)]", pulse: false },
+  inativo:              { dot: "bg-muted-foreground/50", bg: "bg-muted/60 text-muted-foreground", pulse: false },
+  inativo_pendencia:    { dot: "bg-muted-foreground/50", bg: "bg-muted/60 text-muted-foreground", pulse: false },
+  "inativo com pendência": { dot: "bg-muted-foreground/50", bg: "bg-muted/60 text-muted-foreground", pulse: false },
+  "inativo com pendencia":  { dot: "bg-muted-foreground/50", bg: "bg-muted/60 text-muted-foreground", pulse: false },
 };
 
 function normalize(status: string): string {
@@ -46,22 +46,18 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ status, label, className }: StatusBadgeProps) {
   const key = normalize(status);
-  const config = statusConfig[key] || { dot: "bg-[hsl(40_5%_55%)]", pulse: false };
+  const config = statusConfig[key] || { dot: "bg-muted-foreground/50", bg: "bg-muted/60 text-muted-foreground", pulse: false };
   const displayLabel = label || status;
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium bg-muted/60 text-foreground whitespace-nowrap select-none transition-all duration-150 hover:-translate-y-px hover:shadow-sm",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap select-none transition-all duration-150",
+        config.bg,
         className
       )}
     >
-      <span className="relative flex-shrink-0 w-2 h-2">
-        <span className={cn("absolute inset-0 rounded-full", config.dot)} />
-        {config.pulse && (
-          <span className={cn("absolute -inset-[3px] rounded-full opacity-40 animate-status-pulse", config.dot)} />
-        )}
-      </span>
+      <span className={cn("flex-shrink-0 w-1.5 h-1.5 rounded-full", config.dot)} />
       {displayLabel}
     </span>
   );
