@@ -49,15 +49,15 @@ export default function FluxoDiarioTab() {
         <Card className="border-border overflow-hidden">
           
           <CardContent className="p-4 flex items-center gap-3">
-            <ArrowUpRight className="h-5 w-5 text-green-600" />
-            <div><p className="text-lg font-bold text-green-600">R$ {totalEntradas.toLocaleString()}</p><p className="text-xs text-muted-foreground">Entradas</p></div>
+            <ArrowUpRight className="h-5 w-5 text-success" />
+            <div><p className="text-lg font-bold text-success">R$ {totalEntradas.toLocaleString()}</p><p className="text-xs text-muted-foreground">Entradas</p></div>
           </CardContent>
         </Card>
         <Card className="border-border overflow-hidden">
           
           <CardContent className="p-4 flex items-center gap-3">
-            <ArrowDownRight className="h-5 w-5 text-red-500" />
-            <div><p className="text-lg font-bold text-red-500">R$ {totalSaidas.toLocaleString()}</p><p className="text-xs text-muted-foreground">Saídas</p></div>
+            <ArrowDownRight className="h-5 w-5 text-destructive" />
+            <div><p className="text-lg font-bold text-destructive">R$ {totalSaidas.toLocaleString()}</p><p className="text-xs text-muted-foreground">Saídas</p></div>
           </CardContent>
         </Card>
         <Card className="border-border overflow-hidden">
@@ -108,11 +108,11 @@ export default function FluxoDiarioTab() {
                   <TableCell className="font-medium text-foreground">{f.descricao}</TableCell>
                   <TableCell><Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8">{f.categoria}</Badge></TableCell>
                   <TableCell>
-                    <Badge className={f.tipo === "entrada" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                    <Badge className={f.tipo === "entrada" ? "bg-success/10 text-success" : "bg-destructive/8 text-destructive"}>
                       {f.tipo === "entrada" ? "Entrada" : "Saída"}
                     </Badge>
                   </TableCell>
-                  <TableCell className={`text-right font-semibold ${f.tipo === "entrada" ? "text-green-600" : "text-red-500"}`}>
+                  <TableCell className={`text-right font-semibold ${f.tipo === "entrada" ? "text-success" : "text-destructive"}`}>
                     {f.tipo === "entrada" ? "+" : "-"} R$ {f.valor.toLocaleString()}
                   </TableCell>
                   <TableCell className="text-right font-medium text-foreground">R$ {f.saldo.toLocaleString()}</TableCell>

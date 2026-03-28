@@ -126,7 +126,7 @@ export default function DRETab() {
                 </TableRow>
                 <TableRow className="hover:bg-muted/40 border-b border-border/60">
                   <TableCell className="pl-8 text-sm">Mensalidades recebidas</TableCell>
-                  <TableCell className="text-right font-semibold text-green-600">{fmt(totalReceita)}</TableCell>
+                  <TableCell className="text-right font-semibold text-success">{fmt(totalReceita)}</TableCell>
                 </TableRow>
 
                 {/* DESPESAS */}
@@ -141,18 +141,18 @@ export default function DRETab() {
                 ) : Object.entries(despesasPorCategoria).map(([cat, valor]) => (
                   <TableRow key={cat} className="hover:bg-muted/40 border-b border-border/60">
                     <TableCell className="pl-8 text-sm">{cat}</TableCell>
-                    <TableCell className="text-right font-semibold text-red-500">- {fmt(valor)}</TableCell>
+                    <TableCell className="text-right font-semibold text-destructive">- {fmt(valor)}</TableCell>
                   </TableRow>
                 ))}
 
                 {/* TOTALS */}
                 <TableRow className="bg-muted border-t-2 border-primary">
                   <TableCell className="font-bold text-primary">= TOTAL RECEITAS</TableCell>
-                  <TableCell className="text-right font-bold text-green-600">{fmt(totalReceita)}</TableCell>
+                  <TableCell className="text-right font-bold text-success">{fmt(totalReceita)}</TableCell>
                 </TableRow>
                 <TableRow className="bg-muted">
                   <TableCell className="font-bold text-primary">= TOTAL DESPESAS</TableCell>
-                  <TableCell className="text-right font-bold text-red-500">- {fmt(totalDespesas)}</TableCell>
+                  <TableCell className="text-right font-bold text-destructive">- {fmt(totalDespesas)}</TableCell>
                 </TableRow>
                 <TableRow className="bg-primary hover:bg-primary">
                   <TableCell className="font-bold text-white text-base">= RESULTADO LÍQUIDO</TableCell>

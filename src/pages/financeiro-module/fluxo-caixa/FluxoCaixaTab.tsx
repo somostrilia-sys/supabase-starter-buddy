@@ -134,9 +134,9 @@ export default function FluxoCaixaTab() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: "Total Entradas", value: fmtValor(totalEntradas), icon: TrendingUp,  color: "text-green-600", bg: "bg-success/8" },
-          { label: "Total Saídas",   value: fmtValor(totalSaidas),   icon: TrendingDown, color: "text-red-500",  bg: "bg-destructive/8" },
-          { label: "Saldo do Período", value: fmtValor(saldo),       icon: DollarSign,  color: saldo >= 0 ? "text-primary" : "text-red-600", bg: "bg-primary/8" },
+          { label: "Total Entradas", value: fmtValor(totalEntradas), icon: TrendingUp,  color: "text-success", bg: "bg-success/8" },
+          { label: "Total Saídas",   value: fmtValor(totalSaidas),   icon: TrendingDown, color: "text-destructive",  bg: "bg-destructive/8" },
+          { label: "Saldo do Período", value: fmtValor(saldo),       icon: DollarSign,  color: saldo >= 0 ? "text-primary" : "text-destructive", bg: "bg-primary/8" },
         ].map(k => (
           <Card key={k.label} className="border-border">
             <CardContent className="p-4 flex items-center gap-3">
@@ -249,11 +249,11 @@ export default function FluxoCaixaTab() {
                       <Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8">{l.categoria}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={l.tipo === "entrada" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                      <Badge className={l.tipo === "entrada" ? "bg-success/10 text-success" : "bg-destructive/8 text-destructive"}>
                         {l.tipo === "entrada" ? "Entrada" : "Saída"}
                       </Badge>
                     </TableCell>
-                    <TableCell className={`text-right font-semibold ${l.tipo === "entrada" ? "text-green-600" : "text-red-500"}`}>
+                    <TableCell className={`text-right font-semibold ${l.tipo === "entrada" ? "text-success" : "text-destructive"}`}>
                       {l.tipo === "entrada" ? "+" : "-"} {fmtValor(l.valor)}
                     </TableCell>
                   </TableRow>

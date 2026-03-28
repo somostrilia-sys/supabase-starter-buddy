@@ -41,20 +41,20 @@ export default function FunilTab() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {conversoes.map(c => (
-          <Card key={c.de} className={c.de === gargalo.de ? "border-red-300 bg-destructive/8/50 dark:bg-red-950/20" : ""}>
+          <Card key={c.de} className={c.de === gargalo.de ? "border-red-300 bg-destructive/50 dark:bg-red-950/20" : ""}>
             <CardContent className="p-3">
               <p className="text-xs text-muted-foreground mb-1">{c.de}</p>
-              <p className={`text-xl font-bold ${c.de === gargalo.de ? "text-red-600" : ""}`}>{c.taxa.toFixed(1)}%</p>
+              <p className={`text-xl font-bold ${c.de === gargalo.de ? "text-destructive" : ""}`}>{c.taxa.toFixed(1)}%</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <Card className="border-red-200 bg-destructive/8/30 dark:bg-red-950/10">
+      <Card className="border-red-200 bg-destructive/30 dark:bg-red-950/10">
         <CardContent className="p-4 flex items-center gap-3">
-          <AlertTriangle className="h-5 w-5 text-red-600 shrink-0" />
+          <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-red-700">Gargalo Identificado</p>
+            <p className="text-sm font-semibold text-destructive">Gargalo Identificado</p>
             <p className="text-xs text-muted-foreground">{gargalo.de} — Menor taxa de conversão ({gargalo.taxa.toFixed(1)}%)</p>
           </div>
         </CardContent>

@@ -57,8 +57,8 @@ export default function ExtratoBancarioTab() {
             <TableRow key={f.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
               <TableCell className="text-sm font-mono">{f.data}</TableCell>
               <TableCell className="font-medium">{f.descricao}</TableCell>
-              <TableCell><Badge className={f.tipo === "credito" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>{f.tipo === "credito" ? "Crédito" : "Débito"}</Badge></TableCell>
-              <TableCell className={`text-right font-semibold ${f.tipo === "credito" ? "text-green-600" : "text-red-500"}`}>{f.tipo === "credito" ? "+" : "-"} R$ {f.valor.toLocaleString()}</TableCell>
+              <TableCell><Badge className={f.tipo === "credito" ? "bg-success/10 text-success" : "bg-destructive/8 text-destructive"}>{f.tipo === "credito" ? "Crédito" : "Débito"}</Badge></TableCell>
+              <TableCell className={`text-right font-semibold ${f.tipo === "credito" ? "text-success" : "text-destructive"}`}>{f.tipo === "credito" ? "+" : "-"} R$ {f.valor.toLocaleString()}</TableCell>
               <TableCell className="text-right font-semibold text-foreground">R$ {f.saldo.toLocaleString()}</TableCell>
             </TableRow>
           ))}</TableBody></Table>

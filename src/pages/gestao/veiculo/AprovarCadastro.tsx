@@ -16,11 +16,11 @@ const cooperativasList = ["Todos", "Cooperativa São Paulo", "Cooperativa Rio", 
 
 const statusColor = (s: string) => {
   switch (s) {
-    case "Ativo": return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
-    case "Inativo": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-    case "Pendente": return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
-    case "Negado": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-    case "Inadimplente": return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
+    case "Ativo": return "bg-success/10 text-success dark:bg-emerald-900/30 dark:text-emerald-400";
+    case "Inativo": return "bg-destructive/8 text-destructive dark:bg-red-900/30 dark:text-red-400";
+    case "Pendente": return "bg-warning/10 text-warning dark:bg-amber-900/30 dark:text-warning";
+    case "Negado": return "bg-destructive/8 text-destructive dark:bg-red-900/30 dark:text-red-400";
+    case "Inadimplente": return "bg-warning/10 text-warning dark:bg-orange-900/30 dark:text-orange-400";
     default: return "bg-muted text-muted-foreground";
   }
 };

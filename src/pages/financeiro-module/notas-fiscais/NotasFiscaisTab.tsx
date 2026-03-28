@@ -15,7 +15,7 @@ const mock = [
   { id: 5, numero: "NF-001249", emissao: "2025-07-05", destinatario: "CPFL Energia", valor: 1250, status: "pendente" as const, tipo: "Produto" },
 ];
 
-const statusColor: Record<string, string> = { emitida: "bg-green-100 text-green-800", cancelada: "bg-red-100 text-red-800", pendente: "bg-yellow-100 text-yellow-800" };
+const statusColor: Record<string, string> = { emitida: "bg-success/10 text-success", cancelada: "bg-destructive/8 text-destructive", pendente: "bg-warning/10 text-warning" };
 
 export default function NotasFiscaisTab() {
   const [busca, setBusca] = useState("");

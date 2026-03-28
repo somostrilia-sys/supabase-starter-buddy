@@ -13,9 +13,9 @@ import {
 type PagamentoStatus = "pago" | "pendente" | "nao_pago";
 
 const statusBadge: Record<PagamentoStatus, { label: string; cls: string }> = {
-  pago: { label: "Pago", cls: "bg-green-100 text-green-800 border-green-300" },
-  pendente: { label: "Pendente", cls: "bg-amber-100 text-amber-800 border-amber-300" },
-  nao_pago: { label: "Não Pago", cls: "bg-red-100 text-red-800 border-red-300" },
+  pago: { label: "Pago", cls: "bg-success/10 text-success border-green-300" },
+  pendente: { label: "Pendente", cls: "bg-warning/10 text-warning border-warning/30" },
+  nao_pago: { label: "Não Pago", cls: "bg-destructive/8 text-destructive border-red-300" },
 };
 
 const formasPgto = [
@@ -115,9 +115,9 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
               <p className="text-[10px] text-muted-foreground uppercase">Valor Total Adesão</p>
               <p className="text-lg font-bold text-[#1A3A5C]">{fmt(taxaAdesao)}</p>
             </div>
-            <div className="text-center p-3 rounded bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
+            <div className="text-center p-3 rounded bg-emerald-50 dark:bg-emerald-950/20 border border-success/20 dark:border-emerald-800">
               <p className="text-[10px] text-muted-foreground uppercase">Comissão Consultor</p>
-              <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">{fmt(taxaAdesao * 0.15)}</p>
+              <p className="text-lg font-bold text-success dark:text-emerald-400">{fmt(taxaAdesao * 0.15)}</p>
               <p className="text-[10px] text-emerald-600">15% — {deal.consultor}</p>
             </div>
             <div className="text-center p-3 rounded bg-background border">

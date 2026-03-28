@@ -58,32 +58,32 @@ export default function Integracoes({ onBack }: { onBack: () => void }) {
       <div className="grid gap-4 sm:grid-cols-3">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center"><Shield className="h-5 w-5 text-amber-600" /></div>
+            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center"><Shield className="h-5 w-5 text-warning" /></div>
             <div className="flex-1">
               <p className="text-sm font-semibold">SPC</p>
               <p className="text-xs text-muted-foreground">Consulta de crédito</p>
             </div>
-            <Badge variant="outline" className="text-amber-600 border-amber-300">Pendente</Badge>
+            <Badge variant="outline" className="text-warning border-warning/30">Pendente</Badge>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center"><Shield className="h-5 w-5 text-amber-600" /></div>
+            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center"><Shield className="h-5 w-5 text-warning" /></div>
             <div className="flex-1">
               <p className="text-sm font-semibold">Serasa</p>
               <p className="text-xs text-muted-foreground">Score e restrições</p>
             </div>
-            <Badge variant="outline" className="text-amber-600 border-amber-300">Pendente</Badge>
+            <Badge variant="outline" className="text-warning border-warning/30">Pendente</Badge>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center"><MessageSquare className="h-5 w-5 text-green-600" /></div>
+            <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center"><MessageSquare className="h-5 w-5 text-success" /></div>
             <div className="flex-1">
               <p className="text-sm font-semibold">Mensageria</p>
               <p className="text-xs text-muted-foreground">SMS e WhatsApp</p>
             </div>
-            <Badge variant="outline" className="text-green-600 border-green-300">Ativo</Badge>
+            <Badge variant="outline" className="text-success border-green-300">Ativo</Badge>
           </CardContent>
         </Card>
       </div>
@@ -148,7 +148,7 @@ export default function Integracoes({ onBack }: { onBack: () => void }) {
 
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => handleEnviar("SMS")} className="gap-1.5"><Phone className="h-4 w-4" />Enviar SMS</Button>
-            <Button onClick={() => handleEnviar("WhatsApp")} className="gap-1.5 bg-green-600 hover:bg-green-700"><MessageSquare className="h-4 w-4" />Enviar WhatsApp</Button>
+            <Button onClick={() => handleEnviar("WhatsApp")} className="gap-1.5 bg-success hover:bg-success/90"><MessageSquare className="h-4 w-4" />Enviar WhatsApp</Button>
           </div>
         </TabsContent>
 
@@ -174,9 +174,9 @@ export default function Integracoes({ onBack }: { onBack: () => void }) {
                       <TableCell className="text-xs max-w-[200px] truncate">{log.msg}</TableCell>
                       <TableCell>
                         {log.status === "Entregue" ? (
-                          <span className="flex items-center gap-1 text-xs text-green-600"><CheckCircle2 className="h-3 w-3" />{log.status}</span>
+                          <span className="flex items-center gap-1 text-xs text-success"><CheckCircle2 className="h-3 w-3" />{log.status}</span>
                         ) : (
-                          <span className="flex items-center gap-1 text-xs text-red-500"><AlertTriangle className="h-3 w-3" />{log.status}</span>
+                          <span className="flex items-center gap-1 text-xs text-destructive"><AlertTriangle className="h-3 w-3" />{log.status}</span>
                         )}
                       </TableCell>
                     </TableRow>

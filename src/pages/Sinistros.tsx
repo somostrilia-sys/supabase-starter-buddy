@@ -21,7 +21,7 @@ type SinistroTipo = "roubo" | "furto" | "colisao" | "incendio" | "alagamento" | 
 
 const statusMap: Record<SinistroStatus, { label: string; class: string }> = {
   aberto:     { label: "Aberto",      class: "bg-sky-500/15 text-sky-400 border-0" },
-  em_analise: { label: "Em Análise",  class: "bg-warning/80/15 text-amber-400 border-0" },
+  em_analise: { label: "Em Análise",  class: "bg-warning/10 text-warning border-0" },
   aprovado:   { label: "Aprovado",    class: "bg-emerald-500/15 text-emerald-400 border-0" },
   negado:     { label: "Negado",      class: "bg-destructive/15 text-destructive border-0" },
   finalizado: { label: "Finalizado",  class: "bg-primary/15 text-primary border-0" },
@@ -157,7 +157,7 @@ export default function Sinistros() {
 
         <Card className="border border-border/50"><CardContent className="p-4">
           <div className="flex items-center gap-2 mb-1">
-            <div className="p-1.5 rounded-lg bg-warning/80/10"><Clock className="h-4 w-4 text-amber-400" /></div>
+            <div className="p-1.5 rounded-lg bg-warning/8"><Clock className="h-4 w-4 text-warning" /></div>
             <span className="text-[10px] uppercase text-muted-foreground font-medium">Em Aberto</span>
           </div>
           <p className="text-2xl font-bold">

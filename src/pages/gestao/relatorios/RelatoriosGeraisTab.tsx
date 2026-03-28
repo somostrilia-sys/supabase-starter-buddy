@@ -233,7 +233,7 @@ export default function RelatoriosGeraisTab() {
                       {columns.map(col => (
                         <TableCell key={col} className="text-sm">
                           {col === "status" ? (
-                            <Badge className={`text-xs ${String(row[col]).toLowerCase() === "ativo" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
+                            <Badge className={`text-xs ${String(row[col]).toLowerCase() === "ativo" ? "bg-success/10 text-success" : "bg-gray-100 text-gray-800"}`}>
                               {String(row[col])}
                             </Badge>
                           ) : (

@@ -60,8 +60,8 @@ export default function ReplicarItens({ onBack }: { onBack: () => void }) {
         </div>
         <Card className="border-0 shadow-sm">
           <CardContent className="py-16 flex flex-col items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
+              <CheckCircle2 className="h-8 w-8 text-success" />
             </div>
             <p className="font-semibold text-lg">Replicação Concluída!</p>
             <p className="text-sm text-muted-foreground">{cotasPreview.length} cotas replicadas para {destinos.length} destinos</p>

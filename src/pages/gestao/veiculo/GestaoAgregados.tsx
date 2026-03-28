@@ -87,7 +87,7 @@ export default function GestaoAgregados() {
           <p className="text-sm text-muted-foreground">Vincule um veículo agregado a um veículo principal existente.</p>
           <div className="flex flex-col md:flex-row gap-4">
             <PainelVeiculo title="Veículo Principal" icon={<Car className="h-4 w-4 text-primary" />} data={vincVeiculo} setData={setVincVeiculo} color="bg-primary" />
-            <PainelVeiculo title="Veículo Agregado" icon={<Car className="h-4 w-4 text-amber-600" />} data={vincAgregado} setData={setVincAgregado} color="bg-amber-600" />
+            <PainelVeiculo title="Veículo Agregado" icon={<Car className="h-4 w-4 text-warning" />} data={vincAgregado} setData={setVincAgregado} color="bg-amber-600" />
           </div>
           <div className="flex justify-center">
             <Button

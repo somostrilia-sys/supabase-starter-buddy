@@ -38,11 +38,11 @@ const logSync = [
 ];
 
 const statusColor: Record<string, string> = {
-  ativo: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  inativo: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-  sucesso: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  erro: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-  pendente: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+  ativo: "bg-success/10 text-success dark:bg-green-900 dark:text-green-300",
+  inativo: "bg-destructive/8 text-destructive dark:bg-red-900 dark:text-red-300",
+  sucesso: "bg-success/10 text-success dark:bg-green-900 dark:text-green-300",
+  erro: "bg-destructive/8 text-destructive dark:bg-red-900 dark:text-red-300",
+  pendente: "bg-warning/10 text-warning dark:bg-yellow-900 dark:text-yellow-300",
 };
 
 const emptyForm = { nome: "", cnpj: "", tipo: "Guincho", telefone: "", email: "", cidade: "", estado: "", observacoes: "" };

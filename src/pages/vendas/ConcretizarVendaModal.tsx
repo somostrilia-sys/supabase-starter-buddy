@@ -256,9 +256,9 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
 
         {successContrato ? (
           <div className="flex flex-col items-center justify-center py-10 gap-4">
-            <CheckCircle2 className="h-16 w-16 text-green-500" />
+            <CheckCircle2 className="h-16 w-16 text-success" />
             <div className="text-center">
-              <h3 className="text-xl font-bold text-green-700">Venda Concretizada!</h3>
+              <h3 className="text-xl font-bold text-success">Venda Concretizada!</h3>
               <p className="text-muted-foreground mt-1">Contrato <strong>{successContrato}</strong> criado com sucesso.</p>
               <p className="text-sm text-muted-foreground mt-1">Associado, veículo, mensalidade proporcional e vistoria criados.</p>
             </div>
@@ -436,7 +436,7 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
                   const daysRemaining = daysInMonth - today.getDate() + 1;
                   const proporcional = ((vm / 30) * daysRemaining).toFixed(2);
                   return (
-                    <div className="p-3 bg-primary/6 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900 text-xs text-blue-800 dark:text-blue-300 space-y-1">
+                    <div className="p-3 bg-primary/6 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900 text-xs text-primary dark:text-blue-300 space-y-1">
                       <p><strong>Cálculo proporcional (1º boleto):</strong></p>
                       <p>R$ {vm.toFixed(2).replace(".", ",")} / 30 dias × {daysRemaining} dias restantes = <strong>R$ {Number(proporcional).toFixed(2).replace(".", ",")}</strong></p>
                       <p className="text-blue-600">Vencimento: dia 10 do próximo mês</p>
@@ -473,7 +473,7 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
                 </div>
                 <div className="flex justify-between">
                   <Button variant="outline" onClick={() => setStep(3)} disabled={saving}>Voltar</Button>
-                  <Button onClick={handleConfirm} disabled={saving} className="bg-green-600 hover:bg-green-700">
+                  <Button onClick={handleConfirm} disabled={saving} className="bg-success hover:bg-success/90">
                     {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     {saving ? "Concretizando..." : "Concretizar Venda"}
                   </Button>

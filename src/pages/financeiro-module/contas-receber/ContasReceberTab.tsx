@@ -29,9 +29,9 @@ type ContaReceber = {
 };
 
 const statusColor: Record<ContaStatus, string> = {
-  pendente:  "bg-yellow-100 text-yellow-800",
-  recebido:  "bg-green-100 text-green-800",
-  atrasado:  "bg-red-100 text-red-800",
+  pendente:  "bg-warning/10 text-warning",
+  recebido:  "bg-success/10 text-success",
+  atrasado:  "bg-destructive/8 text-destructive",
 };
 
 const statusLabel: Record<ContaStatus, string> = {
@@ -162,9 +162,9 @@ export default function ContasReceberTab() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Total a Receber",   value: fmtValor(totalReceber),  icon: DollarSign,   color: "text-blue-600",   bg: "bg-primary/6" },
-          { label: "Recebido no Mês",   value: fmtValor(totalRecebido), icon: CheckCircle,  color: "text-green-600",  bg: "bg-success/8" },
-          { label: "Pendente",          value: fmtValor(totalPendente), icon: Clock,        color: "text-yellow-600", bg: "bg-warning/8" },
-          { label: "Em Atraso",         value: fmtValor(totalAtrasado), icon: AlertTriangle,color: "text-red-600",    bg: "bg-destructive/8" },
+          { label: "Recebido no Mês",   value: fmtValor(totalRecebido), icon: CheckCircle,  color: "text-success",  bg: "bg-success/8" },
+          { label: "Pendente",          value: fmtValor(totalPendente), icon: Clock,        color: "text-warning", bg: "bg-warning/8" },
+          { label: "Em Atraso",         value: fmtValor(totalAtrasado), icon: AlertTriangle,color: "text-destructive",    bg: "bg-destructive/8" },
         ].map(c => (
           <Card key={c.label} className="border-border">
             <CardContent className="p-4 flex items-center gap-3">
@@ -258,7 +258,7 @@ export default function ContasReceberTab() {
                     <TableCell className="text-sm font-mono">
                       {new Date(c.data_vencimento + "T12:00:00").toLocaleDateString("pt-BR")}
                     </TableCell>
-                    <TableCell className="text-right font-semibold text-green-600">{fmtValor(c.valor)}</TableCell>
+                    <TableCell className="text-right font-semibold text-success">{fmtValor(c.valor)}</TableCell>
                     <TableCell>
                       <Badge className={statusColor[c.status] ?? "bg-gray-100 text-gray-800"}>
                         {statusLabel[c.status] ?? c.status}
@@ -269,7 +269,7 @@ export default function ContasReceberTab() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-7 text-xs gap-1 text-green-700 border-green-300 hover:bg-success/8"
+                          className="h-7 text-xs gap-1 text-success border-green-300 hover:bg-success/8"
                           disabled={marcandoId === c.id}
                           onClick={() => marcarRecebido.mutate(c.id)}
                         >

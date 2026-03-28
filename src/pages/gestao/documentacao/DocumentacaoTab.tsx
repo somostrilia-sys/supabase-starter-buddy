@@ -496,7 +496,7 @@ function CriarTermoTab() {
                 </div>
               ) : uploaded ? (
                 <div className="flex flex-col items-center gap-2">
-                  <CheckCircle2 className="h-8 w-8 text-green-600" />
+                  <CheckCircle2 className="h-8 w-8 text-success" />
                   <p className="text-sm font-medium">termo_modelo.docx</p>
                   <p className="text-xs text-muted-foreground">Arquivo carregado com sucesso</p>
                 </div>

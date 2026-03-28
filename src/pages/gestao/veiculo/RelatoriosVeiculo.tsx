@@ -164,7 +164,7 @@ export default function RelatoriosVeiculo() {
                       <TableCell className="text-xs whitespace-nowrap">{a.data}</TableCell>
                       <TableCell className="font-mono text-xs">{a.placa}</TableCell>
                       <TableCell className="text-sm">{a.modelo}</TableCell>
-                      <TableCell><Badge variant="outline" className="bg-primary/60/10 text-blue-600">{a.campo}</Badge></TableCell>
+                      <TableCell><Badge variant="outline" className="bg-primary/10 text-blue-600">{a.campo}</Badge></TableCell>
                       <TableCell className="text-xs text-muted-foreground">{a.de}</TableCell>
                       <TableCell className="text-xs">{a.para}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{a.usuario}</TableCell>
@@ -217,7 +217,7 @@ export default function RelatoriosVeiculo() {
                         <Badge variant="outline" className={
                           v.status === "Ativo" ? "bg-emerald-500/10 text-emerald-600" :
                           v.status === "Cancelado" ? "bg-destructive/10 text-destructive" :
-                          "bg-warning/80/10 text-amber-600"
+                          "bg-warning/8 text-warning"
                         }>{v.status}</Badge>
                       </TableCell>
                       <TableCell className="text-sm">R$ {v.valorFipe.toLocaleString("pt-BR")}</TableCell>
@@ -267,7 +267,7 @@ export default function RelatoriosVeiculo() {
                         <Badge variant="outline" className={
                           b.statusBoleto === "Pago" ? "bg-emerald-500/10 text-emerald-600" :
                           b.statusBoleto === "Atrasado" ? "bg-destructive/10 text-destructive" :
-                          "bg-warning/80/10 text-amber-600"
+                          "bg-warning/8 text-warning"
                         }>{b.statusBoleto}</Badge>
                       </TableCell>
                     </TableRow>

@@ -27,7 +27,7 @@ const detalhes = [
   { id: 5, data: "2025-07-05", descricao: "Acordo negociação #89", categoria: "Negociação", valor: 5200, status: "pendente" },
 ];
 
-const statusColor: Record<string, string> = { recebido: "bg-green-100 text-green-800", pendente: "bg-yellow-100 text-yellow-800" };
+const statusColor: Record<string, string> = { recebido: "bg-success/10 text-success", pendente: "bg-warning/10 text-warning" };
 
 export default function RecebimentosCategoriaTab() {
   const [busca, setBusca] = useState("");
@@ -83,7 +83,7 @@ export default function RecebimentosCategoriaTab() {
               <TableCell className="text-sm font-mono">{d.data}</TableCell>
               <TableCell className="font-medium">{d.descricao}</TableCell>
               <TableCell><Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8">{d.categoria}</Badge></TableCell>
-              <TableCell className="text-right font-semibold text-green-600">R$ {d.valor.toLocaleString()}</TableCell>
+              <TableCell className="text-right font-semibold text-success">R$ {d.valor.toLocaleString()}</TableCell>
               <TableCell><Badge className={statusColor[d.status]}>{d.status}</Badge></TableCell>
             </TableRow>
           ))}</TableBody></Table>

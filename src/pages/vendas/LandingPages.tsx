@@ -20,7 +20,7 @@ const consultores = [
 const kpis = [
   { label: "Total Consultores", value: consultores.length, icon: Users, color: "text-primary", bg: "bg-primary/8" },
   { label: "Total Visitas", value: consultores.reduce((s, c) => s + c.visitas, 0).toLocaleString(), icon: MousePointerClick, color: "text-blue-600", bg: "bg-primary/6" },
-  { label: "Total Leads", value: consultores.reduce((s, c) => s + c.leads, 0), icon: TrendingUp, color: "text-green-600", bg: "bg-success/8" },
+  { label: "Total Leads", value: consultores.reduce((s, c) => s + c.leads, 0), icon: TrendingUp, color: "text-success", bg: "bg-success/8" },
   { label: "Total Conversões", value: consultores.reduce((s, c) => s + c.conversoes, 0), icon: Globe, color: "text-purple-600", bg: "bg-primary/6" },
 ];
 
@@ -97,12 +97,12 @@ export default function LandingPages() {
                   </TableCell>
                   <TableCell className="text-right font-semibold">{c.visitas.toLocaleString()}</TableCell>
                   <TableCell className="text-right font-semibold">{c.leads}</TableCell>
-                  <TableCell className="text-right font-semibold text-green-600">{c.conversoes}</TableCell>
+                  <TableCell className="text-right font-semibold text-success">{c.conversoes}</TableCell>
                   <TableCell className="text-right">
-                    <Badge className={c.taxa >= 25 ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>{c.taxa}%</Badge>
+                    <Badge className={c.taxa >= 25 ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}>{c.taxa}%</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className={c.ativa ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>{c.ativa ? "Ativa" : "Inativa"}</Badge>
+                    <Badge className={c.ativa ? "bg-success/10 text-success" : "bg-gray-100 text-gray-600"}>{c.ativa ? "Ativa" : "Inativa"}</Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">

@@ -21,18 +21,18 @@ const vistorias = [
 ];
 
 const statusConfig: Record<string, { label: string; className: string }> = {
-  pendente: { label: "Pendente", className: "bg-yellow-100 text-yellow-800" },
-  em_andamento: { label: "Em andamento", className: "bg-blue-100 text-blue-800" },
-  aguardando_analise: { label: "Aguardando análise", className: "bg-purple-100 text-purple-800" },
-  aprovada: { label: "Aprovada", className: "bg-green-100 text-green-800" },
-  reprovada: { label: "Reprovada", className: "bg-red-100 text-red-800" },
+  pendente: { label: "Pendente", className: "bg-warning/10 text-warning" },
+  em_andamento: { label: "Em andamento", className: "bg-primary/8 text-primary" },
+  aguardando_analise: { label: "Aguardando análise", className: "bg-accent/8 text-accent" },
+  aprovada: { label: "Aprovada", className: "bg-success/10 text-success" },
+  reprovada: { label: "Reprovada", className: "bg-destructive/8 text-destructive" },
 };
 
 const kpis = [
   { label: "Total Vistorias", value: vistorias.length, icon: ClipboardCheck, color: "text-primary", bg: "bg-primary/8" },
-  { label: "Aprovadas", value: vistorias.filter(v => v.status === "aprovada").length, icon: CheckCircle, color: "text-green-600", bg: "bg-success/8" },
-  { label: "Reprovadas", value: vistorias.filter(v => v.status === "reprovada").length, icon: XCircle, color: "text-red-500", bg: "bg-destructive/8" },
-  { label: "Pendentes", value: vistorias.filter(v => v.status === "pendente").length, icon: Clock, color: "text-yellow-600", bg: "bg-warning/8" },
+  { label: "Aprovadas", value: vistorias.filter(v => v.status === "aprovada").length, icon: CheckCircle, color: "text-success", bg: "bg-success/8" },
+  { label: "Reprovadas", value: vistorias.filter(v => v.status === "reprovada").length, icon: XCircle, color: "text-destructive", bg: "bg-destructive/8" },
+  { label: "Pendentes", value: vistorias.filter(v => v.status === "pendente").length, icon: Clock, color: "text-warning", bg: "bg-warning/8" },
 ];
 
 export default function VistoriasVendas() {
@@ -82,7 +82,7 @@ export default function VistoriasVendas() {
               <div>
                 <Label className="text-xs font-medium">Enviar via</Label>
                 <div className="flex gap-2 mt-2">
-                  <Button variant="outline" className="flex-1 gap-1.5 text-xs"><MessageCircle className="h-4 w-4 text-green-600" />WhatsApp</Button>
+                  <Button variant="outline" className="flex-1 gap-1.5 text-xs"><MessageCircle className="h-4 w-4 text-success" />WhatsApp</Button>
                   <Button variant="outline" className="flex-1 gap-1.5 text-xs"><Mail className="h-4 w-4 text-blue-600" />Email</Button>
                   <Button variant="outline" className="flex-1 gap-1.5 text-xs"><Smartphone className="h-4 w-4 text-purple-600" />SMS</Button>
                 </div>

@@ -287,7 +287,7 @@ export default function ParametrosTab() {
               <p className="text-[11px] text-muted-foreground">Após quantos dias de inadimplência o associado será enviado automaticamente</p>
             </div>
             <Card className="border bg-warning/8">
-              <CardContent className="p-3 text-xs text-amber-700">
+              <CardContent className="p-3 text-xs text-warning">
                 Integração SPC/Serasa pendente de configuração. Configure as credenciais na aba Integrações das Ferramentas.
               </CardContent>
             </Card>

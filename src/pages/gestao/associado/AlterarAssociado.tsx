@@ -396,19 +396,19 @@ const mockAssociados: Associado[] = [
 
 const finBadge = (s: string) => {
   const map: Record<string, string> = {
-    "Pago": "bg-emerald-100 text-emerald-700 border-emerald-200",
-    "Pendente": "bg-amber-100 text-amber-700 border-amber-200",
-    "Atrasado": "bg-red-100 text-red-700 border-red-200",
+    "Pago": "bg-success/10 text-success border-success/20",
+    "Pendente": "bg-warning/10 text-warning border-warning/25",
+    "Atrasado": "bg-destructive/8 text-destructive border-red-200",
   };
   return map[s] || "";
 };
 
 const ocBadge = (s: string) => {
   const map: Record<string, string> = {
-    "Aberto": "bg-blue-100 text-blue-700 border-blue-200",
-    "Em Análise": "bg-amber-100 text-amber-700 border-amber-200",
-    "Aprovado": "bg-emerald-100 text-emerald-700 border-emerald-200",
-    "Negado": "bg-red-100 text-red-700 border-red-200",
+    "Aberto": "bg-primary/8 text-primary border-blue-200",
+    "Em Análise": "bg-warning/10 text-warning border-warning/25",
+    "Aprovado": "bg-success/10 text-success border-success/20",
+    "Negado": "bg-destructive/8 text-destructive border-red-200",
     "Concluído": "bg-muted text-muted-foreground",
   };
   return map[s] || "";
@@ -955,7 +955,7 @@ export default function AlterarAssociado() {
                 <div>
                   <Label className="text-xs mb-2 block">Status de Revistoria</Label>
                   <div className="flex items-center gap-3">
-                    <span className={`text-sm font-medium px-3 py-1 rounded-full border ${editForm.revistoria_status === "realizada" ? "bg-emerald-100 text-emerald-700 border-emerald-300" : "bg-amber-100 text-amber-700 border-amber-300"}`}>
+                    <span className={`text-sm font-medium px-3 py-1 rounded-full border ${editForm.revistoria_status === "realizada" ? "bg-success/10 text-success border-success/30" : "bg-warning/10 text-warning border-warning/30"}`}>
                       {editForm.revistoria_status === "realizada" ? "✅ Realizada" : "⏳ Pendente"}
                     </span>
                     <Button
@@ -963,7 +963,7 @@ export default function AlterarAssociado() {
                       variant="outline"
                       disabled={savingRevistoria || editForm.revistoria_status === "realizada"}
                       onClick={() => handleRevistoria("realizada")}
-                      className="gap-1.5 text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                      className="gap-1.5 text-success border-success/30 hover:bg-emerald-50"
                     >
                       {savingRevistoria ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
                       ✅ Marcar Revistoria Feita
@@ -973,7 +973,7 @@ export default function AlterarAssociado() {
                       variant="outline"
                       disabled={savingRevistoria || editForm.revistoria_status === "pendente"}
                       onClick={() => handleRevistoria("pendente")}
-                      className="gap-1.5 text-amber-700 border-amber-300 hover:bg-warning/8"
+                      className="gap-1.5 text-warning border-warning/30 hover:bg-warning/8"
                     >
                       ⏳ Marcar Pendente
                     </Button>

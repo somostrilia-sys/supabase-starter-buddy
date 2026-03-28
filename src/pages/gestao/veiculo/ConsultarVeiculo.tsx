@@ -238,7 +238,7 @@ const mockVeiculos: Veiculo[] = [
 // sitBadge replaced by StatusBadge component
 
 const finBadge = (s: string) => {
-  const m: Record<string,string> = { "Pago": "bg-emerald-100 text-emerald-700 border-emerald-200", "Pendente": "bg-amber-100 text-amber-700 border-amber-200", "Atrasado": "bg-red-100 text-red-700 border-red-200" };
+  const m: Record<string,string> = { "Pago": "bg-success/10 text-success border-success/20", "Pendente": "bg-warning/10 text-warning border-warning/25", "Atrasado": "bg-destructive/8 text-destructive border-red-200" };
   return m[s] || "";
 };
 

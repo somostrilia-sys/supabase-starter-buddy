@@ -226,8 +226,8 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
       {step === "done" && (
         <Card className="border-0 shadow-sm">
           <CardContent className="py-16 flex flex-col items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
+              <CheckCircle2 className="h-8 w-8 text-success" />
             </div>
             <p className="font-semibold text-lg">Processamento Concluído!</p>
             <p className="text-sm text-muted-foreground">{mockPreview.length} registros alterados com sucesso</p>

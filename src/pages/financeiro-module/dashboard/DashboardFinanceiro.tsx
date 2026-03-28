@@ -45,12 +45,12 @@ function SectionDivider({ title }: { title: string }) {
 }
 
 const kpis = [
-  { title: "Receita do Mês", value: "R$ 240.000", icon: TrendingUp, trend: +12, color: "text-green-600" },
-  { title: "Despesas do Mês", value: "R$ 158.000", icon: TrendingDown, trend: -3, color: "text-red-500" },
+  { title: "Receita do Mês", value: "R$ 240.000", icon: TrendingUp, trend: +12, color: "text-success" },
+  { title: "Despesas do Mês", value: "R$ 158.000", icon: TrendingDown, trend: -3, color: "text-destructive" },
   { title: "Saldo Atual", value: "R$ 82.000", icon: Wallet, trend: +18, color: "text-foreground" },
   { title: "Boletos Recebidos", value: "1.247", icon: Receipt, trend: +5, color: "text-accent" },
-  { title: "Inadimplência", value: "3,2%", icon: ArrowDownRight, trend: -15, color: "text-green-600" },
-  { title: "Contas a Vencer", value: "R$ 45.200", icon: DollarSign, trend: 0, color: "text-amber-600" },
+  { title: "Inadimplência", value: "3,2%", icon: ArrowDownRight, trend: -15, color: "text-success" },
+  { title: "Contas a Vencer", value: "R$ 45.200", icon: DollarSign, trend: 0, color: "text-warning" },
 ];
 
 export default function DashboardFinanceiro() {
@@ -79,8 +79,8 @@ export default function DashboardFinanceiro() {
               <p className="text-xl font-bold text-primary">{kpi.value}</p>
               {kpi.trend !== 0 && (
                 <div className="flex items-center gap-1 mt-1">
-                  {kpi.trend > 0 ? <ArrowUpRight className="h-3 w-3 text-green-600" /> : <ArrowDownRight className="h-3 w-3 text-red-500" />}
-                  <span className={`text-xs font-medium ${kpi.trend > 0 ? "text-green-600" : "text-red-500"}`}>{Math.abs(kpi.trend)}%</span>
+                  {kpi.trend > 0 ? <ArrowUpRight className="h-3 w-3 text-success" /> : <ArrowDownRight className="h-3 w-3 text-destructive" />}
+                  <span className={`text-xs font-medium ${kpi.trend > 0 ? "text-success" : "text-destructive"}`}>{Math.abs(kpi.trend)}%</span>
                 </div>
               )}
             </CardContent>

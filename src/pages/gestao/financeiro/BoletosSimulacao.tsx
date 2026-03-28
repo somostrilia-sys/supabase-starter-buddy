@@ -123,10 +123,10 @@ export default function BoletosSimulacao({ onBack }: { onBack: () => void }) {
                     <TableCell className="text-xs">{m.referencia || "-"}</TableCell>
                     <TableCell>
                       <Badge className={`text-[10px] ${
-                        m.status === "pago" ? "bg-green-100 text-green-800" :
-                        m.status === "atrasado" ? "bg-red-100 text-red-800" :
+                        m.status === "pago" ? "bg-success/10 text-success" :
+                        m.status === "atrasado" ? "bg-destructive/8 text-destructive" :
                         m.status === "cancelado" ? "bg-gray-100 text-gray-800" :
-                        "bg-amber-100 text-amber-800"
+                        "bg-warning/10 text-warning"
                       }`}>{m.status}</Badge>
                     </TableCell>
                     <TableCell>
@@ -160,7 +160,7 @@ export default function BoletosSimulacao({ onBack }: { onBack: () => void }) {
         </Card>
         <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={handleGerarLote}>
           <CardContent className="p-4 flex items-center gap-3">
-            <Play className="h-5 w-5 text-green-600" />
+            <Play className="h-5 w-5 text-success" />
             <div><p className="font-semibold text-sm">Gerar Lote</p><p className="text-xs text-muted-foreground">Geração em massa</p></div>
           </CardContent>
         </Card>
@@ -219,8 +219,8 @@ export default function BoletosSimulacao({ onBack }: { onBack: () => void }) {
       {/* Resumo */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{filtered.length}</p><p className="text-xs text-muted-foreground">Boletos</p></CardContent></Card>
-        <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-green-600">R$ {totalValor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p><p className="text-xs text-muted-foreground">Valor total</p></CardContent></Card>
-        <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-green-600">{filtered.filter(b => b.status === "pago").length}</p><p className="text-xs text-muted-foreground">Pagos</p></CardContent></Card>
+        <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-success">R$ {totalValor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p><p className="text-xs text-muted-foreground">Valor total</p></CardContent></Card>
+        <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-success">{filtered.filter(b => b.status === "pago").length}</p><p className="text-xs text-muted-foreground">Pagos</p></CardContent></Card>
         <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-destructive">{filtered.filter(b => b.status === "vencido").length}</p><p className="text-xs text-muted-foreground">Vencidos</p></CardContent></Card>
       </div>
 
@@ -263,7 +263,7 @@ export default function BoletosSimulacao({ onBack }: { onBack: () => void }) {
           <div className="space-y-3 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Total de associados:</span><span className="font-bold">847</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Valor médio:</span><span className="font-bold">R$ 234,15</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Valor total projetado:</span><span className="font-bold text-green-600">R$ 198.342,50</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Valor total projetado:</span><span className="font-bold text-success">R$ 198.342,50</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Descontos programados:</span><span className="font-bold">R$ 3.420,00</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Rateios incluídos:</span><span className="font-bold">R$ 12.580,00</span></div>
             <div className="flex justify-between border-t pt-2"><span className="font-semibold">Valor líquido:</span><span className="font-bold text-lg">R$ 207.502,50</span></div>

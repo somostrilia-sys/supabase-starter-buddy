@@ -129,7 +129,7 @@ export default function Metas() {
                   <TableRow key={c.nome} className="hover:bg-muted/30 transition-colors border-b border-border/40">
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        {c.ranking <= 3 && <Trophy className={`h-4 w-4 ${c.ranking === 1 ? "text-yellow-500" : c.ranking === 2 ? "text-gray-400" : "text-amber-700"}`} />}
+                        {c.ranking <= 3 && <Trophy className={`h-4 w-4 ${c.ranking === 1 ? "text-yellow-500" : c.ranking === 2 ? "text-gray-400" : "text-warning"}`} />}
                         <span className="font-bold text-foreground">{c.ranking}º</span>
                       </div>
                     </TableCell>
@@ -137,8 +137,8 @@ export default function Metas() {
                     <TableCell className="text-center">{c.metaContratos}</TableCell>
                     <TableCell className="text-center font-semibold">{c.atualContratos}</TableCell>
                     <TableCell className="text-right text-sm">R$ {c.metaFaturamento.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-semibold text-green-600">R$ {c.atualFaturamento.toLocaleString()}</TableCell>
-                    <TableCell className="text-center"><Badge className={c.conversao >= 30 ? "bg-green-100 text-green-800" : c.conversao >= 20 ? "bg-yellow-100 text-yellow-800" : "bg-red-100 text-red-800"}>{c.conversao}%</Badge></TableCell>
+                    <TableCell className="text-right font-semibold text-success">R$ {c.atualFaturamento.toLocaleString()}</TableCell>
+                    <TableCell className="text-center"><Badge className={c.conversao >= 30 ? "bg-success/10 text-success" : c.conversao >= 20 ? "bg-warning/10 text-warning" : "bg-destructive/8 text-destructive"}>{c.conversao}%</Badge></TableCell>
                     <TableCell className="text-center text-sm">{c.tempoMedio} dias</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

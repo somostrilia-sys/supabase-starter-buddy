@@ -41,9 +41,9 @@ const mockChamados = [
 ];
 
 const statusChamado: Record<string, string> = {
-  aberto: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  em_andamento: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  resolvido: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  aberto: "bg-primary/8 text-primary dark:bg-blue-900 dark:text-blue-300",
+  em_andamento: "bg-warning/10 text-warning dark:bg-yellow-900 dark:text-yellow-300",
+  resolvido: "bg-success/10 text-success dark:bg-green-900 dark:text-green-300",
 };
 
 const apiEndpoints = [
@@ -60,10 +60,10 @@ const apiEndpoints = [
 ];
 
 const methodColor: Record<string, string> = {
-  GET: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  POST: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  PUT: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  DELETE: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+  GET: "bg-success/10 text-success dark:bg-green-900 dark:text-green-300",
+  POST: "bg-primary/8 text-primary dark:bg-blue-900 dark:text-blue-300",
+  PUT: "bg-warning/10 text-warning dark:bg-yellow-900 dark:text-yellow-300",
+  DELETE: "bg-destructive/8 text-destructive dark:bg-red-900 dark:text-red-300",
 };
 
 export default function AreaClienteTab() {
@@ -140,7 +140,7 @@ export default function AreaClienteTab() {
             <div className="grid grid-cols-3 gap-3 flex-1 mr-4">
               <Card><CardContent className="p-3 text-center"><p className="text-xl font-bold">{mockChamados.length}</p><p className="text-xs text-muted-foreground">Total</p></CardContent></Card>
               <Card><CardContent className="p-3 text-center"><p className="text-xl font-bold text-blue-600">{mockChamados.filter(c => c.status === "aberto").length}</p><p className="text-xs text-muted-foreground">Abertos</p></CardContent></Card>
-              <Card><CardContent className="p-3 text-center"><p className="text-xl font-bold text-green-600">{mockChamados.filter(c => c.status === "resolvido").length}</p><p className="text-xs text-muted-foreground">Resolvidos</p></CardContent></Card>
+              <Card><CardContent className="p-3 text-center"><p className="text-xl font-bold text-success">{mockChamados.filter(c => c.status === "resolvido").length}</p><p className="text-xs text-muted-foreground">Resolvidos</p></CardContent></Card>
             </div>
             <Button size="sm" onClick={() => setShowNovoChamado(true)}><Plus className="h-4 w-4" />Novo Chamado</Button>
           </div>

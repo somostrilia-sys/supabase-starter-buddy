@@ -35,9 +35,9 @@ const mockData: ComissaoResumo[] = [
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const statusConfig: Record<string, { label: string; className: string }> = {
-  pago: { label: "Pago", className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  pendente: { label: "Pendente", className: "bg-amber-100 text-amber-700 border-amber-200" },
-  processando: { label: "Em Processamento", className: "bg-blue-100 text-blue-700 border-blue-200" },
+  pago: { label: "Pago", className: "bg-success/10 text-success border-success/20" },
+  pendente: { label: "Pendente", className: "bg-warning/10 text-warning border-warning/25" },
+  processando: { label: "Em Processamento", className: "bg-primary/8 text-primary border-blue-200" },
 };
 
 export default function ExtratoComissoesTab() {
@@ -141,7 +141,7 @@ export default function ExtratoComissoesTab() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card>
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
                   <DollarSign className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div>
@@ -152,7 +152,7 @@ export default function ExtratoComissoesTab() {
             </Card>
             <Card>
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-primary/8 flex items-center justify-center">
                   <Users className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
@@ -163,7 +163,7 @@ export default function ExtratoComissoesTab() {
             </Card>
             <Card>
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-accent/8 flex items-center justify-center">
                   <TrendingUp className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>

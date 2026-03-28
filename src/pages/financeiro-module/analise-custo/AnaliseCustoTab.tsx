@@ -27,8 +27,8 @@ export default function AnaliseCustoTab() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Faturamento Total</p><p className="text-xl font-bold text-green-600">R$ {totalFat.toLocaleString()}</p></CardContent></Card>
-        <Card className="border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Custo Total</p><p className="text-xl font-bold text-red-500">R$ {totalCusto.toLocaleString()}</p></CardContent></Card>
+        <Card className="border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Faturamento Total</p><p className="text-xl font-bold text-success">R$ {totalFat.toLocaleString()}</p></CardContent></Card>
+        <Card className="border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Custo Total</p><p className="text-xl font-bold text-destructive">R$ {totalCusto.toLocaleString()}</p></CardContent></Card>
         <Card className="border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Margem Média</p><p className="text-xl font-bold text-foreground">{((totalFat - totalCusto) / totalFat * 100).toFixed(1)}%</p></CardContent></Card>
       </div>
 
@@ -58,9 +58,9 @@ export default function AnaliseCustoTab() {
             <TableRow key={c.nome} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
               <TableCell className="font-bold text-foreground">{i + 1}º</TableCell>
               <TableCell className="font-medium">{c.nome}</TableCell>
-              <TableCell className="text-right font-semibold text-green-600">R$ {c.faturamento.toLocaleString()}</TableCell>
-              <TableCell className="text-right font-semibold text-red-500">R$ {c.custo.toLocaleString()}</TableCell>
-              <TableCell className="text-right"><Badge className={c.margem >= 50 ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>{c.margem}%</Badge></TableCell>
+              <TableCell className="text-right font-semibold text-success">R$ {c.faturamento.toLocaleString()}</TableCell>
+              <TableCell className="text-right font-semibold text-destructive">R$ {c.custo.toLocaleString()}</TableCell>
+              <TableCell className="text-right"><Badge className={c.margem >= 50 ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}>{c.margem}%</Badge></TableCell>
               <TableCell className="text-right font-semibold">{c.roi.toFixed(2)}x</TableCell>
             </TableRow>
           ))}</TableBody></Table>

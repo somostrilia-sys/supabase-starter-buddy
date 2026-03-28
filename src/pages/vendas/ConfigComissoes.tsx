@@ -81,9 +81,9 @@ export default function ConfigComissoes() {
         <p className="text-sm text-muted-foreground">Defina as regras de split de pagamento e comissões por consultor</p>
       </div>
 
-      <Alert className="border-blue-200 bg-primary/6/50 dark:bg-blue-950/20 dark:border-blue-800">
+      <Alert className="border-blue-200 bg-primary/50 dark:bg-blue-950/20 dark:border-blue-800">
         <Info className="h-4 w-4 text-blue-600" />
-        <AlertDescription className="text-xs text-blue-700 dark:text-blue-400">
+        <AlertDescription className="text-xs text-primary dark:text-blue-400">
           Quando um pagamento de adesão é confirmado via gateway, o sistema executa automaticamente o split: parte vai para a conta da associação e parte vai para a conta bancária do consultor.
         </AlertDescription>
       </Alert>
@@ -93,7 +93,7 @@ export default function ConfigComissoes() {
         <Card className="border-t-2 border-t-emerald-500">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-success/10 dark:bg-emerald-900/40 flex items-center justify-center">
                 <DollarSign className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
@@ -106,7 +106,7 @@ export default function ConfigComissoes() {
         <Card className="border-t-2 border-t-blue-500">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-primary/8 dark:bg-blue-900/40 flex items-center justify-center">
                 <Users className="h-5 w-5 text-blue-600" />
               </div>
               <div>
@@ -132,8 +132,8 @@ export default function ConfigComissoes() {
         <Card className="border-t-2 border-t-amber-500">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-                <ArrowRightLeft className="h-5 w-5 text-amber-600" />
+              <div className="w-10 h-10 rounded-lg bg-warning/10 dark:bg-amber-900/40 flex items-center justify-center">
+                <ArrowRightLeft className="h-5 w-5 text-warning" />
               </div>
               <div>
                 <p className="text-xl font-bold">12</p>
@@ -272,7 +272,7 @@ export default function ConfigComissoes() {
               </p>
               <div className="flex justify-between text-xs mt-1">
                 <span>Comissão Consultor:</span>
-                <span className="font-bold text-emerald-700">
+                <span className="font-bold text-success">
                   {editTipo === "percentual"
                     ? fmt(799 * (parseFloat(editValor || "0") / 100))
                     : fmt(parseFloat(editValor || "0"))

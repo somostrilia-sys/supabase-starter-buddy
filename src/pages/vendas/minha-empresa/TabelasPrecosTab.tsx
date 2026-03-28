@@ -140,7 +140,7 @@ export default function TabelasPrecosTab() {
                   <TableCell><GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" /></TableCell>
                   <TableCell className="font-medium">{t.nome}</TableCell>
                   <TableCell>
-                    <Badge variant={t.status === "Ativa" ? "default" : "secondary"} className={t.status === "Ativa" ? "bg-emerald-500/10 text-emerald-600 border-emerald-200" : ""}>
+                    <Badge variant={t.status === "Ativa" ? "default" : "secondary"} className={t.status === "Ativa" ? "bg-emerald-500/10 text-emerald-600 border-success/20" : ""}>
                       {t.status}
                     </Badge>
                   </TableCell>

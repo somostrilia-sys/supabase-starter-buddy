@@ -195,13 +195,13 @@ const mockBoletos = [
 ];
 
 const situacaoColor: Record<string, string> = {
-  ativo: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  ativo: "bg-success/10 text-success dark:bg-green-900 dark:text-green-300",
   inativo: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
-  inadimplente: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-  pendente: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  pago_dia: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  pago_atraso: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  vencido: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+  inadimplente: "bg-destructive/8 text-destructive dark:bg-red-900 dark:text-red-300",
+  pendente: "bg-warning/10 text-warning dark:bg-yellow-900 dark:text-yellow-300",
+  pago_dia: "bg-success/10 text-success dark:bg-green-900 dark:text-green-300",
+  pago_atraso: "bg-warning/10 text-warning dark:bg-yellow-900 dark:text-yellow-300",
+  vencido: "bg-destructive/8 text-destructive dark:bg-red-900 dark:text-red-300",
   cancelado: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
 };
 

@@ -33,8 +33,8 @@ const veicMock: MockVeic[] = [
 ];
 
 const statusColor = (s: string) => {
-  if (s === "Ativo" || s === "Disponível") return "bg-emerald-100 text-emerald-700 border-emerald-200";
-  if (s === "Suspenso" || s === "Em vistoria") return "bg-amber-100 text-amber-700 border-amber-200";
+  if (s === "Ativo" || s === "Disponível") return "bg-success/10 text-success border-success/20";
+  if (s === "Suspenso" || s === "Em vistoria") return "bg-warning/10 text-warning border-warning/25";
   return "bg-muted text-muted-foreground";
 };
 
@@ -115,7 +115,7 @@ export default function VincularAssociado() {
             </div>
 
             {selA ? (
-              <Card className="border-emerald-300 bg-emerald-50/50">
+              <Card className="border-success/30 bg-emerald-50/50">
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="font-semibold">{selA.nome}</p>
@@ -177,7 +177,7 @@ export default function VincularAssociado() {
             </div>
 
             {selV ? (
-              <Card className="border-emerald-300 bg-emerald-50/50">
+              <Card className="border-success/30 bg-emerald-50/50">
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="font-semibold font-mono">{selV.placa}</p>

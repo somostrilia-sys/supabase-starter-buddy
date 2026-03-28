@@ -27,9 +27,9 @@ export default function DashboardTab() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: "Negociações Criadas", value: 112, change: "+12%", icon: FileText, color: "text-blue-600", bg: "bg-primary/6 dark:bg-blue-950/30" },
-          { label: "Cotações Criadas", value: 87, change: "+8%", icon: Calculator, color: "text-amber-600", bg: "bg-warning/8 dark:bg-amber-950/30" },
+          { label: "Cotações Criadas", value: 87, change: "+8%", icon: Calculator, color: "text-warning", bg: "bg-warning/8 dark:bg-amber-950/30" },
           { label: "Neg. Arquivadas", value: 23, change: "-5%", icon: Archive, color: "text-muted-foreground", bg: "bg-muted/50" },
-          { label: "Vendas Concretizadas", value: 45, change: "+18%", icon: TrendingUp, color: "text-green-600", bg: "bg-success/8 dark:bg-green-950/30" },
+          { label: "Vendas Concretizadas", value: 45, change: "+18%", icon: TrendingUp, color: "text-success", bg: "bg-success/8 dark:bg-green-950/30" },
         ].map(c => (
           <Card key={c.label}>
             <CardContent className="p-4">
@@ -40,7 +40,7 @@ export default function DashboardTab() {
                   <p className="text-xs text-muted-foreground">{c.label}</p>
                 </div>
               </div>
-              <Badge variant="outline" className={`mt-2 text-[10px] ${c.change.startsWith("+") ? "text-green-600 border-green-300" : "text-red-600 border-red-300"}`}>{c.change} vs mês anterior</Badge>
+              <Badge variant="outline" className={`mt-2 text-[10px] ${c.change.startsWith("+") ? "text-success border-green-300" : "text-destructive border-red-300"}`}>{c.change} vs mês anterior</Badge>
             </CardContent>
           </Card>
         ))}
@@ -81,15 +81,15 @@ export default function DashboardTab() {
       {/* Mini cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold">38</p><p className="text-xs text-muted-foreground">Vistorias Realizadas</p></CardContent></Card>
-        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-green-600">32</p><p className="text-xs text-muted-foreground">Vistorias Aprovadas</p></CardContent></Card>
-        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-red-600">4</p><p className="text-xs text-muted-foreground">Vistorias Reprovadas</p></CardContent></Card>
-        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-amber-600">2</p><p className="text-xs text-muted-foreground">Vistorias Pendentes</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-success">32</p><p className="text-xs text-muted-foreground">Vistorias Aprovadas</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-destructive">4</p><p className="text-xs text-muted-foreground">Vistorias Reprovadas</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-warning">2</p><p className="text-xs text-muted-foreground">Vistorias Pendentes</p></CardContent></Card>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-blue-600">45</p><p className="text-xs text-muted-foreground">Cadastros Gestão Sincronizados</p></CardContent></Card>
         <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold">89</p><p className="text-xs text-muted-foreground">Atividades Criadas</p></CardContent></Card>
-        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-green-600">72</p><p className="text-xs text-muted-foreground">Atividades Concluídas</p></CardContent></Card>
-        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-red-600">17</p><p className="text-xs text-muted-foreground">Atividades Atrasadas</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-success">72</p><p className="text-xs text-muted-foreground">Atividades Concluídas</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-destructive">17</p><p className="text-xs text-muted-foreground">Atividades Atrasadas</p></CardContent></Card>
       </div>
     </div>
   );

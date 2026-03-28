@@ -19,10 +19,10 @@ import {
 type VistoriaStatus = "pendente" | "em_aprovacao" | "aprovada" | "reprovada";
 
 const statusConfig: Record<VistoriaStatus, { label: string; color: string; icon: React.ElementType }> = {
-  pendente: { label: "Pendente", color: "bg-amber-100 text-amber-800 border-amber-300", icon: Clock },
-  em_aprovacao: { label: "Em Aprovação", color: "bg-blue-100 text-blue-800 border-blue-300", icon: Eye },
-  aprovada: { label: "Aprovada", color: "bg-green-100 text-green-800 border-green-300", icon: CheckCircle },
-  reprovada: { label: "Reprovada", color: "bg-red-100 text-red-800 border-red-300", icon: XCircle },
+  pendente: { label: "Pendente", color: "bg-warning/10 text-warning border-warning/30", icon: Clock },
+  em_aprovacao: { label: "Em Aprovação", color: "bg-primary/8 text-primary border-blue-300", icon: Eye },
+  aprovada: { label: "Aprovada", color: "bg-success/10 text-success border-green-300", icon: CheckCircle },
+  reprovada: { label: "Reprovada", color: "bg-destructive/8 text-destructive border-red-300", icon: XCircle },
 };
 
 interface TimelineEvent {
@@ -208,7 +208,7 @@ export default function VistoriaTab({ deal }: Props) {
                 </Button>
                 {status !== "aprovada" && (
                   <>
-                    <Button size="sm" className="rounded-none bg-green-600 hover:bg-green-700 text-white" onClick={handleAprovar}>
+                    <Button size="sm" className="rounded-none bg-success hover:bg-success/90 text-white" onClick={handleAprovar}>
                       <CheckCircle className="h-3.5 w-3.5 mr-1" />Aprovar
                     </Button>
                     <Button size="sm" variant="destructive" className="rounded-none" onClick={handleReprovar}>
@@ -248,7 +248,7 @@ export default function VistoriaTab({ deal }: Props) {
           {itens.length > 0 ? (
             <div className="space-y-1">
               {itensObrigatoriosPendentes.length > 0 && (
-                <p className="text-xs text-amber-600 font-medium">{itensObrigatoriosPendentes.length} item(s) obrigatório(s) pendente(s)</p>
+                <p className="text-xs text-warning font-medium">{itensObrigatoriosPendentes.length} item(s) obrigatório(s) pendente(s)</p>
               )}
               {itens.map(item => (
                 <div key={item.id} className="flex items-center gap-2 p-2 rounded hover:bg-muted/30">
@@ -257,7 +257,7 @@ export default function VistoriaTab({ deal }: Props) {
                     onCheckedChange={() => toggleItem(item.id)}
                   />
                   <span className="text-sm flex-1">{item.nome_item}</span>
-                  {item.obrigatorio && <Badge variant="outline" className="text-[9px] text-red-600 border-red-200 rounded-none">Obrigatório</Badge>}
+                  {item.obrigatorio && <Badge variant="outline" className="text-[9px] text-destructive border-red-200 rounded-none">Obrigatório</Badge>}
                 </div>
               ))}
             </div>
@@ -275,14 +275,14 @@ export default function VistoriaTab({ deal }: Props) {
       </Card>
 
       {/* Fluxo Web info */}
-      <Card className="rounded-none bg-primary/6/50 border-blue-200">
+      <Card className="rounded-none bg-primary/50 border-blue-200">
         <CardContent className="p-4 flex items-start gap-3">
           <Globe className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
           <div>
             <p className="text-sm font-semibold text-blue-900">Fluxo Web Alternativo</p>
-            <p className="text-xs text-blue-700 mt-0.5">O cliente pode acessar o link abaixo, tirar fotos pelo navegador e submeter diretamente — sem necessidade de instalar o aplicativo.</p>
+            <p className="text-xs text-primary mt-0.5">O cliente pode acessar o link abaixo, tirar fotos pelo navegador e submeter diretamente — sem necessidade de instalar o aplicativo.</p>
             <div className="flex items-center gap-2 mt-2">
-              <code className="text-[11px] bg-white border px-2 py-1 font-mono text-blue-800">https://vistoria.objetiva.app/v/{codigo}</code>
+              <code className="text-[11px] bg-white border px-2 py-1 font-mono text-primary">https://vistoria.objetiva.app/v/{codigo}</code>
               <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(`https://vistoria.objetiva.app/v/${codigo}`); toast.success("Link copiado!"); }}>
                 <Copy className="h-3 w-3" />
               </Button>

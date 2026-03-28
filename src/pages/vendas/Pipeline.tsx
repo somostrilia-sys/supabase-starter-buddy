@@ -40,9 +40,9 @@ function stallLabel(days: number) {
 
 function StalledBadge({ days }: { days: number }) {
   const label = stallLabel(days);
-  if (days < 1) return <Badge className="bg-success/80/15 text-green-700 border-green-300 text-[9px] px-1.5 py-0">{label}</Badge>;
-  if (days <= 3) return <Badge className="bg-warning/80/15 text-amber-700 border-amber-300 text-[9px] px-1.5 py-0">{label}</Badge>;
-  return <Badge className="bg-destructive/80/15 text-red-700 border-red-300 text-[9px] px-1.5 py-0">{label}</Badge>;
+  if (days < 1) return <Badge className="bg-success/15 text-success border-green-300 text-[9px] px-1.5 py-0">{label}</Badge>;
+  if (days <= 3) return <Badge className="bg-warning/10 text-warning border-warning/30 text-[9px] px-1.5 py-0">{label}</Badge>;
+  return <Badge className="bg-destructive/15 text-destructive border-red-300 text-[9px] px-1.5 py-0">{label}</Badge>;
 }
 
 type SortKey = "id" | "lead_nome" | "veiculo_modelo" | "plano" | "stage" | "consultor" | "cooperativa" | "regional" | "created_at" | "updated_at";
@@ -399,12 +399,12 @@ export default function Pipeline() {
                                   <DropdownMenuItem><Archive className="h-3.5 w-3.5 mr-2" />Arquivar</DropdownMenuItem>
                                   {canLiberarCadastro && deal.stage !== "liberado_cadastro" && deal.stage !== "concluido" && deal.stage !== "perdido" && (
                                     <DropdownMenuItem onClick={e => { e.stopPropagation(); handleLiberarCadastro(deal); }}>
-                                      <CheckCircle className="h-3.5 w-3.5 mr-2 text-green-600" />Liberar p/ Cadastro
+                                      <CheckCircle className="h-3.5 w-3.5 mr-2 text-success" />Liberar p/ Cadastro
                                     </DropdownMenuItem>
                                   )}
                                   {canConcretizarVenda && (deal.stage === "liberado_cadastro" || deal.stage === "concluido") && (
                                     <DropdownMenuItem onClick={e => { e.stopPropagation(); setConcretizarDeal(deal); }}>
-                                      <DollarSign className="h-3.5 w-3.5 mr-2 text-green-600" />Concretizar Venda
+                                      <DollarSign className="h-3.5 w-3.5 mr-2 text-success" />Concretizar Venda
                                     </DropdownMenuItem>
                                   )}
                                 </DropdownMenuContent>
@@ -427,12 +427,12 @@ export default function Pipeline() {
                             {/* Status icons row */}
                             <TooltipProvider delayDuration={200}>
                               <div className="flex items-center gap-1 pt-0.5">
-                                <Tooltip><TooltipTrigger><CheckCircle className={`h-3.5 w-3.5 ${si.aceita ? "text-green-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Aceita</TooltipContent></Tooltip>
+                                <Tooltip><TooltipTrigger><CheckCircle className={`h-3.5 w-3.5 ${si.aceita ? "text-success" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Aceita</TooltipContent></Tooltip>
                                 <Tooltip><TooltipTrigger><AlertCircle className={`h-3.5 w-3.5 ${si.pendente ? "text-amber-500" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Pendente</TooltipContent></Tooltip>
                                 <Tooltip><TooltipTrigger><Shield className={`h-3.5 w-3.5 ${si.aprovada ? "text-blue-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Aprovada</TooltipContent></Tooltip>
-                                <Tooltip><TooltipTrigger><Send className={`h-3.5 w-3.5 ${si.sga ? "text-green-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Gestão</TooltipContent></Tooltip>
+                                <Tooltip><TooltipTrigger><Send className={`h-3.5 w-3.5 ${si.sga ? "text-success" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Gestão</TooltipContent></Tooltip>
                                 <Tooltip><TooltipTrigger><Radio className={`h-3.5 w-3.5 ${si.rastreador ? "text-blue-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Rastreador</TooltipContent></Tooltip>
-                                <Tooltip><TooltipTrigger><AlertTriangle className={`h-3.5 w-3.5 ${si.inadimplencia ? "text-red-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Inadimplência</TooltipContent></Tooltip>
+                                <Tooltip><TooltipTrigger><AlertTriangle className={`h-3.5 w-3.5 ${si.inadimplencia ? "text-destructive" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Inadimplência</TooltipContent></Tooltip>
                               </div>
                             </TooltipProvider>
 
@@ -517,7 +517,7 @@ export default function Pipeline() {
                       <TableCell className="text-xs">{deal.regional}</TableCell>
                       <TableCell className="text-xs">{new Date(deal.created_at).toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell className="text-xs">{new Date(deal.updated_at).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell>{deal.enviado_sga ? <Badge className="bg-green-600 text-white text-[9px]">Gestão</Badge> : <span className="text-muted-foreground text-xs">—</span>}</TableCell>
+                      <TableCell>{deal.enviado_sga ? <Badge className="bg-success text-white text-[9px]">Gestão</Badge> : <span className="text-muted-foreground text-xs">—</span>}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -550,7 +550,7 @@ export default function Pipeline() {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Nova Negociação</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="p-3 rounded-lg border border-amber-200 bg-warning/8 text-amber-800 text-xs">
+            <div className="p-3 rounded-lg border border-warning/25 bg-warning/8 text-warning text-xs">
               <strong>Dados mínimos para cotação:</strong> Preencha Nome e Telefone para criar a negociação.
             </div>
             <div className="space-y-1.5">

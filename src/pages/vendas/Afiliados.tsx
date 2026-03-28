@@ -20,7 +20,7 @@ const afiliados = [
 const kpis = [
   { label: "Total Afiliados", value: afiliados.length, icon: UsersRound, color: "text-primary", bg: "bg-primary/8" },
   { label: "Total Indicações", value: afiliados.reduce((s, a) => s + a.indicacoes, 0), icon: Users, color: "text-blue-600", bg: "bg-primary/6" },
-  { label: "Contratos Gerados", value: afiliados.reduce((s, a) => s + a.contratos, 0), icon: FileText, color: "text-green-600", bg: "bg-success/8" },
+  { label: "Contratos Gerados", value: afiliados.reduce((s, a) => s + a.contratos, 0), icon: FileText, color: "text-success", bg: "bg-success/8" },
   { label: "Comissões Pagas", value: `R$ ${afiliados.reduce((s, a) => s + a.comissao, 0).toLocaleString()}`, icon: DollarSign, color: "text-purple-600", bg: "bg-primary/6" },
 ];
 
@@ -114,10 +114,10 @@ export default function Afiliados() {
                   <TableCell className="font-medium">{a.nome}</TableCell>
                   <TableCell><span className="font-mono text-xs bg-muted/50 px-2 py-0.5 rounded">{a.codigo}</span></TableCell>
                   <TableCell className="text-right font-semibold">{a.indicacoes}</TableCell>
-                  <TableCell className="text-right font-semibold text-green-600">{a.contratos}</TableCell>
+                  <TableCell className="text-right font-semibold text-success">{a.contratos}</TableCell>
                   <TableCell className="text-right"><Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8">{a.taxa}%</Badge></TableCell>
                   <TableCell className="text-right font-semibold text-primary">R$ {a.comissao.toLocaleString()}</TableCell>
-                  <TableCell><Badge className={a.status === "ativo" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>{a.status === "ativo" ? "Ativo" : "Inativo"}</Badge></TableCell>
+                  <TableCell><Badge className={a.status === "ativo" ? "bg-success/10 text-success" : "bg-gray-100 text-gray-600"}>{a.status === "ativo" ? "Ativo" : "Inativo"}</Badge></TableCell>
                 </TableRow>
               ))}
             </TableBody>

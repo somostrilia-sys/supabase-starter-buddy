@@ -133,7 +133,7 @@ export default function FerramentasVendas() {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-semibold">{f.nome}</p>
-                      <Badge variant="outline" className={cn("text-[10px]", f.status === "Ativo" ? "text-green-700 border-green-300" : "text-muted-foreground")}>{f.status}</Badge>
+                      <Badge variant="outline" className={cn("text-[10px]", f.status === "Ativo" ? "text-success border-green-300" : "text-muted-foreground")}>{f.status}</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{f.desc}</p>
                     <div className="flex gap-2 mt-2">
@@ -201,7 +201,7 @@ export default function FerramentasVendas() {
                     <TableCell className="text-sm">{h.arquivo}</TableCell>
                     <TableCell className="text-right font-medium">{h.total}</TableCell>
                     <TableCell className="text-xs">{h.distribuidoPara}</TableCell>
-                    <TableCell><Badge variant="outline" className={cn("text-[10px]", h.status === "Concluída" ? "text-green-700 border-green-300" : "text-amber-700 border-amber-300")}>{h.status}</Badge></TableCell>
+                    <TableCell><Badge variant="outline" className={cn("text-[10px]", h.status === "Concluída" ? "text-success border-green-300" : "text-warning border-warning/30")}>{h.status}</Badge></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -259,8 +259,8 @@ export default function FerramentasVendas() {
                     </TableCell>
                     <TableCell className="text-right">{a.leads}</TableCell>
                     <TableCell className="text-right font-bold">{a.vendas}</TableCell>
-                    <TableCell><Badge variant="outline" className={cn("text-[10px]", a.etapa === "Ativo" ? "text-green-700 border-green-300" : "text-muted-foreground")}>{a.etapa}</Badge></TableCell>
-                    <TableCell className="text-right font-medium text-amber-600">{fmt(a.recompensa)}</TableCell>
+                    <TableCell><Badge variant="outline" className={cn("text-[10px]", a.etapa === "Ativo" ? "text-success border-green-300" : "text-muted-foreground")}>{a.etapa}</Badge></TableCell>
+                    <TableCell className="text-right font-medium text-warning">{fmt(a.recompensa)}</TableCell>
                     <TableCell><Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setAfiliadoMetaModal(true)}><Target className="h-3.5 w-3.5 mr-1" />Meta</Button></TableCell>
                   </TableRow>
                 ))}

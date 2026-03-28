@@ -12,8 +12,8 @@ const ranking = [
   { pos: 6, nome: "Ricardo Santos", vendas: 5, valor: 8900, taxa: 19.8, tempo: 14 },
 ];
 
-const medalColors = ["text-amber-500", "text-slate-400", "text-amber-700"];
-const podiumBg = ["border-amber-300 bg-warning/8/50 dark:bg-amber-950/20", "border-slate-300 bg-slate-50/50 dark:bg-slate-950/20", "border-amber-600/30 bg-warning/8/30 dark:bg-amber-950/10"];
+const medalColors = ["text-amber-500", "text-slate-400", "text-warning"];
+const podiumBg = ["border-warning/30 bg-warning/50 dark:bg-amber-950/20", "border-slate-300 bg-slate-50/50 dark:bg-slate-950/20", "border-amber-600/30 bg-warning/30 dark:bg-amber-950/10"];
 
 function fmt(v: number) { return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
 

@@ -341,12 +341,12 @@ export default function AlteracaoCotaMassa({ onBack }: { onBack: () => void }) {
 
       {/* Step: Resultado */}
       {step === "resultado" && (
-        <Card className={resultType === "success" ? "border-emerald-300" : "border-amber-300"}>
+        <Card className={resultType === "success" ? "border-success/30" : "border-warning/30"}>
           <CardContent className="p-6 flex items-start gap-4">
             {resultType === "success" ? (
               <CheckCircle2 className="h-10 w-10 text-emerald-600 shrink-0 mt-1" />
             ) : (
-              <AlertTriangle className="h-10 w-10 text-amber-600 shrink-0 mt-1" />
+              <AlertTriangle className="h-10 w-10 text-warning shrink-0 mt-1" />
             )}
             <div className="flex-1 space-y-2">
               <h3 className="font-semibold text-lg">

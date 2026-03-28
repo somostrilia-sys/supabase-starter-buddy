@@ -81,7 +81,7 @@ export default function CadastrarCooperativa() {
             <CardContent className="p-5">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/60/10 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                     <Building2 className="h-5 w-5 text-purple-500" />
                   </div>
                   <div>

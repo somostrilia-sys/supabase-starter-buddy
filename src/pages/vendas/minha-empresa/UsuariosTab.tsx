@@ -53,7 +53,7 @@ const gruposPermissao: GrupoPermissao[] = [
     id: "consultor",
     label: "Consultor",
     descricao: "Acesso operacional básico — atendimento, cotações e vendas",
-    badgeColor: "bg-blue-100 text-blue-800",
+    badgeColor: "bg-primary/8 text-primary",
     permissoes: [
       { key: "atendimento", label: "Atendimento ao cliente" },
       { key: "cotacoes", label: "Criar e gerenciar cotações" },
@@ -66,7 +66,7 @@ const gruposPermissao: GrupoPermissao[] = [
     id: "gestor",
     label: "Gestor",
     descricao: "Acesso intermediário — equipe, relatórios e aprovações",
-    badgeColor: "bg-amber-100 text-amber-800",
+    badgeColor: "bg-warning/10 text-warning",
     permissoes: [
       { key: "equipe", label: "Gerenciar equipe" },
       { key: "relatorios", label: "Relatórios de desempenho" },
@@ -80,7 +80,7 @@ const gruposPermissao: GrupoPermissao[] = [
     id: "diretor",
     label: "Diretor",
     descricao: "Acesso amplo — metas, configurações estratégicas",
-    badgeColor: "bg-purple-100 text-purple-800",
+    badgeColor: "bg-accent/8 text-accent",
     permissoes: [
       { key: "metas_globais", label: "Metas globais" },
       { key: "config_estrategicas", label: "Configurações estratégicas" },
@@ -94,7 +94,7 @@ const gruposPermissao: GrupoPermissao[] = [
     id: "administrativo",
     label: "Administrativo",
     descricao: "Acesso financeiro e operacional — boletos, contratos, cadastros",
-    badgeColor: "bg-green-100 text-green-800",
+    badgeColor: "bg-success/10 text-success",
     permissoes: [
       { key: "boletos", label: "Emissão e gestão de boletos" },
       { key: "contratos", label: "Contratos de adesão" },

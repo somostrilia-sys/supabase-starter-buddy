@@ -266,7 +266,7 @@ export default function PlanosProtecao({ onBack }: { onBack: () => void }) {
 
                 {/* Regras especiais */}
                 {p.regrasEspeciais && (
-                  <p className="text-[11px] text-amber-500 italic bg-warning/80/10 px-2 py-1.5 rounded">
+                  <p className="text-[11px] text-amber-500 italic bg-warning/8 px-2 py-1.5 rounded">
                     ⚠️ {p.regrasEspeciais}
                   </p>
                 )}

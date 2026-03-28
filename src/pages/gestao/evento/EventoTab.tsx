@@ -26,12 +26,12 @@ const regionais = ["Central SP", "Campinas", "Ribeirão Preto", "Litoral SP", "C
 const categoriasVeiculo = ["Passeio", "Utilitário", "Caminhão", "Moto", "Van"];
 
 const statusColor: Record<string, string> = {
-  "Em análise": "bg-yellow-100 text-yellow-800",
-  "Em reparo": "bg-blue-100 text-blue-800",
-  "Aguardando docs": "bg-orange-100 text-orange-800",
-  "Indenização integral": "bg-purple-100 text-purple-800",
-  "Negado": "bg-red-100 text-red-800",
-  "Reembolso": "bg-green-100 text-green-800",
+  "Em análise": "bg-warning/10 text-warning",
+  "Em reparo": "bg-primary/8 text-primary",
+  "Aguardando docs": "bg-warning/10 text-warning",
+  "Indenização integral": "bg-accent/8 text-accent",
+  "Negado": "bg-destructive/8 text-destructive",
+  "Reembolso": "bg-success/10 text-success",
 };
 
 // ── Mock Data ──────────────────────────────────────────────
@@ -211,7 +211,7 @@ function CadastroEventoTab() {
                   <div><Label className="text-xs text-muted-foreground">Chassi</Label><p className="text-sm font-mono">9BGKS48U0MG123456</p></div>
                   <div><Label className="text-xs text-muted-foreground">Cooperativa</Label><p className="text-sm">Central SP</p></div>
                   <div><Label className="text-xs text-muted-foreground">Cota</Label><p className="text-sm">R$ 50-70 mil</p></div>
-                  <div><Label className="text-xs text-muted-foreground">Status</Label><Badge className="bg-green-100 text-green-800">Ativo</Badge></div>
+                  <div><Label className="text-xs text-muted-foreground">Status</Label><Badge className="bg-success/10 text-success">Ativo</Badge></div>
                 </div>
               )}
             </>
@@ -401,7 +401,7 @@ function CadastroEventoTab() {
                     { termo: "Autorização de Vistoria", aceito: false, data: "" },
                   ].map((t, i) => (
                     <div key={i} className="flex items-center gap-2 text-xs">
-                      {t.aceito ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600" /> : <XCircle className="h-3.5 w-3.5 text-muted-foreground" />}
+                      {t.aceito ? <CheckCircle2 className="h-3.5 w-3.5 text-success" /> : <XCircle className="h-3.5 w-3.5 text-muted-foreground" />}
                       <span className={t.aceito ? "font-medium" : "text-muted-foreground"}>{t.termo}</span>
                       {t.data && <span className="text-muted-foreground ml-auto">{t.data}</span>}
                     </div>
@@ -682,13 +682,13 @@ function MonitoramentoTab() {
   ];
 
   const estadoDoTempo = [
-    { status: "Aguardando cota", qtde: 3, cor: "bg-yellow-100 text-yellow-800" },
-    { status: "Aprovados", qtde: 8, cor: "bg-green-100 text-green-800" },
-    { status: "Em reparação", qtde: 5, cor: "bg-blue-100 text-blue-800" },
-    { status: "Indenização integral", qtde: 2, cor: "bg-purple-100 text-purple-800" },
-    { status: "Negados", qtde: 1, cor: "bg-red-100 text-red-800" },
-    { status: "Reembolso", qtde: 3, cor: "bg-emerald-100 text-emerald-800" },
-    { status: "Aguardando documentos", qtde: 4, cor: "bg-orange-100 text-orange-800" },
+    { status: "Aguardando cota", qtde: 3, cor: "bg-warning/10 text-warning" },
+    { status: "Aprovados", qtde: 8, cor: "bg-success/10 text-success" },
+    { status: "Em reparação", qtde: 5, cor: "bg-primary/8 text-primary" },
+    { status: "Indenização integral", qtde: 2, cor: "bg-accent/8 text-accent" },
+    { status: "Negados", qtde: 1, cor: "bg-destructive/8 text-destructive" },
+    { status: "Reembolso", qtde: 3, cor: "bg-success/10 text-emerald-800" },
+    { status: "Aguardando documentos", qtde: 4, cor: "bg-warning/10 text-warning" },
     { status: "Encerrados", qtde: 15, cor: "bg-gray-100 text-gray-800" },
   ];
 
@@ -852,7 +852,7 @@ function RelatoriosEventoTab() {
                     <TableCell className="text-sm text-right">R$ {c.valor2.toLocaleString("pt-BR")}</TableCell>
                     <TableCell className="text-sm">{c.oficina3}</TableCell>
                     <TableCell className="text-sm text-right">R$ {c.valor3.toLocaleString("pt-BR")}</TableCell>
-                    <TableCell><Badge className="bg-green-100 text-green-800 text-xs">{c.escolhida}</Badge></TableCell>
+                    <TableCell><Badge className="bg-success/10 text-success text-xs">{c.escolhida}</Badge></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -877,7 +877,7 @@ function RelatoriosEventoTab() {
                     <TableCell className="font-mono text-xs">{s.protocolo}</TableCell>
                     <TableCell className="text-sm">{s.dataCadastro}</TableCell>
                     <TableCell className="text-sm">{s.dataSync}</TableCell>
-                    <TableCell><Badge className={`text-xs ${s.status === "Sincronizado" ? "bg-green-100 text-green-800" : s.status === "Atrasado" ? "bg-yellow-100 text-yellow-800" : "bg-orange-100 text-orange-800"}`}>{s.status}</Badge></TableCell>
+                    <TableCell><Badge className={`text-xs ${s.status === "Sincronizado" ? "bg-success/10 text-success" : s.status === "Atrasado" ? "bg-warning/10 text-warning" : "bg-warning/10 text-warning"}`}>{s.status}</Badge></TableCell>
                   </TableRow>
                 ))}
               </TableBody>

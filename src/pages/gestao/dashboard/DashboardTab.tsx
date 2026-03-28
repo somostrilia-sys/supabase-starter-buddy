@@ -209,19 +209,19 @@ export default function DashboardTab() {
       {/* ═══ INADIMPLÊNCIA ═══ */}
       <SectionDivider title="Inadimplência & Revistoria" />
       <Card
-        className="shadow-none border-red-200 bg-destructive/8/40 cursor-pointer hover:bg-destructive/8/70 transition-colors"
+        className="shadow-none border-red-200 bg-destructive/40 cursor-pointer hover:bg-destructive/70 transition-colors"
         onClick={() => setModalOpen(true)}
       >
         <CardContent className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
+            <div className="w-10 h-10 rounded-lg bg-destructive/8 flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
             </div>
             <div>
-              <p className="text-xl font-bold text-red-700">
+              <p className="text-xl font-bold text-destructive">
                 {loadingInad ? <Loader2 className="w-5 h-5 animate-spin inline" /> : porAssociado.length}
               </p>
-              <p className="text-[10px] font-medium text-red-500 uppercase tracking-wider">
+              <p className="text-[10px] font-medium text-destructive uppercase tracking-wider">
                 Inadimplência +5 dias / Pendentes de Revistoria
               </p>
             </div>
@@ -235,7 +235,7 @@ export default function DashboardTab() {
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
+              <AlertTriangle className="w-5 h-5 text-destructive" />
               Inadimplência +5 dias / Pendentes de Revistoria
             </DialogTitle>
           </DialogHeader>
@@ -263,13 +263,13 @@ export default function DashboardTab() {
                     <TableRow key={a.associado_id}>
                       <TableCell className="font-medium text-sm">{a.nome}</TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">
+                        <Badge variant="outline" className="bg-destructive/8 text-destructive border-red-200">
                           {a.boletos.length}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center text-sm font-mono">{maxDias} dias</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={a.revistoria_status === "realizada" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-amber-100 text-amber-700 border-amber-200"}>
+                        <Badge variant="outline" className={a.revistoria_status === "realizada" ? "bg-success/10 text-success border-success/20" : "bg-warning/10 text-warning border-warning/25"}>
                           {a.revistoria_status === "realizada" ? "✅ Realizada" : "⏳ Pendente"}
                         </Badge>
                       </TableCell>

@@ -15,7 +15,7 @@ const centros = [
 ];
 
 const chartData = centros.map(c => ({ name: c.nome, Orçamento: c.orcamento, Realizado: c.realizado }));
-const statusColor: Record<string, string> = { dentro: "bg-green-100 text-green-800", acima: "bg-red-100 text-red-800" };
+const statusColor: Record<string, string> = { dentro: "bg-success/10 text-success", acima: "bg-destructive/8 text-destructive" };
 
 export default function CentroCustosTab() {
   return (
@@ -55,7 +55,7 @@ export default function CentroCustosTab() {
                 <TableCell className="text-sm">{c.responsavel}</TableCell>
                 <TableCell className="text-right font-semibold">R$ {c.orcamento.toLocaleString()}</TableCell>
                 <TableCell className="text-right font-semibold">R$ {c.realizado.toLocaleString()}</TableCell>
-                <TableCell className={`text-right font-semibold ${Number(variacao) > 0 ? "text-red-500" : "text-green-600"}`}>{Number(variacao) > 0 ? "+" : ""}{variacao}%</TableCell>
+                <TableCell className={`text-right font-semibold ${Number(variacao) > 0 ? "text-destructive" : "text-success"}`}>{Number(variacao) > 0 ? "+" : ""}{variacao}%</TableCell>
                 <TableCell><Badge className={statusColor[c.status]}>{c.status === "dentro" ? "Dentro" : "Acima"}</Badge></TableCell>
               </TableRow>
             );

@@ -28,12 +28,12 @@ interface EventoData {
 const statusOptions = ["Em análise", "Em reparo", "Aguardando docs", "Indenização integral", "Negado", "Reembolso", "Encerrado"];
 
 const statusColor: Record<string, string> = {
-  "Em análise": "bg-yellow-100 text-yellow-800",
-  "Em reparo": "bg-blue-100 text-blue-800",
-  "Aguardando docs": "bg-orange-100 text-orange-800",
-  "Indenização integral": "bg-purple-100 text-purple-800",
-  "Negado": "bg-red-100 text-red-800",
-  "Reembolso": "bg-green-100 text-green-800",
+  "Em análise": "bg-warning/10 text-warning",
+  "Em reparo": "bg-primary/8 text-primary",
+  "Aguardando docs": "bg-warning/10 text-warning",
+  "Indenização integral": "bg-accent/8 text-accent",
+  "Negado": "bg-destructive/8 text-destructive",
+  "Reembolso": "bg-success/10 text-success",
   "Encerrado": "bg-muted text-muted-foreground",
 };
 

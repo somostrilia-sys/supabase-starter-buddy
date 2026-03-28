@@ -60,11 +60,11 @@ export default function BancoIntegracao({ onBack }: { onBack: () => void }) {
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <Wifi className="h-6 w-6 text-green-600" />
+            <Wifi className="h-6 w-6 text-success" />
             <div>
               <p className="font-semibold text-sm">Banco do Brasil</p>
               <p className="text-xs text-muted-foreground">CNAB 240 · Conta 12345-6</p>
-              <Badge className="mt-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">Conectado</Badge>
+              <Badge className="mt-1 bg-success/10 text-success dark:bg-green-900 dark:text-green-300">Conectado</Badge>
             </div>
           </CardContent>
         </Card>
@@ -128,7 +128,7 @@ export default function BancoIntegracao({ onBack }: { onBack: () => void }) {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2"><FileText className="h-4 w-4" />Extrato de Cobrança</CardTitle>
           <div className="flex gap-4 text-sm mt-2">
-            <span className="text-green-600 font-semibold">Créditos: R$ {totalCreditos.toFixed(2)}</span>
+            <span className="text-success font-semibold">Créditos: R$ {totalCreditos.toFixed(2)}</span>
             <span className="text-destructive font-semibold">Débitos: R$ {totalDebitos.toFixed(2)}</span>
             <span className="font-bold">Saldo: R$ {(totalCreditos - totalDebitos).toFixed(2)}</span>
           </div>
@@ -143,8 +143,8 @@ export default function BancoIntegracao({ onBack }: { onBack: () => void }) {
                 <TableRow key={i}>
                   <TableCell>{new Date(e.data).toLocaleDateString("pt-BR")}</TableCell>
                   <TableCell>{e.descricao}</TableCell>
-                  <TableCell><Badge className={e.tipo === "credito" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"}>{e.tipo}</Badge></TableCell>
-                  <TableCell className={`text-right font-mono ${e.tipo === "credito" ? "text-green-600" : "text-destructive"}`}>{e.tipo === "debito" ? "-" : "+"}R$ {e.valor.toFixed(2)}</TableCell>
+                  <TableCell><Badge className={e.tipo === "credito" ? "bg-success/10 text-success dark:bg-green-900 dark:text-green-300" : "bg-destructive/8 text-destructive dark:bg-red-900 dark:text-red-300"}>{e.tipo}</Badge></TableCell>
+                  <TableCell className={`text-right font-mono ${e.tipo === "credito" ? "text-success" : "text-destructive"}`}>{e.tipo === "debito" ? "-" : "+"}R$ {e.valor.toFixed(2)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

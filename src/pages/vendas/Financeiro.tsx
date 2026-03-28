@@ -26,15 +26,15 @@ import { consultores } from "./pipeline/mockData";
 const day = 86400000;
 const now = Date.now();
 const statusPagColors: Record<string, string> = {
-  Aprovado: "bg-success/80/15 text-green-700 border-green-300",
-  Aguardando: "bg-warning/80/15 text-amber-700 border-amber-300",
+  Aprovado: "bg-success/15 text-success border-green-300",
+  Aguardando: "bg-warning/10 text-warning border-warning/30",
   Expirado: "bg-muted text-muted-foreground",
-  Estornado: "bg-destructive/80/15 text-red-700 border-red-300",
+  Estornado: "bg-destructive/15 text-destructive border-red-300",
 };
 const formaColors: Record<string, string> = {
-  "Cartão": "bg-primary/60/15 text-blue-700 border-blue-300",
-  Boleto: "bg-warning/80/15 text-amber-700 border-amber-300",
-  Dinheiro: "bg-success/80/15 text-green-700 border-green-300",
+  "Cartão": "bg-primary/15 text-primary border-blue-300",
+  Boleto: "bg-warning/10 text-warning border-warning/30",
+  Dinheiro: "bg-success/15 text-success border-green-300",
 };
 
 const mockVendas = [
@@ -79,9 +79,9 @@ const mockComissoes = [
 ];
 
 const comStatusColors: Record<string, string> = {
-  Paga: "bg-success/80/15 text-green-700 border-green-300",
-  "A Pagar": "bg-warning/80/15 text-amber-700 border-amber-300",
-  Cancelada: "bg-destructive/80/15 text-red-700 border-red-300",
+  Paga: "bg-success/15 text-success border-green-300",
+  "A Pagar": "bg-warning/10 text-warning border-warning/30",
+  Cancelada: "bg-destructive/15 text-destructive border-red-300",
 };
 
 // ========== TAB 4 - FATURAS ==========
@@ -94,9 +94,9 @@ const mockFaturas = [
   { periodo: "Out/2025", valor: 397.0, status: "Vencida", vencimento: "10/10/2025", pagamento: null },
 ];
 const faturaStatusColors: Record<string, string> = {
-  Paga: "bg-success/80/15 text-green-700 border-green-300",
-  Pendente: "bg-warning/80/15 text-amber-700 border-amber-300",
-  Vencida: "bg-destructive/80/15 text-red-700 border-red-300",
+  Paga: "bg-success/15 text-success border-green-300",
+  Pendente: "bg-warning/10 text-warning border-warning/30",
+  Vencida: "bg-destructive/15 text-destructive border-red-300",
 };
 
 function fmt(v: number) { return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
@@ -148,10 +148,10 @@ export default function Financeiro() {
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <Card><CardContent className="p-4 flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-success/8 dark:bg-green-950/30 flex items-center justify-center"><DollarSign className="h-5 w-5 text-green-600" /></div><div><p className="text-xl font-bold">{fmt(totalAdesoes)}</p><p className="text-xs text-muted-foreground">Total Adesões</p></div></CardContent></Card>
+            <Card><CardContent className="p-4 flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-success/8 dark:bg-green-950/30 flex items-center justify-center"><DollarSign className="h-5 w-5 text-success" /></div><div><p className="text-xl font-bold">{fmt(totalAdesoes)}</p><p className="text-xs text-muted-foreground">Total Adesões</p></div></CardContent></Card>
             <Card><CardContent className="p-4 flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-primary/6 dark:bg-blue-950/30 flex items-center justify-center"><Receipt className="h-5 w-5 text-blue-600" /></div><div><p className="text-xl font-bold">{totalBoletos}</p><p className="text-xs text-muted-foreground">Boletos Gerados</p></div></CardContent></Card>
-            <Card><CardContent className="p-4 flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-warning/8 dark:bg-amber-950/30 flex items-center justify-center"><AlertTriangle className="h-5 w-5 text-amber-600" /></div><div><p className="text-xl font-bold">{totalVencidos}</p><p className="text-xs text-muted-foreground">Boletos Vencidos</p></div></CardContent></Card>
-            <Card><CardContent className="p-4 flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-destructive/8 dark:bg-red-950/30 flex items-center justify-center"><RotateCcw className="h-5 w-5 text-red-600" /></div><div><p className="text-xl font-bold">{totalEstornos}</p><p className="text-xs text-muted-foreground">Estornos</p></div></CardContent></Card>
+            <Card><CardContent className="p-4 flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-warning/8 dark:bg-amber-950/30 flex items-center justify-center"><AlertTriangle className="h-5 w-5 text-warning" /></div><div><p className="text-xl font-bold">{totalVencidos}</p><p className="text-xs text-muted-foreground">Boletos Vencidos</p></div></CardContent></Card>
+            <Card><CardContent className="p-4 flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-destructive/8 dark:bg-red-950/30 flex items-center justify-center"><RotateCcw className="h-5 w-5 text-destructive" /></div><div><p className="text-xl font-bold">{totalEstornos}</p><p className="text-xs text-muted-foreground">Estornos</p></div></CardContent></Card>
           </div>
 
           <Card><CardContent className="p-0">
@@ -209,7 +209,7 @@ export default function Financeiro() {
                   <p className="font-semibold">Banco do Brasil</p>
                   <p className="text-sm text-muted-foreground">Ag: 1234-5 | CC: 67890-1 | Conta Corrente</p>
                 </div>
-                <Badge className="bg-success/80/15 text-green-700 border-green-300 text-xs" variant="outline">Ativa</Badge>
+                <Badge className="bg-success/15 text-success border-green-300 text-xs" variant="outline">Ativa</Badge>
               </div>
               <Button size="sm" variant="outline" onClick={() => setContaModal(true)}><Settings className="h-3.5 w-3.5 mr-1" />Configurar Conta</Button>
             </CardContent>
@@ -228,8 +228,8 @@ export default function Financeiro() {
                   <TableRow key={i}>
                     <TableCell className="text-xs">{e.data}</TableCell>
                     <TableCell className="text-sm">{e.desc}</TableCell>
-                    <TableCell><Badge variant="outline" className={cn("text-[10px]", e.tipo === "Crédito" ? "text-green-700 border-green-300" : "text-red-700 border-red-300")}>{e.tipo}</Badge></TableCell>
-                    <TableCell className={cn("text-sm text-right font-medium", e.valor > 0 ? "text-green-700" : "text-red-700")}>{fmt(e.valor)}</TableCell>
+                    <TableCell><Badge variant="outline" className={cn("text-[10px]", e.tipo === "Crédito" ? "text-success border-green-300" : "text-destructive border-red-300")}>{e.tipo}</Badge></TableCell>
+                    <TableCell className={cn("text-sm text-right font-medium", e.valor > 0 ? "text-success" : "text-destructive")}>{fmt(e.valor)}</TableCell>
                     <TableCell className="text-sm text-right">{fmt(e.saldo)}</TableCell>
                   </TableRow>
                 ))}
@@ -241,8 +241,8 @@ export default function Financeiro() {
         {/* TAB 3 - COMISSOES */}
         <TabsContent value="comissoes" className="space-y-4">
           <div className="grid grid-cols-3 gap-3">
-            <Card><CardContent className="p-4 text-center"><p className="text-xl font-bold text-green-600">{fmt(totalComPagas)}</p><p className="text-xs text-muted-foreground">Total Comissões Pagas</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-xl font-bold text-amber-600">{fmt(totalComAPagar)}</p><p className="text-xs text-muted-foreground">Comissões a Pagar</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-xl font-bold text-success">{fmt(totalComPagas)}</p><p className="text-xs text-muted-foreground">Total Comissões Pagas</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-xl font-bold text-warning">{fmt(totalComAPagar)}</p><p className="text-xs text-muted-foreground">Comissões a Pagar</p></CardContent></Card>
             <Card><CardContent className="p-4 text-center"><p className="text-xl font-bold">{fmt(mediaConsultor)}</p><p className="text-xs text-muted-foreground">Média por Consultor</p></CardContent></Card>
           </div>
 

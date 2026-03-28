@@ -39,9 +39,9 @@ export default function ProjecaoDespesasTab() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: "Cenário Otimista", value: "R$ 868.000", color: "text-green-600", desc: "Redução de custos projetada" },
+          { label: "Cenário Otimista", value: "R$ 868.000", color: "text-success", desc: "Redução de custos projetada" },
           { label: "Cenário Realista", value: "R$ 978.000", color: "text-blue-600", desc: "Base histórica ajustada" },
-          { label: "Cenário Conservador", value: "R$ 1.085.000", color: "text-red-600", desc: "Inclusão de riscos adicionais" },
+          { label: "Cenário Conservador", value: "R$ 1.085.000", color: "text-destructive", desc: "Inclusão de riscos adicionais" },
         ].map(c => (
           <Card key={c.label} className="border-border">
             <CardContent className="p-4">
@@ -78,7 +78,7 @@ export default function ProjecaoDespesasTab() {
             <TableRow key={r.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
               <TableCell className="font-medium">{r.descricao}</TableCell>
               <TableCell><Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8">{r.categoria}</Badge></TableCell>
-              <TableCell className="text-right font-semibold text-red-500">R$ {r.valor.toLocaleString()}</TableCell>
+              <TableCell className="text-right font-semibold text-destructive">R$ {r.valor.toLocaleString()}</TableCell>
               <TableCell className="text-sm">{r.frequencia}</TableCell>
             </TableRow>
           ))}</TableBody></Table>

@@ -28,7 +28,7 @@ export default function AnaliseCooperativaTab() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Cooperativas Ativas</p><p className="text-xl font-bold text-foreground">{cooperativas.length}</p></CardContent></Card>
         <Card className="border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Total Associados</p><p className="text-xl font-bold text-foreground">{totalAssoc.toLocaleString()}</p></CardContent></Card>
-        <Card className="border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Faturamento Total</p><p className="text-xl font-bold text-green-600">R$ {totalFat.toLocaleString()}</p></CardContent></Card>
+        <Card className="border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Faturamento Total</p><p className="text-xl font-bold text-success">R$ {totalFat.toLocaleString()}</p></CardContent></Card>
       </div>
 
       <Card className="border-border">
@@ -59,10 +59,10 @@ export default function AnaliseCooperativaTab() {
               <TableRow key={c.nome} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
                 <TableCell className="font-medium">{c.nome}</TableCell>
                 <TableCell className="text-right font-semibold">{c.associados}</TableCell>
-                <TableCell className="text-right font-semibold text-green-600">R$ {c.faturamento.toLocaleString()}</TableCell>
-                <TableCell className="text-right font-semibold text-red-500">R$ {c.custo.toLocaleString()}</TableCell>
-                <TableCell className="text-right"><Badge className={Number(margem) >= 55 ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>{margem}%</Badge></TableCell>
-                <TableCell className="text-right"><Badge className={c.inadimplencia <= 3.5 ? "bg-green-100 text-green-800" : c.inadimplencia <= 5 ? "bg-yellow-100 text-yellow-800" : "bg-red-100 text-red-800"}>{c.inadimplencia}%</Badge></TableCell>
+                <TableCell className="text-right font-semibold text-success">R$ {c.faturamento.toLocaleString()}</TableCell>
+                <TableCell className="text-right font-semibold text-destructive">R$ {c.custo.toLocaleString()}</TableCell>
+                <TableCell className="text-right"><Badge className={Number(margem) >= 55 ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}>{margem}%</Badge></TableCell>
+                <TableCell className="text-right"><Badge className={c.inadimplencia <= 3.5 ? "bg-success/10 text-success" : c.inadimplencia <= 5 ? "bg-warning/10 text-warning" : "bg-destructive/8 text-destructive"}>{c.inadimplencia}%</Badge></TableCell>
               </TableRow>
             );
           })}</TableBody></Table>

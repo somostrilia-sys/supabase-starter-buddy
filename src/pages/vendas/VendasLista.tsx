@@ -40,17 +40,17 @@ interface VendaDeal {
 }
 
 const gestaoColors: Record<string, string> = {
-  Sincronizado: "bg-success/80/15 text-green-700 border-green-300",
-  Pendente: "bg-warning/80/15 text-amber-700 border-amber-300",
-  Erro: "bg-destructive/80/15 text-red-700 border-red-300",
+  Sincronizado: "bg-success/15 text-success border-green-300",
+  Pendente: "bg-warning/10 text-warning border-warning/30",
+  Erro: "bg-destructive/15 text-destructive border-red-300",
   "Não Enviado": "bg-muted text-muted-foreground",
 };
 
 const planoColors: Record<string, string> = {
   "Básico": "bg-muted text-muted-foreground",
-  "Intermediário": "bg-primary/60/15 text-blue-700 border-blue-300",
-  "Premium": "bg-warning/80/15 text-amber-800 border-amber-400",
-  "Frota": "bg-primary/60/15 text-purple-700 border-purple-300",
+  "Intermediário": "bg-primary/15 text-primary border-blue-300",
+  "Premium": "bg-warning/10 text-warning border-amber-400",
+  "Frota": "bg-primary/15 text-purple-700 border-purple-300",
 };
 
 const day = 86400000;

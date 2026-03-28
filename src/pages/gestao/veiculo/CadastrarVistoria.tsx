@@ -144,9 +144,9 @@ export default function CadastrarVistoria() {
 
   const situacaoColor = (s: string) => {
     switch (s) {
-      case "Pendente": return "bg-amber-100 text-amber-700";
-      case "Aprovada": return "bg-emerald-100 text-emerald-700";
-      case "Reprovada": return "bg-red-100 text-red-700";
+      case "Pendente": return "bg-warning/10 text-warning";
+      case "Aprovada": return "bg-success/10 text-success";
+      case "Reprovada": return "bg-destructive/8 text-destructive";
       default: return "bg-muted text-muted-foreground";
     }
   };

@@ -122,7 +122,7 @@ export default function Contatos() {
 
       {contatosSemNome > 0 && (
         <div
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-200/80 bg-warning/8/70 text-amber-800 text-xs cursor-pointer hover:bg-amber-100/80 transition-colors"
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-warning/25 bg-warning/8 text-warning text-xs cursor-pointer hover:bg-warning/15 transition-colors"
           onClick={() => { setTab("sem-nome"); setPage(0); }}
         >
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
@@ -137,7 +137,7 @@ export default function Contatos() {
           <TabsTrigger value="antigos" className="text-xs">Antigos (+90d)</TabsTrigger>
           <TabsTrigger value="sem-dados" className="text-xs">Sem Dados</TabsTrigger>
           <TabsTrigger value="aniversariantes" className="text-xs">🎂 Aniversariantes</TabsTrigger>
-          {contatosSemNome > 0 && <TabsTrigger value="sem-nome" className="text-xs text-amber-700">⚠️ Sem Nome ({contatosSemNome})</TabsTrigger>}
+          {contatosSemNome > 0 && <TabsTrigger value="sem-nome" className="text-xs text-warning">⚠️ Sem Nome ({contatosSemNome})</TabsTrigger>}
         </TabsList>
       </Tabs>
 
@@ -191,8 +191,8 @@ export default function Contatos() {
                 <tr key={c.id} className="table-row-hover border-b border-border/30 hover:bg-muted/40 cursor-pointer" onClick={() => setSelected(c)}>
                    <td className="p-3">
                     <div className="flex items-center gap-2">
-                      <Avatar className="h-7 w-7"><AvatarFallback className={`text-[10px] ${!c.nome.trim() ? "bg-amber-100 text-amber-700" : "bg-primary/15 text-primary"}`}>{c.nome ? c.nome.split(" ").map(n=>n[0]).slice(0,2).join("") : "—"}</AvatarFallback></Avatar>
-                      <span className={`font-medium text-xs ${!c.nome.trim() ? "italic text-amber-600" : ""}`}>{c.nome.trim() || "Contato sem nome"}</span>
+                      <Avatar className="h-7 w-7"><AvatarFallback className={`text-[10px] ${!c.nome.trim() ? "bg-warning/10 text-warning" : "bg-primary/15 text-primary"}`}>{c.nome ? c.nome.split(" ").map(n=>n[0]).slice(0,2).join("") : "—"}</AvatarFallback></Avatar>
+                      <span className={`font-medium text-xs ${!c.nome.trim() ? "italic text-warning" : ""}`}>{c.nome.trim() || "Contato sem nome"}</span>
                     </div>
                   </td>
                   <td className="p-3 text-xs font-mono text-muted-foreground">{c.cpf}</td>

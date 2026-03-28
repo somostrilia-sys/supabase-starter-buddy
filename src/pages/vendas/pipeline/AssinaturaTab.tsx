@@ -15,10 +15,10 @@ type AssinaturaStatus = "pendente" | "enviado" | "visualizado" | "assinado" | "e
 
 const statusConfig: Record<AssinaturaStatus, { label: string; color: string; icon: React.ElementType }> = {
   pendente: { label: "Pendente", color: "bg-gray-100 text-gray-700 border-gray-300", icon: Clock },
-  enviado: { label: "Enviado", color: "bg-blue-100 text-blue-800 border-blue-300", icon: Send },
-  visualizado: { label: "Visualizado", color: "bg-amber-100 text-amber-800 border-amber-300", icon: Eye },
-  assinado: { label: "Assinado", color: "bg-green-100 text-green-800 border-green-300", icon: CheckCircle },
-  expirado: { label: "Expirado", color: "bg-red-100 text-red-800 border-red-300", icon: AlertTriangle },
+  enviado: { label: "Enviado", color: "bg-primary/8 text-primary border-blue-300", icon: Send },
+  visualizado: { label: "Visualizado", color: "bg-warning/10 text-warning border-warning/30", icon: Eye },
+  assinado: { label: "Assinado", color: "bg-success/10 text-success border-green-300", icon: CheckCircle },
+  expirado: { label: "Expirado", color: "bg-destructive/8 text-destructive border-red-300", icon: AlertTriangle },
 };
 
 interface MockDocumento {
@@ -180,7 +180,7 @@ export default function AssinaturaTab({ deal }: Props) {
           <Button size="sm" variant="outline" className="rounded-none" onClick={() => handleEnviar("email")}>
             <Mail className="h-3.5 w-3.5 mr-1" />Enviar por E-mail
           </Button>
-          <Button size="sm" className="rounded-none bg-green-600 hover:bg-green-700 text-white" onClick={() => handleEnviar("whatsapp")}>
+          <Button size="sm" className="rounded-none bg-success hover:bg-success/90 text-white" onClick={() => handleEnviar("whatsapp")}>
             <MessageSquare className="h-3.5 w-3.5 mr-1" />Enviar por WhatsApp
           </Button>
           <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white" onClick={() => handleEnviar("ambos")}>
@@ -192,7 +192,7 @@ export default function AssinaturaTab({ deal }: Props) {
             <Button size="sm" variant="outline" className="rounded-none" onClick={() => { setStatus("enviado"); toast.info("Lembrete reenviado!"); }}>
               <RotateCcw className="h-3.5 w-3.5 mr-1" />Reenviar Lembrete
             </Button>
-            <Button size="sm" variant="ghost" className="rounded-none text-xs text-green-700 border border-green-200" onClick={handleSimularAssinatura}>
+            <Button size="sm" variant="ghost" className="rounded-none text-xs text-success border border-green-200" onClick={handleSimularAssinatura}>
               <PenTool className="h-3.5 w-3.5 mr-1" />Simular Assinatura (demo)
             </Button>
           </div>
@@ -200,10 +200,10 @@ export default function AssinaturaTab({ deal }: Props) {
         {status === "assinado" && (
           <Card className="rounded-none bg-success/8 border-green-200">
             <CardContent className="p-3 flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+              <CheckCircle className="h-5 w-5 text-success shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-green-900">Documento assinado com sucesso!</p>
-                <p className="text-xs text-green-700">Negociação movida automaticamente para "Vendas Concretizadas".</p>
+                <p className="text-xs text-success">Negociação movida automaticamente para "Vendas Concretizadas".</p>
               </div>
             </CardContent>
           </Card>

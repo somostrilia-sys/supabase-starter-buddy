@@ -36,7 +36,7 @@ const calcIdade = (dt: string) => {
   return String(age);
 };
 
-const statusColor = (s: string) => s === "Ativo" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+const statusColor = (s: string) => s === "Ativo" ? "bg-success/10 text-success dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-destructive/8 text-destructive dark:bg-red-900/30 dark:text-red-400";
 
 const emptyForm = {
   situacao: "Ativo", nome: "", cpf: "", rg: "", dataExpRg: "", orgaoExp: "",

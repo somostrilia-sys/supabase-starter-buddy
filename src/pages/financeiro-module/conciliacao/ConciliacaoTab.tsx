@@ -13,9 +13,9 @@ const mockConciliacao = [
 ];
 
 const statusMap = {
-  conciliado: { label: "Conciliado", color: "bg-green-100 text-green-800", icon: CheckCircle2 },
-  pendente: { label: "Pendente", color: "bg-yellow-100 text-yellow-800", icon: AlertTriangle },
-  divergente: { label: "Divergente", color: "bg-red-100 text-red-800", icon: XCircle },
+  conciliado: { label: "Conciliado", color: "bg-success/10 text-success", icon: CheckCircle2 },
+  pendente: { label: "Pendente", color: "bg-warning/10 text-warning", icon: AlertTriangle },
+  divergente: { label: "Divergente", color: "bg-destructive/8 text-destructive", icon: XCircle },
 };
 
 export default function ConciliacaoTab() {
@@ -38,9 +38,9 @@ export default function ConciliacaoTab() {
       </div>
 
       <div className="grid sm:grid-cols-3 gap-4">
-        <Card className="border-border overflow-hidden"><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-green-600">3</p><p className="text-xs text-muted-foreground">Conciliados</p></CardContent></Card>
-        <Card className="border-border overflow-hidden"><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-yellow-600">1</p><p className="text-xs text-muted-foreground">Pendente</p></CardContent></Card>
-        <Card className="border-border overflow-hidden"><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-red-500">1</p><p className="text-xs text-muted-foreground">Divergente</p></CardContent></Card>
+        <Card className="border-border overflow-hidden"><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-success">3</p><p className="text-xs text-muted-foreground">Conciliados</p></CardContent></Card>
+        <Card className="border-border overflow-hidden"><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-warning">1</p><p className="text-xs text-muted-foreground">Pendente</p></CardContent></Card>
+        <Card className="border-border overflow-hidden"><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-destructive">1</p><p className="text-xs text-muted-foreground">Divergente</p></CardContent></Card>
       </div>
 
       <Card className="border-border overflow-hidden">

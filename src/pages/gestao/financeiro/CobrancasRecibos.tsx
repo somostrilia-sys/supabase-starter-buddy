@@ -13,10 +13,10 @@ import { mockCobrancas } from "./mockFinanceiro";
 import { toast } from "sonner";
 
 const statusCobranca: Record<string, string> = {
-  em_dia: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  atrasado: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+  em_dia: "bg-success/10 text-success dark:bg-green-900 dark:text-green-300",
+  atrasado: "bg-destructive/8 text-destructive dark:bg-red-900 dark:text-red-300",
   negativado: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
-  renegociado: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+  renegociado: "bg-primary/8 text-primary dark:bg-blue-900 dark:text-blue-300",
 };
 
 const enviosMock = [
@@ -109,7 +109,7 @@ export default function CobrancasRecibos({ onBack }: { onBack: () => void }) {
                       <TableCell><Badge variant="outline">{e.tipo}</Badge></TableCell>
                       <TableCell className="font-mono text-xs">{e.destinatario}</TableCell>
                       <TableCell>{e.assunto}</TableCell>
-                      <TableCell><Badge className={e.status === "Falhou" ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300" : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"}>{e.status}</Badge></TableCell>
+                      <TableCell><Badge className={e.status === "Falhou" ? "bg-destructive/8 text-destructive dark:bg-red-900 dark:text-red-300" : "bg-success/10 text-success dark:bg-green-900 dark:text-green-300"}>{e.status}</Badge></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -131,7 +131,7 @@ export default function CobrancasRecibos({ onBack }: { onBack: () => void }) {
               </div>
               <div className="flex justify-between"><span className="text-muted-foreground">Associado:</span><span className="font-medium">{showRecibo.associado}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Referência:</span><span>{showRecibo.tipo}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Valor:</span><span className="font-bold text-green-600">R$ {showRecibo.valor.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Valor:</span><span className="font-bold text-success">R$ {showRecibo.valor.toFixed(2)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Vencimento:</span><span>{new Date(showRecibo.vencimento).toLocaleDateString("pt-BR")}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Data emissão:</span><span>{new Date().toLocaleDateString("pt-BR")}</span></div>
               <div className="border-t pt-3 text-center text-xs text-muted-foreground">Documento gerado eletronicamente</div>

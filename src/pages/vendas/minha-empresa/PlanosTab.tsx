@@ -77,7 +77,7 @@ export default function PlanosTab() {
                   <TableCell className="font-medium">{p.nome}</TableCell>
                   <TableCell className="max-w-[200px] truncate text-muted-foreground">{p.descricao}</TableCell>
                   <TableCell>
-                    <Badge variant={p.status === "Ativo" ? "default" : "secondary"} className={p.status === "Ativo" ? "bg-emerald-500/10 text-emerald-600 border-emerald-200" : ""}>
+                    <Badge variant={p.status === "Ativo" ? "default" : "secondary"} className={p.status === "Ativo" ? "bg-emerald-500/10 text-emerald-600 border-success/20" : ""}>
                       {p.status}
                     </Badge>
                   </TableCell>

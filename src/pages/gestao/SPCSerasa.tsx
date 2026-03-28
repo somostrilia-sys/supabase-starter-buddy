@@ -57,9 +57,9 @@ export default function SPCSerasa({ onBack }: SPCSerasaProps) {
   const totalDivida = negativados.reduce((s, r) => s + r.valor, 0);
 
   const statCards = [
-    { label: "Total Enviados", value: stats.negativados + mockRegistros.filter(r => r.situacao === "enviado").length, icon: AlertTriangle, color: "text-red-500", bg: "bg-destructive/80/10" },
-    { label: "Pendentes de Envio", value: stats.pendentes, icon: Clock, color: "text-yellow-500", bg: "bg-warning/80/10" },
-    { label: "Negativados Ativos", value: stats.confirmados, icon: CheckCircle, color: "text-green-500", bg: "bg-success/80/10" },
+    { label: "Total Enviados", value: stats.negativados + mockRegistros.filter(r => r.situacao === "enviado").length, icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
+    { label: "Pendentes de Envio", value: stats.pendentes, icon: Clock, color: "text-yellow-500", bg: "bg-warning/8" },
+    { label: "Negativados Ativos", value: stats.confirmados, icon: CheckCircle, color: "text-success", bg: "bg-success/8" },
     { label: "Baixas / Cancelados", value: stats.cancelados, icon: XCircle, color: "text-muted-foreground", bg: "bg-muted" },
   ];
 
@@ -102,8 +102,8 @@ export default function SPCSerasa({ onBack }: SPCSerasaProps) {
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft className="h-5 w-5" /></Button>
-        <div className="w-10 h-10 rounded-xl bg-destructive/80/10 flex items-center justify-center">
-          <ShieldAlert className="h-5 w-5 text-red-500" />
+        <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center">
+          <ShieldAlert className="h-5 w-5 text-destructive" />
         </div>
         <div>
           <h1 className="text-xl font-bold">SPC / Serasa</h1>
@@ -165,19 +165,19 @@ export default function SPCSerasa({ onBack }: SPCSerasaProps) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card className="shadow-sm border-red-500/20">
               <CardContent className="p-4 text-center">
-                <p className="text-3xl font-bold text-red-500">{negativados.length}</p>
+                <p className="text-3xl font-bold text-destructive">{negativados.length}</p>
                 <p className="text-sm text-muted-foreground">Total Negativados</p>
               </CardContent>
             </Card>
             <Card className="shadow-sm border-red-500/20">
               <CardContent className="p-4 text-center">
-                <p className="text-3xl font-bold text-red-500">R$ {totalDivida.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                <p className="text-3xl font-bold text-destructive">R$ {totalDivida.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
                 <p className="text-sm text-muted-foreground">Valor Total em Dívida</p>
               </CardContent>
             </Card>
             <Card className="shadow-sm border-red-500/20">
               <CardContent className="p-4 text-center">
-                <p className="text-3xl font-bold text-red-500">R$ {negativados.length ? (totalDivida / negativados.length).toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : "0,00"}</p>
+                <p className="text-3xl font-bold text-destructive">R$ {negativados.length ? (totalDivida / negativados.length).toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : "0,00"}</p>
                 <p className="text-sm text-muted-foreground">Média por Associado</p>
               </CardContent>
             </Card>

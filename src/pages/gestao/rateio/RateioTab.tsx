@@ -231,7 +231,7 @@ function EstruturaCotas() {
                     <TableCell className="text-sm">{h.usuario}</TableCell>
                     <TableCell className="text-sm font-mono">{h.arquivo}</TableCell>
                     <TableCell className="text-sm text-right">{h.registros}</TableCell>
-                    <TableCell><Badge className={`text-xs ${h.status === "Sucesso" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>{h.status}</Badge></TableCell>
+                    <TableCell><Badge className={`text-xs ${h.status === "Sucesso" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}>{h.status}</Badge></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -486,12 +486,12 @@ function DistribuicaoRateio() {
           {step === 6 && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-green-600 mb-1" /><p className="text-xs font-medium text-green-800">Mês: {mesRef}</p></CardContent></Card>
-                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-green-600 mb-1" /><p className="text-xs font-medium text-green-800">{totalVeiculos.toLocaleString("pt-BR")} veículos</p></CardContent></Card>
-                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-green-600 mb-1" /><p className="text-xs font-medium text-green-800">12 regionais</p></CardContent></Card>
-                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-green-600 mb-1" /><p className="text-xs font-medium text-green-800">R$ {totalRateado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p></CardContent></Card>
+                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-success mb-1" /><p className="text-xs font-medium text-success">Mês: {mesRef}</p></CardContent></Card>
+                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-success mb-1" /><p className="text-xs font-medium text-success">{totalVeiculos.toLocaleString("pt-BR")} veículos</p></CardContent></Card>
+                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-success mb-1" /><p className="text-xs font-medium text-success">12 regionais</p></CardContent></Card>
+                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-success mb-1" /><p className="text-xs font-medium text-success">R$ {totalRateado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p></CardContent></Card>
               </div>
-              <div className="p-3 bg-warning/8 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-start gap-2">
+              <div className="p-3 bg-warning/8 border border-yellow-200 rounded-lg text-sm text-warning flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                 <span>Confirme os valores antes de gravar. Esta ação gerará os boletos com os valores de rateio para o período {mesRef}.</span>
               </div>
@@ -671,8 +671,8 @@ function CargaInicialGestao() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{totalVeiculos.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Veículos</p></CardContent></Card>
         <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{totalCotas.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Cotas</p></CardContent></Card>
-        <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-green-700">{executadas}/{mockCargaGestao.length}</p><p className="text-xs text-muted-foreground">Regionais Executadas</p></CardContent></Card>
-        <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-yellow-700">{mockCargaGestao.length - executadas}</p><p className="text-xs text-muted-foreground">Pendentes</p></CardContent></Card>
+        <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-success">{executadas}/{mockCargaGestao.length}</p><p className="text-xs text-muted-foreground">Regionais Executadas</p></CardContent></Card>
+        <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-warning">{mockCargaGestao.length - executadas}</p><p className="text-xs text-muted-foreground">Pendentes</p></CardContent></Card>
       </div>
 
       {/* Table */}
@@ -699,7 +699,7 @@ function CargaInicialGestao() {
                 <TableCell className="text-sm text-right">{r.motos.toLocaleString("pt-BR")}</TableCell>
                 <TableCell className="text-sm text-right">{r.pesados.toLocaleString("pt-BR")}</TableCell>
                 <TableCell>
-                  <Badge className={`text-xs ${r.status === "Executada" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>{r.status}</Badge>
+                  <Badge className={`text-xs ${r.status === "Executada" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}>{r.status}</Badge>
                 </TableCell>
               </TableRow>
             ))}
@@ -728,7 +728,7 @@ function CargaInicialGestao() {
         <DialogContent>
           <DialogHeader><DialogTitle className="text-primary">Confirmar Carga Inicial</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div className="p-3 bg-warning/8 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-start gap-2">
+            <div className="p-3 bg-warning/8 border border-yellow-200 rounded-lg text-sm text-warning flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
               <span>Esta ação irá importar os dados do sistema Gestão para as <strong>{mockCargaGestao.length - executadas} regionais pendentes</strong>. Os valores de cota serão zerados (R$ 0,00). Deseja continuar?</span>
             </div>

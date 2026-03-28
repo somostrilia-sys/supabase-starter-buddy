@@ -19,9 +19,9 @@ import { Receipt, Search, Download, CheckCircle, Loader2, Plus, Snowflake } from
 type MensalidadeStatus = "pendente" | "pago" | "atrasado" | "cancelado";
 
 const statusColor: Record<MensalidadeStatus, string> = {
-  pendente:  "bg-yellow-100 text-yellow-800",
-  pago:      "bg-green-100 text-green-800",
-  atrasado:  "bg-red-100 text-red-800",
+  pendente:  "bg-warning/10 text-warning",
+  pago:      "bg-success/10 text-success",
+  atrasado:  "bg-destructive/8 text-destructive",
   cancelado: "bg-gray-100 text-gray-800",
 };
 
@@ -357,15 +357,15 @@ export default function BoletosTab() {
       <div className="grid grid-cols-3 gap-3">
         <Card className="border-border"><CardContent className="p-4">
           <p className="text-xs text-muted-foreground">Em Aberto</p>
-          <p className="text-lg font-bold text-yellow-600">R$ {totalPendente.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+          <p className="text-lg font-bold text-warning">R$ {totalPendente.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
         </CardContent></Card>
         <Card className="border-border"><CardContent className="p-4">
           <p className="text-xs text-muted-foreground">Pago</p>
-          <p className="text-lg font-bold text-green-600">R$ {totalPago.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+          <p className="text-lg font-bold text-success">R$ {totalPago.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
         </CardContent></Card>
         <Card className="border-border"><CardContent className="p-4">
           <p className="text-xs text-muted-foreground">Vencido</p>
-          <p className="text-lg font-bold text-red-600">R$ {totalVencido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+          <p className="text-lg font-bold text-destructive">R$ {totalVencido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
         </CardContent></Card>
       </div>
 
@@ -442,7 +442,7 @@ export default function BoletosTab() {
                         <div className="flex items-center gap-2 flex-wrap">
                           {b.associados?.nome ?? "—"}
                           {congelado && (
-                            <Badge className="bg-blue-100 text-blue-800 text-[10px] px-1.5 h-4 gap-0.5 shrink-0">
+                            <Badge className="bg-primary/8 text-primary text-[10px] px-1.5 h-4 gap-0.5 shrink-0">
                               <Snowflake className="h-2.5 w-2.5" />
                               CONGELADO
                             </Badge>
@@ -467,7 +467,7 @@ export default function BoletosTab() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 text-xs gap-1 text-green-700 border-green-300 hover:bg-success/8"
+                            className="h-7 text-xs gap-1 text-success border-green-300 hover:bg-success/8"
                             disabled={pagandoId === b.id}
                             onClick={() => marcarPago.mutate(b.id)}
                           >

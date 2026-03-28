@@ -111,12 +111,12 @@ const planosConfig: PlanoConfig[] = [
     coberturas: ["Roubo/Furto", "Perda Total", "Assistência 24h", "Carro Reserva 7 dias"],
   },
   {
-    nome: "Completo", icon: ShieldCheck, cor: "border-emerald-200 bg-emerald-50",
+    nome: "Completo", icon: ShieldCheck, cor: "border-success/20 bg-emerald-50",
     percentual: 0.038,
     coberturas: ["Roubo/Furto", "Perda Total", "Colisão", "Assistência 24h", "Carro Reserva 15 dias", "Vidros", "Terceiros R$50k"],
   },
   {
-    nome: "Premium", icon: ShieldPlus, cor: "border-amber-200 bg-warning/8",
+    nome: "Premium", icon: ShieldPlus, cor: "border-warning/25 bg-warning/8",
     percentual: 0.052,
     coberturas: ["Roubo/Furto", "Perda Total", "Colisão", "Assistência 24h", "Carro Reserva 30 dias", "Vidros", "Faróis", "Terceiros R$100k", "APP Passageiros", "Rastreador incluso"],
   },
@@ -226,12 +226,12 @@ export default function CotacaoTab({ deal }: Props) {
       {/* FIPE result banner */}
       {fipeFetched && (
         <div className="flex items-center gap-3 p-3 rounded-lg border border-green-200 bg-success/8">
-          <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+          <CheckCircle className="h-5 w-5 text-success shrink-0" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-green-800">Dados FIPE preenchidos automaticamente</p>
-            <p className="text-xs text-green-700">{marca} {modeloAtual?.modelo} — {formatCurrency(valorFipe)} — Ref. Março/2026</p>
+            <p className="text-sm font-semibold text-success">Dados FIPE preenchidos automaticamente</p>
+            <p className="text-xs text-success">{marca} {modeloAtual?.modelo} — {formatCurrency(valorFipe)} — Ref. Março/2026</p>
           </div>
-          <Badge className="bg-green-600 text-white text-[10px]">Tabela FIPE</Badge>
+          <Badge className="bg-success text-white text-[10px]">Tabela FIPE</Badge>
         </div>
       )}
 
@@ -412,7 +412,7 @@ export default function CotacaoTab({ deal }: Props) {
                   <ul className="space-y-1">
                     {p.coberturas.map(c => (
                       <li key={c} className="text-[11px] text-muted-foreground flex items-start gap-1">
-                        <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 shrink-0" />{c}
+                        <CheckCircle className="h-3 w-3 text-success mt-0.5 shrink-0" />{c}
                       </li>
                     ))}
                   </ul>
@@ -437,7 +437,7 @@ export default function CotacaoTab({ deal }: Props) {
           <Button size="sm" variant="outline" className="rounded-none" onClick={() => handleEnviar("Link")}>
             <Link2 className="h-3.5 w-3.5 mr-1" />Enviar Link
           </Button>
-          <Button size="sm" className="rounded-none bg-green-600 hover:bg-green-700 text-white" onClick={() => handleEnviar("WhatsApp")}>
+          <Button size="sm" className="rounded-none bg-success hover:bg-success/90 text-white" onClick={() => handleEnviar("WhatsApp")}>
             <MessageSquare className="h-3.5 w-3.5 mr-1" />Enviar WhatsApp
           </Button>
           <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white" onClick={() => toast.success("Link de pagamento gerado!")}>

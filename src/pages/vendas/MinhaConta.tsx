@@ -79,9 +79,9 @@ const mockComissoes: ComissaoRecord[] = [
 ];
 
 const statusConfig: Record<ComissaoStatus, { label: string; cls: string }> = {
-  pago: { label: "Pago", cls: "bg-success/80/15 text-green-700 border-green-300" },
-  pendente: { label: "Pendente", cls: "bg-warning/80/15 text-amber-700 border-amber-300" },
-  processando: { label: "Em Processamento", cls: "bg-primary/60/15 text-blue-700 border-blue-300" },
+  pago: { label: "Pago", cls: "bg-success/15 text-success border-green-300" },
+  pendente: { label: "Pendente", cls: "bg-warning/10 text-warning border-warning/30" },
+  processando: { label: "Em Processamento", cls: "bg-primary/15 text-primary border-blue-300" },
 };
 
 const PAGE_SIZE = 10;
@@ -162,16 +162,16 @@ export default function MinhaConta() {
               Dados Bancários
             </CardTitle>
             {saved && (
-              <Badge variant="outline" className={cn("text-xs", verificado ? "bg-success/80/15 text-green-700 border-green-300" : "bg-warning/80/15 text-amber-700 border-amber-300")}>
+              <Badge variant="outline" className={cn("text-xs", verificado ? "bg-success/15 text-success border-green-300" : "bg-warning/10 text-warning border-warning/30")}>
                 {verificado ? <><CheckCircle className="h-3 w-3 mr-1" />Conta verificada</> : <><Clock className="h-3 w-3 mr-1" />Pendente de verificação</>}
               </Badge>
             )}
           </div>
         </CardHeader>
         <CardContent className="space-y-5">
-          <Alert className="border-blue-200 bg-primary/6/50 dark:bg-blue-950/20 dark:border-blue-800">
+          <Alert className="border-blue-200 bg-primary/50 dark:bg-blue-950/20 dark:border-blue-800">
             <Info className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-xs text-blue-700 dark:text-blue-400">
+            <AlertDescription className="text-xs text-primary dark:text-blue-400">
               Seus dados bancários serão utilizados para recebimento de comissões. Certifique-se de que as informações estão corretas.
             </AlertDescription>
           </Alert>
@@ -248,11 +248,11 @@ export default function MinhaConta() {
             <Card className="border-t-2 border-t-emerald-500">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-lg bg-success/10 dark:bg-emerald-900/40 flex items-center justify-center">
                     <DollarSign className="h-5 w-5 text-emerald-600" />
                   </div>
                   <div>
-                    <p className="text-xl font-bold text-emerald-700 dark:text-emerald-400">{fmt(totalRecebido)}</p>
+                    <p className="text-xl font-bold text-success dark:text-emerald-400">{fmt(totalRecebido)}</p>
                     <p className="text-[10px] text-muted-foreground">Total Recebido</p>
                   </div>
                 </div>
@@ -261,11 +261,11 @@ export default function MinhaConta() {
             <Card className="border-t-2 border-t-amber-500">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-amber-600" />
+                  <div className="w-10 h-10 rounded-lg bg-warning/10 dark:bg-amber-900/40 flex items-center justify-center">
+                    <Clock className="h-5 w-5 text-warning" />
                   </div>
                   <div>
-                    <p className="text-xl font-bold text-amber-700 dark:text-amber-400">{fmt(totalPendente)}</p>
+                    <p className="text-xl font-bold text-warning dark:text-warning">{fmt(totalPendente)}</p>
                     <p className="text-[10px] text-muted-foreground">Pendente</p>
                   </div>
                 </div>
@@ -274,11 +274,11 @@ export default function MinhaConta() {
             <Card className="border-t-2 border-t-blue-500">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-lg bg-primary/8 dark:bg-blue-900/40 flex items-center justify-center">
                     <TrendingUp className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-xl font-bold text-blue-700 dark:text-blue-400">{fmt(comissoesMes)}</p>
+                    <p className="text-xl font-bold text-primary dark:text-blue-400">{fmt(comissoesMes)}</p>
                     <p className="text-[10px] text-muted-foreground">Comissões do Mês</p>
                   </div>
                 </div>

@@ -66,10 +66,10 @@ const COLORS = ["hsl(var(--primary))", "hsl(45, 93%, 47%)", "hsl(0, 84%, 60%)", 
 
 const acaoBadge = (a: string) => {
   const map: Record<string, { label: string; color: string }> = {
-    envio: { label: "Envio", color: "bg-primary/60/10 text-blue-600 border-blue-200" },
-    baixa: { label: "Baixa", color: "bg-success/80/10 text-green-600 border-green-200" },
-    cancelamento: { label: "Cancelamento", color: "bg-destructive/80/10 text-red-600 border-red-200" },
-    confirmacao: { label: "Confirmação", color: "bg-primary/60/10 text-purple-600 border-purple-200" },
+    envio: { label: "Envio", color: "bg-primary/10 text-blue-600 border-blue-200" },
+    baixa: { label: "Baixa", color: "bg-success/8 text-success border-green-200" },
+    cancelamento: { label: "Cancelamento", color: "bg-destructive/10 text-destructive border-red-200" },
+    confirmacao: { label: "Confirmação", color: "bg-primary/10 text-purple-600 border-purple-200" },
     cadastro: { label: "Cadastro", color: "bg-gray-500/10 text-gray-600 border-gray-200" },
   };
   const cfg = map[a] || map.cadastro;
@@ -121,9 +121,9 @@ export default function GestorSPCSerasa({ onBack }: GestorSPCSerasaProps) {
 
   const statCards = [
     { label: "Total Registros", value: stats.total, icon: Database, color: "text-primary", bg: "bg-primary/10" },
-    { label: "Envios Pendentes", value: stats.pendentes, icon: Clock, color: "text-yellow-500", bg: "bg-warning/80/10" },
-    { label: "Negativados Ativos", value: stats.negativados, icon: AlertTriangle, color: "text-red-500", bg: "bg-destructive/80/10" },
-    { label: "Baixas Realizadas", value: stats.baixas, icon: CheckCircle, color: "text-green-500", bg: "bg-success/80/10" },
+    { label: "Envios Pendentes", value: stats.pendentes, icon: Clock, color: "text-yellow-500", bg: "bg-warning/8" },
+    { label: "Negativados Ativos", value: stats.negativados, icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
+    { label: "Baixas Realizadas", value: stats.baixas, icon: CheckCircle, color: "text-success", bg: "bg-success/8" },
   ];
 
   return (
