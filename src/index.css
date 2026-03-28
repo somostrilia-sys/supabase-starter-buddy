@@ -260,6 +260,20 @@
   .animate-fade-in-up-6 { animation-delay: 0.3s; }
   .animate-fade-in-up-7 { animation-delay: 0.35s; }
   .animate-fade-in-up-8 { animation-delay: 0.4s; }
+
+  /* Row hover para tabelas */
+  .table-row-hover {
+    transition: background-color 0.12s ease;
+  }
+
+  /* Card kanban transition */
+  .kanban-card {
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .kanban-card:hover {
+    box-shadow: 0 4px 12px -2px hsl(var(--primary) / 0.12), 0 2px 6px -1px hsl(0 0% 0% / 0.08);
+    transform: translateY(-1px);
+  }
 }
 
 /* ─── Keyframes ─── */

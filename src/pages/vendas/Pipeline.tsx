@@ -32,10 +32,17 @@ function daysStalled(updated: string) {
   return Math.floor((Date.now() - new Date(updated).getTime()) / 86400000);
 }
 
+function stallLabel(days: number) {
+  if (days < 1) return "Hoje";
+  if (days === 1) return "1 dia";
+  return `${days} dias`;
+}
+
 function StalledBadge({ days }: { days: number }) {
-  if (days < 1) return <Badge className="bg-green-500/15 text-green-700 border-green-300 text-[9px] px-1.5 py-0">Hoje</Badge>;
-  if (days <= 3) return <Badge className="bg-amber-500/15 text-amber-700 border-amber-300 text-[9px] px-1.5 py-0">{days} dias</Badge>;
-  return <Badge className="bg-red-500/15 text-red-700 border-red-300 text-[9px] px-1.5 py-0">{days} dias</Badge>;
+  const label = stallLabel(days);
+  if (days < 1) return <Badge className="bg-green-500/15 text-green-700 border-green-300 text-[9px] px-1.5 py-0">{label}</Badge>;
+  if (days <= 3) return <Badge className="bg-amber-500/15 text-amber-700 border-amber-300 text-[9px] px-1.5 py-0">{label}</Badge>;
+  return <Badge className="bg-red-500/15 text-red-700 border-red-300 text-[9px] px-1.5 py-0">{label}</Badge>;
 }
 
 type SortKey = "id" | "lead_nome" | "veiculo_modelo" | "plano" | "stage" | "consultor" | "cooperativa" | "regional" | "created_at" | "updated_at";
@@ -355,7 +362,7 @@ export default function Pipeline() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className={`w-2.5 h-2.5 rounded-full ${col.dot}`} />
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-foreground/80">{col.label}</span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground/80">{col.label}</span>
                     </div>
                     <Badge className="text-[10px] h-5 px-1.5" style={{ backgroundColor: `${col.color}20`, color: col.color, border: `1px solid ${col.color}40` }}>{colDeals.length}</Badge>
                   </div>
@@ -371,7 +378,7 @@ export default function Pipeline() {
                           draggable
                           onDragStart={e => handleDragStart(e, deal.id)}
                           onClick={() => setDetailDeal(deal)}
-                          className={`group bg-card border rounded-lg cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 ${draggedId === deal.id ? "opacity-40" : ""}`}
+                          className={`kanban-card group bg-card border rounded-lg cursor-pointer ${draggedId === deal.id ? "opacity-40" : ""}`}
                           style={{ borderLeft: `3px solid ${col.color}` }}
                         >
                           <div className="p-3 space-y-1.5">
@@ -450,8 +457,8 @@ export default function Pipeline() {
                       );
                     })}
                     {colDeals.length === 0 && (
-                      <div className="flex flex-col items-center justify-center h-32 text-muted-foreground/30 gap-2">
-                        <Car className="h-6 w-6" /><p className="text-xs">Arraste cards aqui</p>
+                      <div className="flex flex-col items-center justify-center h-20 gap-1 select-none">
+                        <div className="w-8 h-1 rounded-full bg-border/50" />
                       </div>
                     )}
                   </div>
@@ -531,10 +538,11 @@ export default function Pipeline() {
 
       {/* Floating button */}
       <Button
-        className="fixed bottom-6 right-6 h-12 px-5 rounded-full shadow-2xl shadow-primary/20 z-50 transition-all hover:scale-105"
+        className="fixed bottom-6 right-6 h-12 px-5 rounded-full shadow-2xl shadow-primary/25 transition-all hover:scale-[1.03] gap-2 z-50"
         onClick={() => setNewDealOpen(true)}
       >
-        <Plus className="h-5 w-5 mr-2" />Nova Negociação
+        <Plus className="h-5 w-5" />
+        <span className="hidden sm:inline">Nova Negociação</span>
       </Button>
 
       {/* New deal modal */}

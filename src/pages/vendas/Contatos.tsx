@@ -116,17 +116,17 @@ export default function Contatos() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1" /> Exportar CSV</Button>
-          <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Novo Contato</Button>
+          <Button size="sm" className="shadow-sm"><Plus className="h-4 w-4 mr-1" /> Novo Contato</Button>
         </div>
       </div>
 
       {contatosSemNome > 0 && (
         <div
-          className="flex items-center gap-2 p-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-sm cursor-pointer hover:bg-amber-100 transition-colors"
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-200/80 bg-amber-50/70 text-amber-800 text-xs cursor-pointer hover:bg-amber-100/80 transition-colors"
           onClick={() => { setTab("sem-nome"); setPage(0); }}
         >
-          <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span><strong>{contatosSemNome} contato{contatosSemNome > 1 ? "s" : ""} sem nome</strong> identificado{contatosSemNome > 1 ? "s" : ""}. Clique para revisar.</span>
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          <span><strong>{contatosSemNome}</strong> contato{contatosSemNome > 1 ? "s" : ""} sem nome — clique para revisar</span>
         </div>
       )}
 
@@ -177,21 +177,21 @@ export default function Contatos() {
         <CardContent className="p-0 overflow-x-auto">
           <table className="w-full text-sm min-w-[800px]">
             <thead><tr className="border-b bg-muted/30">
-              <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">Nome</th>
-              <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">CPF</th>
-              <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">Telefone</th>
-              <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">Email</th>
-              <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">Cidade/UF</th>
-              <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">Cadastro</th>
-              <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">Últ. Interação</th>
-              <th className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase">Negoc.</th>
+              <th className="text-left p-3 text-[10px] font-semibold text-foreground/60 tracking-[0.06em] uppercase">Nome</th>
+              <th className="text-left p-3 text-[10px] font-semibold text-foreground/60 tracking-[0.06em] uppercase">CPF</th>
+              <th className="text-left p-3 text-[10px] font-semibold text-foreground/60 tracking-[0.06em] uppercase">Telefone</th>
+              <th className="text-left p-3 text-[10px] font-semibold text-foreground/60 tracking-[0.06em] uppercase">Email</th>
+              <th className="text-left p-3 text-[10px] font-semibold text-foreground/60 tracking-[0.06em] uppercase">Cidade/UF</th>
+              <th className="text-left p-3 text-[10px] font-semibold text-foreground/60 tracking-[0.06em] uppercase">Cadastro</th>
+              <th className="text-left p-3 text-[10px] font-semibold text-foreground/60 tracking-[0.06em] uppercase">Últ. Interação</th>
+              <th className="text-left p-3 text-[10px] font-semibold text-foreground/60 tracking-[0.06em] uppercase">Negoc.</th>
             </tr></thead>
             <tbody>
               {pageData.map(c => (
-                <tr key={c.id} className="border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-colors" onClick={() => setSelected(c)}>
+                <tr key={c.id} className="table-row-hover border-b border-border/30 hover:bg-muted/40 cursor-pointer" onClick={() => setSelected(c)}>
                    <td className="p-3">
                     <div className="flex items-center gap-2">
-                      <Avatar className="h-7 w-7"><AvatarFallback className="text-[10px] bg-primary/20 text-primary">{c.nome ? c.nome.split(" ").map(n=>n[0]).slice(0,2).join("") : "?"}</AvatarFallback></Avatar>
+                      <Avatar className="h-7 w-7"><AvatarFallback className={`text-[10px] ${!c.nome.trim() ? "bg-amber-100 text-amber-700" : "bg-primary/15 text-primary"}`}>{c.nome ? c.nome.split(" ").map(n=>n[0]).slice(0,2).join("") : "—"}</AvatarFallback></Avatar>
                       <span className={`font-medium text-xs ${!c.nome.trim() ? "italic text-amber-600" : ""}`}>{c.nome.trim() || "Contato sem nome"}</span>
                     </div>
                   </td>
@@ -206,7 +206,13 @@ export default function Contatos() {
                   <td className="p-3 text-xs">{c.cidade}/{c.estado}</td>
                   <td className="p-3 text-xs text-muted-foreground">{new Date(c.dataCadastro).toLocaleDateString("pt-BR")}</td>
                   <td className="p-3 text-xs text-muted-foreground">{timeAgo(c.ultimaInteracao)}</td>
-                  <td className="p-3"><Badge variant={c.negociacoes > 0 ? "default" : "secondary"} className="text-[10px]">{c.negociacoes}</Badge></td>
+                  <td className="p-3">
+                    {c.negociacoes > 0 ? (
+                      <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">{c.negociacoes}</span>
+                    ) : (
+                      <span className="text-muted-foreground/40 text-xs">—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

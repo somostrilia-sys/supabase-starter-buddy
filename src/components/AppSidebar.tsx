@@ -168,7 +168,7 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
 
-        <div className="h-px bg-sidebar-border mx-2 mt-2" />
+        <div className="border-t border-sidebar-border/50 mx-3 my-2" />
         <ModuleGroup
           label="Gestão"
           icon={Shield}
@@ -177,7 +177,7 @@ export function AppSidebar() {
           pathname={location.pathname}
         />
 
-        <div className="h-px bg-sidebar-border mx-2 my-1" />
+        <div className="border-t border-sidebar-border/50 mx-3 my-2" />
         <ModuleGroup
           label="Financeiro"
           icon={DollarSign}
@@ -186,7 +186,7 @@ export function AppSidebar() {
           pathname={location.pathname}
         />
 
-        <div className="h-px bg-sidebar-border mx-2 my-1" />
+        <div className="border-t border-sidebar-border/50 mx-3 my-2" />
         <ModuleGroup
           label="Vendas"
           icon={Target}
