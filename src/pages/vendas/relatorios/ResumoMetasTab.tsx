@@ -64,10 +64,10 @@ export default function ResumoMetasTab() {
       <Tabs value={subTab} onValueChange={setSubTab}>
         <TabsList>
           <TabsTrigger value="bateram" className="text-xs gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-500" />Bateram a Meta ({bateram.length})
+            <span className="w-2 h-2 rounded-full bg-success/80" />Bateram a Meta ({bateram.length})
           </TabsTrigger>
           <TabsTrigger value="nao_bateram" className="text-xs gap-1">
-            <span className="w-2 h-2 rounded-full bg-red-500" />Não Bateram ({naoBateram.length})
+            <span className="w-2 h-2 rounded-full bg-destructive/80" />Não Bateram ({naoBateram.length})
           </TabsTrigger>
           <TabsTrigger value="nao_participaram" className="text-xs gap-1">
             <span className="w-2 h-2 rounded-full bg-muted-foreground" />Não Participaram ({naoParticiparam.length})

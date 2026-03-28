@@ -149,7 +149,7 @@ function ReportActionBar({
 function Pagination({ page, totalPages, onPageChange }: { page: number; totalPages: number; onPageChange: (p: number) => void }) {
   if (totalPages <= 1) return null;
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-[hsl(210_30%_97%)] border-t border-[hsl(210_30%_90%)]">
+    <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-t border-border/60">
       <span className="text-xs text-muted-foreground">Página {page} de {totalPages}</span>
       <div className="flex gap-1">
         <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)} className="h-7 px-2">
@@ -546,7 +546,7 @@ export default function RelatoriosTab() {
                   <TableRow><TableCell colSpan={14} className="text-center py-8 text-muted-foreground">Nenhum boleto encontrado com os filtros aplicados</TableCell></TableRow>
                 )}
                 {pagedBoletos.map((b, i) => (
-                  <TableRow key={b.id} className={i % 2 === 0 ? "bg-card" : "bg-[hsl(210_30%_97%)]"}>
+                  <TableRow key={b.id} className={i % 2 === 0 ? "bg-card" : "bg-muted/30"}>
                     <TableCell className="font-mono text-xs">{b.id}</TableCell>
                     <TableCell className="font-medium text-sm">{b.associado}</TableCell>
                     <TableCell className="font-mono text-xs">{b.cpf}</TableCell>
@@ -565,7 +565,7 @@ export default function RelatoriosTab() {
                 ))}
               </TableBody>
             </Table>
-            <div className="flex items-center justify-between px-4 py-3 bg-[hsl(210_30%_95%)] border-t border-border">
+            <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-t border-border">
               <span className="text-xs text-muted-foreground">{filteredBoletos.length} boleto(s) encontrado(s)</span>
               <span className="text-sm font-bold">Total: R$ {somaBoletosTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
             </div>
@@ -585,10 +585,10 @@ export default function RelatoriosTab() {
               <button
                 key={r.id}
                 onClick={() => setOutroAtivo(r.id)}
-                className={`group flex items-center gap-5 border bg-[hsl(210_30%_96%)] px-6 py-6 text-left hover:bg-[hsl(210_30%_93%)] transition-colors min-h-[100px] ${outroAtivo === r.id ? "border-primary" : "border-[hsl(210_30%_88%)]"}`}
+                className={`group flex items-center gap-5 border bg-muted/50 px-6 py-6 text-left hover:bg-muted transition-colors min-h-[100px] ${outroAtivo === r.id ? "border-primary" : "border-border"}`}
               >
-                <div className="w-14 h-14 bg-[hsl(212_35%_18%)] flex items-center justify-center shrink-0">
-                  <r.icon className="h-6 w-6 text-[hsl(210_55%_70%)]" />
+                <div className="w-14 h-14 bg-primary flex items-center justify-center shrink-0">
+                  <r.icon className="h-6 w-6 text-accent" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-base">{r.label}</h3>

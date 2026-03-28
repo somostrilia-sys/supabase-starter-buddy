@@ -103,19 +103,19 @@ export default function RateioTab() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-[hsl(212_35%_18%)]">Rateio</h2>
+        <h2 className="text-xl font-bold text-primary">Rateio</h2>
         <p className="text-sm text-muted-foreground">Estrutura de cotas, distribuição e histórico de rateio</p>
       </div>
 
-      <div className="flex gap-1 border-b border-[hsl(210_30%_88%)] overflow-x-auto">
+      <div className="flex gap-1 border-b border-border overflow-x-auto">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setSubTab(t.id)}
             className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
               subTab === t.id
-                ? "border-[hsl(212_55%_40%)] text-[hsl(212_35%_18%)]"
-                : "border-transparent text-muted-foreground hover:text-[hsl(212_35%_30%)]"
+                ? "border-primary/50 text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             <t.icon className="h-4 w-4" />
@@ -168,20 +168,20 @@ function EstruturaCotas() {
           </Select>
         </div>
         <div className="ml-auto flex gap-2">
-          <Button variant="outline" className="gap-2 text-xs border-[hsl(210_30%_85%)]" onClick={() => setShowUpload(true)}>
+          <Button variant="outline" className="gap-2 text-xs border-border" onClick={() => setShowUpload(true)}>
             <Upload className="h-4 w-4" />Importar Planilha
           </Button>
-          <Button className="gap-2 text-xs bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={() => toast.success("Cota adicionada")}>
+          <Button className="gap-2 text-xs bg-primary hover:bg-primary/90 text-white" onClick={() => toast.success("Cota adicionada")}>
             <Plus className="h-4 w-4" />Nova Cota
           </Button>
         </div>
       </div>
 
       {/* Tabela de cotas */}
-      <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+      <div className="border rounded-lg border-border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[hsl(210_40%_96%)]">
+            <TableRow className="bg-muted">
               <TableHead className="text-xs">Valor Inicial (FIPE)</TableHead>
               <TableHead className="text-xs">Valor Final (FIPE)</TableHead>
               <TableHead className="text-xs">Categoria Veículo</TableHead>
@@ -195,7 +195,7 @@ function EstruturaCotas() {
               <TableRow key={c.id}>
                 <TableCell className="text-sm font-mono">R$ {c.valorInicial.toLocaleString("pt-BR")}</TableCell>
                 <TableCell className="text-sm font-mono">R$ {c.valorFinal.toLocaleString("pt-BR")}</TableCell>
-                <TableCell><Badge variant="outline" className="text-xs border-[hsl(210_35%_70%)] bg-[hsl(210_40%_95%)]">{c.categoria}</Badge></TableCell>
+                <TableCell><Badge variant="outline" className="text-xs border-primary/30 bg-primary/8">{c.categoria}</Badge></TableCell>
                 <TableCell className="text-sm">{c.regional}</TableCell>
                 <TableCell className="text-sm text-right font-bold font-mono">{c.fator.toFixed(1)}x</TableCell>
                 <TableCell>
@@ -208,15 +208,15 @@ function EstruturaCotas() {
       </div>
 
       {/* Histórico de importações */}
-      <Card className="border-[hsl(210_30%_88%)] shadow-sm">
+      <Card className="border-border shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm text-[hsl(212_35%_18%)]">Histórico de Importações</CardTitle>
+          <CardTitle className="text-sm text-primary">Histórico de Importações</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+          <div className="border rounded-lg border-border overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow className="bg-[hsl(210_40%_96%)]">
+                <TableRow className="bg-muted">
                   <TableHead className="text-xs">Data/Hora</TableHead>
                   <TableHead className="text-xs">Usuário</TableHead>
                   <TableHead className="text-xs">Arquivo</TableHead>
@@ -243,12 +243,12 @@ function EstruturaCotas() {
       {/* Upload Dialog */}
       <Dialog open={showUpload} onOpenChange={setShowUpload}>
         <DialogContent>
-          <DialogHeader><DialogTitle className="text-[hsl(212_35%_18%)]">Importar Planilha de Cotas</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-primary">Importar Planilha de Cotas</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="border-2 border-dashed border-[hsl(210_30%_85%)] rounded-lg p-8 text-center hover:border-[hsl(212_55%_40%)] transition-colors cursor-pointer" onClick={handleUpload}>
+            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer" onClick={handleUpload}>
               {uploading ? (
                 <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="h-8 w-8 animate-spin text-[hsl(212_55%_40%)]" />
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   <p className="text-sm">Processando arquivo...</p>
                   <Progress value={65} className="w-48 mx-auto" />
                 </div>
@@ -259,7 +259,7 @@ function EstruturaCotas() {
                 </>
               )}
             </div>
-            <Button variant="outline" size="sm" className="gap-2 text-xs border-[hsl(210_30%_85%)]" onClick={() => toast.info("Download do modelo iniciado")}>
+            <Button variant="outline" size="sm" className="gap-2 text-xs border-border" onClick={() => toast.info("Download do modelo iniciado")}>
               <Download className="h-3 w-3" />Baixar Modelo de Planilha
             </Button>
           </div>
@@ -269,7 +269,7 @@ function EstruturaCotas() {
       {/* Edit Dialog */}
       <Dialog open={!!showEdit} onOpenChange={() => setShowEdit(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle className="text-[hsl(212_35%_18%)]">Editar Cota</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-primary">Editar Cota</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-3">
             <div><Label className="text-xs">Valor Inicial (R$)</Label><Input defaultValue={showEdit?.valorInicial} /></div>
             <div><Label className="text-xs">Valor Final (R$)</Label><Input defaultValue={showEdit?.valorFinal} /></div>
@@ -279,8 +279,8 @@ function EstruturaCotas() {
             <div><Label className="text-xs">Fator Multiplicador</Label><Input defaultValue={showEdit?.fator} /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEdit(null)} className="border-[hsl(210_30%_85%)]">Cancelar</Button>
-            <Button className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white gap-2" onClick={() => { toast.success("Cota atualizada"); setShowEdit(null); }}>
+            <Button variant="outline" onClick={() => setShowEdit(null)} className="border-border">Cancelar</Button>
+            <Button className="bg-primary hover:bg-primary/90 text-white gap-2" onClick={() => { toast.success("Cota atualizada"); setShowEdit(null); }}>
               <Save className="h-4 w-4" />Salvar
             </Button>
           </DialogFooter>
@@ -330,11 +330,11 @@ function DistribuicaoRateio() {
   return (
     <div className="space-y-5">
       {/* Card explicativo */}
-      <Card className="border-[hsl(210_30%_88%)] bg-[hsl(210_40%_97%)]">
+      <Card className="border-border bg-muted/50">
         <CardContent className="p-4 flex items-start gap-3">
-          <Info className="h-5 w-5 text-[hsl(212_55%_40%)] mt-0.5 shrink-0" />
+          <Info className="h-5 w-5 text-primary mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-[hsl(212_35%_18%)]">Conceito Mutualista</p>
+            <p className="text-sm font-semibold text-primary">Conceito Mutualista</p>
             <p className="text-xs text-muted-foreground mt-1">O rateio distribui o custo total dos eventos entre todos os associados ativos, conforme a categoria do veículo e o fator multiplicador da cota. O valor base (primeira cota) é definido manualmente e as demais são calculadas automaticamente: <strong>Valor Cota N = Valor Base × Fator Multiplicador</strong>.</p>
           </div>
         </CardContent>
@@ -347,9 +347,9 @@ function DistribuicaoRateio() {
             <button
               onClick={() => setStep(i)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                i === step ? "bg-[hsl(212_35%_18%)] text-white" :
-                i < step ? "bg-[hsl(210_40%_90%)] text-[hsl(212_35%_30%)]" :
-                "bg-[hsl(210_40%_96%)] text-muted-foreground"
+                i === step ? "bg-primary text-white" :
+                i < step ? "bg-secondary text-foreground" :
+                "bg-muted text-muted-foreground"
               }`}
             >
               <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border border-current/20">
@@ -362,9 +362,9 @@ function DistribuicaoRateio() {
         ))}
       </div>
 
-      <Card className="border-[hsl(210_30%_88%)] shadow-sm">
+      <Card className="border-border shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-[hsl(212_35%_18%)]">Passo {step + 1}: {steps[step]}</CardTitle>
+          <CardTitle className="text-base text-primary">Passo {step + 1}: {steps[step]}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Step 0 - Mês Referência */}
@@ -389,14 +389,14 @@ function DistribuicaoRateio() {
           {step === 2 && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-[hsl(212_35%_18%)]">{totalVeiculos.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Veículos</p></CardContent></Card>
-                <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-[hsl(212_35%_18%)]">{regionaisData.length}</p><p className="text-xs text-muted-foreground">Regionais</p></CardContent></Card>
-                <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-[hsl(212_35%_18%)]">{categoriasVeiculo.length}</p><p className="text-xs text-muted-foreground">Categorias</p></CardContent></Card>
-                <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-[hsl(212_35%_18%)]">{mockCotas.length}</p><p className="text-xs text-muted-foreground">Intervalos FIPE</p></CardContent></Card>
+                <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{totalVeiculos.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Veículos</p></CardContent></Card>
+                <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{regionaisData.length}</p><p className="text-xs text-muted-foreground">Regionais</p></CardContent></Card>
+                <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{categoriasVeiculo.length}</p><p className="text-xs text-muted-foreground">Categorias</p></CardContent></Card>
+                <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{mockCotas.length}</p><p className="text-xs text-muted-foreground">Intervalos FIPE</p></CardContent></Card>
               </div>
-              <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+              <div className="border rounded-lg border-border overflow-hidden">
                 <Table>
-                  <TableHeader><TableRow className="bg-[hsl(210_40%_96%)]"><TableHead className="text-xs">Regional</TableHead><TableHead className="text-xs text-right">Veículos</TableHead><TableHead className="text-xs text-right">% do Total</TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow className="bg-muted"><TableHead className="text-xs">Regional</TableHead><TableHead className="text-xs text-right">Veículos</TableHead><TableHead className="text-xs text-right">% do Total</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {regionaisData.map((r, i) => (
                       <TableRow key={i}>
@@ -424,9 +424,9 @@ function DistribuicaoRateio() {
           {step === 4 && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">Valores calculados automaticamente: <strong>Valor Cota = R$ {vb.toFixed(2)} × Fator</strong></p>
-              <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+              <div className="border rounded-lg border-border overflow-hidden">
                 <Table>
-                  <TableHeader><TableRow className="bg-[hsl(210_40%_96%)]"><TableHead className="text-xs">Categoria</TableHead><TableHead className="text-xs">Intervalo FIPE</TableHead><TableHead className="text-xs text-right">Fator</TableHead><TableHead className="text-xs text-right">Valor Cota Calculado</TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow className="bg-muted"><TableHead className="text-xs">Categoria</TableHead><TableHead className="text-xs">Intervalo FIPE</TableHead><TableHead className="text-xs text-right">Fator</TableHead><TableHead className="text-xs text-right">Valor Cota Calculado</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {mockCotas.map(c => (
                       <TableRow key={c.id}>
@@ -444,10 +444,10 @@ function DistribuicaoRateio() {
 
           {/* Step 5 - Tabela Completa */}
           {step === 5 && (
-            <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+            <div className="border rounded-lg border-border overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-[hsl(210_40%_96%)]">
+                  <TableRow className="bg-muted">
                     <TableHead className="text-xs">Regional</TableHead>
                     <TableHead className="text-xs">Categoria</TableHead>
                     <TableHead className="text-xs text-right">Qtde Veículos</TableHead>
@@ -469,7 +469,7 @@ function DistribuicaoRateio() {
                       <TableCell className="text-sm text-right font-bold">R$ {d.valorRateado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
                     </TableRow>
                   ))}
-                  <TableRow className="bg-[hsl(210_40%_96%)] font-bold">
+                  <TableRow className="bg-muted font-bold">
                     <TableCell colSpan={2} className="text-sm">TOTAL</TableCell>
                     <TableCell className="text-sm text-right">{totalVeiculos.toLocaleString("pt-BR")}</TableCell>
                     <TableCell className="text-sm text-right">{Math.floor(totalVeiculos * 1.1).toLocaleString("pt-BR")}</TableCell>
@@ -486,12 +486,12 @@ function DistribuicaoRateio() {
           {step === 6 && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Card className="border-green-200 bg-green-50"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-green-600 mb-1" /><p className="text-xs font-medium text-green-800">Mês: {mesRef}</p></CardContent></Card>
-                <Card className="border-green-200 bg-green-50"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-green-600 mb-1" /><p className="text-xs font-medium text-green-800">{totalVeiculos.toLocaleString("pt-BR")} veículos</p></CardContent></Card>
-                <Card className="border-green-200 bg-green-50"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-green-600 mb-1" /><p className="text-xs font-medium text-green-800">12 regionais</p></CardContent></Card>
-                <Card className="border-green-200 bg-green-50"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-green-600 mb-1" /><p className="text-xs font-medium text-green-800">R$ {totalRateado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p></CardContent></Card>
+                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-green-600 mb-1" /><p className="text-xs font-medium text-green-800">Mês: {mesRef}</p></CardContent></Card>
+                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-green-600 mb-1" /><p className="text-xs font-medium text-green-800">{totalVeiculos.toLocaleString("pt-BR")} veículos</p></CardContent></Card>
+                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-green-600 mb-1" /><p className="text-xs font-medium text-green-800">12 regionais</p></CardContent></Card>
+                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-green-600 mb-1" /><p className="text-xs font-medium text-green-800">R$ {totalRateado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p></CardContent></Card>
               </div>
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-start gap-2">
+              <div className="p-3 bg-warning/8 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                 <span>Confirme os valores antes de gravar. Esta ação gerará os boletos com os valores de rateio para o período {mesRef}.</span>
               </div>
@@ -501,12 +501,12 @@ function DistribuicaoRateio() {
           {/* Step 7 - Gravar */}
           {step === 7 && (
             <div className="text-center py-6 space-y-4">
-              <Calculator className="h-12 w-12 mx-auto text-[hsl(212_55%_40%)]" />
+              <Calculator className="h-12 w-12 mx-auto text-primary" />
               <div>
-                <p className="text-lg font-bold text-[hsl(212_35%_18%)]">Rateio pronto para gravação</p>
+                <p className="text-lg font-bold text-primary">Rateio pronto para gravação</p>
                 <p className="text-sm text-muted-foreground mt-1">Mês: {mesRef} · Veículos: {totalVeiculos.toLocaleString("pt-BR")} · Total: R$ {totalRateado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
               </div>
-              <Button className="gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={salvarRateio}>
+              <Button className="gap-2 bg-primary hover:bg-primary/90 text-white" onClick={salvarRateio}>
                 <Save className="h-4 w-4" />Gravar Rateio
               </Button>
             </div>
@@ -516,11 +516,11 @@ function DistribuicaoRateio() {
 
       {/* Navigation */}
       <div className="flex justify-between">
-        <Button variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)} className="gap-2 border-[hsl(210_30%_85%)]">
+        <Button variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)} className="gap-2 border-border">
           <ChevronLeft className="h-4 w-4" />Anterior
         </Button>
         {step < steps.length - 1 && (
-          <Button onClick={() => setStep(step + 1)} className="gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white">
+          <Button onClick={() => setStep(step + 1)} className="gap-2 bg-primary hover:bg-primary/90 text-white">
             Próximo<ChevronRight className="h-4 w-4" />
           </Button>
         )}
@@ -564,15 +564,15 @@ function HistoricoDistribuicao() {
             </SelectContent>
           </Select>
         </div>
-        <Button variant="outline" className="gap-2 text-xs border-[hsl(210_30%_85%)] ml-auto" disabled={loading === "excel"} onClick={handleExport}>
+        <Button variant="outline" className="gap-2 text-xs border-border ml-auto" disabled={loading === "excel"} onClick={handleExport}>
           {loading === "excel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exportar Excel
         </Button>
       </div>
 
-      <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+      <div className="border rounded-lg border-border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[hsl(210_40%_96%)]">
+            <TableRow className="bg-muted">
               <TableHead className="text-xs w-[30px]"></TableHead>
               <TableHead className="text-xs">Mês Referência</TableHead>
               <TableHead className="text-xs text-right">Valor Total Distribuído</TableHead>
@@ -586,7 +586,7 @@ function HistoricoDistribuicao() {
           <TableBody>
             {mockHistDist.map((h, i) => (
               <>
-                <TableRow key={i} className="cursor-pointer hover:bg-[hsl(210_40%_97%)]" onClick={() => setExpandido(expandido === i ? null : i)}>
+                <TableRow key={i} className="cursor-pointer hover:bg-muted/50" onClick={() => setExpandido(expandido === i ? null : i)}>
                   <TableCell className="px-2">
                     {expandido === i ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                   </TableCell>
@@ -600,11 +600,11 @@ function HistoricoDistribuicao() {
                 </TableRow>
                 {expandido === i && h.detalhes.length > 0 && (
                   <TableRow key={`det-${i}`}>
-                    <TableCell colSpan={8} className="bg-[hsl(210_40%_97%)] p-4">
-                      <p className="text-xs font-semibold text-[hsl(212_35%_18%)] mb-2">Detalhes por Regional — {h.mes}</p>
-                      <div className="border rounded border-[hsl(210_30%_88%)] overflow-hidden">
+                    <TableCell colSpan={8} className="bg-muted/50 p-4">
+                      <p className="text-xs font-semibold text-primary mb-2">Detalhes por Regional — {h.mes}</p>
+                      <div className="border rounded border-border overflow-hidden">
                         <Table>
-                          <TableHeader><TableRow className="bg-[hsl(210_40%_94%)]"><TableHead className="text-xs">Regional</TableHead><TableHead className="text-xs text-right">Veículos</TableHead><TableHead className="text-xs text-right">Valor</TableHead></TableRow></TableHeader>
+                          <TableHeader><TableRow className="bg-muted/40"><TableHead className="text-xs">Regional</TableHead><TableHead className="text-xs text-right">Veículos</TableHead><TableHead className="text-xs text-right">Valor</TableHead></TableRow></TableHeader>
                           <TableBody>
                             {h.detalhes.map((d, di) => (
                               <TableRow key={di}>
@@ -652,11 +652,11 @@ function CargaInicialGestao() {
   return (
     <div className="space-y-5">
       {/* Info card */}
-      <Card className="border-[hsl(210_30%_88%)] bg-[hsl(210_40%_97%)]">
+      <Card className="border-border bg-muted/50">
         <CardContent className="p-4 flex items-start gap-3">
-          <Info className="h-5 w-5 text-[hsl(212_55%_40%)] mt-0.5 shrink-0" />
+          <Info className="h-5 w-5 text-primary mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-[hsl(212_35%_18%)]">Carga Inicial — Sistema Gestão</p>
+            <p className="text-sm font-semibold text-primary">Carga Inicial — Sistema Gestão</p>
             <p className="text-xs text-muted-foreground mt-1">Dados referentes a <strong>01/12/2025</strong> do sistema legado Gestão. Esta operação importa a estrutura de veículos e cotas para o novo sistema.</p>
             <div className="flex gap-4 mt-2 text-xs">
               <span><strong>Valor Cota:</strong> R$ 0,00 (zerado)</span>
@@ -669,17 +669,17 @@ function CargaInicialGestao() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-[hsl(212_35%_18%)]">{totalVeiculos.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Veículos</p></CardContent></Card>
-        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-[hsl(212_35%_18%)]">{totalCotas.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Cotas</p></CardContent></Card>
-        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-green-700">{executadas}/{mockCargaGestao.length}</p><p className="text-xs text-muted-foreground">Regionais Executadas</p></CardContent></Card>
-        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-yellow-700">{mockCargaGestao.length - executadas}</p><p className="text-xs text-muted-foreground">Pendentes</p></CardContent></Card>
+        <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{totalVeiculos.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Veículos</p></CardContent></Card>
+        <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{totalCotas.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Cotas</p></CardContent></Card>
+        <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-green-700">{executadas}/{mockCargaGestao.length}</p><p className="text-xs text-muted-foreground">Regionais Executadas</p></CardContent></Card>
+        <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-yellow-700">{mockCargaGestao.length - executadas}</p><p className="text-xs text-muted-foreground">Pendentes</p></CardContent></Card>
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+      <div className="border rounded-lg border-border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[hsl(210_40%_96%)]">
+            <TableRow className="bg-muted">
               <TableHead className="text-xs">Regional</TableHead>
               <TableHead className="text-xs text-right">Total Veículos</TableHead>
               <TableHead className="text-xs text-right">Total Cotas</TableHead>
@@ -703,7 +703,7 @@ function CargaInicialGestao() {
                 </TableCell>
               </TableRow>
             ))}
-            <TableRow className="bg-[hsl(210_40%_96%)] font-bold">
+            <TableRow className="bg-muted font-bold">
               <TableCell className="text-sm">TOTAL</TableCell>
               <TableCell className="text-sm text-right">{totalVeiculos.toLocaleString("pt-BR")}</TableCell>
               <TableCell className="text-sm text-right">{totalCotas.toLocaleString("pt-BR")}</TableCell>
@@ -718,7 +718,7 @@ function CargaInicialGestao() {
 
       {/* Executar Carga */}
       <div className="flex justify-end">
-        <Button className="gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={() => setShowConfirm(true)}>
+        <Button className="gap-2 bg-primary hover:bg-primary/90 text-white" onClick={() => setShowConfirm(true)}>
           <Play className="h-4 w-4" />Executar Carga Inicial
         </Button>
       </div>
@@ -726,9 +726,9 @@ function CargaInicialGestao() {
       {/* Confirmação */}
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
         <DialogContent>
-          <DialogHeader><DialogTitle className="text-[hsl(212_35%_18%)]">Confirmar Carga Inicial</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-primary">Confirmar Carga Inicial</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-start gap-2">
+            <div className="p-3 bg-warning/8 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
               <span>Esta ação irá importar os dados do sistema Gestão para as <strong>{mockCargaGestao.length - executadas} regionais pendentes</strong>. Os valores de cota serão zerados (R$ 0,00). Deseja continuar?</span>
             </div>
@@ -739,8 +739,8 @@ function CargaInicialGestao() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirm(false)} className="border-[hsl(210_30%_85%)]">Cancelar</Button>
-            <Button className="gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={executarCarga} disabled={loading}>
+            <Button variant="outline" onClick={() => setShowConfirm(false)} className="border-border">Cancelar</Button>
+            <Button className="gap-2 bg-primary hover:bg-primary/90 text-white" onClick={executarCarga} disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               {loading ? "Executando..." : "Confirmar Carga"}
             </Button>

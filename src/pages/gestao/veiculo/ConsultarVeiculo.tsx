@@ -539,7 +539,7 @@ export default function ConsultarVeiculo() {
               {sel.vistorias.map((v, i) => (
                 <div key={i} className="flex gap-4 items-start">
                   <div className="flex flex-col items-center">
-                    <div className={`w-3 h-3 rounded-full shrink-0 mt-1 ${v.resultado === "Aprovada" ? "bg-emerald-500" : v.resultado === "Pendente" ? "bg-amber-500" : "bg-destructive"}`} />
+                    <div className={`w-3 h-3 rounded-full shrink-0 mt-1 ${v.resultado === "Aprovada" ? "bg-emerald-500" : v.resultado === "Pendente" ? "bg-warning/80" : "bg-destructive"}`} />
                     {i < sel.vistorias.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
                   </div>
                   <div className="pb-4 flex-1">

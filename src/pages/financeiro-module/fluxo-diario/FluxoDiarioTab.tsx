@@ -35,8 +35,8 @@ export default function FluxoDiarioTab() {
   return (
     <div className="p-6 lg:px-8 space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md">
-          <Wallet className="h-5 w-5 text-[hsl(210_55%_70%)]" />
+        <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
+          <Wallet className="h-5 w-5 text-accent" />
         </div>
         <div>
           <h1 className="text-xl font-bold text-foreground">Fluxo Diário</h1>
@@ -46,67 +46,67 @@ export default function FluxoDiarioTab() {
 
       {/* Resumo */}
       <div className="grid sm:grid-cols-3 gap-4">
-        <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-          <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] to-[hsl(212_35%_35%)]" />
+        <Card className="border-border overflow-hidden">
+          
           <CardContent className="p-4 flex items-center gap-3">
             <ArrowUpRight className="h-5 w-5 text-green-600" />
             <div><p className="text-lg font-bold text-green-600">R$ {totalEntradas.toLocaleString()}</p><p className="text-xs text-muted-foreground">Entradas</p></div>
           </CardContent>
         </Card>
-        <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-          <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] to-[hsl(210_40%_40%)]" />
+        <Card className="border-border overflow-hidden">
+          
           <CardContent className="p-4 flex items-center gap-3">
             <ArrowDownRight className="h-5 w-5 text-red-500" />
             <div><p className="text-lg font-bold text-red-500">R$ {totalSaidas.toLocaleString()}</p><p className="text-xs text-muted-foreground">Saídas</p></div>
           </CardContent>
         </Card>
-        <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-          <div className="h-1 bg-gradient-to-r from-[hsl(210_40%_40%)] to-[hsl(210_55%_60%)]" />
+        <Card className="border-border overflow-hidden">
+          
           <CardContent className="p-4 flex items-center gap-3">
-            <Wallet className="h-5 w-5 text-[hsl(212_35%_25%)]" />
-            <div><p className="text-lg font-bold text-[hsl(212_35%_20%)]">R$ {(totalEntradas - totalSaidas).toLocaleString()}</p><p className="text-xs text-muted-foreground">Saldo</p></div>
+            <Wallet className="h-5 w-5 text-foreground" />
+            <div><p className="text-lg font-bold text-primary">R$ {(totalEntradas - totalSaidas).toLocaleString()}</p><p className="text-xs text-muted-foreground">Saldo</p></div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filtros */}
-      <Card className="border-[hsl(210_30%_88%)]">
+      <Card className="border-border">
         <CardContent className="p-4">
           <div className="grid sm:grid-cols-3 gap-3 items-end">
             <div>
-              <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Buscar</Label>
-              <div className="relative mt-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="pl-9 border-[hsl(210_30%_85%)]" placeholder="Descrição..." value={busca} onChange={e => setBusca(e.target.value)} /></div>
+              <Label className="text-xs font-medium text-foreground">Buscar</Label>
+              <div className="relative mt-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="pl-9 border-border" placeholder="Descrição..." value={busca} onChange={e => setBusca(e.target.value)} /></div>
             </div>
             <div>
-              <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Tipo</Label>
-              <Select value={filtroTipo} onValueChange={setFiltroTipo}><SelectTrigger className="mt-1 border-[hsl(210_30%_85%)]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem><SelectItem value="entrada">Entradas</SelectItem><SelectItem value="saida">Saídas</SelectItem></SelectContent></Select>
+              <Label className="text-xs font-medium text-foreground">Tipo</Label>
+              <Select value={filtroTipo} onValueChange={setFiltroTipo}><SelectTrigger className="mt-1 border-border"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem><SelectItem value="entrada">Entradas</SelectItem><SelectItem value="saida">Saídas</SelectItem></SelectContent></Select>
             </div>
-            <Button variant="outline" size="sm" className="gap-1.5 border-[hsl(210_30%_85%)]"><Download className="h-4 w-4" />Exportar</Button>
+            <Button variant="outline" size="sm" className="gap-1.5 border-border"><Download className="h-4 w-4" />Exportar</Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Tabela */}
-      <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
+      <Card className="border-border overflow-hidden">
+        
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Data</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Descrição</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Categoria</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Tipo</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Valor</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Saldo</TableHead>
+              <TableRow className="bg-primary hover:bg-primary border-b-0">
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Data</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Descrição</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Categoria</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Tipo</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Valor</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Saldo</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((f, i) => (
-                <TableRow key={f.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-[hsl(210_30%_97%)]'} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}>
-                  <TableCell className="text-sm font-mono text-[hsl(212_35%_30%)]">{f.data}</TableCell>
+                <TableRow key={f.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
+                  <TableCell className="text-sm font-mono text-foreground">{f.data}</TableCell>
                   <TableCell className="font-medium text-foreground">{f.descricao}</TableCell>
-                  <TableCell><Badge variant="outline" className="border-[hsl(210_35%_70%)] text-[hsl(212_35%_30%)] bg-[hsl(210_40%_95%)]">{f.categoria}</Badge></TableCell>
+                  <TableCell><Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8">{f.categoria}</Badge></TableCell>
                   <TableCell>
                     <Badge className={f.tipo === "entrada" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
                       {f.tipo === "entrada" ? "Entrada" : "Saída"}
@@ -115,12 +115,12 @@ export default function FluxoDiarioTab() {
                   <TableCell className={`text-right font-semibold ${f.tipo === "entrada" ? "text-green-600" : "text-red-500"}`}>
                     {f.tipo === "entrada" ? "+" : "-"} R$ {f.valor.toLocaleString()}
                   </TableCell>
-                  <TableCell className="text-right font-medium text-[hsl(212_35%_25%)]">R$ {f.saldo.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-medium text-foreground">R$ {f.saldo.toLocaleString()}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-          <div className="px-4 py-3 bg-[hsl(210_30%_97%)] border-t border-[hsl(210_30%_90%)] flex justify-between items-center">
+          <div className="px-4 py-3 bg-muted/30 border-t border-border/60 flex justify-between items-center">
             <span className="text-xs text-muted-foreground">{filtered.length} movimentação(ões)</span>
           </div>
         </CardContent>

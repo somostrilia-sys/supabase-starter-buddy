@@ -22,17 +22,17 @@ export default function AnaliseCustoTab() {
   return (
     <div className="p-6 lg:px-8 space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md"><BarChart3 className="h-5 w-5 text-[hsl(210_55%_70%)]" /></div>
+        <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md"><BarChart3 className="h-5 w-5 text-accent" /></div>
         <div><h1 className="text-xl font-bold text-foreground">Análise Custo vs Faturamento</h1><p className="text-sm text-muted-foreground">Performance por consultor - ranking de eficiência</p></div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Faturamento Total</p><p className="text-xl font-bold text-green-600">R$ {totalFat.toLocaleString()}</p></CardContent></Card>
-        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Custo Total</p><p className="text-xl font-bold text-red-500">R$ {totalCusto.toLocaleString()}</p></CardContent></Card>
-        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Margem Média</p><p className="text-xl font-bold text-foreground">{((totalFat - totalCusto) / totalFat * 100).toFixed(1)}%</p></CardContent></Card>
+        <Card className="border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Faturamento Total</p><p className="text-xl font-bold text-green-600">R$ {totalFat.toLocaleString()}</p></CardContent></Card>
+        <Card className="border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Custo Total</p><p className="text-xl font-bold text-red-500">R$ {totalCusto.toLocaleString()}</p></CardContent></Card>
+        <Card className="border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Margem Média</p><p className="text-xl font-bold text-foreground">{((totalFat - totalCusto) / totalFat * 100).toFixed(1)}%</p></CardContent></Card>
       </div>
 
-      <Card className="border-[hsl(210_30%_88%)]">
+      <Card className="border-border">
         <CardContent className="p-4">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} /><Tooltip formatter={(v: number) => `R$ ${v.toLocaleString()}`} /><Legend />
@@ -43,20 +43,20 @@ export default function AnaliseCustoTab() {
         </CardContent>
       </Card>
 
-      <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
+      <Card className="border-border overflow-hidden">
+        
         <CardContent className="p-0">
-          <Table><TableHeader><TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">#</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Consultor</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Faturamento</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Custo</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Margem</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">ROI</TableHead>
+          <Table><TableHeader><TableRow className="bg-primary hover:bg-primary border-b-0">
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">#</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Consultor</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Faturamento</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Custo</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Margem</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">ROI</TableHead>
           </TableRow></TableHeader>
           <TableBody>{consultores.map((c, i) => (
-            <TableRow key={c.nome} className={`${i % 2 === 0 ? 'bg-card' : 'bg-[hsl(210_30%_97%)]'} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}>
-              <TableCell className="font-bold text-[hsl(212_35%_25%)]">{i + 1}º</TableCell>
+            <TableRow key={c.nome} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
+              <TableCell className="font-bold text-foreground">{i + 1}º</TableCell>
               <TableCell className="font-medium">{c.nome}</TableCell>
               <TableCell className="text-right font-semibold text-green-600">R$ {c.faturamento.toLocaleString()}</TableCell>
               <TableCell className="text-right font-semibold text-red-500">R$ {c.custo.toLocaleString()}</TableCell>

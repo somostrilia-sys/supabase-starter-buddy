@@ -20,7 +20,7 @@ import {
 
 const statusMap: Record<string, { label: string; class: string }> = {
   pendente:      { label: "Pendente",      class: "bg-sky-500/15 text-sky-400 border-0" },
-  em_andamento:  { label: "Em Andamento",  class: "bg-amber-500/15 text-amber-400 border-0" },
+  em_andamento:  { label: "Em Andamento",  class: "bg-warning/80/15 text-amber-400 border-0" },
   aprovada:      { label: "Aprovada",      class: "bg-emerald-500/15 text-emerald-400 border-0" },
   reprovada:     { label: "Reprovada",     class: "bg-destructive/15 text-destructive border-0" },
 };

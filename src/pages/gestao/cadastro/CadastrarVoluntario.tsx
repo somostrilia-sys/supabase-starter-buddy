@@ -38,10 +38,10 @@ const cooperativas = ["Cooperativa São Paulo", "Cooperativa Rio", "Cooperativa 
 
 const perfilColor: Record<string, string> = {
   Administrador: "bg-destructive/10 text-destructive border-destructive/20",
-  Operador: "bg-blue-500/10 text-blue-600 border-blue-200",
+  Operador: "bg-primary/60/10 text-blue-600 border-blue-200",
   Vendedor: "bg-emerald-500/10 text-emerald-600 border-emerald-200",
-  Inspetor: "bg-amber-500/10 text-amber-600 border-amber-200",
-  Financeiro: "bg-purple-500/10 text-purple-600 border-purple-200",
+  Inspetor: "bg-warning/80/10 text-amber-600 border-amber-200",
+  Financeiro: "bg-primary/60/10 text-purple-600 border-purple-200",
 };
 
 const emptyForm: { nome: string; cpf: string; email: string; telefone: string; perfil: Voluntario["perfil"]; cooperativa: string } = { nome: "", cpf: "", email: "", telefone: "", perfil: "Operador", cooperativa: "" };
@@ -166,7 +166,7 @@ export default function CadastrarVoluntario() {
                 </Select>
               </div>
             </div>
-            <div className="p-3 rounded-md bg-blue-500/5 border border-blue-200/50 text-xs text-blue-600">
+            <div className="p-3 rounded-md bg-primary/60/5 border border-blue-200/50 text-xs text-blue-600">
               <Shield className="h-3.5 w-3.5 inline mr-1" />
               Ao cadastrar, um usuário será criado automaticamente e sincronizado com o módulo de Vendas.
             </div>

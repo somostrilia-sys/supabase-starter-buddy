@@ -106,7 +106,7 @@ interface PlanoConfig {
 
 const planosConfig: PlanoConfig[] = [
   {
-    nome: "Básico", icon: Shield, cor: "border-blue-200 bg-blue-50",
+    nome: "Básico", icon: Shield, cor: "border-blue-200 bg-primary/6",
     percentual: 0.028,
     coberturas: ["Roubo/Furto", "Perda Total", "Assistência 24h", "Carro Reserva 7 dias"],
   },
@@ -116,7 +116,7 @@ const planosConfig: PlanoConfig[] = [
     coberturas: ["Roubo/Furto", "Perda Total", "Colisão", "Assistência 24h", "Carro Reserva 15 dias", "Vidros", "Terceiros R$50k"],
   },
   {
-    nome: "Premium", icon: ShieldPlus, cor: "border-amber-200 bg-amber-50",
+    nome: "Premium", icon: ShieldPlus, cor: "border-amber-200 bg-warning/8",
     percentual: 0.052,
     coberturas: ["Roubo/Furto", "Perda Total", "Colisão", "Assistência 24h", "Carro Reserva 30 dias", "Vidros", "Faróis", "Terceiros R$100k", "APP Passageiros", "Rastreador incluso"],
   },
@@ -225,7 +225,7 @@ export default function CotacaoTab({ deal }: Props) {
     <div className="space-y-6">
       {/* FIPE result banner */}
       {fipeFetched && (
-        <div className="flex items-center gap-3 p-3 rounded-lg border border-green-200 bg-green-50">
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-green-200 bg-success/8">
           <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-green-800">Dados FIPE preenchidos automaticamente</p>

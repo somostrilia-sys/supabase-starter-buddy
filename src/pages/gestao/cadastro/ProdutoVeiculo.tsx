@@ -95,8 +95,8 @@ export default function ProdutoVeiculo() {
   const tipoColor = (tipo: string) => {
     if (["Crédito", "Desconto"].includes(tipo)) return "bg-emerald-500/10 text-emerald-600 border-emerald-200";
     if (["Débito", "Taxa Administrativa", "Tarifa Bancária"].includes(tipo)) return "bg-destructive/10 text-destructive border-destructive/20";
-    if (tipo === "Rateio") return "bg-amber-500/10 text-amber-600 border-amber-200";
-    return "bg-blue-500/10 text-blue-600 border-blue-200";
+    if (tipo === "Rateio") return "bg-warning/80/10 text-amber-600 border-amber-200";
+    return "bg-primary/60/10 text-blue-600 border-blue-200";
   };
 
   return (
@@ -144,7 +144,7 @@ export default function ProdutoVeiculo() {
                   <TableCell className="text-sm font-mono text-muted-foreground">R$ {p.custoInterno.toFixed(2)}</TableCell>
                   <TableCell className="text-xs">{p.tipoVeiculoElegivel}</TableCell>
                   <TableCell>{p.exibirBoleto ? <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 text-[10px]">Sim</Badge> : <span className="text-xs text-muted-foreground">Não</span>}</TableCell>
-                  <TableCell>{p.exibirApp ? <Badge variant="outline" className="bg-blue-500/10 text-blue-600 text-[10px]">Sim</Badge> : <span className="text-xs text-muted-foreground">Não</span>}</TableCell>
+                  <TableCell>{p.exibirApp ? <Badge variant="outline" className="bg-primary/60/10 text-blue-600 text-[10px]">Sim</Badge> : <span className="text-xs text-muted-foreground">Não</span>}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={p.ativo ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"}>
                       {p.ativo ? "Ativo" : "Inativo"}

@@ -56,7 +56,7 @@ export default function IntegracoesTab() {
           <AccordionTrigger className="hover:no-underline">
             <div className="flex items-center gap-3">
               <span className="font-semibold">Gestão - Sistema de Gestão</span>
-              <Badge className={gestaoConectado ? "bg-emerald-500/10 text-emerald-600 border-emerald-200" : "bg-red-500/10 text-red-600 border-red-200"}>
+              <Badge className={gestaoConectado ? "bg-emerald-500/10 text-emerald-600 border-emerald-200" : "bg-destructive/80/10 text-red-600 border-red-200"}>
                 {gestaoConectado ? <><Wifi className="h-3 w-3 mr-1" /> Conectado</> : <><WifiOff className="h-3 w-3 mr-1" /> Desconectado</>}
               </Badge>
             </div>
@@ -117,7 +117,7 @@ export default function IntegracoesTab() {
           <AccordionTrigger className="hover:no-underline">
             <div className="flex items-center gap-3">
               <span className="font-semibold">Power Sign - Assinatura Digital</span>
-              <Badge className={psConectado ? "bg-emerald-500/10 text-emerald-600 border-emerald-200" : "bg-red-500/10 text-red-600 border-red-200"}>
+              <Badge className={psConectado ? "bg-emerald-500/10 text-emerald-600 border-emerald-200" : "bg-destructive/80/10 text-red-600 border-red-200"}>
                 {psConectado ? <><Wifi className="h-3 w-3 mr-1" /> Conectado</> : <><WifiOff className="h-3 w-3 mr-1" /> Desconectado</>}
               </Badge>
             </div>

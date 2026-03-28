@@ -31,10 +31,10 @@ export default function ProjecaoDespesasTab() {
     <div className="p-6 lg:px-8 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md"><LineChartIcon className="h-5 w-5 text-[hsl(210_55%_70%)]" /></div>
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md"><LineChartIcon className="h-5 w-5 text-accent" /></div>
           <div><h1 className="text-xl font-bold text-foreground">Projeção de Despesas</h1><p className="text-sm text-muted-foreground">Cenários de despesas para os próximos 6 meses</p></div>
         </div>
-        <Button size="sm" className="gap-1.5 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white"><Plus className="h-4 w-4" />Despesa Futura</Button>
+        <Button size="sm" className="gap-1.5 bg-primary hover:bg-primary/90 text-white"><Plus className="h-4 w-4" />Despesa Futura</Button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -43,7 +43,7 @@ export default function ProjecaoDespesasTab() {
           { label: "Cenário Realista", value: "R$ 978.000", color: "text-blue-600", desc: "Base histórica ajustada" },
           { label: "Cenário Conservador", value: "R$ 1.085.000", color: "text-red-600", desc: "Inclusão de riscos adicionais" },
         ].map(c => (
-          <Card key={c.label} className="border-[hsl(210_30%_88%)]">
+          <Card key={c.label} className="border-border">
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">{c.label}</p>
               <p className={`text-xl font-bold ${c.color}`}>{c.value}</p>
@@ -53,31 +53,31 @@ export default function ProjecaoDespesasTab() {
         ))}
       </div>
 
-      <Card className="border-[hsl(210_30%_88%)]">
+      <Card className="border-border">
         <CardContent className="p-4">
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={projData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="mes" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} /><Tooltip formatter={(v: number) => `R$ ${v.toLocaleString()}`} /><Legend />
               <Line type="monotone" dataKey="otimista" stroke="hsl(142, 60%, 45%)" strokeWidth={2} name="Otimista" />
-              <Line type="monotone" dataKey="realista" stroke="hsl(212, 55%, 50%)" strokeWidth={2} name="Realista" />
+              <Line type="monotone" dataKey="realista" stroke="hsl(var(--primary))" strokeWidth={2} name="Realista" />
               <Line type="monotone" dataKey="conservador" stroke="hsl(0, 60%, 50%)" strokeWidth={2} name="Conservador" />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
+      <Card className="border-border overflow-hidden">
+        
         <CardContent className="p-0">
-          <Table><TableHeader><TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Descrição</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Categoria</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Valor</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Frequência</TableHead>
+          <Table><TableHeader><TableRow className="bg-primary hover:bg-primary border-b-0">
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Descrição</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Categoria</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Valor</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Frequência</TableHead>
           </TableRow></TableHeader>
           <TableBody>{recorrentes.map((r, i) => (
-            <TableRow key={r.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-[hsl(210_30%_97%)]'} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}>
+            <TableRow key={r.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
               <TableCell className="font-medium">{r.descricao}</TableCell>
-              <TableCell><Badge variant="outline" className="border-[hsl(210_35%_70%)] text-[hsl(212_35%_30%)] bg-[hsl(210_40%_95%)]">{r.categoria}</Badge></TableCell>
+              <TableCell><Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8">{r.categoria}</Badge></TableCell>
               <TableCell className="text-right font-semibold text-red-500">R$ {r.valor.toLocaleString()}</TableCell>
               <TableCell className="text-sm">{r.frequencia}</TableCell>
             </TableRow>

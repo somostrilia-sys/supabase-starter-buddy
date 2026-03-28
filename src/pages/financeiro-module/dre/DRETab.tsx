@@ -73,26 +73,26 @@ export default function DRETab() {
     <div className="p-6 lg:px-8 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md">
-            <FileBarChart className="h-5 w-5 text-[hsl(210_55%_70%)]" />
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
+            <FileBarChart className="h-5 w-5 text-accent" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">DRE - Demonstrativo de Resultados</h1>
             <p className="text-sm text-muted-foreground">Análise de receitas, custos e resultado operacional</p>
           </div>
         </div>
-        <Button variant="outline" size="sm" className="gap-1.5 border-[hsl(210_30%_85%)]">
+        <Button variant="outline" size="sm" className="gap-1.5 border-border">
           <Download className="h-4 w-4" />Exportar PDF
         </Button>
       </div>
 
-      <Card className="border-[hsl(210_30%_88%)]">
+      <Card className="border-border">
         <CardContent className="p-4">
           <div className="grid sm:grid-cols-2 gap-3 items-end">
             <div>
-              <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Período</Label>
+              <Label className="text-xs font-medium text-foreground">Período</Label>
               <Select value={periodo} onValueChange={setPeriodo}>
-                <SelectTrigger className="mt-1 border-[hsl(210_30%_85%)]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="mt-1 border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {periodos.map(p => (
                     <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
@@ -109,52 +109,52 @@ export default function DRETab() {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-          <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
+        <Card className="border-border overflow-hidden">
+          
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Descrição</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Valor (R$)</TableHead>
+                <TableRow className="bg-primary hover:bg-primary border-b-0">
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Descrição</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Valor (R$)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {/* RECEITAS */}
-                <TableRow className="bg-[hsl(210_30%_95%)] border-b border-[hsl(210_30%_90%)]">
-                  <TableCell colSpan={2} className="font-bold text-[hsl(212_35%_25%)] text-sm">RECEITA OPERACIONAL</TableCell>
+                <TableRow className="bg-muted/50 border-b border-border/60">
+                  <TableCell colSpan={2} className="font-bold text-foreground text-sm">RECEITA OPERACIONAL</TableCell>
                 </TableRow>
-                <TableRow className="hover:bg-[hsl(210_40%_94%)] border-b border-[hsl(210_30%_90%)]">
+                <TableRow className="hover:bg-muted/40 border-b border-border/60">
                   <TableCell className="pl-8 text-sm">Mensalidades recebidas</TableCell>
                   <TableCell className="text-right font-semibold text-green-600">{fmt(totalReceita)}</TableCell>
                 </TableRow>
 
                 {/* DESPESAS */}
-                <TableRow className="bg-[hsl(210_30%_95%)] border-b border-[hsl(210_30%_90%)]">
-                  <TableCell colSpan={2} className="font-bold text-[hsl(212_35%_25%)] text-sm">DESPESAS OPERACIONAIS</TableCell>
+                <TableRow className="bg-muted/50 border-b border-border/60">
+                  <TableCell colSpan={2} className="font-bold text-foreground text-sm">DESPESAS OPERACIONAIS</TableCell>
                 </TableRow>
                 {Object.keys(despesasPorCategoria).length === 0 ? (
-                  <TableRow className="border-b border-[hsl(210_30%_90%)]">
+                  <TableRow className="border-b border-border/60">
                     <TableCell className="pl-8 text-sm text-muted-foreground">Nenhuma despesa registrada</TableCell>
                     <TableCell className="text-right text-muted-foreground">—</TableCell>
                   </TableRow>
                 ) : Object.entries(despesasPorCategoria).map(([cat, valor]) => (
-                  <TableRow key={cat} className="hover:bg-[hsl(210_40%_94%)] border-b border-[hsl(210_30%_90%)]">
+                  <TableRow key={cat} className="hover:bg-muted/40 border-b border-border/60">
                     <TableCell className="pl-8 text-sm">{cat}</TableCell>
                     <TableCell className="text-right font-semibold text-red-500">- {fmt(valor)}</TableCell>
                   </TableRow>
                 ))}
 
                 {/* TOTALS */}
-                <TableRow className="bg-[hsl(210_30%_93%)] border-t-2 border-[hsl(212_35%_18%)]">
-                  <TableCell className="font-bold text-[hsl(212_35%_18%)]">= TOTAL RECEITAS</TableCell>
+                <TableRow className="bg-muted border-t-2 border-primary">
+                  <TableCell className="font-bold text-primary">= TOTAL RECEITAS</TableCell>
                   <TableCell className="text-right font-bold text-green-600">{fmt(totalReceita)}</TableCell>
                 </TableRow>
-                <TableRow className="bg-[hsl(210_30%_93%)]">
-                  <TableCell className="font-bold text-[hsl(212_35%_18%)]">= TOTAL DESPESAS</TableCell>
+                <TableRow className="bg-muted">
+                  <TableCell className="font-bold text-primary">= TOTAL DESPESAS</TableCell>
                   <TableCell className="text-right font-bold text-red-500">- {fmt(totalDespesas)}</TableCell>
                 </TableRow>
-                <TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)]">
+                <TableRow className="bg-primary hover:bg-primary">
                   <TableCell className="font-bold text-white text-base">= RESULTADO LÍQUIDO</TableCell>
                   <TableCell className={`text-right font-bold text-base ${resultado >= 0 ? "text-green-300" : "text-red-300"}`}>
                     {resultado < 0 ? "- " : ""}{fmt(resultado)}

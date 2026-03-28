@@ -8,7 +8,7 @@ import { PieChart as PieChartIcon, Search, CreditCard, UserPlus, Shield, Calenda
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 const categorias = [
-  { nome: "Mensalidade", icon: CreditCard, valor: 185400, qtd: 1240, color: "hsl(212, 55%, 40%)" },
+  { nome: "Mensalidade", icon: CreditCard, valor: 185400, qtd: 1240, color: "hsl(var(--primary))" },
   { nome: "Adesão", icon: UserPlus, valor: 12600, qtd: 36, color: "hsl(142, 50%, 45%)" },
   { nome: "Sinistro", icon: Shield, valor: 8200, qtd: 12, color: "hsl(0, 55%, 50%)" },
   { nome: "Evento", icon: Calendar, valor: 4500, qtd: 9, color: "hsl(45, 70%, 50%)" },
@@ -37,13 +37,13 @@ export default function RecebimentosCategoriaTab() {
   return (
     <div className="p-6 lg:px-8 space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md"><PieChartIcon className="h-5 w-5 text-[hsl(210_55%_70%)]" /></div>
+        <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md"><PieChartIcon className="h-5 w-5 text-accent" /></div>
         <div><h1 className="text-xl font-bold text-foreground">Recebimentos por Categoria</h1><p className="text-sm text-muted-foreground">Distribuição de receitas por tipo de recebimento</p></div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {categorias.map(c => (
-          <Card key={c.nome} className="border-[hsl(210_30%_88%)]">
+          <Card key={c.nome} className="border-border">
             <CardContent className="p-4 text-center">
               <c.icon className="h-6 w-6 mx-auto mb-2" style={{ color: c.color }} />
               <p className="text-xs text-muted-foreground">{c.nome}</p>
@@ -54,7 +54,7 @@ export default function RecebimentosCategoriaTab() {
         ))}
       </div>
 
-      <Card className="border-[hsl(210_30%_88%)]">
+      <Card className="border-border">
         <CardContent className="p-4">
           <ResponsiveContainer width="100%" height={280}>
             <PieChart><Pie data={pieData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
@@ -64,25 +64,25 @@ export default function RecebimentosCategoriaTab() {
         </CardContent>
       </Card>
 
-      <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-4">
-        <div><Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Buscar</Label><div className="relative mt-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="pl-9 border-[hsl(210_30%_85%)]" placeholder="Descrição..." value={busca} onChange={e => setBusca(e.target.value)} /></div></div>
+      <Card className="border-border"><CardContent className="p-4">
+        <div><Label className="text-xs font-medium text-foreground">Buscar</Label><div className="relative mt-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="pl-9 border-border" placeholder="Descrição..." value={busca} onChange={e => setBusca(e.target.value)} /></div></div>
       </CardContent></Card>
 
-      <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
+      <Card className="border-border overflow-hidden">
+        
         <CardContent className="p-0">
-          <Table><TableHeader><TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Data</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Descrição</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Categoria</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Valor</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Status</TableHead>
+          <Table><TableHeader><TableRow className="bg-primary hover:bg-primary border-b-0">
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Data</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Descrição</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Categoria</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Valor</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
           </TableRow></TableHeader>
           <TableBody>{filtered.map((d, i) => (
-            <TableRow key={d.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-[hsl(210_30%_97%)]'} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}>
+            <TableRow key={d.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
               <TableCell className="text-sm font-mono">{d.data}</TableCell>
               <TableCell className="font-medium">{d.descricao}</TableCell>
-              <TableCell><Badge variant="outline" className="border-[hsl(210_35%_70%)] text-[hsl(212_35%_30%)] bg-[hsl(210_40%_95%)]">{d.categoria}</Badge></TableCell>
+              <TableCell><Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8">{d.categoria}</Badge></TableCell>
               <TableCell className="text-right font-semibold text-green-600">R$ {d.valor.toLocaleString()}</TableCell>
               <TableCell><Badge className={statusColor[d.status]}>{d.status}</Badge></TableCell>
             </TableRow>

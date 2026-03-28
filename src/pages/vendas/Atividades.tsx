@@ -41,9 +41,9 @@ const tipoIcons: Record<string, React.ElementType> = {
 };
 const tipos = ["Ligação", "Visita", "Email", "WhatsApp", "Reunião"];
 const statusColors: Record<string, string> = {
-  "Pendente": "bg-amber-500/15 text-amber-700 border-amber-300",
-  "Concluída": "bg-green-500/15 text-green-700 border-green-300",
-  "Atrasada": "bg-red-500/15 text-red-700 border-red-300",
+  "Pendente": "bg-warning/80/15 text-amber-700 border-amber-300",
+  "Concluída": "bg-success/80/15 text-green-700 border-green-300",
+  "Atrasada": "bg-destructive/80/15 text-red-700 border-red-300",
 };
 
 const day = 86400000;
@@ -101,9 +101,9 @@ const mockAgenda = [
 ];
 
 const prioridadeColors: Record<string, string> = {
-  urgente: "bg-red-500/15 text-red-700 border-red-300",
-  alta: "bg-amber-500/15 text-amber-700 border-amber-300",
-  media: "bg-blue-500/15 text-blue-700 border-blue-300",
+  urgente: "bg-destructive/80/15 text-red-700 border-red-300",
+  alta: "bg-warning/80/15 text-amber-700 border-amber-300",
+  media: "bg-primary/60/15 text-blue-700 border-blue-300",
 };
 
 const alertaColors: Record<string, string> = {
@@ -203,15 +203,15 @@ function AIAdvisorSection() {
           </CardHeader>
           <CardContent className="px-4 pb-4">
             <div className="grid grid-cols-2 gap-2">
-              <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-800/50">
+              <div className="p-2.5 rounded-lg bg-destructive/8 dark:bg-red-950/20 border border-red-200/50 dark:border-red-800/50">
                 <p className="text-lg font-bold text-red-700 dark:text-red-400">{mockAnalise.leadsParados}</p>
                 <p className="text-[10px] text-muted-foreground">Leads Parados</p>
               </div>
-              <div className="p-2.5 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200/50 dark:border-green-800/50">
+              <div className="p-2.5 rounded-lg bg-success/8 dark:bg-green-950/20 border border-green-200/50 dark:border-green-800/50">
                 <p className="text-lg font-bold text-green-700 dark:text-green-400">{mockAnalise.leadsQuentes}</p>
                 <p className="text-[10px] text-muted-foreground">Leads Quentes</p>
               </div>
-              <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/50">
+              <div className="p-2.5 rounded-lg bg-primary/6 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/50">
                 <p className="text-lg font-bold text-blue-700 dark:text-blue-400">{mockAnalise.taxaConversao}%</p>
                 <p className="text-[10px] text-muted-foreground">Taxa Conversão</p>
               </div>
@@ -227,7 +227,7 @@ function AIAdvisorSection() {
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-xs font-semibold flex items-center gap-1.5 text-red-700 dark:text-red-400">
               <Bell className="h-3.5 w-3.5" />ALERTAS INTELIGENTES
-              <Badge className="bg-red-500/15 text-red-700 border-red-300 text-[9px] ml-auto">{mockAlertas.length}</Badge>
+              <Badge className="bg-destructive/80/15 text-red-700 border-red-300 text-[9px] ml-auto">{mockAlertas.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4 space-y-1.5">
@@ -351,19 +351,19 @@ export default function Atividades() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-3 gap-3">
-        <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800">
+        <Card className="border-amber-200 bg-warning/8/50 dark:bg-amber-950/20 dark:border-amber-800">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center"><Clock className="h-5 w-5 text-amber-600" /></div>
             <div><p className="text-2xl font-bold">{pendentes}</p><p className="text-xs text-muted-foreground">Pendentes</p></div>
           </CardContent>
         </Card>
-        <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20 dark:border-green-800">
+        <Card className="border-green-200 bg-success/8/50 dark:bg-green-950/20 dark:border-green-800">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center"><CheckCircle className="h-5 w-5 text-green-600" /></div>
             <div><p className="text-2xl font-bold">{concluidasHoje}</p><p className="text-xs text-muted-foreground">Concluídas Hoje</p></div>
           </CardContent>
         </Card>
-        <Card className="border-red-200 bg-red-50/50 dark:bg-red-950/20 dark:border-red-800">
+        <Card className="border-red-200 bg-destructive/8/50 dark:bg-red-950/20 dark:border-red-800">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center"><AlertTriangle className="h-5 w-5 text-red-600" /></div>
             <div><p className="text-2xl font-bold">{atrasadas}</p><p className="text-xs text-muted-foreground">Atrasadas</p></div>

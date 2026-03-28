@@ -79,9 +79,9 @@ const mockComissoes: ComissaoRecord[] = [
 ];
 
 const statusConfig: Record<ComissaoStatus, { label: string; cls: string }> = {
-  pago: { label: "Pago", cls: "bg-green-500/15 text-green-700 border-green-300" },
-  pendente: { label: "Pendente", cls: "bg-amber-500/15 text-amber-700 border-amber-300" },
-  processando: { label: "Em Processamento", cls: "bg-blue-500/15 text-blue-700 border-blue-300" },
+  pago: { label: "Pago", cls: "bg-success/80/15 text-green-700 border-green-300" },
+  pendente: { label: "Pendente", cls: "bg-warning/80/15 text-amber-700 border-amber-300" },
+  processando: { label: "Em Processamento", cls: "bg-primary/60/15 text-blue-700 border-blue-300" },
 };
 
 const PAGE_SIZE = 10;
@@ -162,14 +162,14 @@ export default function MinhaConta() {
               Dados Bancários
             </CardTitle>
             {saved && (
-              <Badge variant="outline" className={cn("text-xs", verificado ? "bg-green-500/15 text-green-700 border-green-300" : "bg-amber-500/15 text-amber-700 border-amber-300")}>
+              <Badge variant="outline" className={cn("text-xs", verificado ? "bg-success/80/15 text-green-700 border-green-300" : "bg-warning/80/15 text-amber-700 border-amber-300")}>
                 {verificado ? <><CheckCircle className="h-3 w-3 mr-1" />Conta verificada</> : <><Clock className="h-3 w-3 mr-1" />Pendente de verificação</>}
               </Badge>
             )}
           </div>
         </CardHeader>
         <CardContent className="space-y-5">
-          <Alert className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800">
+          <Alert className="border-blue-200 bg-primary/6/50 dark:bg-blue-950/20 dark:border-blue-800">
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-xs text-blue-700 dark:text-blue-400">
               Seus dados bancários serão utilizados para recebimento de comissões. Certifique-se de que as informações estão corretas.

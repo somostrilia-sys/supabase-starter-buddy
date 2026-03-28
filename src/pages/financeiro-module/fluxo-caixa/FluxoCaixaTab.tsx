@@ -122,8 +122,8 @@ export default function FluxoCaixaTab() {
     <div className="p-6 lg:px-8 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md">
-            <Wallet className="h-5 w-5 text-[hsl(210_55%_70%)]" />
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
+            <Wallet className="h-5 w-5 text-accent" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">Fluxo de Caixa</h1>
@@ -134,11 +134,11 @@ export default function FluxoCaixaTab() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: "Total Entradas", value: fmtValor(totalEntradas), icon: TrendingUp,  color: "text-green-600", bg: "bg-green-50" },
-          { label: "Total Saídas",   value: fmtValor(totalSaidas),   icon: TrendingDown, color: "text-red-500",  bg: "bg-red-50" },
-          { label: "Saldo do Período", value: fmtValor(saldo),       icon: DollarSign,  color: saldo >= 0 ? "text-[hsl(212_55%_40%)]" : "text-red-600", bg: "bg-[hsl(210_40%_95%)]" },
+          { label: "Total Entradas", value: fmtValor(totalEntradas), icon: TrendingUp,  color: "text-green-600", bg: "bg-success/8" },
+          { label: "Total Saídas",   value: fmtValor(totalSaidas),   icon: TrendingDown, color: "text-red-500",  bg: "bg-destructive/8" },
+          { label: "Saldo do Período", value: fmtValor(saldo),       icon: DollarSign,  color: saldo >= 0 ? "text-primary" : "text-red-600", bg: "bg-primary/8" },
         ].map(k => (
-          <Card key={k.label} className="border-[hsl(210_30%_88%)]">
+          <Card key={k.label} className="border-border">
             <CardContent className="p-4 flex items-center gap-3">
               <div className={`w-10 h-10 rounded-lg ${k.bg} flex items-center justify-center`}>
                 <k.icon className={`h-5 w-5 ${k.color}`} />
@@ -154,7 +154,7 @@ export default function FluxoCaixaTab() {
 
       {/* Chart */}
       {chartData.length > 0 && (
-        <Card className="border-[hsl(210_30%_88%)]">
+        <Card className="border-border">
           <CardContent className="p-4">
             <p className="text-sm font-semibold text-foreground mb-3">Fluxo por dia — {periodos.find(p => p.value === periodo)?.label}</p>
             <ResponsiveContainer width="100%" height={280}>
@@ -166,7 +166,7 @@ export default function FluxoCaixaTab() {
                 <Legend />
                 <Bar dataKey="Entradas" fill="hsl(142, 50%, 45%)" radius={[3, 3, 0, 0]} barSize={14} />
                 <Bar dataKey="Saídas" fill="hsl(0, 55%, 55%)" radius={[3, 3, 0, 0]} barSize={14} />
-                <Line type="monotone" dataKey="Saldo" stroke="hsl(212, 55%, 40%)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="Saldo" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
               </ComposedChart>
             </ResponsiveContainer>
           </CardContent>
@@ -174,13 +174,13 @@ export default function FluxoCaixaTab() {
       )}
 
       {/* Filters */}
-      <Card className="border-[hsl(210_30%_88%)]">
+      <Card className="border-border">
         <CardContent className="p-4">
           <div className="grid sm:grid-cols-4 gap-3 items-end">
             <div>
-              <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Período</Label>
+              <Label className="text-xs font-medium text-foreground">Período</Label>
               <Select value={periodo} onValueChange={setPeriodo}>
-                <SelectTrigger className="mt-1 border-[hsl(210_30%_85%)]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="mt-1 border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {periodos.map(p => (
                     <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
@@ -189,9 +189,9 @@ export default function FluxoCaixaTab() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Tipo</Label>
+              <Label className="text-xs font-medium text-foreground">Tipo</Label>
               <Select value={filtroTipo} onValueChange={setFiltroTipo}>
-                <SelectTrigger className="mt-1 border-[hsl(210_30%_85%)]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="mt-1 border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="entrada">Entradas</SelectItem>
@@ -200,13 +200,13 @@ export default function FluxoCaixaTab() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Buscar</Label>
+              <Label className="text-xs font-medium text-foreground">Buscar</Label>
               <div className="relative mt-1">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input className="pl-9 border-[hsl(210_30%_85%)]" placeholder="Descrição..." value={busca} onChange={e => setBusca(e.target.value)} />
+                <Input className="pl-9 border-border" placeholder="Descrição..." value={busca} onChange={e => setBusca(e.target.value)} />
               </div>
             </div>
-            <Button variant="outline" size="sm" className="gap-1.5 border-[hsl(210_30%_85%)] w-fit">
+            <Button variant="outline" size="sm" className="gap-1.5 border-border w-fit">
               <Download className="h-4 w-4" />Exportar
             </Button>
           </div>
@@ -214,8 +214,8 @@ export default function FluxoCaixaTab() {
       </Card>
 
       {/* Table */}
-      <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
+      <Card className="border-border overflow-hidden">
+        
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-10">
@@ -224,12 +224,12 @@ export default function FluxoCaixaTab() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Data</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Descrição</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Categoria</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Tipo</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Valor</TableHead>
+                <TableRow className="bg-primary hover:bg-primary border-b-0">
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Data</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Descrição</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Categoria</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Tipo</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Valor</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -240,13 +240,13 @@ export default function FluxoCaixaTab() {
                     </TableCell>
                   </TableRow>
                 ) : filtered.map((l, i) => (
-                  <TableRow key={l.id + l.tipo} className={`${i % 2 === 0 ? "bg-card" : "bg-[hsl(210_30%_97%)]"} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}>
+                  <TableRow key={l.id + l.tipo} className={`${i % 2 === 0 ? "bg-card" : "bg-muted/30"} hover:bg-muted/40 transition-colors border-b border-border/60`}>
                     <TableCell className="text-sm font-mono">
                       {new Date(l.data + "T12:00:00").toLocaleDateString("pt-BR")}
                     </TableCell>
                     <TableCell className="font-medium text-sm">{l.descricao}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="border-[hsl(210_35%_70%)] text-[hsl(212_35%_30%)] bg-[hsl(210_40%_95%)]">{l.categoria}</Badge>
+                      <Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8">{l.categoria}</Badge>
                     </TableCell>
                     <TableCell>
                       <Badge className={l.tipo === "entrada" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
@@ -261,7 +261,7 @@ export default function FluxoCaixaTab() {
               </TableBody>
             </Table>
           )}
-          <div className="px-4 py-3 bg-[hsl(210_30%_97%)] border-t border-[hsl(210_30%_90%)]">
+          <div className="px-4 py-3 bg-muted/30 border-t border-border/60">
             <span className="text-xs text-muted-foreground">{filtered.length} lançamento(s)</span>
           </div>
         </CardContent>

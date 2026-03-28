@@ -34,12 +34,12 @@ export default function AssociadoTab() {
             <button
               key={a.id}
               onClick={() => setView(a.id)}
-              className="group relative overflow-hidden rounded-xl border border-[hsl(210_30%_85%)] bg-card text-left transition-all duration-200 hover:shadow-lg hover:shadow-[hsl(210_30%_80%)]/20 hover:-translate-y-0.5 hover:border-[hsl(210_35%_70%)] flex flex-col"
+              className="group relative overflow-hidden rounded-xl border border-border bg-card text-left transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 hover:border-primary/30 flex flex-col"
             >
-              <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
+              
               <div className="flex items-center gap-5 px-6 py-5 flex-1">
-                <div className="w-12 h-12 rounded-full bg-[hsl(212_35%_18%)] flex items-center justify-center shrink-0 shadow-md">
-                  <a.icon className="h-5 w-5 text-[hsl(210_55%_70%)]" />
+                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-md">
+                  <a.icon className="h-5 w-5 text-accent" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-[15px] text-foreground">{a.title}</h3>

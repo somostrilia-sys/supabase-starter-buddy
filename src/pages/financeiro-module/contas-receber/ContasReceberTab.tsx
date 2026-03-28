@@ -146,27 +146,27 @@ export default function ContasReceberTab() {
     <div className="p-6 lg:px-8 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md">
-            <TrendingUp className="h-5 w-5 text-[hsl(210_55%_70%)]" />
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
+            <TrendingUp className="h-5 w-5 text-accent" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">Contas a Receber</h1>
             <p className="text-sm text-muted-foreground">Receitas e recebimentos programados</p>
           </div>
         </div>
-        <Button size="sm" className="gap-1.5 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={() => setModalOpen(true)}>
+        <Button size="sm" className="gap-1.5 bg-primary hover:bg-primary/90 text-white" onClick={() => setModalOpen(true)}>
           <Plus className="h-4 w-4" />Nova Conta a Receber
         </Button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Total a Receber",   value: fmtValor(totalReceber),  icon: DollarSign,   color: "text-blue-600",   bg: "bg-blue-50" },
-          { label: "Recebido no Mês",   value: fmtValor(totalRecebido), icon: CheckCircle,  color: "text-green-600",  bg: "bg-green-50" },
-          { label: "Pendente",          value: fmtValor(totalPendente), icon: Clock,        color: "text-yellow-600", bg: "bg-yellow-50" },
-          { label: "Em Atraso",         value: fmtValor(totalAtrasado), icon: AlertTriangle,color: "text-red-600",    bg: "bg-red-50" },
+          { label: "Total a Receber",   value: fmtValor(totalReceber),  icon: DollarSign,   color: "text-blue-600",   bg: "bg-primary/6" },
+          { label: "Recebido no Mês",   value: fmtValor(totalRecebido), icon: CheckCircle,  color: "text-green-600",  bg: "bg-success/8" },
+          { label: "Pendente",          value: fmtValor(totalPendente), icon: Clock,        color: "text-yellow-600", bg: "bg-warning/8" },
+          { label: "Em Atraso",         value: fmtValor(totalAtrasado), icon: AlertTriangle,color: "text-red-600",    bg: "bg-destructive/8" },
         ].map(c => (
-          <Card key={c.label} className="border-[hsl(210_30%_88%)]">
+          <Card key={c.label} className="border-border">
             <CardContent className="p-4 flex items-center gap-3">
               <div className={`w-10 h-10 rounded-lg ${c.bg} flex items-center justify-center`}>
                 <c.icon className={`h-5 w-5 ${c.color}`} />
@@ -180,20 +180,20 @@ export default function ContasReceberTab() {
         ))}
       </div>
 
-      <Card className="border-[hsl(210_30%_88%)]">
+      <Card className="border-border">
         <CardContent className="p-4">
           <div className="grid sm:grid-cols-4 gap-3 items-end">
             <div>
-              <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Buscar</Label>
+              <Label className="text-xs font-medium text-foreground">Buscar</Label>
               <div className="relative mt-1">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input className="pl-9 border-[hsl(210_30%_85%)]" placeholder="Descrição ou cliente..." value={busca} onChange={e => setBusca(e.target.value)} />
+                <Input className="pl-9 border-border" placeholder="Descrição ou cliente..." value={busca} onChange={e => setBusca(e.target.value)} />
               </div>
             </div>
             <div>
-              <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Status</Label>
+              <Label className="text-xs font-medium text-foreground">Status</Label>
               <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-                <SelectTrigger className="mt-1 border-[hsl(210_30%_85%)]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="mt-1 border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="pendente">Pendente</SelectItem>
@@ -203,9 +203,9 @@ export default function ContasReceberTab() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Período</Label>
+              <Label className="text-xs font-medium text-foreground">Período</Label>
               <Select value={filtroPeriodo} onValueChange={setFiltroPeriodo}>
-                <SelectTrigger className="mt-1 border-[hsl(210_30%_85%)]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="mt-1 border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
                   {periodos.map(p => (
@@ -214,15 +214,15 @@ export default function ContasReceberTab() {
                 </SelectContent>
               </Select>
             </div>
-            <Button variant="outline" size="sm" className="gap-1.5 border-[hsl(210_30%_85%)] w-fit">
+            <Button variant="outline" size="sm" className="gap-1.5 border-border w-fit">
               <Download className="h-4 w-4" />Exportar
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
+      <Card className="border-border overflow-hidden">
+        
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-10">
@@ -231,14 +231,14 @@ export default function ContasReceberTab() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Descrição</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Cliente</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Categoria</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Vencimento</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Valor</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Status</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Ação</TableHead>
+                <TableRow className="bg-primary hover:bg-primary border-b-0">
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Descrição</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Cliente</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Categoria</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Vencimento</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Valor</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Ação</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -249,11 +249,11 @@ export default function ContasReceberTab() {
                     </TableCell>
                   </TableRow>
                 ) : filtered.map((c, i) => (
-                  <TableRow key={c.id} className={`${i % 2 === 0 ? "bg-card" : "bg-[hsl(210_30%_97%)]"} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}>
+                  <TableRow key={c.id} className={`${i % 2 === 0 ? "bg-card" : "bg-muted/30"} hover:bg-muted/40 transition-colors border-b border-border/60`}>
                     <TableCell className="font-medium text-sm">{c.descricao}</TableCell>
                     <TableCell className="text-sm">{c.cliente}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="border-[hsl(210_35%_70%)] text-[hsl(212_35%_30%)] bg-[hsl(210_40%_95%)]">{c.categoria}</Badge>
+                      <Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8">{c.categoria}</Badge>
                     </TableCell>
                     <TableCell className="text-sm font-mono">
                       {new Date(c.data_vencimento + "T12:00:00").toLocaleDateString("pt-BR")}
@@ -269,7 +269,7 @@ export default function ContasReceberTab() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-7 text-xs gap-1 text-green-700 border-green-300 hover:bg-green-50"
+                          className="h-7 text-xs gap-1 text-green-700 border-green-300 hover:bg-success/8"
                           disabled={marcandoId === c.id}
                           onClick={() => marcarRecebido.mutate(c.id)}
                         >
@@ -286,7 +286,7 @@ export default function ContasReceberTab() {
               </TableBody>
             </Table>
           )}
-          <div className="px-4 py-3 bg-[hsl(210_30%_97%)] border-t border-[hsl(210_30%_90%)]">
+          <div className="px-4 py-3 bg-muted/30 border-t border-border/60">
             <span className="text-xs text-muted-foreground">{filtered.length} conta(s)</span>
           </div>
         </CardContent>
@@ -333,7 +333,7 @@ export default function ContasReceberTab() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
             <Button
-              className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white"
+              className="bg-primary hover:bg-primary/90 text-white"
               disabled={salvando || !form.descricao || !form.cliente || !form.data_vencimento || !form.valor}
               onClick={() => inserirConta.mutate()}
             >

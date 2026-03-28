@@ -395,7 +395,7 @@ function SubstituicaoFornecedor() {
             </Select>
           </div>
         </div>
-        <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-sm text-amber-700">
+        <div className="p-3 bg-warning/80/10 border border-amber-500/20 rounded-lg text-sm text-amber-700">
           ⚠️ Esta ação migrará todos os produtos e contratos vinculados ao fornecedor selecionado.
         </div>
         <Button className="gap-2" onClick={executar}><ArrowRightLeft className="h-4 w-4" />Migrar Fornecedor</Button>
@@ -555,7 +555,7 @@ function OpcionaisVeiculoSection({ subView, setSubView }: { subView: number; set
       {/* Intervalo de Cota - REMOVED "Valor Mensal Base", only Faixa FIPE + cálculo dinâmico */}
       {subView === 2 && (
         <div className="space-y-3">
-          <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm text-blue-700">
+          <div className="p-3 bg-primary/60/10 border border-blue-500/20 rounded-lg text-sm text-blue-700">
             ℹ️ O valor da cota é calculado dinamicamente: produto base + taxa admin (faixa FIPE) + rateio (categoria/regional) + adicionais
           </div>
           <CrudTable title="Cotas por Faixa FIPE" columns={["Faixa FIPE", "Cota"]}
@@ -694,7 +694,7 @@ function CooperativaSection({ subView, setSubView }: { subView: number; setSubVi
       {/* AUDIT LOG - Read-only, no Add button */}
       {subView === 4 && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+          <div className="flex items-center gap-2 p-3 bg-warning/80/10 border border-amber-500/20 rounded-lg">
             <Shield className="h-4 w-4 text-amber-600" />
             <span className="text-sm text-amber-700">Log de auditoria inviolável — somente visualização (diretoria)</span>
           </div>

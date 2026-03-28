@@ -26,7 +26,7 @@ const statusConfig: Record<string, { dot: string; label?: string; pulse: boolean
   "em análise":         { dot: "bg-[hsl(38_85%_50%)]",   pulse: true },
   aberto:               { dot: "bg-[hsl(38_85%_50%)]",   pulse: true },
 
-  suspenso:             { dot: "bg-[hsl(210_70%_55%)]",  pulse: true },
+  suspenso:             { dot: "bg-accent",  pulse: true },
 
   inativo:              { dot: "bg-[hsl(40_5%_55%)]",    pulse: false },
   inativo_pendencia:    { dot: "bg-[hsl(40_5%_55%)]",    pulse: false },

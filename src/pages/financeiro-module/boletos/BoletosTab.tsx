@@ -218,8 +218,8 @@ export default function BoletosTab() {
     <div className="p-6 lg:px-8 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md">
-            <Receipt className="h-5 w-5 text-[hsl(210_55%_70%)]" />
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
+            <Receipt className="h-5 w-5 text-accent" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">Boletos / Mensalidades</h1>
@@ -228,7 +228,7 @@ export default function BoletosTab() {
         </div>
         <Button
           onClick={() => setModalAvulso(true)}
-          className="gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white"
+          className="gap-2 bg-primary hover:bg-primary/90 text-white"
         >
           <Plus className="h-4 w-4" /> Gerar Boleto Avulso
         </Button>
@@ -355,29 +355,29 @@ export default function BoletosTab() {
 
       {/* KPIs */}
       <div className="grid grid-cols-3 gap-3">
-        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-4">
+        <Card className="border-border"><CardContent className="p-4">
           <p className="text-xs text-muted-foreground">Em Aberto</p>
           <p className="text-lg font-bold text-yellow-600">R$ {totalPendente.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
         </CardContent></Card>
-        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-4">
+        <Card className="border-border"><CardContent className="p-4">
           <p className="text-xs text-muted-foreground">Pago</p>
           <p className="text-lg font-bold text-green-600">R$ {totalPago.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
         </CardContent></Card>
-        <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-4">
+        <Card className="border-border"><CardContent className="p-4">
           <p className="text-xs text-muted-foreground">Vencido</p>
           <p className="text-lg font-bold text-red-600">R$ {totalVencido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
         </CardContent></Card>
       </div>
 
-      <Card className="border-[hsl(210_30%_88%)]">
+      <Card className="border-border">
         <CardContent className="p-4">
           <div className="grid sm:grid-cols-3 gap-3 items-end">
             <div>
-              <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Buscar</Label>
+              <Label className="text-xs font-medium text-foreground">Buscar</Label>
               <div className="relative mt-1">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  className="pl-9 border-[hsl(210_30%_85%)]"
+                  className="pl-9 border-border"
                   placeholder="Associado ou CPF..."
                   value={busca}
                   onChange={e => setBusca(e.target.value)}
@@ -385,9 +385,9 @@ export default function BoletosTab() {
               </div>
             </div>
             <div>
-              <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Status</Label>
+              <Label className="text-xs font-medium text-foreground">Status</Label>
               <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-                <SelectTrigger className="mt-1 border-[hsl(210_30%_85%)]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="mt-1 border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="pendente">Pendente</SelectItem>
@@ -397,15 +397,15 @@ export default function BoletosTab() {
                 </SelectContent>
               </Select>
             </div>
-            <Button variant="outline" size="sm" className="gap-1.5 border-[hsl(210_30%_85%)]">
+            <Button variant="outline" size="sm" className="gap-1.5 border-border">
               <Download className="h-4 w-4" />Exportar
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
+      <Card className="border-border overflow-hidden">
+        
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-10">
@@ -414,14 +414,14 @@ export default function BoletosTab() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Associado</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">CPF</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Referência</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Vencimento</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Valor</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Status</TableHead>
-                  <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Ação</TableHead>
+                <TableRow className="bg-primary hover:bg-primary border-b-0">
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Associado</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">CPF</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Referência</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Vencimento</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Valor</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
+                  <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Ação</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -436,7 +436,7 @@ export default function BoletosTab() {
                   return (
                     <TableRow
                       key={b.id}
-                      className={`${i % 2 === 0 ? 'bg-card' : 'bg-[hsl(210_30%_97%)]'} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}
+                      className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}
                     >
                       <TableCell className="font-medium text-sm">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -467,7 +467,7 @@ export default function BoletosTab() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 text-xs gap-1 text-green-700 border-green-300 hover:bg-green-50"
+                            className="h-7 text-xs gap-1 text-green-700 border-green-300 hover:bg-success/8"
                             disabled={pagandoId === b.id}
                             onClick={() => marcarPago.mutate(b.id)}
                           >
@@ -485,7 +485,7 @@ export default function BoletosTab() {
               </TableBody>
             </Table>
           )}
-          <div className="px-4 py-3 bg-[hsl(210_30%_97%)] border-t border-[hsl(210_30%_90%)]">
+          <div className="px-4 py-3 bg-muted/30 border-t border-border/60">
             <span className="text-xs text-muted-foreground">{filtered.length} mensalidade(s)</span>
           </div>
         </CardContent>

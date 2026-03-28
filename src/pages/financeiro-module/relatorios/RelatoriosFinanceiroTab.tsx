@@ -23,21 +23,21 @@ export default function RelatoriosFinanceiroTab() {
   return (
     <div className="p-6 lg:px-8 space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md"><FileBarChart className="h-5 w-5 text-[hsl(210_55%_70%)]" /></div>
+        <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md"><FileBarChart className="h-5 w-5 text-accent" /></div>
         <div><h1 className="text-xl font-bold text-foreground">Relatórios Financeiros</h1><p className="text-sm text-muted-foreground">Geração e exportação de relatórios</p></div>
       </div>
 
-      <Card className="border-[hsl(210_30%_88%)]"><CardContent className="p-4"><div className="grid sm:grid-cols-2 gap-3 items-end">
-        <div><Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Período</Label><Select value={periodo} onValueChange={setPeriodo}><SelectTrigger className="mt-1 border-[hsl(210_30%_85%)]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="jul-2025">Julho 2025</SelectItem><SelectItem value="jun-2025">Junho 2025</SelectItem><SelectItem value="q2-2025">2º Trimestre 2025</SelectItem><SelectItem value="s1-2025">1º Semestre 2025</SelectItem></SelectContent></Select></div>
+      <Card className="border-border"><CardContent className="p-4"><div className="grid sm:grid-cols-2 gap-3 items-end">
+        <div><Label className="text-xs font-medium text-foreground">Período</Label><Select value={periodo} onValueChange={setPeriodo}><SelectTrigger className="mt-1 border-border"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="jul-2025">Julho 2025</SelectItem><SelectItem value="jun-2025">Junho 2025</SelectItem><SelectItem value="q2-2025">2º Trimestre 2025</SelectItem><SelectItem value="s1-2025">1º Semestre 2025</SelectItem></SelectContent></Select></div>
       </div></CardContent></Card>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {relatorios.map(r => (
-          <Card key={r.id} className="border-[hsl(210_30%_88%)] hover:border-[hsl(212_35%_50%)] transition-colors cursor-pointer group">
+          <Card key={r.id} className="border-border hover:border-primary/40 transition-colors cursor-pointer group">
             <CardContent className="p-5">
               <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-[hsl(210_40%_95%)] flex items-center justify-center group-hover:bg-[hsl(212_35%_18%)] transition-colors">
-                  <r.icon className="h-5 w-5 text-[hsl(212_35%_30%)] group-hover:text-[hsl(210_55%_70%)] transition-colors" />
+                <div className="w-10 h-10 rounded-lg bg-primary/8 flex items-center justify-center group-hover:bg-primary transition-colors">
+                  <r.icon className="h-5 w-5 text-foreground group-hover:text-accent transition-colors" />
                 </div>
                 <div>
                   <p className="font-semibold text-foreground">{r.titulo}</p>
@@ -45,10 +45,10 @@ export default function RelatoriosFinanceiroTab() {
                 </div>
               </div>
               <div className="flex gap-1.5">
-                <Button variant="outline" size="sm" className="gap-1 text-xs border-[hsl(210_30%_85%)] flex-1"><Monitor className="h-3 w-3" />Tela</Button>
-                <Button variant="outline" size="sm" className="gap-1 text-xs border-[hsl(210_30%_85%)] flex-1"><Printer className="h-3 w-3" />Imprimir</Button>
-                <Button variant="outline" size="sm" className="gap-1 text-xs border-[hsl(210_30%_85%)] flex-1"><FileSpreadsheet className="h-3 w-3" />Excel</Button>
-                <Button variant="outline" size="sm" className="gap-1 text-xs border-[hsl(210_30%_85%)] flex-1"><Download className="h-3 w-3" />PDF</Button>
+                <Button variant="outline" size="sm" className="gap-1 text-xs border-border flex-1"><Monitor className="h-3 w-3" />Tela</Button>
+                <Button variant="outline" size="sm" className="gap-1 text-xs border-border flex-1"><Printer className="h-3 w-3" />Imprimir</Button>
+                <Button variant="outline" size="sm" className="gap-1 text-xs border-border flex-1"><FileSpreadsheet className="h-3 w-3" />Excel</Button>
+                <Button variant="outline" size="sm" className="gap-1 text-xs border-border flex-1"><Download className="h-3 w-3" />PDF</Button>
               </div>
             </CardContent>
           </Card>

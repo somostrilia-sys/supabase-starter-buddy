@@ -33,11 +33,11 @@ interface ReportType {
 }
 
 const reportTypes: ReportType[] = [
-  { id: "agentes", titulo: "Agentes", desc: "Relatório de agentes ativos e inativos por regional", icon: Users, contagem: 45, cor: "bg-blue-500" },
+  { id: "agentes", titulo: "Agentes", desc: "Relatório de agentes ativos e inativos por regional", icon: Users, contagem: 45, cor: "bg-primary/60" },
   { id: "colaboradores", titulo: "Colaboradores", desc: "Listagem de colaboradores com cargos e departamentos", icon: UserCog, contagem: 98, cor: "bg-emerald-500" },
-  { id: "unidades", titulo: "Unidades", desc: "Relatório de unidades operacionais e filiais", icon: Building, contagem: 41, cor: "bg-amber-500" },
-  { id: "uso-agentes", titulo: "Uso de Agentes", desc: "Métricas de utilização e produtividade dos agentes", icon: Users, contagem: 320, cor: "bg-purple-500" },
-  { id: "permissoes", titulo: "Permissões", desc: "Mapa de permissões por grupo e perfil de acesso", icon: Shield, contagem: 12, cor: "bg-red-500" },
+  { id: "unidades", titulo: "Unidades", desc: "Relatório de unidades operacionais e filiais", icon: Building, contagem: 41, cor: "bg-warning/80" },
+  { id: "uso-agentes", titulo: "Uso de Agentes", desc: "Métricas de utilização e produtividade dos agentes", icon: Users, contagem: 320, cor: "bg-primary/60" },
+  { id: "permissoes", titulo: "Permissões", desc: "Mapa de permissões por grupo e perfil de acesso", icon: Shield, contagem: 12, cor: "bg-destructive/80" },
 ];
 
 // Mock report data per type

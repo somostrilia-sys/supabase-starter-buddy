@@ -122,7 +122,7 @@ export default function Contatos() {
 
       {contatosSemNome > 0 && (
         <div
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-200/80 bg-amber-50/70 text-amber-800 text-xs cursor-pointer hover:bg-amber-100/80 transition-colors"
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-200/80 bg-warning/8/70 text-amber-800 text-xs cursor-pointer hover:bg-amber-100/80 transition-colors"
           onClick={() => { setTab("sem-nome"); setPage(0); }}
         >
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />

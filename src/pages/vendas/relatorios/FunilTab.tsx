@@ -41,7 +41,7 @@ export default function FunilTab() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {conversoes.map(c => (
-          <Card key={c.de} className={c.de === gargalo.de ? "border-red-300 bg-red-50/50 dark:bg-red-950/20" : ""}>
+          <Card key={c.de} className={c.de === gargalo.de ? "border-red-300 bg-destructive/8/50 dark:bg-red-950/20" : ""}>
             <CardContent className="p-3">
               <p className="text-xs text-muted-foreground mb-1">{c.de}</p>
               <p className={`text-xl font-bold ${c.de === gargalo.de ? "text-red-600" : ""}`}>{c.taxa.toFixed(1)}%</p>
@@ -50,7 +50,7 @@ export default function FunilTab() {
         ))}
       </div>
 
-      <Card className="border-red-200 bg-red-50/30 dark:bg-red-950/10">
+      <Card className="border-red-200 bg-destructive/8/30 dark:bg-red-950/10">
         <CardContent className="p-4 flex items-center gap-3">
           <AlertTriangle className="h-5 w-5 text-red-600 shrink-0" />
           <div>

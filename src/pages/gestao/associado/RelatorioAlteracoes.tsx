@@ -75,7 +75,7 @@ export default function RelatorioAlteracoes() {
     if (!campo) return "";
     if (campo.toLowerCase().includes("insert") || campo.toLowerCase().includes("adicion")) return "bg-emerald-500/10 text-emerald-600";
     if (campo.toLowerCase().includes("delet") || campo.toLowerCase().includes("remov")) return "bg-destructive/10 text-destructive";
-    return "bg-blue-500/10 text-blue-600";
+    return "bg-primary/60/10 text-blue-600";
   }
 
   return (

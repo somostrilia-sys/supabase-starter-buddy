@@ -40,9 +40,9 @@ function stallLabel(days: number) {
 
 function StalledBadge({ days }: { days: number }) {
   const label = stallLabel(days);
-  if (days < 1) return <Badge className="bg-green-500/15 text-green-700 border-green-300 text-[9px] px-1.5 py-0">{label}</Badge>;
-  if (days <= 3) return <Badge className="bg-amber-500/15 text-amber-700 border-amber-300 text-[9px] px-1.5 py-0">{label}</Badge>;
-  return <Badge className="bg-red-500/15 text-red-700 border-red-300 text-[9px] px-1.5 py-0">{label}</Badge>;
+  if (days < 1) return <Badge className="bg-success/80/15 text-green-700 border-green-300 text-[9px] px-1.5 py-0">{label}</Badge>;
+  if (days <= 3) return <Badge className="bg-warning/80/15 text-amber-700 border-amber-300 text-[9px] px-1.5 py-0">{label}</Badge>;
+  return <Badge className="bg-destructive/80/15 text-red-700 border-red-300 text-[9px] px-1.5 py-0">{label}</Badge>;
 }
 
 type SortKey = "id" | "lead_nome" | "veiculo_modelo" | "plano" | "stage" | "consultor" | "cooperativa" | "regional" | "created_at" | "updated_at";
@@ -550,7 +550,7 @@ export default function Pipeline() {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Nova Negociação</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="p-3 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-xs">
+            <div className="p-3 rounded-lg border border-amber-200 bg-warning/8 text-amber-800 text-xs">
               <strong>Dados mínimos para cotação:</strong> Preencha Nome e Telefone para criar a negociação.
             </div>
             <div className="space-y-1.5">

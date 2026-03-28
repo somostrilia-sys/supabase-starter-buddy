@@ -26,10 +26,10 @@ export default function DashboardTab() {
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Negociações Criadas", value: 112, change: "+12%", icon: FileText, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30" },
-          { label: "Cotações Criadas", value: 87, change: "+8%", icon: Calculator, color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-950/30" },
+          { label: "Negociações Criadas", value: 112, change: "+12%", icon: FileText, color: "text-blue-600", bg: "bg-primary/6 dark:bg-blue-950/30" },
+          { label: "Cotações Criadas", value: 87, change: "+8%", icon: Calculator, color: "text-amber-600", bg: "bg-warning/8 dark:bg-amber-950/30" },
           { label: "Neg. Arquivadas", value: 23, change: "-5%", icon: Archive, color: "text-muted-foreground", bg: "bg-muted/50" },
-          { label: "Vendas Concretizadas", value: 45, change: "+18%", icon: TrendingUp, color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30" },
+          { label: "Vendas Concretizadas", value: 45, change: "+18%", icon: TrendingUp, color: "text-green-600", bg: "bg-success/8 dark:bg-green-950/30" },
         ].map(c => (
           <Card key={c.label}>
             <CardContent className="p-4">

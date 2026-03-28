@@ -98,7 +98,7 @@ export default function RegionaisCooperativasTab() {
             <Plus className="h-4 w-4" /> Nova Cooperativa
           </Button>
         </div>
-        <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-800">
+        <Alert variant="destructive" className="bg-warning/8 border-amber-200 text-amber-800">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription>Alteração de CNPJ requer abertura de chamado ao suporte.</AlertDescription>
         </Alert>

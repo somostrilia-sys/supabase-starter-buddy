@@ -29,10 +29,10 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 const kpis = [
-  { label: "Total Vistorias", value: vistorias.length, icon: ClipboardCheck, color: "text-[hsl(212_55%_40%)]", bg: "bg-[hsl(210_40%_95%)]" },
-  { label: "Aprovadas", value: vistorias.filter(v => v.status === "aprovada").length, icon: CheckCircle, color: "text-green-600", bg: "bg-green-50" },
-  { label: "Reprovadas", value: vistorias.filter(v => v.status === "reprovada").length, icon: XCircle, color: "text-red-500", bg: "bg-red-50" },
-  { label: "Pendentes", value: vistorias.filter(v => v.status === "pendente").length, icon: Clock, color: "text-yellow-600", bg: "bg-yellow-50" },
+  { label: "Total Vistorias", value: vistorias.length, icon: ClipboardCheck, color: "text-primary", bg: "bg-primary/8" },
+  { label: "Aprovadas", value: vistorias.filter(v => v.status === "aprovada").length, icon: CheckCircle, color: "text-green-600", bg: "bg-success/8" },
+  { label: "Reprovadas", value: vistorias.filter(v => v.status === "reprovada").length, icon: XCircle, color: "text-red-500", bg: "bg-destructive/8" },
+  { label: "Pendentes", value: vistorias.filter(v => v.status === "pendente").length, icon: Clock, color: "text-yellow-600", bg: "bg-warning/8" },
 ];
 
 export default function VistoriasVendas() {
@@ -46,8 +46,8 @@ export default function VistoriasVendas() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md">
-            <ClipboardCheck className="h-5 w-5 text-[hsl(210_55%_70%)]" />
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
+            <ClipboardCheck className="h-5 w-5 text-accent" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">Vistoria Veicular</h1>
@@ -56,7 +56,7 @@ export default function VistoriasVendas() {
         </div>
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-1.5 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white">
+            <Button size="sm" className="gap-1.5 bg-primary hover:bg-primary/90 text-white">
               <Send className="h-4 w-4" />Enviar Link de Vistoria
             </Button>
           </DialogTrigger>
@@ -87,7 +87,7 @@ export default function VistoriasVendas() {
                   <Button variant="outline" className="flex-1 gap-1.5 text-xs"><Smartphone className="h-4 w-4 text-purple-600" />SMS</Button>
                 </div>
               </div>
-              <Button className="w-full bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={() => setModalOpen(false)}>Enviar Link</Button>
+              <Button className="w-full bg-primary hover:bg-primary/90 text-white" onClick={() => setModalOpen(false)}>Enviar Link</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -96,7 +96,7 @@ export default function VistoriasVendas() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map(k => (
-          <Card key={k.label} className="border-[hsl(210_30%_88%)]">
+          <Card key={k.label} className="border-border">
             <CardContent className="p-4 flex items-center gap-3">
               <div className={`w-10 h-10 rounded-lg ${k.bg} flex items-center justify-center`}>
                 <k.icon className={`h-5 w-5 ${k.color}`} />
@@ -111,37 +111,37 @@ export default function VistoriasVendas() {
       </div>
 
       {/* Search */}
-      <Card className="border-[hsl(210_30%_88%)]">
+      <Card className="border-border">
         <CardContent className="p-4">
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9 border-[hsl(210_30%_85%)]" placeholder="Buscar por associado ou placa..." value={busca} onChange={e => setBusca(e.target.value)} />
+            <Input className="pl-9 border-border" placeholder="Buscar por associado ou placa..." value={busca} onChange={e => setBusca(e.target.value)} />
           </div>
         </CardContent>
       </Card>
 
       {/* Table */}
-      <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
+      <Card className="border-border overflow-hidden">
+        
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Associado</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Veículo</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Placa</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Status</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Data</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Consultor</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Ações</TableHead>
+              <TableRow className="bg-primary hover:bg-primary border-b-0">
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Associado</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Veículo</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Placa</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Data</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Consultor</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((v, i) => (
-                <TableRow key={v.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-[hsl(210_30%_97%)]'} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}>
+                <TableRow key={v.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
                   <TableCell className="font-medium">{v.associado}</TableCell>
                   <TableCell className="text-sm">{v.veiculo}</TableCell>
-                  <TableCell><span className="font-mono text-sm bg-[hsl(210_30%_95%)] px-2 py-0.5 rounded">{v.placa}</span></TableCell>
+                  <TableCell><span className="font-mono text-sm bg-muted/50 px-2 py-0.5 rounded">{v.placa}</span></TableCell>
                   <TableCell><Badge className={statusConfig[v.status].className}>{statusConfig[v.status].label}</Badge></TableCell>
                   <TableCell className="text-sm font-mono">{v.data}</TableCell>
                   <TableCell className="text-sm">{v.consultor}</TableCell>
@@ -152,7 +152,7 @@ export default function VistoriasVendas() {
               ))}
             </TableBody>
           </Table>
-          <div className="px-4 py-3 bg-[hsl(210_30%_97%)] border-t border-[hsl(210_30%_90%)]">
+          <div className="px-4 py-3 bg-muted/30 border-t border-border/60">
             <span className="text-xs text-muted-foreground">{filtered.length} vistoria(s)</span>
           </div>
         </CardContent>

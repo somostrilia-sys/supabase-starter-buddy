@@ -18,10 +18,10 @@ const consultores = [
 ];
 
 const kpis = [
-  { label: "Total Consultores", value: consultores.length, icon: Users, color: "text-[hsl(212_55%_40%)]", bg: "bg-[hsl(210_40%_95%)]" },
-  { label: "Total Visitas", value: consultores.reduce((s, c) => s + c.visitas, 0).toLocaleString(), icon: MousePointerClick, color: "text-blue-600", bg: "bg-blue-50" },
-  { label: "Total Leads", value: consultores.reduce((s, c) => s + c.leads, 0), icon: TrendingUp, color: "text-green-600", bg: "bg-green-50" },
-  { label: "Total Conversões", value: consultores.reduce((s, c) => s + c.conversoes, 0), icon: Globe, color: "text-purple-600", bg: "bg-purple-50" },
+  { label: "Total Consultores", value: consultores.length, icon: Users, color: "text-primary", bg: "bg-primary/8" },
+  { label: "Total Visitas", value: consultores.reduce((s, c) => s + c.visitas, 0).toLocaleString(), icon: MousePointerClick, color: "text-blue-600", bg: "bg-primary/6" },
+  { label: "Total Leads", value: consultores.reduce((s, c) => s + c.leads, 0), icon: TrendingUp, color: "text-green-600", bg: "bg-success/8" },
+  { label: "Total Conversões", value: consultores.reduce((s, c) => s + c.conversoes, 0), icon: Globe, color: "text-purple-600", bg: "bg-primary/6" },
 ];
 
 export default function LandingPages() {
@@ -34,8 +34,8 @@ export default function LandingPages() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md">
-            <Globe className="h-5 w-5 text-[hsl(210_55%_70%)]" />
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
+            <Globe className="h-5 w-5 text-accent" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">Landing Pages por Consultor</h1>
@@ -47,7 +47,7 @@ export default function LandingPages() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map(k => (
-          <Card key={k.label} className="border-[hsl(210_30%_88%)]">
+          <Card key={k.label} className="border-border">
             <CardContent className="p-4 flex items-center gap-3">
               <div className={`w-10 h-10 rounded-lg ${k.bg} flex items-center justify-center`}>
                 <k.icon className={`h-5 w-5 ${k.color}`} />
@@ -62,38 +62,38 @@ export default function LandingPages() {
       </div>
 
       {/* Search */}
-      <Card className="border-[hsl(210_30%_88%)]">
+      <Card className="border-border">
         <CardContent className="p-4">
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9 border-[hsl(210_30%_85%)]" placeholder="Buscar consultor..." value={busca} onChange={e => setBusca(e.target.value)} />
+            <Input className="pl-9 border-border" placeholder="Buscar consultor..." value={busca} onChange={e => setBusca(e.target.value)} />
           </div>
         </CardContent>
       </Card>
 
       {/* Table */}
-      <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
+      <Card className="border-border overflow-hidden">
+        
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Consultor</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">URL</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Visitas</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Leads</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Conversões</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Taxa</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Status</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Ações</TableHead>
+              <TableRow className="bg-primary hover:bg-primary border-b-0">
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Consultor</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">URL</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Visitas</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Leads</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Conversões</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Taxa</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((c, i) => (
-                <TableRow key={c.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-[hsl(210_30%_97%)]'} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}>
+                <TableRow key={c.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
                   <TableCell className="font-medium">{c.nome}</TableCell>
                   <TableCell>
-                    <span className="font-mono text-xs bg-[hsl(210_30%_95%)] px-2 py-1 rounded">{baseUrl}{c.slug}</span>
+                    <span className="font-mono text-xs bg-muted/50 px-2 py-1 rounded">{baseUrl}{c.slug}</span>
                   </TableCell>
                   <TableCell className="text-right font-semibold">{c.visitas.toLocaleString()}</TableCell>
                   <TableCell className="text-right font-semibold">{c.leads}</TableCell>
@@ -115,7 +115,7 @@ export default function LandingPages() {
               ))}
             </TableBody>
           </Table>
-          <div className="px-4 py-3 bg-[hsl(210_30%_97%)] border-t border-[hsl(210_30%_90%)]">
+          <div className="px-4 py-3 bg-muted/30 border-t border-border/60">
             <span className="text-xs text-muted-foreground">{filtered.length} landing page(s)</span>
           </div>
         </CardContent>

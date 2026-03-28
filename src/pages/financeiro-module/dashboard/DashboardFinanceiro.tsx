@@ -13,8 +13,8 @@ const receitasMensais = [
 
 const despesasCategoria = [
   { name: "Sinistros", value: 45000, color: "hsl(0, 70%, 50%)" },
-  { name: "Operacional", value: 32000, color: "hsl(212, 35%, 25%)" },
-  { name: "Pessoal", value: 28000, color: "hsl(210, 55%, 70%)" },
+  { name: "Operacional", value: 32000, color: "hsl(var(--primary))" },
+  { name: "Pessoal", value: 28000, color: "hsl(var(--muted-foreground) / 0.4)" },
   { name: "Fornecedores", value: 18000, color: "hsl(45, 80%, 50%)" },
   { name: "Impostos", value: 15000, color: "hsl(150, 50%, 40%)" },
 ];
@@ -47,8 +47,8 @@ function SectionDivider({ title }: { title: string }) {
 const kpis = [
   { title: "Receita do Mês", value: "R$ 240.000", icon: TrendingUp, trend: +12, color: "text-green-600" },
   { title: "Despesas do Mês", value: "R$ 158.000", icon: TrendingDown, trend: -3, color: "text-red-500" },
-  { title: "Saldo Atual", value: "R$ 82.000", icon: Wallet, trend: +18, color: "text-[hsl(212_35%_25%)]" },
-  { title: "Boletos Recebidos", value: "1.247", icon: Receipt, trend: +5, color: "text-[hsl(210_55%_50%)]" },
+  { title: "Saldo Atual", value: "R$ 82.000", icon: Wallet, trend: +18, color: "text-foreground" },
+  { title: "Boletos Recebidos", value: "1.247", icon: Receipt, trend: +5, color: "text-accent" },
   { title: "Inadimplência", value: "3,2%", icon: ArrowDownRight, trend: -15, color: "text-green-600" },
   { title: "Contas a Vencer", value: "R$ 45.200", icon: DollarSign, trend: 0, color: "text-amber-600" },
 ];
@@ -57,8 +57,8 @@ export default function DashboardFinanceiro() {
   return (
     <div className="p-6 lg:px-8 space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md">
-          <DollarSign className="h-5 w-5 text-[hsl(210_55%_70%)]" />
+        <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
+          <DollarSign className="h-5 w-5 text-accent" />
         </div>
         <div>
           <h1 className="text-xl font-bold text-foreground">Dashboard Financeiro</h1>
@@ -69,14 +69,14 @@ export default function DashboardFinanceiro() {
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {kpis.map((kpi) => (
-          <Card key={kpi.title} className="border-[hsl(210_30%_88%)] overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
+          <Card key={kpi.title} className="border-border overflow-hidden">
+            
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{kpi.title}</span>
                 <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
               </div>
-              <p className="text-xl font-bold text-[hsl(212_35%_20%)]">{kpi.value}</p>
+              <p className="text-xl font-bold text-primary">{kpi.value}</p>
               {kpi.trend !== 0 && (
                 <div className="flex items-center gap-1 mt-1">
                   {kpi.trend > 0 ? <ArrowUpRight className="h-3 w-3 text-green-600" /> : <ArrowDownRight className="h-3 w-3 text-red-500" />}
@@ -92,30 +92,30 @@ export default function DashboardFinanceiro() {
 
       <div className="grid md:grid-cols-2 gap-5">
         {/* Receitas vs Despesas */}
-        <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-          <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] to-[hsl(210_40%_40%)]" />
-          <CardHeader className="pb-2 border-b border-[hsl(210_30%_90%)]">
-            <CardTitle className="text-sm text-[hsl(212_35%_20%)]">Receitas vs Despesas (mensal)</CardTitle>
+        <Card className="border-border overflow-hidden">
+          
+          <CardHeader className="pb-2 border-b border-border/60">
+            <CardTitle className="text-sm text-primary">Receitas vs Despesas (mensal)</CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={receitasMensais}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(210 30% 90%)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
                 <Tooltip formatter={(v: number) => `R$ ${v.toLocaleString()}`} />
-                <Bar dataKey="receitas" fill="hsl(212 35% 25%)" radius={[4,4,0,0]} name="Receitas" />
-                <Bar dataKey="despesas" fill="hsl(210 55% 70%)" radius={[4,4,0,0]} name="Despesas" />
+                <Bar dataKey="receitas" fill="hsl(var(--primary))" radius={[4,4,0,0]} name="Receitas" />
+                <Bar dataKey="despesas" fill="hsl(var(--muted-foreground) / 0.4)" radius={[4,4,0,0]} name="Despesas" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
         {/* Despesas por Categoria */}
-        <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-          <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] to-[hsl(210_40%_40%)]" />
-          <CardHeader className="pb-2 border-b border-[hsl(210_30%_90%)]">
-            <CardTitle className="text-sm text-[hsl(212_35%_20%)]">Despesas por Categoria</CardTitle>
+        <Card className="border-border overflow-hidden">
+          
+          <CardHeader className="pb-2 border-b border-border/60">
+            <CardTitle className="text-sm text-primary">Despesas por Categoria</CardTitle>
           </CardHeader>
           <CardContent className="pt-4 flex items-center justify-center">
             <ResponsiveContainer width="100%" height={240}>
@@ -142,19 +142,19 @@ export default function DashboardFinanceiro() {
 
       <div className="grid md:grid-cols-2 gap-5">
         {/* Fluxo de Caixa */}
-        <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-          <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] to-[hsl(210_40%_40%)]" />
-          <CardHeader className="pb-2 border-b border-[hsl(210_30%_90%)]">
-            <CardTitle className="text-sm text-[hsl(212_35%_20%)]">Fluxo de Caixa Diário</CardTitle>
+        <Card className="border-border overflow-hidden">
+          
+          <CardHeader className="pb-2 border-b border-border/60">
+            <CardTitle className="text-sm text-primary">Fluxo de Caixa Diário</CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={fluxoCaixaDiario}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(210 30% 90%)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="dia" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
                 <Tooltip formatter={(v: number) => `R$ ${v.toLocaleString()}`} />
-                <Area type="monotone" dataKey="entrada" stroke="hsl(212 35% 25%)" fill="hsl(212 35% 25% / 0.2)" name="Entradas" />
+                <Area type="monotone" dataKey="entrada" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.15)" name="Entradas" />
                 <Area type="monotone" dataKey="saida" stroke="hsl(0 70% 50%)" fill="hsl(0 70% 50% / 0.1)" name="Saídas" />
               </AreaChart>
             </ResponsiveContainer>
@@ -162,19 +162,19 @@ export default function DashboardFinanceiro() {
         </Card>
 
         {/* Inadimplência */}
-        <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-          <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] to-[hsl(210_40%_40%)]" />
-          <CardHeader className="pb-2 border-b border-[hsl(210_30%_90%)]">
-            <CardTitle className="text-sm text-[hsl(212_35%_20%)]">Taxa de Inadimplência (%)</CardTitle>
+        <Card className="border-border overflow-hidden">
+          
+          <CardHeader className="pb-2 border-b border-border/60">
+            <CardTitle className="text-sm text-primary">Taxa de Inadimplência (%)</CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={inadimplencia}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(210 30% 90%)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 11 }} domain={[0, 8]} />
                 <Tooltip formatter={(v: number) => `${v}%`} />
-                <Line type="monotone" dataKey="taxa" stroke="hsl(212 35% 25%)" strokeWidth={2} dot={{ fill: "hsl(212 35% 25%)" }} />
+                <Line type="monotone" dataKey="taxa" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: "hsl(var(--primary))" }} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>

@@ -57,9 +57,9 @@ export default function SPCSerasa({ onBack }: SPCSerasaProps) {
   const totalDivida = negativados.reduce((s, r) => s + r.valor, 0);
 
   const statCards = [
-    { label: "Total Enviados", value: stats.negativados + mockRegistros.filter(r => r.situacao === "enviado").length, icon: AlertTriangle, color: "text-red-500", bg: "bg-red-500/10" },
-    { label: "Pendentes de Envio", value: stats.pendentes, icon: Clock, color: "text-yellow-500", bg: "bg-yellow-500/10" },
-    { label: "Negativados Ativos", value: stats.confirmados, icon: CheckCircle, color: "text-green-500", bg: "bg-green-500/10" },
+    { label: "Total Enviados", value: stats.negativados + mockRegistros.filter(r => r.situacao === "enviado").length, icon: AlertTriangle, color: "text-red-500", bg: "bg-destructive/80/10" },
+    { label: "Pendentes de Envio", value: stats.pendentes, icon: Clock, color: "text-yellow-500", bg: "bg-warning/80/10" },
+    { label: "Negativados Ativos", value: stats.confirmados, icon: CheckCircle, color: "text-green-500", bg: "bg-success/80/10" },
     { label: "Baixas / Cancelados", value: stats.cancelados, icon: XCircle, color: "text-muted-foreground", bg: "bg-muted" },
   ];
 
@@ -102,7 +102,7 @@ export default function SPCSerasa({ onBack }: SPCSerasaProps) {
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft className="h-5 w-5" /></Button>
-        <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-destructive/80/10 flex items-center justify-center">
           <ShieldAlert className="h-5 w-5 text-red-500" />
         </div>
         <div>

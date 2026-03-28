@@ -209,7 +209,7 @@ export default function DashboardTab() {
       {/* ═══ INADIMPLÊNCIA ═══ */}
       <SectionDivider title="Inadimplência & Revistoria" />
       <Card
-        className="shadow-none border-red-200 bg-red-50/40 cursor-pointer hover:bg-red-50/70 transition-colors"
+        className="shadow-none border-red-200 bg-destructive/8/40 cursor-pointer hover:bg-destructive/8/70 transition-colors"
         onClick={() => setModalOpen(true)}
       >
         <CardContent className="p-4 flex items-center justify-between">

@@ -16,7 +16,7 @@ import {
 const statusMap: Record<string, { label: string; class: string }> = {
   ativo: { label: "Ativo", class: "bg-emerald-500/15 text-emerald-400 border-0" },
   cancelado: { label: "Cancelado", class: "bg-destructive/15 text-destructive border-0" },
-  vistoria: { label: "Em Vistoria", class: "bg-amber-500/15 text-amber-400 border-0" },
+  vistoria: { label: "Em Vistoria", class: "bg-warning/80/15 text-amber-400 border-0" },
 };
 const tipoIcon: Record<string, any> = { "Automóvel": Car, "Moto": Bike, "Caminhão": Truck };
 

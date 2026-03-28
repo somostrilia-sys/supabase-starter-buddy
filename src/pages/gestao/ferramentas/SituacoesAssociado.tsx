@@ -98,7 +98,7 @@ export default function SituacoesAssociado({ onBack }: { onBack: () => void }) {
           <TableHeader>
             <TableRow className="bg-[#1A3A5C]">
               {["Código", "Descrição", "Módulo", "Participa Fechamento", "Participa Rateio", "Situação", "Ações"].map(h => (
-                <TableHead key={h} className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase">{h}</TableHead>
+                <TableHead key={h} className="text-primary-foreground/90 font-semibold text-xs uppercase">{h}</TableHead>
               ))}
             </TableRow>
           </TableHeader>

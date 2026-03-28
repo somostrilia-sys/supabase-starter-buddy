@@ -81,7 +81,7 @@ export default function ConfigComissoes() {
         <p className="text-sm text-muted-foreground">Defina as regras de split de pagamento e comissões por consultor</p>
       </div>
 
-      <Alert className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800">
+      <Alert className="border-blue-200 bg-primary/6/50 dark:bg-blue-950/20 dark:border-blue-800">
         <Info className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-xs text-blue-700 dark:text-blue-400">
           Quando um pagamento de adesão é confirmado via gateway, o sistema executa automaticamente o split: parte vai para a conta da associação e parte vai para a conta bancária do consultor.

@@ -453,7 +453,7 @@ export default function ConsultarAgregado() {
               {mockVistorias.map((v, i) => (
                 <div key={v.id} className="flex gap-3">
                   <div className="flex flex-col items-center">
-                    <div className={`w-3 h-3 rounded-full ${v.resultado === "Aprovada" ? "bg-emerald-500" : v.resultado === "Reprovada" ? "bg-red-500" : "bg-amber-500"}`} />
+                    <div className={`w-3 h-3 rounded-full ${v.resultado === "Aprovada" ? "bg-emerald-500" : v.resultado === "Reprovada" ? "bg-destructive/80" : "bg-warning/80"}`} />
                     {i < mockVistorias.length - 1 && <div className="w-px h-full bg-border" />}
                   </div>
                   <Card className="flex-1 mb-0">

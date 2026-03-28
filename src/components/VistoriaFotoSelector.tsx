@@ -61,7 +61,7 @@ export default function VistoriaFotoSelector({ selected: controlledSelected, onC
   return (
     <fieldset className="space-y-3">
       <div className="flex items-center justify-between">
-        <legend className="text-sm font-bold text-[hsl(212_35%_18%)] border-b pb-1 flex items-center gap-2">
+        <legend className="text-sm font-bold text-primary border-b pb-1 flex items-center gap-2">
           <Camera className="h-4 w-4" />
           FOTOS OBRIGATÓRIAS DA VISTORIA
         </legend>
@@ -73,7 +73,7 @@ export default function VistoriaFotoSelector({ selected: controlledSelected, onC
           <button
             type="button"
             onClick={toggleAll}
-            className="text-xs text-[hsl(212_55%_40%)] hover:underline font-medium"
+            className="text-xs text-primary hover:underline font-medium"
           >
             {selected.length === partes.length ? "Desmarcar todas" : "Selecionar todas"}
           </button>
@@ -90,7 +90,7 @@ export default function VistoriaFotoSelector({ selected: controlledSelected, onC
               onClick={() => toggle(parte.id)}
               className={`relative group rounded-none overflow-hidden border-2 transition-all cursor-pointer ${
                 isSelected
-                  ? "border-[hsl(212_35%_18%)] shadow-md"
+                  ? "border-primary shadow-md"
                   : "border-border opacity-60 hover:opacity-90"
               }`}
             >
@@ -110,7 +110,7 @@ export default function VistoriaFotoSelector({ selected: controlledSelected, onC
                 <div className="absolute top-2 left-2">
                   <Checkbox
                     checked={isSelected}
-                    className="h-5 w-5 border-2 border-white bg-white/80 data-[state=checked]:bg-[hsl(212_35%_18%)] data-[state=checked]:border-[hsl(212_35%_18%)]"
+                    className="h-5 w-5 border-2 border-white bg-white/80 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                     tabIndex={-1}
                   />
                 </div>
@@ -126,7 +126,7 @@ export default function VistoriaFotoSelector({ selected: controlledSelected, onC
               {/* Label */}
               <div className={`px-2 py-1.5 text-center text-xs font-semibold transition-colors ${
                 isSelected
-                  ? "bg-[hsl(212_35%_18%)] text-white"
+                  ? "bg-primary text-white"
                   : "bg-muted text-muted-foreground"
               }`}>
                 {parte.label}

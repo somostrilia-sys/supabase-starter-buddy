@@ -54,9 +54,9 @@ const tipoIconMap: Record<string, React.ElementType> = {
 const tipoColorMap: Record<string, string> = {
   solicitacao: "bg-[#1A3A5C] text-white",
   envio: "bg-emerald-500 text-white",
-  analise: "bg-blue-500 text-white",
-  resultado: "bg-red-500 text-white",
-  reenvio: "bg-amber-500 text-white",
+  analise: "bg-primary/60 text-white",
+  resultado: "bg-destructive/80 text-white",
+  reenvio: "bg-warning/80 text-white",
 };
 
 interface Props { deal: PipelineDeal; }
@@ -226,7 +226,7 @@ export default function VistoriaTab({ deal }: Props) {
       </Card>
 
       {/* Template de Vistoria por Categoria */}
-      <Card className="rounded-none border-2 border-[hsl(210_30%_88%)]">
+      <Card className="rounded-none border-2 border-border">
         <CardContent className="p-5 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <p className="text-sm font-bold">Template de Vistoria</p>
@@ -268,14 +268,14 @@ export default function VistoriaTab({ deal }: Props) {
       </Card>
 
       {/* Seleção de fotos */}
-      <Card className="rounded-none border-2 border-[hsl(210_30%_88%)]">
+      <Card className="rounded-none border-2 border-border">
         <CardContent className="p-5">
           <VistoriaFotoSelector selected={selectedFotos} onChange={setSelectedFotos} />
         </CardContent>
       </Card>
 
       {/* Fluxo Web info */}
-      <Card className="rounded-none bg-blue-50/50 border-blue-200">
+      <Card className="rounded-none bg-primary/6/50 border-blue-200">
         <CardContent className="p-4 flex items-start gap-3">
           <Globe className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
           <div>

@@ -60,7 +60,7 @@ const distribuicaoCooperativa = [
 ];
 
 const PIE_COLORS = [
-  "hsl(212, 55%, 40%)",
+  "hsl(var(--primary))",
   "hsl(142, 50%, 40%)",
   "hsl(38, 90%, 50%)",
   "hsl(0, 65%, 50%)",
@@ -68,10 +68,10 @@ const PIE_COLORS = [
 ];
 
 const FUNNEL_COLORS = [
-  "hsl(212, 55%, 55%)",
-  "hsl(212, 55%, 45%)",
-  "hsl(212, 55%, 38%)",
-  "hsl(212, 55%, 30%)",
+  "hsl(var(--primary) / 0.7)",
+  "hsl(var(--primary) / 0.85)",
+  "hsl(var(--primary) / 0.9)",
+  "hsl(var(--primary) / 1)",
   "hsl(142, 50%, 40%)",
 ];
 
@@ -132,10 +132,10 @@ export default function DashboardVendas() {
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         {[
-          { label: "Total Leads", value: totalLeads.toString(), icon: Users, color: "text-[hsl(212,55%,40%)]", bg: "bg-[hsl(212,55%,95%)]" },
+          { label: "Total Leads", value: totalLeads.toString(), icon: Users, color: "text-primary", bg: "bg-primary/6" },
           { label: "Propostas Enviadas", value: propostas.toString(), icon: FileText, color: "text-[hsl(38,90%,45%)]", bg: "bg-[hsl(38,90%,95%)]" },
           { label: "Contratos Fechados", value: contratos.toString(), icon: Handshake, color: "text-[hsl(142,50%,35%)]", bg: "bg-[hsl(142,50%,95%)]" },
-          { label: "Faturamento Total", value: `R$ ${faturamento.toLocaleString("pt-BR")}`, icon: DollarSign, color: "text-[hsl(212,35%,25%)]", bg: "bg-[hsl(210,30%,94%)]" },
+          { label: "Faturamento Total", value: `R$ ${faturamento.toLocaleString("pt-BR")}`, icon: DollarSign, color: "text-foreground", bg: "bg-muted" },
           { label: "Taxa de Conversão", value: `${conversao}%`, icon: TrendingUp, color: "text-[hsl(142,50%,35%)]", bg: "bg-[hsl(142,50%,95%)]" },
           { label: "Comissões do Mês", value: "R$ 7.950", icon: ArrowRightLeft, color: "text-[hsl(152,50%,35%)]", bg: "bg-[hsl(152,50%,95%)]" },
         ].map(c => (
@@ -185,7 +185,7 @@ export default function DashboardVendas() {
                 <YAxis yAxisId="right" orientation="right" tickFormatter={formatCurrency} tick={{ fontSize: 10 }} />
                 <Tooltip formatter={(v: number, name: string) => [name === "faturamento" ? `R$ ${v.toLocaleString("pt-BR")}` : v, name === "faturamento" ? "Faturamento" : "Vendas"]} />
                 <Legend />
-                <Line yAxisId="left" type="monotone" dataKey="vendas" stroke="hsl(212, 55%, 40%)" strokeWidth={2} dot={{ r: 3 }} name="Vendas" />
+                <Line yAxisId="left" type="monotone" dataKey="vendas" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} name="Vendas" />
                 <Line yAxisId="right" type="monotone" dataKey="faturamento" stroke="hsl(142, 50%, 40%)" strokeWidth={2} dot={{ r: 3 }} name="Faturamento" />
               </LineChart>
             </ResponsiveContainer>
@@ -223,7 +223,7 @@ export default function DashboardVendas() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-7 w-7">
-                            <AvatarFallback className="text-[10px] bg-[hsl(212,55%,92%)] text-[hsl(212,55%,35%)]">{c.avatar}</AvatarFallback>
+                            <AvatarFallback className="text-[10px] bg-primary/8 text-primary">{c.avatar}</AvatarFallback>
                           </Avatar>
                           <span className="font-medium text-sm">{c.nome}</span>
                           {i === 0 && <Badge className="bg-[hsl(38,90%,50%)] text-white text-[9px] px-1.5 py-0">🏆</Badge>}

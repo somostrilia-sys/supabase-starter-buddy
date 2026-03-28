@@ -973,7 +973,7 @@ export default function AlterarAssociado() {
                       variant="outline"
                       disabled={savingRevistoria || editForm.revistoria_status === "pendente"}
                       onClick={() => handleRevistoria("pendente")}
-                      className="gap-1.5 text-amber-700 border-amber-300 hover:bg-amber-50"
+                      className="gap-1.5 text-amber-700 border-amber-300 hover:bg-warning/8"
                     >
                       ⏳ Marcar Pendente
                     </Button>

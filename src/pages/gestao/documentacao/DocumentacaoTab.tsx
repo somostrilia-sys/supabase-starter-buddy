@@ -99,20 +99,20 @@ export default function DocumentacaoTab() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-[hsl(212_35%_18%)]">Documentação</h2>
+        <h2 className="text-xl font-bold text-primary">Documentação</h2>
         <p className="text-sm text-muted-foreground">Emissão, gestão e relatório de termos do sistema</p>
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-1 border-b border-[hsl(210_30%_88%)]">
+      <div className="flex gap-1 border-b border-border">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setSubTab(t.id)}
             className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium transition-colors border-b-2 -mb-px ${
               subTab === t.id
-                ? "border-[hsl(212_55%_40%)] text-[hsl(212_35%_18%)]"
-                : "border-transparent text-muted-foreground hover:text-[hsl(212_35%_30%)]"
+                ? "border-primary/50 text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             <t.icon className="h-4 w-4" />
@@ -185,9 +185,9 @@ function EmitirTermoTab() {
   return (
     <div className="space-y-5">
       {/* Busca */}
-      <Card className="border-[hsl(210_30%_88%)] shadow-sm">
+      <Card className="border-border shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-[hsl(212_35%_18%)]">Localizar Associado / Veículo</CardTitle>
+          <CardTitle className="text-base text-primary">Localizar Associado / Veículo</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-3 items-end flex-wrap">
@@ -208,17 +208,17 @@ function EmitirTermoTab() {
               </Label>
               <Input placeholder="Digite para pesquisar..." value={busca} onChange={e => setBusca(e.target.value)} onKeyDown={e => e.key === "Enter" && pesquisar()} />
             </div>
-            <Button onClick={pesquisar} className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white gap-2">
+            <Button onClick={pesquisar} className="bg-primary hover:bg-primary/90 text-white gap-2">
               <Search className="h-4 w-4" />Pesquisar
             </Button>
           </div>
 
           {/* Resultados */}
           {resultados.length > 0 && (
-            <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+            <div className="border rounded-lg border-border overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-[hsl(210_40%_96%)]">
+                  <TableRow className="bg-muted">
                     <TableHead className="text-xs">Associado</TableHead>
                     <TableHead className="text-xs">CPF</TableHead>
                     <TableHead className="text-xs">Veículo</TableHead>
@@ -228,13 +228,13 @@ function EmitirTermoTab() {
                 </TableHeader>
                 <TableBody>
                   {resultados.map((r, i) => (
-                    <TableRow key={i} className={selecionado === r ? "bg-[hsl(210_40%_94%)]" : ""}>
+                    <TableRow key={i} className={selecionado === r ? "bg-muted/40" : ""}>
                       <TableCell className="text-sm font-medium">{r.nome}</TableCell>
                       <TableCell className="text-sm">{r.cpf}</TableCell>
                       <TableCell className="text-sm">{r.veiculo}</TableCell>
                       <TableCell className="text-sm font-mono">{r.placa}</TableCell>
                       <TableCell>
-                        <Button size="sm" variant={selecionado === r ? "default" : "outline"} className={`h-7 text-xs ${selecionado === r ? "bg-[hsl(212_55%_40%)]" : "border-[hsl(210_30%_85%)]"}`} onClick={() => { setSelecionado(r); setTermoSelecionado(null); }}>
+                        <Button size="sm" variant={selecionado === r ? "default" : "outline"} className={`h-7 text-xs ${selecionado === r ? "bg-primary" : "border-border"}`} onClick={() => { setSelecionado(r); setTermoSelecionado(null); }}>
                           {selecionado === r ? <><CheckCircle2 className="h-3 w-3 mr-1" />Selecionado</> : "Selecionar"}
                         </Button>
                       </TableCell>
@@ -249,9 +249,9 @@ function EmitirTermoTab() {
 
       {/* Termos disponíveis */}
       {selecionado && (
-        <Card className="border-[hsl(210_30%_88%)] shadow-sm">
+        <Card className="border-border shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base text-[hsl(212_35%_18%)]">Termos Disponíveis para {selecionado.nome}</CardTitle>
+            <CardTitle className="text-base text-primary">Termos Disponíveis para {selecionado.nome}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid sm:grid-cols-3 gap-3">
@@ -261,13 +261,13 @@ function EmitirTermoTab() {
                   onClick={() => setTermoSelecionado(t.id)}
                   className={`p-4 border rounded-lg text-left transition-all ${
                     termoSelecionado === t.id
-                      ? "border-[hsl(212_55%_40%)] bg-[hsl(210_40%_96%)] shadow-sm"
-                      : "border-[hsl(210_30%_88%)] hover:border-[hsl(210_30%_75%)]"
+                      ? "border-primary/50 bg-muted shadow-sm"
+                      : "border-border hover:border-primary/30"
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <FileText className="h-4 w-4 text-[hsl(212_55%_40%)]" />
-                    <span className="text-sm font-medium text-[hsl(212_35%_18%)]">{t.nome}</span>
+                    <FileText className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium text-primary">{t.nome}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">Clique para selecionar</p>
                 </button>
@@ -276,7 +276,7 @@ function EmitirTermoTab() {
 
             {termoSelecionado && (
               <div className="mt-4 flex gap-2">
-                <Button onClick={gerarDocumento} className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white gap-2">
+                <Button onClick={gerarDocumento} className="bg-primary hover:bg-primary/90 text-white gap-2">
                   <Eye className="h-4 w-4" />Gerar e Visualizar Termo
                 </Button>
               </div>
@@ -288,16 +288,16 @@ function EmitirTermoTab() {
       {/* Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="text-[hsl(212_35%_18%)]">Termo Gerado — Preview</DialogTitle></DialogHeader>
-          <div className="border rounded-lg p-6 bg-white font-mono text-sm whitespace-pre-wrap leading-relaxed border-[hsl(210_30%_88%)]">
+          <DialogHeader><DialogTitle className="text-primary">Termo Gerado — Preview</DialogTitle></DialogHeader>
+          <div className="border rounded-lg p-6 bg-white font-mono text-sm whitespace-pre-wrap leading-relaxed border-border">
             {getPreviewContent()}
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowPreview(false)} className="border-[hsl(210_30%_85%)]">Fechar</Button>
-            <Button variant="outline" disabled={loading === "pdf"} onClick={() => handleAction("pdf", () => toast.success("PDF baixado com sucesso"))} className="gap-2 border-[hsl(210_30%_85%)]">
+            <Button variant="outline" onClick={() => setShowPreview(false)} className="border-border">Fechar</Button>
+            <Button variant="outline" disabled={loading === "pdf"} onClick={() => handleAction("pdf", () => toast.success("PDF baixado com sucesso"))} className="gap-2 border-border">
               {loading === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Baixar PDF
             </Button>
-            <Button disabled={loading === "print"} onClick={() => handleAction("print", () => { window.print(); toast.success("Enviado para impressão"); })} className="gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white">
+            <Button disabled={loading === "print"} onClick={() => handleAction("print", () => { window.print(); toast.success("Enviado para impressão"); })} className="gap-2 bg-primary hover:bg-primary/90 text-white">
               {loading === "print" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}Imprimir
             </Button>
           </DialogFooter>
@@ -336,10 +336,10 @@ function AlterarTermoTab() {
         </div>
       </div>
 
-      <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+      <div className="border rounded-lg border-border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[hsl(210_40%_96%)]">
+            <TableRow className="bg-muted">
               <TableHead className="text-xs">Modelo</TableHead>
               <TableHead className="text-xs">Tipo</TableHead>
               <TableHead className="text-xs">Categoria</TableHead>
@@ -353,17 +353,17 @@ function AlterarTermoTab() {
             {filtered.map(m => (
               <TableRow key={m.id}>
                 <TableCell className="text-sm font-medium">{m.nome}</TableCell>
-                <TableCell><Badge variant="outline" className="border-[hsl(210_35%_70%)] text-[hsl(212_35%_30%)] bg-[hsl(210_40%_95%)] text-xs">{m.tipo}</Badge></TableCell>
+                <TableCell><Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8 text-xs">{m.tipo}</Badge></TableCell>
                 <TableCell className="text-sm capitalize">{m.categoria}</TableCell>
                 <TableCell className="text-sm">v{m.versao}</TableCell>
                 <TableCell className="text-sm">{new Date(m.atualizadoEm).toLocaleDateString("pt-BR")}</TableCell>
                 <TableCell className="text-sm">{m.atualizadoPor}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-[hsl(210_30%_85%)]" onClick={() => abrirEditor(m)}>
+                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-border" onClick={() => abrirEditor(m)}>
                       <Edit className="h-3 w-3" />Editar
                     </Button>
-                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-[hsl(210_30%_85%)]" onClick={() => setShowHistorico(m)}>
+                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-border" onClick={() => setShowHistorico(m)}>
                       <History className="h-3 w-3" />
                     </Button>
                   </div>
@@ -377,24 +377,24 @@ function AlterarTermoTab() {
       {/* Editor Dialog */}
       <Dialog open={!!editando} onOpenChange={() => setEditando(null)}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="text-[hsl(212_35%_18%)]">Editar Modelo — {editando?.nome}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-primary">Editar Modelo — {editando?.nome}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
               <Label className="text-xs">Conteúdo do Modelo</Label>
               <Textarea className="min-h-[280px] font-mono text-sm" value={editConteudo} onChange={e => setEditConteudo(e.target.value)} />
             </div>
-            <div className="p-3 bg-[hsl(210_40%_96%)] rounded-lg">
-              <p className="text-xs font-semibold mb-1 text-[hsl(212_35%_18%)]">Marcadores automáticos:</p>
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-xs font-semibold mb-1 text-primary">Marcadores automáticos:</p>
               <div className="flex flex-wrap gap-1.5">
                 {editando?.marcadores.map(m => (
-                  <Badge key={m} variant="outline" className="text-xs border-[hsl(210_35%_70%)] bg-white">{m}</Badge>
+                  <Badge key={m} variant="outline" className="text-xs border-primary/30 bg-white">{m}</Badge>
                 ))}
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditando(null)} className="border-[hsl(210_30%_85%)]">Cancelar</Button>
-            <Button className="gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={() => { toast.success(`Nova versão v${(editando?.versao || 0) + 1} salva com sucesso`); setEditando(null); }}>
+            <Button variant="outline" onClick={() => setEditando(null)} className="border-border">Cancelar</Button>
+            <Button className="gap-2 bg-primary hover:bg-primary/90 text-white" onClick={() => { toast.success(`Nova versão v${(editando?.versao || 0) + 1} salva com sucesso`); setEditando(null); }}>
               <Save className="h-4 w-4" />Salvar Nova Versão
             </Button>
           </DialogFooter>
@@ -404,12 +404,12 @@ function AlterarTermoTab() {
       {/* Histórico Dialog */}
       <Dialog open={!!showHistorico} onOpenChange={() => setShowHistorico(null)}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle className="text-[hsl(212_35%_18%)]">Histórico de Versões — {showHistorico?.nome}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-primary">Histórico de Versões — {showHistorico?.nome}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             {showHistorico?.historico.map(h => (
-              <div key={h.versao} className="flex items-start gap-3 p-3 border rounded-lg border-[hsl(210_30%_88%)]">
-                <div className="w-8 h-8 rounded-full bg-[hsl(210_40%_96%)] flex items-center justify-center shrink-0">
-                  <span className="text-xs font-bold text-[hsl(212_55%_40%)]">v{h.versao}</span>
+              <div key={h.versao} className="flex items-start gap-3 p-3 border rounded-lg border-border">
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <span className="text-xs font-bold text-primary">v{h.versao}</span>
                 </div>
                 <div>
                   <p className="text-sm font-medium">{h.resumo}</p>
@@ -448,9 +448,9 @@ function CriarTermoTab() {
 
   return (
     <div className="max-w-2xl space-y-5">
-      <Card className="border-[hsl(210_30%_88%)] shadow-sm">
+      <Card className="border-border shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-[hsl(212_35%_18%)]">Novo Modelo de Termo</CardTitle>
+          <CardTitle className="text-base text-primary">Novo Modelo de Termo</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -488,10 +488,10 @@ function CriarTermoTab() {
           {/* Upload */}
           <div>
             <Label className="text-xs">Upload do Arquivo Modelo (.doc / .docx)</Label>
-            <div className="mt-1 border-2 border-dashed border-[hsl(210_30%_85%)] rounded-lg p-6 text-center hover:border-[hsl(212_55%_40%)] transition-colors cursor-pointer" onClick={handleUpload}>
+            <div className="mt-1 border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer" onClick={handleUpload}>
               {loading ? (
                 <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="h-8 w-8 animate-spin text-[hsl(212_55%_40%)]" />
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   <p className="text-sm text-muted-foreground">Processando arquivo...</p>
                 </div>
               ) : uploaded ? (
@@ -512,22 +512,22 @@ function CriarTermoTab() {
 
           {/* Marcadores detectados */}
           {uploaded && (
-            <div className="p-4 bg-[hsl(210_40%_96%)] rounded-lg border border-[hsl(210_30%_88%)]">
+            <div className="p-4 bg-muted rounded-lg border border-border">
               <div className="flex items-center gap-2 mb-2">
-                <AlertCircle className="h-4 w-4 text-[hsl(212_55%_40%)]" />
-                <p className="text-xs font-semibold text-[hsl(212_35%_18%)]">Marcadores identificados no modelo:</p>
+                <AlertCircle className="h-4 w-4 text-primary" />
+                <p className="text-xs font-semibold text-primary">Marcadores identificados no modelo:</p>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {marcadoresDetectados.map(m => (
-                  <Badge key={m} variant="outline" className="text-xs border-[hsl(210_35%_70%)] bg-white">{m}</Badge>
+                  <Badge key={m} variant="outline" className="text-xs border-primary/30 bg-white">{m}</Badge>
                 ))}
               </div>
             </div>
           )}
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" className="border-[hsl(210_30%_85%)]" onClick={() => { setNome(""); setTipo(""); setCategoria(""); setUploaded(false); }}>Limpar</Button>
-            <Button className="gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={handleSalvar}>
+            <Button variant="outline" className="border-border" onClick={() => { setNome(""); setTipo(""); setCategoria(""); setUploaded(false); }}>Limpar</Button>
+            <Button className="gap-2 bg-primary hover:bg-primary/90 text-white" onClick={handleSalvar}>
               <Save className="h-4 w-4" />Salvar Modelo
             </Button>
           </div>
@@ -594,16 +594,16 @@ function RelatorioTermosTab() {
             <Input className="pl-9" placeholder="Nome, CPF ou placa..." value={busca} onChange={e => setBusca(e.target.value)} />
           </div>
         </div>
-        <Button variant="outline" className="gap-2 border-[hsl(210_30%_85%)]" disabled={loading === "excel"} onClick={() => handleAction("excel", () => toast.success("Relatório exportado para Excel"))}>
+        <Button variant="outline" className="gap-2 border-border" disabled={loading === "excel"} onClick={() => handleAction("excel", () => toast.success("Relatório exportado para Excel"))}>
           {loading === "excel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exportar Excel
         </Button>
       </div>
 
       {/* Tabela */}
-      <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+      <div className="border rounded-lg border-border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[hsl(210_40%_96%)]">
+            <TableRow className="bg-muted">
               <TableHead className="text-xs">Associado</TableHead>
               <TableHead className="text-xs">CPF</TableHead>
               <TableHead className="text-xs">Tipo de Termo</TableHead>
@@ -618,7 +618,7 @@ function RelatorioTermosTab() {
                 <TableCell className="text-sm font-medium">{t.associado}</TableCell>
                 <TableCell className="text-sm font-mono">{t.cpf}</TableCell>
                 <TableCell>
-                  <Badge variant="outline" className="text-xs border-[hsl(210_35%_70%)] text-[hsl(212_35%_30%)] bg-[hsl(210_40%_95%)]">{t.tipo}</Badge>
+                  <Badge variant="outline" className="text-xs border-primary/30 text-foreground bg-primary/8">{t.tipo}</Badge>
                 </TableCell>
                 <TableCell className="text-sm">{new Date(t.dataEmissao).toLocaleDateString("pt-BR")}</TableCell>
                 <TableCell className="text-sm">{t.placa} — {t.modelo}</TableCell>

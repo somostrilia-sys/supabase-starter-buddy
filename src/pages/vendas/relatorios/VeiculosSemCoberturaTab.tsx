@@ -21,7 +21,7 @@ export default function VeiculosSemCoberturaTab() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-3">
-        <Card className="border-red-200 bg-red-50/50 dark:bg-red-950/20">
+        <Card className="border-red-200 bg-destructive/8/50 dark:bg-red-950/20">
           <CardContent className="p-4 text-center">
             <AlertTriangle className="h-6 w-6 text-red-600 mx-auto mb-1" />
             <p className="text-2xl font-bold">{veiculos.length}</p>

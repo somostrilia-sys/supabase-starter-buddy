@@ -103,20 +103,20 @@ export default function EventoTab() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-[hsl(212_35%_18%)]">Eventos</h2>
+        <h2 className="text-xl font-bold text-primary">Eventos</h2>
         <p className="text-sm text-muted-foreground">Cadastro, rateio, distribuição e monitoramento de eventos</p>
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-1 border-b border-[hsl(210_30%_88%)] overflow-x-auto">
+      <div className="flex gap-1 border-b border-border overflow-x-auto">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setSubTab(t.id)}
             className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
               subTab === t.id
-                ? "border-[hsl(212_55%_40%)] text-[hsl(212_35%_18%)]"
-                : "border-transparent text-muted-foreground hover:text-[hsl(212_35%_30%)]"
+                ? "border-primary/50 text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             <t.icon className="h-4 w-4" />
@@ -170,9 +170,9 @@ function CadastroEventoTab() {
             <button
               onClick={() => setStep(i)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                i === step ? "bg-[hsl(212_35%_18%)] text-white" :
-                i < step ? "bg-[hsl(210_40%_90%)] text-[hsl(212_35%_30%)]" :
-                "bg-[hsl(210_40%_96%)] text-muted-foreground"
+                i === step ? "bg-primary text-white" :
+                i < step ? "bg-secondary text-foreground" :
+                "bg-muted text-muted-foreground"
               }`}
             >
               <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border border-current/20">
@@ -185,9 +185,9 @@ function CadastroEventoTab() {
         ))}
       </div>
 
-      <Card className="border-[hsl(210_30%_88%)] shadow-sm">
+      <Card className="border-border shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-[hsl(212_35%_18%)]">{steps[step]}</CardTitle>
+          <CardTitle className="text-base text-primary">{steps[step]}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Step 0 - Informações Gerais */}
@@ -198,12 +198,12 @@ function CadastroEventoTab() {
                   <Label className="text-xs">Buscar por Placa / Chassi</Label>
                   <Input placeholder="Ex: BRA2E19 ou 9BGKS48U..." value={placaBusca} onChange={e => setPlacaBusca(e.target.value.toUpperCase())} />
                 </div>
-                <Button onClick={buscarPlaca} disabled={loading} className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white gap-2">
+                <Button onClick={buscarPlaca} disabled={loading} className="bg-primary hover:bg-primary/90 text-white gap-2">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}Buscar
                 </Button>
               </div>
               {dadosCarregados && (
-                <div className="grid grid-cols-2 gap-3 p-4 bg-[hsl(210_40%_96%)] rounded-lg border border-[hsl(210_30%_88%)]">
+                <div className="grid grid-cols-2 gap-3 p-4 bg-muted rounded-lg border border-border">
                   <div><Label className="text-xs text-muted-foreground">Associado</Label><p className="text-sm font-medium">Carlos Eduardo Silva</p></div>
                   <div><Label className="text-xs text-muted-foreground">CPF</Label><p className="text-sm">123.456.789-00</p></div>
                   <div><Label className="text-xs text-muted-foreground">Veículo</Label><p className="text-sm">Chevrolet Onix Plus 2023</p></div>
@@ -276,8 +276,8 @@ function CadastroEventoTab() {
           {/* Step 4 - Veículo Terceiro */}
           {step === 4 && (
             <div className="space-y-4">
-              <Card className="border-[hsl(210_30%_88%)]">
-                <CardHeader className="pb-2"><CardTitle className="text-sm text-[hsl(212_35%_18%)]">Terceiro #1 — Dados Pessoais</CardTitle></CardHeader>
+              <Card className="border-border">
+                <CardHeader className="pb-2"><CardTitle className="text-sm text-primary">Terceiro #1 — Dados Pessoais</CardTitle></CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-3">
                     <div><Label className="text-xs">Nome</Label><Input defaultValue="Marcos Pereira da Silva" /></div>
@@ -296,8 +296,8 @@ function CadastroEventoTab() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="border-[hsl(210_30%_88%)]">
-                <CardHeader className="pb-2"><CardTitle className="text-sm text-[hsl(212_35%_18%)]">Terceiro #1 — Dados do Veículo</CardTitle></CardHeader>
+              <Card className="border-border">
+                <CardHeader className="pb-2"><CardTitle className="text-sm text-primary">Terceiro #1 — Dados do Veículo</CardTitle></CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-3">
                     <div><Label className="text-xs">Placa</Label><Input defaultValue="XYZ9A88" /></div>
@@ -309,7 +309,7 @@ function CadastroEventoTab() {
                   </div>
                 </CardContent>
               </Card>
-              <Button variant="outline" className="gap-2 border-[hsl(210_30%_85%)]" onClick={() => toast.info("Formulário de terceiro adicional aberto")}>
+              <Button variant="outline" className="gap-2 border-border" onClick={() => toast.info("Formulário de terceiro adicional aberto")}>
                 <Plus className="h-4 w-4" />Adicionar outro terceiro
               </Button>
             </div>
@@ -377,7 +377,7 @@ function CadastroEventoTab() {
             <div className="space-y-4">
               <div>
                 <Label className="text-xs">Upload de Documentos</Label>
-                <div className="mt-1 border-2 border-dashed border-[hsl(210_30%_85%)] rounded-lg p-6 text-center hover:border-[hsl(212_55%_40%)] transition-colors cursor-pointer" onClick={() => toast.info("Selecione os documentos para upload")}>
+                <div className="mt-1 border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer" onClick={() => toast.info("Selecione os documentos para upload")}>
                   <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">Clique ou arraste arquivos aqui</p>
                   <p className="text-xs text-muted-foreground">PDF, JPG, PNG — máx. 10MB</p>
@@ -386,14 +386,14 @@ function CadastroEventoTab() {
               <div className="space-y-2">
                 <Label className="text-xs">Documentos Anexados</Label>
                 {["Boletim_Ocorrencia.pdf", "Fotos_Veiculo.zip", "CNH_Condutor.jpg"].map((doc, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 border rounded border-[hsl(210_30%_88%)] bg-[hsl(210_40%_96%)]">
-                    <div className="flex items-center gap-2"><FileText className="h-4 w-4 text-[hsl(212_55%_40%)]" /><span className="text-sm">{doc}</span></div>
+                  <div key={i} className="flex items-center justify-between p-2 border rounded border-border bg-muted">
+                    <div className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /><span className="text-sm">{doc}</span></div>
                     <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Trash2 className="h-3.5 w-3.5 text-muted-foreground" /></Button>
                   </div>
                 ))}
               </div>
-              <div className="p-3 bg-[hsl(210_40%_96%)] rounded-lg border border-[hsl(210_30%_88%)]">
-                <p className="text-xs font-semibold text-[hsl(212_35%_18%)] mb-2">Registro de Aceite de Termos</p>
+              <div className="p-3 bg-muted rounded-lg border border-border">
+                <p className="text-xs font-semibold text-primary mb-2">Registro de Aceite de Termos</p>
                 <div className="space-y-1.5">
                   {[
                     { termo: "Termo de Responsabilidade", aceito: true, data: "10/07/2025 14:35" },
@@ -415,15 +415,15 @@ function CadastroEventoTab() {
 
       {/* Navigation Buttons */}
       <div className="flex justify-between">
-        <Button variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)} className="gap-2 border-[hsl(210_30%_85%)]">
+        <Button variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)} className="gap-2 border-border">
           <ChevronLeft className="h-4 w-4" />Anterior
         </Button>
         {step < steps.length - 1 ? (
-          <Button onClick={() => setStep(step + 1)} className="gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white">
+          <Button onClick={() => setStep(step + 1)} className="gap-2 bg-primary hover:bg-primary/90 text-white">
             Próximo<ChevronRight className="h-4 w-4" />
           </Button>
         ) : (
-          <Button onClick={salvarEvento} className="gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white">
+          <Button onClick={salvarEvento} className="gap-2 bg-primary hover:bg-primary/90 text-white">
             <Save className="h-4 w-4" />Salvar Evento
           </Button>
         )}
@@ -466,10 +466,10 @@ function ConsultarEventosTab() {
         </div>
       </div>
 
-      <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+      <div className="border rounded-lg border-border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[hsl(210_40%_96%)]">
+            <TableRow className="bg-muted">
               <TableHead className="text-xs">Protocolo</TableHead>
               <TableHead className="text-xs">Associado</TableHead>
               <TableHead className="text-xs">Placa</TableHead>
@@ -486,7 +486,7 @@ function ConsultarEventosTab() {
                 <TableCell className="font-mono text-xs">{e.protocolo}</TableCell>
                 <TableCell className="text-sm font-medium">{e.associado}</TableCell>
                 <TableCell className="font-mono text-sm">{e.placa}</TableCell>
-                <TableCell><Badge variant="outline" className="text-xs border-[hsl(210_35%_70%)] bg-[hsl(210_40%_95%)]">{e.tipo}</Badge></TableCell>
+                <TableCell><Badge variant="outline" className="text-xs border-primary/30 bg-primary/8">{e.tipo}</Badge></TableCell>
                 <TableCell className="text-sm">{new Date(e.data).toLocaleDateString("pt-BR")}</TableCell>
                 <TableCell><Badge className={`text-xs ${statusColor[e.status] || "bg-gray-100 text-gray-800"}`}>{e.status}</Badge></TableCell>
                 <TableCell className="text-sm">{e.responsavel}</TableCell>
@@ -520,9 +520,9 @@ function EventosRateioTab() {
 
   return (
     <div className="space-y-5">
-      <Card className="border-[hsl(210_30%_88%)] shadow-sm">
+      <Card className="border-border shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-[hsl(212_35%_18%)]">Criar Evento Fictício para Rateio</CardTitle>
+          <CardTitle className="text-base text-primary">Criar Evento Fictício para Rateio</CardTitle>
           <CardDescription>Eventos administrativos com valor zerado ou ajustes para distribuição mensal</CardDescription>
         </CardHeader>
         <CardContent>
@@ -538,19 +538,19 @@ function EventosRateioTab() {
               <Select value={reg} onValueChange={setReg}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{regionais.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>
             </div>
           </div>
-          <Button className="mt-4 gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={() => toast.success("Evento fictício criado para " + mes)}>
+          <Button className="mt-4 gap-2 bg-primary hover:bg-primary/90 text-white" onClick={() => toast.success("Evento fictício criado para " + mes)}>
             <Plus className="h-4 w-4" />Criar Evento
           </Button>
         </CardContent>
       </Card>
 
-      <Card className="border-[hsl(210_30%_88%)] shadow-sm">
-        <CardHeader className="pb-3"><CardTitle className="text-base text-[hsl(212_35%_18%)]">Eventos Fictícios Cadastrados</CardTitle></CardHeader>
+      <Card className="border-border shadow-sm">
+        <CardHeader className="pb-3"><CardTitle className="text-base text-primary">Eventos Fictícios Cadastrados</CardTitle></CardHeader>
         <CardContent>
-          <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+          <div className="border rounded-lg border-border overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow className="bg-[hsl(210_40%_96%)]">
+                <TableRow className="bg-muted">
                   <TableHead className="text-xs">Mês</TableHead>
                   <TableHead className="text-xs">Descrição</TableHead>
                   <TableHead className="text-xs text-right">Valor Total</TableHead>
@@ -594,10 +594,10 @@ function DistribuicaoRateioTab() {
         <div><Label className="text-xs">Valor Base (1ª cota)</Label><Input value={valorBase} onChange={e => setValorBase(e.target.value)} className="w-32" /></div>
       </div>
 
-      <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+      <div className="border rounded-lg border-border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[hsl(210_40%_96%)]">
+            <TableRow className="bg-muted">
               <TableHead className="text-xs">Regional</TableHead>
               <TableHead className="text-xs">Categoria</TableHead>
               <TableHead className="text-xs text-right">Qtde Veículos</TableHead>
@@ -624,8 +624,8 @@ function DistribuicaoRateioTab() {
       </div>
 
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-[hsl(212_35%_18%)]">Total Distribuído: R$ {totalDistribuido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
-        <Button className="gap-2 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={() => toast.success("Rateio gravado com sucesso para " + mesRef)}>
+        <p className="text-sm font-semibold text-primary">Total Distribuído: R$ {totalDistribuido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+        <Button className="gap-2 bg-primary hover:bg-primary/90 text-white" onClick={() => toast.success("Rateio gravado com sucesso para " + mesRef)}>
           <Save className="h-4 w-4" />Gravar Rateio
         </Button>
       </div>
@@ -638,10 +638,10 @@ function DistribuicaoRateioTab() {
 function HistoricoDistribuicaoTab() {
   return (
     <div className="space-y-5">
-      <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+      <div className="border rounded-lg border-border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[hsl(210_40%_96%)]">
+            <TableRow className="bg-muted">
               <TableHead className="text-xs">Mês Referência</TableHead>
               <TableHead className="text-xs text-right">Valor Total Distribuído</TableHead>
               <TableHead className="text-xs text-right">Qtde Veículos</TableHead>
@@ -694,9 +694,9 @@ function MonitoramentoTab() {
 
   return (
     <div className="space-y-5">
-      <div className="flex gap-1 border-b border-[hsl(210_30%_88%)]">
+      <div className="flex gap-1 border-b border-border">
         {(["eventos", "estado", "processo"] as const).map(t => (
-          <button key={t} onClick={() => setMonTab(t)} className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px transition-colors capitalize ${monTab === t ? "border-[hsl(212_55%_40%)] text-[hsl(212_35%_18%)]" : "border-transparent text-muted-foreground"}`}>
+          <button key={t} onClick={() => setMonTab(t)} className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px transition-colors capitalize ${monTab === t ? "border-primary/50 text-primary" : "border-transparent text-muted-foreground"}`}>
             {t === "estado" ? "Estado do Tempo" : t === "processo" ? "Processo" : "Eventos"}
           </button>
         ))}
@@ -705,10 +705,10 @@ function MonitoramentoTab() {
       {monTab === "eventos" && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {kpis.map((k, i) => (
-            <Card key={i} className="border-[hsl(210_30%_88%)]">
+            <Card key={i} className="border-border">
               <CardContent className="p-4 text-center">
-                <k.icon className="h-5 w-5 mx-auto mb-1 text-[hsl(212_55%_40%)]" />
-                <p className="text-xl font-bold text-[hsl(212_35%_18%)]">{k.valor}</p>
+                <k.icon className="h-5 w-5 mx-auto mb-1 text-primary" />
+                <p className="text-xl font-bold text-primary">{k.valor}</p>
                 <p className="text-xs text-muted-foreground">{k.label}</p>
               </CardContent>
             </Card>
@@ -719,7 +719,7 @@ function MonitoramentoTab() {
       {monTab === "estado" && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {estadoDoTempo.map((e, i) => (
-            <Card key={i} className="border-[hsl(210_30%_88%)]">
+            <Card key={i} className="border-border">
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">{e.status}</p>
@@ -734,17 +734,17 @@ function MonitoramentoTab() {
       {monTab === "processo" && (
         <div className="space-y-6">
           {mockTimeline.map((evt, ei) => (
-            <Card key={ei} className="border-[hsl(210_30%_88%)] shadow-sm">
+            <Card key={ei} className="border-border shadow-sm">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-[hsl(212_35%_18%)]">Protocolo {evt.protocolo}</CardTitle>
+                <CardTitle className="text-sm text-primary">Protocolo {evt.protocolo}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="relative pl-6">
-                  <div className="absolute left-2 top-0 bottom-0 w-px bg-[hsl(210_30%_85%)]" />
+                  <div className="absolute left-2 top-0 bottom-0 w-px bg-border" />
                   <div className="space-y-3">
                     {evt.movimentacoes.map((m, mi) => (
                       <div key={mi} className="relative flex gap-3">
-                        <div className="absolute -left-4 top-1 w-3 h-3 rounded-full bg-[hsl(212_55%_40%)] border-2 border-white" />
+                        <div className="absolute -left-4 top-1 w-3 h-3 rounded-full bg-primary border-2 border-white" />
                         <div>
                           <p className="text-sm font-medium">{m.acao}</p>
                           <p className="text-xs text-muted-foreground">{m.data} — {m.usuario}</p>
@@ -787,13 +787,13 @@ function RelatoriosEventoTab() {
 
   return (
     <div className="space-y-5">
-      <div className="flex gap-1 border-b border-[hsl(210_30%_88%)]">
+      <div className="flex gap-1 border-b border-border">
         {([
           { id: "eventos" as const, label: "Relatório de Eventos" },
           { id: "cotacao" as const, label: "Cotação / Orçamento" },
           { id: "sincronismo" as const, label: "Sincronismo" },
         ]).map(t => (
-          <button key={t.id} onClick={() => setRelTab(t.id)} className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px transition-colors ${relTab === t.id ? "border-[hsl(212_55%_40%)] text-[hsl(212_35%_18%)]" : "border-transparent text-muted-foreground"}`}>
+          <button key={t.id} onClick={() => setRelTab(t.id)} className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px transition-colors ${relTab === t.id ? "border-primary/50 text-primary" : "border-transparent text-muted-foreground"}`}>
             {t.label}
           </button>
         ))}
@@ -807,13 +807,13 @@ function RelatoriosEventoTab() {
             <div><Label className="text-xs">Tipo</Label>
               <Select defaultValue="Todos"><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Todos">Todos</SelectItem>{tiposEvento.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
             </div>
-            <Button variant="outline" className="gap-2 border-[hsl(210_30%_85%)]" disabled={loading === "eventos"} onClick={() => handleExport("eventos")}>
+            <Button variant="outline" className="gap-2 border-border" disabled={loading === "eventos"} onClick={() => handleExport("eventos")}>
               {loading === "eventos" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exportar Excel
             </Button>
           </div>
-          <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+          <div className="border rounded-lg border-border overflow-hidden">
             <Table>
-              <TableHeader><TableRow className="bg-[hsl(210_40%_96%)]"><TableHead className="text-xs">Protocolo</TableHead><TableHead className="text-xs">Associado</TableHead><TableHead className="text-xs">Placa</TableHead><TableHead className="text-xs">Tipo</TableHead><TableHead className="text-xs">Data</TableHead><TableHead className="text-xs">Status</TableHead><TableHead className="text-xs">Responsável</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow className="bg-muted"><TableHead className="text-xs">Protocolo</TableHead><TableHead className="text-xs">Associado</TableHead><TableHead className="text-xs">Placa</TableHead><TableHead className="text-xs">Tipo</TableHead><TableHead className="text-xs">Data</TableHead><TableHead className="text-xs">Status</TableHead><TableHead className="text-xs">Responsável</TableHead></TableRow></TableHeader>
               <TableBody>
                 {mockConsulta.map(e => (
                   <TableRow key={e.protocolo}>
@@ -835,13 +835,13 @@ function RelatoriosEventoTab() {
       {relTab === "cotacao" && (
         <div className="space-y-4">
           <div className="flex justify-end">
-            <Button variant="outline" className="gap-2 border-[hsl(210_30%_85%)]" disabled={loading === "cotacao"} onClick={() => handleExport("cotação")}>
+            <Button variant="outline" className="gap-2 border-border" disabled={loading === "cotacao"} onClick={() => handleExport("cotação")}>
               {loading === "cotacao" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exportar Excel
             </Button>
           </div>
-          <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+          <div className="border rounded-lg border-border overflow-hidden">
             <Table>
-              <TableHeader><TableRow className="bg-[hsl(210_40%_96%)]"><TableHead className="text-xs">Evento</TableHead><TableHead className="text-xs">Oficina 1</TableHead><TableHead className="text-xs text-right">Valor</TableHead><TableHead className="text-xs">Oficina 2</TableHead><TableHead className="text-xs text-right">Valor</TableHead><TableHead className="text-xs">Oficina 3</TableHead><TableHead className="text-xs text-right">Valor</TableHead><TableHead className="text-xs">Escolhida</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow className="bg-muted"><TableHead className="text-xs">Evento</TableHead><TableHead className="text-xs">Oficina 1</TableHead><TableHead className="text-xs text-right">Valor</TableHead><TableHead className="text-xs">Oficina 2</TableHead><TableHead className="text-xs text-right">Valor</TableHead><TableHead className="text-xs">Oficina 3</TableHead><TableHead className="text-xs text-right">Valor</TableHead><TableHead className="text-xs">Escolhida</TableHead></TableRow></TableHeader>
               <TableBody>
                 {mockCotacao.map((c, i) => (
                   <TableRow key={i}>
@@ -864,13 +864,13 @@ function RelatoriosEventoTab() {
       {relTab === "sincronismo" && (
         <div className="space-y-4">
           <div className="flex justify-end">
-            <Button variant="outline" className="gap-2 border-[hsl(210_30%_85%)]" disabled={loading === "sincronismo"} onClick={() => handleExport("sincronismo")}>
+            <Button variant="outline" className="gap-2 border-border" disabled={loading === "sincronismo"} onClick={() => handleExport("sincronismo")}>
               {loading === "sincronismo" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exportar Excel
             </Button>
           </div>
-          <div className="border rounded-lg border-[hsl(210_30%_88%)] overflow-hidden">
+          <div className="border rounded-lg border-border overflow-hidden">
             <Table>
-              <TableHeader><TableRow className="bg-[hsl(210_40%_96%)]"><TableHead className="text-xs">Protocolo</TableHead><TableHead className="text-xs">Data Cadastro</TableHead><TableHead className="text-xs">Data Sincronização</TableHead><TableHead className="text-xs">Status</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow className="bg-muted"><TableHead className="text-xs">Protocolo</TableHead><TableHead className="text-xs">Data Cadastro</TableHead><TableHead className="text-xs">Data Sincronização</TableHead><TableHead className="text-xs">Status</TableHead></TableRow></TableHeader>
               <TableBody>
                 {mockSincronismo.map((s, i) => (
                   <TableRow key={i}>

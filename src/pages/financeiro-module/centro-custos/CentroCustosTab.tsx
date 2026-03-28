@@ -22,35 +22,35 @@ export default function CentroCustosTab() {
     <div className="p-6 lg:px-8 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md"><FolderTree className="h-5 w-5 text-[hsl(210_55%_70%)]" /></div>
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md"><FolderTree className="h-5 w-5 text-accent" /></div>
           <div><h1 className="text-xl font-bold text-foreground">Centro de Custos</h1><p className="text-sm text-muted-foreground">Orçamento por centro de custo vs realizado</p></div>
         </div>
-        <Button size="sm" className="gap-1.5 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white"><Plus className="h-4 w-4" />Novo Centro</Button>
+        <Button size="sm" className="gap-1.5 bg-primary hover:bg-primary/90 text-white"><Plus className="h-4 w-4" />Novo Centro</Button>
       </div>
 
-      <Card className="border-[hsl(210_30%_88%)]">
+      <Card className="border-border">
         <CardContent className="p-4">
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} /><Tooltip formatter={(v: number) => `R$ ${v.toLocaleString()}`} /><Bar dataKey="Orçamento" fill="hsl(210, 55%, 70%)" radius={[4,4,0,0]} /><Bar dataKey="Realizado" fill="hsl(212, 35%, 28%)" radius={[4,4,0,0]} /></BarChart>
+            <BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} /><Tooltip formatter={(v: number) => `R$ ${v.toLocaleString()}`} /><Bar dataKey="Orçamento" fill="hsl(var(--muted-foreground) / 0.4)" radius={[4,4,0,0]} /><Bar dataKey="Realizado" fill="hsl(var(--primary))" radius={[4,4,0,0]} /></BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
+      <Card className="border-border overflow-hidden">
+        
         <CardContent className="p-0">
-          <Table><TableHeader><TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Centro</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Responsável</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Orçamento</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Realizado</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Variação</TableHead>
-            <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Status</TableHead>
+          <Table><TableHeader><TableRow className="bg-primary hover:bg-primary border-b-0">
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Centro</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Responsável</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Orçamento</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Realizado</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Variação</TableHead>
+            <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
           </TableRow></TableHeader>
           <TableBody>{centros.map((c, i) => {
             const variacao = ((c.realizado - c.orcamento) / c.orcamento * 100).toFixed(1);
             return (
-              <TableRow key={c.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-[hsl(210_30%_97%)]'} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}>
+              <TableRow key={c.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
                 <TableCell className="font-medium">{c.nome}</TableCell>
                 <TableCell className="text-sm">{c.responsavel}</TableCell>
                 <TableCell className="text-right font-semibold">R$ {c.orcamento.toLocaleString()}</TableCell>

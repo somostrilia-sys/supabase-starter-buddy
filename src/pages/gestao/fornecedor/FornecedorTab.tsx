@@ -93,8 +93,8 @@ export default function FornecedorTab() {
       {/* ── HEADER ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md">
-            <Truck className="h-5 w-5 text-[hsl(210_55%_70%)]" />
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
+            <Truck className="h-5 w-5 text-accent" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-foreground">Fornecedores</h2>
@@ -105,7 +105,7 @@ export default function FornecedorTab() {
           <Button variant="outline" size="sm" onClick={handleSync} disabled={sincronizando} className="gap-1.5">
             <RefreshCw className={`h-4 w-4 ${sincronizando ? "animate-spin" : ""}`} />Sincronizar
           </Button>
-          <Button size="sm" onClick={() => setShowCadastro(true)} className="gap-1.5 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white">
+          <Button size="sm" onClick={() => setShowCadastro(true)} className="gap-1.5 bg-primary hover:bg-primary/90 text-white">
             <Plus className="h-4 w-4" />Novo Fornecedor
           </Button>
         </div>
@@ -113,11 +113,11 @@ export default function FornecedorTab() {
 
       {/* ── PROGRESS BAR ── */}
       {sincronizando && (
-        <Card className="border-[hsl(210_40%_80%)] bg-[hsl(210_40%_97%)]">
+        <Card className="border-border bg-muted/50">
           <CardContent className="p-4 space-y-2">
             <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin text-[hsl(212_35%_25%)]" />
-              <span className="text-sm font-medium text-[hsl(212_35%_25%)]">Sincronizando fornecedores...</span>
+              <Loader2 className="h-4 w-4 animate-spin text-foreground" />
+              <span className="text-sm font-medium text-foreground">Sincronizando fornecedores...</span>
             </div>
             <Progress value={progresso} className="h-2" />
           </CardContent>
@@ -126,17 +126,17 @@ export default function FornecedorTab() {
 
       {/* ── TABS ── */}
       <Tabs defaultValue="listagem">
-        <TabsList className="bg-[hsl(210_30%_95%)] border border-[hsl(210_30%_88%)]">
-          <TabsTrigger value="listagem" className="data-[state=active]:bg-[hsl(212_35%_18%)] data-[state=active]:text-white gap-1.5">
+        <TabsList className="bg-muted/50 border border-border">
+          <TabsTrigger value="listagem" className="data-[state=active]:bg-primary data-[state=active]:text-white gap-1.5">
             <FileText className="h-3.5 w-3.5" />Listagem
           </TabsTrigger>
-          <TabsTrigger value="sincronismo" className="data-[state=active]:bg-[hsl(212_35%_18%)] data-[state=active]:text-white gap-1.5">
+          <TabsTrigger value="sincronismo" className="data-[state=active]:bg-primary data-[state=active]:text-white gap-1.5">
             <BarChart3 className="h-3.5 w-3.5" />Sincronismo
           </TabsTrigger>
-          <TabsTrigger value="log" className="data-[state=active]:bg-[hsl(212_35%_18%)] data-[state=active]:text-white gap-1.5">
+          <TabsTrigger value="log" className="data-[state=active]:bg-primary data-[state=active]:text-white gap-1.5">
             <Clock className="h-3.5 w-3.5" />Log
           </TabsTrigger>
-          <TabsTrigger value="relatorio" className="data-[state=active]:bg-[hsl(212_35%_18%)] data-[state=active]:text-white gap-1.5">
+          <TabsTrigger value="relatorio" className="data-[state=active]:bg-primary data-[state=active]:text-white gap-1.5">
             <Download className="h-3.5 w-3.5" />Relatório
           </TabsTrigger>
         </TabsList>
@@ -144,31 +144,31 @@ export default function FornecedorTab() {
         {/* ── LISTAGEM ── */}
         <TabsContent value="listagem" className="space-y-4 mt-4">
           {/* Filtros */}
-          <Card className="border-[hsl(210_30%_88%)]">
+          <Card className="border-border">
             <CardContent className="p-4">
               <div className="grid sm:grid-cols-4 gap-3 items-end">
                 <div>
-                  <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Buscar</Label>
+                  <Label className="text-xs font-medium text-foreground">Buscar</Label>
                   <div className="relative mt-1">
                     <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input className="pl-9 border-[hsl(210_30%_85%)] focus-visible:ring-[hsl(212_35%_25%)]" placeholder="Nome ou CNPJ..." value={busca} onChange={e => setBusca(e.target.value)} />
+                    <Input className="pl-9 border-border focus-visible:ring-ring" placeholder="Nome ou CNPJ..." value={busca} onChange={e => setBusca(e.target.value)} />
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Tipo de Serviço</Label>
+                  <Label className="text-xs font-medium text-foreground">Tipo de Serviço</Label>
                   <Select value={filtroTipo} onValueChange={setFiltroTipo}>
-                    <SelectTrigger className="mt-1 border-[hsl(210_30%_85%)]"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="mt-1 border-border"><SelectValue /></SelectTrigger>
                     <SelectContent><SelectItem value="todos">Todos</SelectItem>{tiposServico.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Status</Label>
+                  <Label className="text-xs font-medium text-foreground">Status</Label>
                   <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-                    <SelectTrigger className="mt-1 border-[hsl(210_30%_85%)]"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="mt-1 border-border"><SelectValue /></SelectTrigger>
                     <SelectContent><SelectItem value="todos">Todos</SelectItem><SelectItem value="ativo">Ativo</SelectItem><SelectItem value="inativo">Inativo</SelectItem></SelectContent>
                   </Select>
                 </div>
-                <Button variant="outline" size="sm" onClick={exportCsv} className="gap-1.5 border-[hsl(210_30%_85%)] hover:bg-[hsl(210_30%_95%)]">
+                <Button variant="outline" size="sm" onClick={exportCsv} className="gap-1.5 border-border hover:bg-muted/50">
                   <Download className="h-4 w-4" />Exportar CSV
                 </Button>
               </div>
@@ -176,28 +176,28 @@ export default function FornecedorTab() {
           </Card>
 
           {/* Tabela */}
-          <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
+          <Card className="border-border overflow-hidden">
+            
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">ID</TableHead>
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Nome</TableHead>
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">CNPJ</TableHead>
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Tipo</TableHead>
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Contato</TableHead>
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Cidade/UF</TableHead>
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Status</TableHead>
+                  <TableRow className="bg-primary hover:bg-primary border-b-0">
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">ID</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Nome</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">CNPJ</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Tipo</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Contato</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Cidade/UF</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.map((f, i) => (
-                    <TableRow key={f.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-[hsl(210_30%_97%)]'} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}>
-                      <TableCell className="font-mono text-xs text-[hsl(212_35%_30%)] font-semibold">{f.id}</TableCell>
+                    <TableRow key={f.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
+                      <TableCell className="font-mono text-xs text-foreground font-semibold">{f.id}</TableCell>
                       <TableCell className="font-medium text-foreground">{f.nome}</TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">{f.cnpj}</TableCell>
-                      <TableCell><Badge variant="outline" className="border-[hsl(210_35%_70%)] text-[hsl(212_35%_30%)] bg-[hsl(210_40%_95%)]">{f.tipo}</Badge></TableCell>
+                      <TableCell><Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8">{f.tipo}</Badge></TableCell>
                       <TableCell className="text-xs text-muted-foreground">{f.telefone}</TableCell>
                       <TableCell className="text-sm">{f.cidade}/{f.estado}</TableCell>
                       <TableCell><Badge className={statusColor[f.status]}>{f.status}</Badge></TableCell>
@@ -205,7 +205,7 @@ export default function FornecedorTab() {
                   ))}
                 </TableBody>
               </Table>
-              <div className="px-4 py-3 bg-[hsl(210_30%_97%)] border-t border-[hsl(210_30%_90%)] flex justify-between items-center">
+              <div className="px-4 py-3 bg-muted/30 border-t border-border/60 flex justify-between items-center">
                 <span className="text-xs text-muted-foreground">{filtered.length} fornecedor(es) encontrado(s)</span>
                 <span className="text-xs text-muted-foreground">Total geral: {mockFornecedores.length}</span>
               </div>
@@ -217,38 +217,38 @@ export default function FornecedorTab() {
         <TabsContent value="sincronismo" className="space-y-5 mt-4">
           {/* Stat Cards */}
           <div className="grid sm:grid-cols-3 gap-4">
-            <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-              <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] to-[hsl(212_35%_35%)]" />
+            <Card className="border-border overflow-hidden">
+              
               <CardContent className="p-5 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md">
-                  <Building2 className="h-5 w-5 text-[hsl(210_55%_70%)]" />
+                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-md">
+                  <Building2 className="h-5 w-5 text-accent" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-[hsl(212_35%_20%)]">{ativos}</p>
+                  <p className="text-2xl font-bold text-primary">{ativos}</p>
                   <p className="text-xs text-muted-foreground font-medium">Fornecedores ativos</p>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-              <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] to-[hsl(210_40%_40%)]" />
+            <Card className="border-border overflow-hidden">
+              
               <CardContent className="p-5 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md">
-                  <Car className="h-5 w-5 text-[hsl(210_55%_70%)]" />
+                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-md">
+                  <Car className="h-5 w-5 text-accent" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-[hsl(212_35%_20%)]">{totalVeiculos.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-primary">{totalVeiculos.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground font-medium">Veículos cobertos</p>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-              <div className="h-1 bg-gradient-to-r from-[hsl(210_40%_40%)] to-[hsl(210_55%_60%)]" />
+            <Card className="border-border overflow-hidden">
+              
               <CardContent className="p-5 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md">
-                  <Users className="h-5 w-5 text-[hsl(210_55%_70%)]" />
+                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-md">
+                  <Users className="h-5 w-5 text-accent" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-[hsl(212_35%_20%)]">{totalAssociados.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-primary">{totalAssociados.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground font-medium">Associados vinculados</p>
                 </div>
               </CardContent>
@@ -256,22 +256,22 @@ export default function FornecedorTab() {
           </div>
 
           {/* Cobertura */}
-          <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
-            <CardHeader className="pb-3 border-b border-[hsl(210_30%_90%)]">
+          <Card className="border-border overflow-hidden">
+            
+            <CardHeader className="pb-3 border-b border-border/60">
               <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-[hsl(212_35%_25%)]" />
-                <CardTitle className="text-base text-[hsl(212_35%_20%)]">Cobertura por Fornecedor</CardTitle>
+                <Activity className="h-4 w-4 text-foreground" />
+                <CardTitle className="text-base text-primary">Cobertura por Fornecedor</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-4">
               {mockFornecedores.filter(f => f.status === "ativo").map(f => {
                 const pct = Math.round((f.veiculosCobertos / 847) * 100);
                 return (
-                  <div key={f.id} className="space-y-1.5 p-3 rounded-lg bg-[hsl(210_30%_97%)] border border-[hsl(210_30%_92%)]">
+                  <div key={f.id} className="space-y-1.5 p-3 rounded-lg bg-muted/30 border border-border/50">
                     <div className="flex justify-between text-sm">
-                      <span className="font-semibold text-[hsl(212_35%_20%)]">{f.nome}</span>
-                      <span className="text-[hsl(210_40%_45%)] font-medium">{f.veiculosCobertos} veículos ({pct}%)</span>
+                      <span className="font-semibold text-primary">{f.nome}</span>
+                      <span className="text-muted-foreground font-medium">{f.veiculosCobertos} veículos ({pct}%)</span>
                     </div>
                     <Progress value={pct} className="h-2.5" />
                   </div>
@@ -281,34 +281,34 @@ export default function FornecedorTab() {
           </Card>
 
           {/* Vínculo */}
-          <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
-            <CardHeader className="pb-3 border-b border-[hsl(210_30%_90%)]">
+          <Card className="border-border overflow-hidden">
+            
+            <CardHeader className="pb-3 border-b border-border/60">
               <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-[hsl(212_35%_25%)]" />
-                <CardTitle className="text-base text-[hsl(212_35%_20%)]">Vínculo Associado × Fornecedor</CardTitle>
+                <BarChart3 className="h-4 w-4 text-foreground" />
+                <CardTitle className="text-base text-primary">Vínculo Associado × Fornecedor</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Fornecedor</TableHead>
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Tipo</TableHead>
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Associados</TableHead>
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Veículos</TableHead>
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Cobertura</TableHead>
+                  <TableRow className="bg-primary hover:bg-primary border-b-0">
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Fornecedor</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Tipo</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Associados</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Veículos</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Cobertura</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {mockFornecedores.filter(f => f.status === "ativo").map((f, i) => (
-                    <TableRow key={f.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-[hsl(210_30%_97%)]'} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}>
+                    <TableRow key={f.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
                       <TableCell className="font-medium text-foreground">{f.nome}</TableCell>
-                      <TableCell><Badge variant="outline" className="border-[hsl(210_35%_70%)] text-[hsl(212_35%_30%)] bg-[hsl(210_40%_95%)]">{f.tipo}</Badge></TableCell>
+                      <TableCell><Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8">{f.tipo}</Badge></TableCell>
                       <TableCell className="text-right font-medium">{f.associadosVinc}</TableCell>
                       <TableCell className="text-right font-medium">{f.veiculosCobertos}</TableCell>
                       <TableCell className="text-right">
-                        <Badge className="bg-[hsl(212_35%_18%)] text-white hover:bg-[hsl(212_35%_25%)]">
+                        <Badge className="bg-primary text-white hover:bg-primary/90">
                           {Math.round((f.veiculosCobertos / 847) * 100)}%
                         </Badge>
                       </TableCell>
@@ -322,15 +322,15 @@ export default function FornecedorTab() {
 
         {/* ── LOG ── */}
         <TabsContent value="log" className="space-y-4 mt-4">
-          <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
-            <CardHeader className="pb-3 border-b border-[hsl(210_30%_90%)]">
+          <Card className="border-border overflow-hidden">
+            
+            <CardHeader className="pb-3 border-b border-border/60">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-[hsl(212_35%_25%)]" />
-                  <CardTitle className="text-base text-[hsl(212_35%_20%)]">Log de Sincronismo</CardTitle>
+                  <Clock className="h-4 w-4 text-foreground" />
+                  <CardTitle className="text-base text-primary">Log de Sincronismo</CardTitle>
                 </div>
-                <Badge variant="outline" className="gap-1.5 border-[hsl(210_35%_70%)] text-[hsl(212_35%_30%)] bg-[hsl(210_40%_95%)]">
+                <Badge variant="outline" className="gap-1.5 border-primary/30 text-foreground bg-primary/8">
                   <Calendar className="h-3 w-3" />Cron: diário às 06:00
                 </Badge>
               </div>
@@ -338,21 +338,21 @@ export default function FornecedorTab() {
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Data/Hora</TableHead>
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Fornecedor</TableHead>
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Tipo</TableHead>
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Registros</TableHead>
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Duração</TableHead>
-                    <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Status</TableHead>
+                  <TableRow className="bg-primary hover:bg-primary border-b-0">
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Data/Hora</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Fornecedor</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Tipo</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Registros</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Duração</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {logSync.map((l, i) => (
-                    <TableRow key={l.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-[hsl(210_30%_97%)]'} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}>
-                      <TableCell className="text-sm font-mono text-[hsl(212_35%_30%)]">{l.data}</TableCell>
+                    <TableRow key={l.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
+                      <TableCell className="text-sm font-mono text-foreground">{l.data}</TableCell>
                       <TableCell className="font-medium text-foreground">{l.fornecedor}</TableCell>
-                      <TableCell><Badge variant="outline" className="border-[hsl(210_35%_70%)] text-[hsl(212_35%_30%)] bg-[hsl(210_40%_95%)]">{l.tipo}</Badge></TableCell>
+                      <TableCell><Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8">{l.tipo}</Badge></TableCell>
                       <TableCell className="text-right font-semibold">{l.registros}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{l.duracao}</TableCell>
                       <TableCell><Badge className={statusColor[l.status]}>{l.status}</Badge></TableCell>
@@ -360,9 +360,9 @@ export default function FornecedorTab() {
                   ))}
                 </TableBody>
               </Table>
-              <div className="px-4 py-3 bg-[hsl(210_30%_97%)] border-t border-[hsl(210_30%_90%)] flex justify-between items-center">
+              <div className="px-4 py-3 bg-muted/30 border-t border-border/60 flex justify-between items-center">
                 <span className="text-xs text-muted-foreground">{logSync.length} execução(ões) registrada(s)</span>
-                <span className="text-xs font-medium text-[hsl(212_35%_30%)]">
+                <span className="text-xs font-medium text-foreground">
                   {logSync.filter(l => l.status === "sucesso").length} sucesso · {logSync.filter(l => l.status === "erro").length} erro · {logSync.filter(l => l.status === "pendente").length} pendente
                 </span>
               </div>
@@ -372,13 +372,13 @@ export default function FornecedorTab() {
 
         {/* ── RELATÓRIO ── */}
         <TabsContent value="relatorio" className="space-y-4 mt-4">
-          <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
-            <CardHeader className="border-b border-[hsl(210_30%_90%)]">
+          <Card className="border-border overflow-hidden">
+            
+            <CardHeader className="border-b border-border/60">
               <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-[hsl(212_35%_25%)]" />
+                <FileText className="h-4 w-4 text-foreground" />
                 <div>
-                  <CardTitle className="text-base text-[hsl(212_35%_20%)]">Relatório de Fornecedores</CardTitle>
+                  <CardTitle className="text-base text-primary">Relatório de Fornecedores</CardTitle>
                   <CardDescription className="mt-0.5">Aplique os filtros e exporte os dados</CardDescription>
                 </div>
               </div>
@@ -386,29 +386,29 @@ export default function FornecedorTab() {
             <CardContent className="pt-5">
               <div className="grid sm:grid-cols-3 gap-4 mb-5">
                 <div>
-                  <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Tipo de Serviço</Label>
+                  <Label className="text-xs font-medium text-foreground">Tipo de Serviço</Label>
                   <Select defaultValue="todos">
-                    <SelectTrigger className="mt-1 border-[hsl(210_30%_85%)]"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="mt-1 border-border"><SelectValue /></SelectTrigger>
                     <SelectContent><SelectItem value="todos">Todos</SelectItem>{tiposServico.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Status</Label>
+                  <Label className="text-xs font-medium text-foreground">Status</Label>
                   <Select defaultValue="todos">
-                    <SelectTrigger className="mt-1 border-[hsl(210_30%_85%)]"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="mt-1 border-border"><SelectValue /></SelectTrigger>
                     <SelectContent><SelectItem value="todos">Todos</SelectItem><SelectItem value="ativo">Ativo</SelectItem><SelectItem value="inativo">Inativo</SelectItem></SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Região</Label>
+                  <Label className="text-xs font-medium text-foreground">Região</Label>
                   <Select defaultValue="todos">
-                    <SelectTrigger className="mt-1 border-[hsl(210_30%_85%)]"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="mt-1 border-border"><SelectValue /></SelectTrigger>
                     <SelectContent><SelectItem value="todos">Todas</SelectItem><SelectItem value="SP">SP</SelectItem><SelectItem value="RJ">RJ</SelectItem><SelectItem value="MG">MG</SelectItem><SelectItem value="PR">PR</SelectItem><SelectItem value="RS">RS</SelectItem></SelectContent>
                   </Select>
                 </div>
               </div>
-              <div className="flex items-center gap-3 pt-2 border-t border-[hsl(210_30%_90%)]">
-                <Button onClick={exportCsv} className="gap-1.5 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white">
+              <div className="flex items-center gap-3 pt-2 border-t border-border/60">
+                <Button onClick={exportCsv} className="gap-1.5 bg-primary hover:bg-primary/90 text-white">
                   <Download className="h-4 w-4" />Exportar Excel
                 </Button>
                 <span className="text-xs text-muted-foreground">Os filtros serão aplicados na exportação</span>
@@ -423,59 +423,59 @@ export default function FornecedorTab() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center">
-                <Plus className="h-4 w-4 text-[hsl(210_55%_70%)]" />
+              <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
+                <Plus className="h-4 w-4 text-accent" />
               </div>
-              <DialogTitle className="text-[hsl(212_35%_20%)]">Novo Fornecedor</DialogTitle>
+              <DialogTitle className="text-primary">Novo Fornecedor</DialogTitle>
             </div>
           </DialogHeader>
-          <div className="h-px bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-transparent" />
+          <div className="h-px bg-gradient-to-r from-primary  to-transparent" />
           <div className="grid gap-4 pt-2">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Nome *</Label>
-                <Input className="mt-1 border-[hsl(210_30%_85%)]" value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })} />
+                <Label className="text-xs font-medium text-foreground">Nome *</Label>
+                <Input className="mt-1 border-border" value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })} />
               </div>
               <div>
-                <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">CNPJ *</Label>
-                <Input className="mt-1 border-[hsl(210_30%_85%)]" placeholder="00.000.000/0001-00" value={form.cnpj} onChange={e => setForm({ ...form, cnpj: e.target.value })} />
+                <Label className="text-xs font-medium text-foreground">CNPJ *</Label>
+                <Input className="mt-1 border-border" placeholder="00.000.000/0001-00" value={form.cnpj} onChange={e => setForm({ ...form, cnpj: e.target.value })} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Tipo de Serviço</Label>
+                <Label className="text-xs font-medium text-foreground">Tipo de Serviço</Label>
                 <Select value={form.tipo} onValueChange={v => setForm({ ...form, tipo: v })}>
-                  <SelectTrigger className="mt-1 border-[hsl(210_30%_85%)]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="mt-1 border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>{tiposServico.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
-                <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Telefone</Label>
-                <Input className="mt-1 border-[hsl(210_30%_85%)]" value={form.telefone} onChange={e => setForm({ ...form, telefone: e.target.value })} />
+                <Label className="text-xs font-medium text-foreground">Telefone</Label>
+                <Input className="mt-1 border-border" value={form.telefone} onChange={e => setForm({ ...form, telefone: e.target.value })} />
               </div>
             </div>
             <div>
-              <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">E-mail</Label>
-              <Input className="mt-1 border-[hsl(210_30%_85%)]" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+              <Label className="text-xs font-medium text-foreground">E-mail</Label>
+              <Input className="mt-1 border-border" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Cidade</Label>
-                <Input className="mt-1 border-[hsl(210_30%_85%)]" value={form.cidade} onChange={e => setForm({ ...form, cidade: e.target.value })} />
+                <Label className="text-xs font-medium text-foreground">Cidade</Label>
+                <Input className="mt-1 border-border" value={form.cidade} onChange={e => setForm({ ...form, cidade: e.target.value })} />
               </div>
               <div>
-                <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Estado</Label>
-                <Input className="mt-1 border-[hsl(210_30%_85%)]" value={form.estado} onChange={e => setForm({ ...form, estado: e.target.value })} />
+                <Label className="text-xs font-medium text-foreground">Estado</Label>
+                <Input className="mt-1 border-border" value={form.estado} onChange={e => setForm({ ...form, estado: e.target.value })} />
               </div>
             </div>
             <div>
-              <Label className="text-xs font-medium text-[hsl(212_35%_25%)]">Observações</Label>
-              <Textarea className="mt-1 border-[hsl(210_30%_85%)]" value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} />
+              <Label className="text-xs font-medium text-foreground">Observações</Label>
+              <Textarea className="mt-1 border-border" value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} />
             </div>
           </div>
-          <DialogFooter className="border-t border-[hsl(210_30%_90%)] pt-4">
-            <Button variant="outline" onClick={() => setShowCadastro(false)} className="border-[hsl(210_30%_85%)]">Cancelar</Button>
-            <Button onClick={handleSalvar} className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white">Salvar</Button>
+          <DialogFooter className="border-t border-border/60 pt-4">
+            <Button variant="outline" onClick={() => setShowCadastro(false)} className="border-border">Cancelar</Button>
+            <Button onClick={handleSalvar} className="bg-primary hover:bg-primary/90 text-white">Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

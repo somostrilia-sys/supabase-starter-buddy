@@ -18,10 +18,10 @@ const afiliados = [
 ];
 
 const kpis = [
-  { label: "Total Afiliados", value: afiliados.length, icon: UsersRound, color: "text-[hsl(212_55%_40%)]", bg: "bg-[hsl(210_40%_95%)]" },
-  { label: "Total Indicações", value: afiliados.reduce((s, a) => s + a.indicacoes, 0), icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-  { label: "Contratos Gerados", value: afiliados.reduce((s, a) => s + a.contratos, 0), icon: FileText, color: "text-green-600", bg: "bg-green-50" },
-  { label: "Comissões Pagas", value: `R$ ${afiliados.reduce((s, a) => s + a.comissao, 0).toLocaleString()}`, icon: DollarSign, color: "text-purple-600", bg: "bg-purple-50" },
+  { label: "Total Afiliados", value: afiliados.length, icon: UsersRound, color: "text-primary", bg: "bg-primary/8" },
+  { label: "Total Indicações", value: afiliados.reduce((s, a) => s + a.indicacoes, 0), icon: Users, color: "text-blue-600", bg: "bg-primary/6" },
+  { label: "Contratos Gerados", value: afiliados.reduce((s, a) => s + a.contratos, 0), icon: FileText, color: "text-green-600", bg: "bg-success/8" },
+  { label: "Comissões Pagas", value: `R$ ${afiliados.reduce((s, a) => s + a.comissao, 0).toLocaleString()}`, icon: DollarSign, color: "text-purple-600", bg: "bg-primary/6" },
 ];
 
 export default function Afiliados() {
@@ -33,8 +33,8 @@ export default function Afiliados() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[hsl(212_35%_18%)] flex items-center justify-center shadow-md">
-            <UsersRound className="h-5 w-5 text-[hsl(210_55%_70%)]" />
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
+            <UsersRound className="h-5 w-5 text-accent" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">Afiliados</h1>
@@ -43,7 +43,7 @@ export default function Afiliados() {
         </div>
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-1.5 bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white">
+            <Button size="sm" className="gap-1.5 bg-primary hover:bg-primary/90 text-white">
               <Plus className="h-4 w-4" />Novo Afiliado
             </Button>
           </DialogTrigger>
@@ -59,7 +59,7 @@ export default function Afiliados() {
                 <Input className="mt-1" type="number" placeholder="10" min={0} max={100} />
               </div>
               <div><Label className="text-xs font-medium">Chave PIX (para pagamento)</Label><Input className="mt-1" placeholder="Chave PIX" /></div>
-              <Button className="w-full bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_25%)] text-white" onClick={() => setModalOpen(false)}>Cadastrar Afiliado</Button>
+              <Button className="w-full bg-primary hover:bg-primary/90 text-white" onClick={() => setModalOpen(false)}>Cadastrar Afiliado</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -68,7 +68,7 @@ export default function Afiliados() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map(k => (
-          <Card key={k.label} className="border-[hsl(210_30%_88%)]">
+          <Card key={k.label} className="border-border">
             <CardContent className="p-4 flex items-center gap-3">
               <div className={`w-10 h-10 rounded-lg ${k.bg} flex items-center justify-center`}>
                 <k.icon className={`h-5 w-5 ${k.color}`} />
@@ -83,46 +83,46 @@ export default function Afiliados() {
       </div>
 
       {/* Search */}
-      <Card className="border-[hsl(210_30%_88%)]">
+      <Card className="border-border">
         <CardContent className="p-4">
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9 border-[hsl(210_30%_85%)]" placeholder="Buscar por nome ou código..." value={busca} onChange={e => setBusca(e.target.value)} />
+            <Input className="pl-9 border-border" placeholder="Buscar por nome ou código..." value={busca} onChange={e => setBusca(e.target.value)} />
           </div>
         </CardContent>
       </Card>
 
       {/* Table */}
-      <Card className="border-[hsl(210_30%_88%)] overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-[hsl(212_35%_18%)] via-[hsl(212_35%_28%)] to-[hsl(210_40%_40%)]" />
+      <Card className="border-border overflow-hidden">
+        
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="bg-[hsl(212_35%_18%)] hover:bg-[hsl(212_35%_18%)] border-b-0">
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Nome</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Código</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Indicações</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Contratos</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Taxa</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider text-right">Comissão Acum.</TableHead>
-                <TableHead className="text-[hsl(210_55%_80%)] font-semibold text-xs uppercase tracking-wider">Status</TableHead>
+              <TableRow className="bg-primary hover:bg-primary border-b-0">
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Nome</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Código</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Indicações</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Contratos</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Taxa</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Comissão Acum.</TableHead>
+                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((a, i) => (
-                <TableRow key={a.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-[hsl(210_30%_97%)]'} hover:bg-[hsl(210_40%_94%)] transition-colors border-b border-[hsl(210_30%_90%)]`}>
+                <TableRow key={a.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
                   <TableCell className="font-medium">{a.nome}</TableCell>
-                  <TableCell><span className="font-mono text-xs bg-[hsl(210_30%_95%)] px-2 py-0.5 rounded">{a.codigo}</span></TableCell>
+                  <TableCell><span className="font-mono text-xs bg-muted/50 px-2 py-0.5 rounded">{a.codigo}</span></TableCell>
                   <TableCell className="text-right font-semibold">{a.indicacoes}</TableCell>
                   <TableCell className="text-right font-semibold text-green-600">{a.contratos}</TableCell>
-                  <TableCell className="text-right"><Badge variant="outline" className="border-[hsl(210_35%_70%)] text-[hsl(212_35%_30%)] bg-[hsl(210_40%_95%)]">{a.taxa}%</Badge></TableCell>
-                  <TableCell className="text-right font-semibold text-[hsl(212_55%_40%)]">R$ {a.comissao.toLocaleString()}</TableCell>
+                  <TableCell className="text-right"><Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8">{a.taxa}%</Badge></TableCell>
+                  <TableCell className="text-right font-semibold text-primary">R$ {a.comissao.toLocaleString()}</TableCell>
                   <TableCell><Badge className={a.status === "ativo" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>{a.status === "ativo" ? "Ativo" : "Inativo"}</Badge></TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-          <div className="px-4 py-3 bg-[hsl(210_30%_97%)] border-t border-[hsl(210_30%_90%)]">
+          <div className="px-4 py-3 bg-muted/30 border-t border-border/60">
             <span className="text-xs text-muted-foreground">{filtered.length} afiliado(s)</span>
           </div>
         </CardContent>

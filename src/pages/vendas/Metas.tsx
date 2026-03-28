@@ -124,7 +124,7 @@ export default function Metas() {
             <TableBody>
               {sorted.map((c, i) => {
                 const pctContratos = c.metaContratos > 0 ? (c.atualContratos / c.metaContratos) * 100 : 0;
-                const barColor = pctContratos >= 80 ? "bg-green-500" : pctContratos >= 50 ? "bg-yellow-500" : "bg-red-500";
+                const barColor = pctContratos >= 80 ? "bg-success/80" : pctContratos >= 50 ? "bg-warning/80" : "bg-destructive/80";
                 return (
                   <TableRow key={c.nome} className="hover:bg-muted/30 transition-colors border-b border-border/40">
                     <TableCell>

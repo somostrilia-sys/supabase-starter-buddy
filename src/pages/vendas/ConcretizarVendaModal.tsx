@@ -272,7 +272,7 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
                 <div key={s.id} className="flex items-center gap-1">
                   <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     step === s.id ? "bg-primary text-primary-foreground" :
-                    step > s.id ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
+                    step > s.id ? "bg-success/80 text-white" : "bg-muted text-muted-foreground"
                   }`}>
                     {step > s.id ? <CheckCircle2 className="h-3 w-3" /> : <s.icon className="h-3 w-3" />}
                     {s.label}
@@ -436,7 +436,7 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
                   const daysRemaining = daysInMonth - today.getDate() + 1;
                   const proporcional = ((vm / 30) * daysRemaining).toFixed(2);
                   return (
-                    <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900 text-xs text-blue-800 dark:text-blue-300 space-y-1">
+                    <div className="p-3 bg-primary/6 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900 text-xs text-blue-800 dark:text-blue-300 space-y-1">
                       <p><strong>Cálculo proporcional (1º boleto):</strong></p>
                       <p>R$ {vm.toFixed(2).replace(".", ",")} / 30 dias × {daysRemaining} dias restantes = <strong>R$ {Number(proporcional).toFixed(2).replace(".", ",")}</strong></p>
                       <p className="text-blue-600">Vencimento: dia 10 do próximo mês</p>

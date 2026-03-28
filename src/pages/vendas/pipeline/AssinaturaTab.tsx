@@ -54,9 +54,9 @@ const tipoIcons: Record<string, React.ElementType> = {
   assinatura: CheckCircle, expiracao: AlertTriangle, reenvio: RotateCcw,
 };
 const tipoCores: Record<string, string> = {
-  criacao: "bg-[#1A3A5C] text-white", envio: "bg-blue-500 text-white",
-  visualizacao: "bg-amber-500 text-white", assinatura: "bg-green-500 text-white",
-  expiracao: "bg-red-500 text-white", reenvio: "bg-purple-500 text-white",
+  criacao: "bg-[#1A3A5C] text-white", envio: "bg-primary/60 text-white",
+  visualizacao: "bg-warning/80 text-white", assinatura: "bg-success/80 text-white",
+  expiracao: "bg-destructive/80 text-white", reenvio: "bg-primary/60 text-white",
 };
 
 interface Props { deal: PipelineDeal; }
@@ -198,7 +198,7 @@ export default function AssinaturaTab({ deal }: Props) {
           </div>
         )}
         {status === "assinado" && (
-          <Card className="rounded-none bg-green-50 border-green-200">
+          <Card className="rounded-none bg-success/8 border-green-200">
             <CardContent className="p-3 flex items-center gap-3">
               <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
               <div>
