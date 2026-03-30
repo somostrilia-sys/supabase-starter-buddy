@@ -411,7 +411,7 @@ export default function Pipeline() {
             return (
               <div
                 key={col.key}
-                className={`flex flex-col rounded-xl overflow-hidden min-w-[270px] w-[270px] shrink-0 transition-all bg-muted/30 border border-border/70 ${isOver ? "ring-2 ring-primary/30 shadow-lg" : "shadow-sm"}`}
+                className={`flex flex-col rounded-xl overflow-hidden min-w-[270px] w-[270px] shrink-0 transition-all bg-muted/30 border-2 border-gray-200 dark:border-gray-700 ${isOver ? "ring-2 ring-primary/30 shadow-lg" : "shadow-sm"}`}
                 style={{ borderTop: `4px solid ${col.color}` }}
                 onDragOver={e => handleDragOver(e, col.key)}
                 onDragLeave={() => setDragOverStage(null)}
@@ -437,7 +437,7 @@ export default function Pipeline() {
                           draggable
                           onDragStart={e => handleDragStart(e, deal.id)}
                           onClick={() => setDetailDeal(deal)}
-                          className={`kanban-card group bg-card border-2 border-border/60 border-l-4 rounded-xl cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-200 ${draggedId === deal.id ? "opacity-40 scale-[0.97]" : ""}`}
+                          className={`kanban-card group bg-card border-2 border-gray-300 dark:border-gray-600 border-l-[5px] rounded-xl cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-200 ${draggedId === deal.id ? "opacity-40 scale-[0.97]" : ""}`}
                           style={{ borderLeftColor: col.color }}
                         >
                           <div className="p-3.5 space-y-2">
