@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  PipelineDeal, PipelineStage, stageColumns, mockDeals,
+  PipelineDeal, PipelineStage, stageColumns,
   consultores, gerentes, cooperativas, regionais, planos,
 } from "./pipeline/mockData";
 import DealDetailModal from "./pipeline/DealDetailModal";
@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePermission, useLeadScope } from "@/hooks/usePermission";
 import ConcretizarVendaModal from "./ConcretizarVendaModal";
+import { useNegociacoes } from "@/hooks/useNegociacoes";
 
 function daysStalled(updated: string) {
   return Math.floor((Date.now() - new Date(updated).getTime()) / 86400000);
@@ -80,10 +81,12 @@ export default function Pipeline() {
   const [form, setForm] = useState({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
   const [formTouched, setFormTouched] = useState({ lead_nome: false, telefone: false });
 
-  // Drag state (for mock fallback)
+  // Drag state
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
-  const [localDeals, setLocalDeals] = useState<PipelineDeal[]>(mockDeals);
+
+  // Hook de negociações (Supabase real)
+  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao } = useNegociacoes();
 
   // Supabase leads query with busca + RBAC scope
   const { data: leadsData } = useQuery({
@@ -113,56 +116,107 @@ export default function Pipeline() {
 
   const createLead = useMutation({
     mutationFn: async (data: typeof form) => {
-      const { error } = await supabase.from("leads").insert({
-        nome: data.lead_nome,
+      // Criar na tabela negociacoes (nova)
+      const { error: negError } = await createNegociacao({
+        lead_nome: data.lead_nome,
         telefone: data.telefone,
-        email: data.email || null,
-        cpf: data.cpf_cnpj || null,
-        veiculo_interesse: data.modelo || null,
-        plano_interesse: data.plano || null,
-        consultor_nome: data.consultor || null,
-        observacoes: data.observacoes || null,
-        status: "novo_lead",
+        email: data.email || undefined,
+        cpf_cnpj: data.cpf_cnpj || undefined,
+        veiculo_modelo: data.modelo || undefined,
+        veiculo_placa: data.placa ? data.placa.toUpperCase().replace(/\s/g, "") : undefined,
+        plano: data.plano || undefined,
+        cooperativa: data.cooperativa || undefined,
+        regional: data.regional || undefined,
+        consultor: data.consultor || undefined,
+        observacoes: data.observacoes || undefined,
+        stage: "novo_lead",
+        origem: "Manual",
+        enviado_sga: false,
+        visualizacoes_proposta: 0,
+        status_icons: { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false },
       });
-      if (error) throw error;
+      if (negError) {
+        // Fallback: criar na tabela leads (antiga)
+        const { error } = await supabase.from("leads").insert({
+          nome: data.lead_nome,
+          telefone: data.telefone,
+          email: data.email || null,
+          cpf: data.cpf_cnpj || null,
+          veiculo_interesse: data.modelo || null,
+          plano_interesse: data.plano || null,
+          consultor_nome: data.consultor || null,
+          observacoes: data.observacoes || null,
+          status: "novo_lead",
+        });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       setNewDealOpen(false);
-      toast.success("Lead criado com sucesso!");
+      toast.success("Negociação criada com sucesso!");
       setForm({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
       setFormTouched({ lead_nome: false, telefone: false });
     },
     onError: (e: any) => toast.error(e.message),
   });
 
-  // Map leads data or use mock
-  const dealsToShow: PipelineDeal[] = leadsData && leadsData.length > 0
-    ? leadsData.map(l => ({
-        id: l.id,
-        codigo: (l as any).codigo_negociacao || `NEG-${new Date(l.created_at).getFullYear()}-${l.id.slice(-3).toUpperCase()}`,
-        lead_nome: l.nome,
-        cpf_cnpj: l.cpf || "",
-        telefone: l.telefone,
-        email: l.email || "",
-        veiculo_modelo: l.veiculo_interesse || "",
-        veiculo_placa: "",
-        plano: l.plano_interesse || "",
-        valor_plano: 0,
-        stage: (l.status as PipelineStage) || "novo_lead",
-        consultor: l.consultor_nome || "",
-        cooperativa: "",
-        regional: "",
-        gerente: "",
-        origem: "Manual",
-        observacoes: l.observacoes || "",
-        enviado_sga: false,
-        visualizacoes_proposta: 0,
-        status_icons: { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false },
-        created_at: l.created_at,
-        updated_at: l.updated_at,
-      }))
-    : localDeals;
+  // Map negociacoes (Supabase real) → PipelineDeal
+  const negociacoesAsDeal: PipelineDeal[] = negociacoes.map(n => ({
+    id: n.id,
+    codigo: n.codigo || `NEG-${new Date(n.created_at).getFullYear()}-${n.id.slice(-4).toUpperCase()}`,
+    lead_nome: n.lead_nome,
+    cpf_cnpj: n.cpf_cnpj || "",
+    telefone: n.telefone || "",
+    email: n.email || "",
+    veiculo_modelo: n.veiculo_modelo || "",
+    veiculo_placa: n.veiculo_placa || "",
+    plano: n.plano || "",
+    valor_plano: n.valor_plano || 0,
+    stage: (n.stage as PipelineStage) || "novo_lead",
+    consultor: n.consultor || "",
+    cooperativa: n.cooperativa || "",
+    regional: n.regional || "",
+    gerente: n.gerente || "",
+    origem: n.origem || "Manual",
+    observacoes: n.observacoes || "",
+    enviado_sga: n.enviado_sga || false,
+    visualizacoes_proposta: n.visualizacoes_proposta || 0,
+    status_icons: (n.status_icons as any) || { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false },
+    created_at: n.created_at,
+    updated_at: n.updated_at,
+  }));
+
+  // Map leads data (tabela antiga)
+  const leadsAsDeal: PipelineDeal[] = (leadsData || []).map(l => ({
+    id: l.id,
+    codigo: (l as any).codigo_negociacao || `NEG-${new Date(l.created_at).getFullYear()}-${l.id.slice(-3).toUpperCase()}`,
+    lead_nome: l.nome,
+    cpf_cnpj: l.cpf || "",
+    telefone: l.telefone,
+    email: l.email || "",
+    veiculo_modelo: l.veiculo_interesse || "",
+    veiculo_placa: "",
+    plano: l.plano_interesse || "",
+    valor_plano: 0,
+    stage: (l.status as PipelineStage) || "novo_lead",
+    consultor: l.consultor_nome || "",
+    cooperativa: "",
+    regional: "",
+    gerente: "",
+    origem: "Manual",
+    observacoes: l.observacoes || "",
+    enviado_sga: false,
+    visualizacoes_proposta: 0,
+    status_icons: { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false },
+    created_at: l.created_at,
+    updated_at: l.updated_at,
+  }));
+
+  // Prioridade: negociacoes (nova tabela) > leads (tabela antiga)
+  const dealsToShow: PipelineDeal[] = negociacoesAsDeal.length > 0
+    ? negociacoesAsDeal
+    : leadsAsDeal;
 
   const activeFilterCount = [fConsultor !== "all", fGerente !== "all", fCoop !== "all", fRegional !== "all", fEtapa !== "all", !!fDateStart, !!fDateEnd].filter(Boolean).length;
 
@@ -207,8 +261,11 @@ export default function Pipeline() {
   function handleDragOver(e: React.DragEvent, stage: PipelineStage) { e.preventDefault(); setDragOverStage(stage); }
   async function handleDrop(stage: PipelineStage) {
     if (draggedId) {
-      if (draggedId.startsWith("p")) {
-        setLocalDeals(prev => prev.map(d => d.id === draggedId ? { ...d, stage, updated_at: new Date().toISOString() } : d));
+      // Verifica se é uma negociação real (UUID) ou lead antigo
+      const isNegociacao = negociacoes.some(n => n.id === draggedId);
+      if (isNegociacao) {
+        const { error } = await updateNegociacao(draggedId, { stage });
+        if (error) toast.error("Erro ao mover negociação");
       } else {
         await updateLeadStatus.mutateAsync({ id: draggedId, status: stage });
       }
@@ -217,10 +274,12 @@ export default function Pipeline() {
   }
 
   async function handleLiberarCadastro(deal: PipelineDeal) {
-    if (!deal.id.startsWith("p")) {
-      await updateLeadStatus.mutateAsync({ id: deal.id, status: "liberado_cadastro" });
+    const isNegociacao = negociacoes.some(n => n.id === deal.id);
+    if (isNegociacao) {
+      const { error } = await updateNegociacao(deal.id, { stage: "liberado_cadastro" });
+      if (error) { toast.error("Erro ao liberar cadastro"); return; }
     } else {
-      setLocalDeals(prev => prev.map(d => d.id === deal.id ? { ...d, stage: "liberado_cadastro" } : d));
+      await updateLeadStatus.mutateAsync({ id: deal.id, status: "liberado_cadastro" });
     }
     toast.success("Lead liberado para cadastro!");
   }
