@@ -90,6 +90,116 @@ const mockCargaGestao = regionaisData.map(r => ({
   status: r.nome === "Natal" || r.nome === "Alagoas" || r.nome === "Mato Grosso Sul" ? "Pendente" as const : "Executada" as const,
 }));
 
+// ── Dashboard helpers ───────────────────────────────────────
+
+const totalVeiculos = regionaisData.reduce((s, r) => s + r.veiculos, 0);
+const regionalMaior = regionaisData.reduce((a, b) => (b.veiculos > a.veiculos ? b : a));
+const maxVeiculos = regionalMaior.veiculos;
+
+// Média ponderada dos fatores de cada categoria × R$ 50 base
+const fatorMedioGeral =
+  mockCotas.reduce((s, c) => s + c.fator, 0) / mockCotas.length;
+const custoMedioRateio = fatorMedioGeral * 50;
+
+// Resumo por categoria (calculado das mockCotas)
+const categoriaResumo = ["Automóvel", "Motocicleta", "Pesados", "Utilitários", "Vans"].map(cat => {
+  const cotas = mockCotas.filter(c => c.categoria === cat);
+  const fatorMedio = cotas.reduce((s, c) => s + c.fator, 0) / cotas.length;
+  const percFrota: Record<string, number> = { "Automóvel": 71, "Motocicleta": 15, "Pesados": 8, "Utilitários": 4, "Vans": 2 };
+  return { categoria: cat, fatorMedio, pct: percFrota[cat] ?? 0 };
+});
+
+// ── Dashboard Component ─────────────────────────────────────
+
+function DashboardRateio() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-muted/50 hover:bg-muted transition-colors text-sm font-medium text-primary"
+      >
+        <span>{open ? "▼" : "▶"} Dashboard de Rateio</span>
+        <span className="text-xs font-normal text-muted-foreground">
+          {open ? "Ocultar" : "Ver Dashboard"}
+        </span>
+      </button>
+
+      {open && (
+        <div className="p-5 space-y-6 bg-background">
+          {/* KPI cards */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="border border-border rounded-lg p-4">
+              <p className="text-xs text-muted-foreground mb-1">Total Veículos</p>
+              <p className="text-2xl font-bold text-primary">{totalVeiculos.toLocaleString("pt-BR")}</p>
+              <p className="text-xs text-muted-foreground mt-1">12 regionais</p>
+            </div>
+            <div className="border border-border rounded-lg p-4">
+              <p className="text-xs text-muted-foreground mb-1">Regional com Mais Veículos</p>
+              <p className="text-lg font-bold text-primary">{regionalMaior.nome}</p>
+              <p className="text-xs text-muted-foreground mt-1">{regionalMaior.veiculos.toLocaleString("pt-BR")} veículos</p>
+            </div>
+            <div className="border border-border rounded-lg p-4">
+              <p className="text-xs text-muted-foreground mb-1">Custo Médio Rateio</p>
+              <p className="text-2xl font-bold text-primary">
+                {custoMedioRateio.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">fator médio × R$ 50</p>
+            </div>
+          </div>
+
+          {/* Gráfico de barras por regional */}
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Veículos por Regional</p>
+            <div className="space-y-2">
+              {regionaisData.map(r => (
+                <div key={r.nome} className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground w-36 truncate shrink-0">{r.nome}</span>
+                  <div className="flex-1 bg-primary/10 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-primary h-2 rounded-full transition-all"
+                      style={{ width: `${(r.veiculos / maxVeiculos) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-mono text-foreground w-12 text-right shrink-0">
+                    {r.veiculos.toLocaleString("pt-BR")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Resumo por categoria */}
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Resumo por Categoria</p>
+            <div className="border border-border rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted text-xs text-muted-foreground">
+                    <th className="text-left px-3 py-2 font-medium">Categoria</th>
+                    <th className="text-right px-3 py-2 font-medium">Fator Médio</th>
+                    <th className="text-right px-3 py-2 font-medium">% da Frota</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categoriaResumo.map((c, i) => (
+                    <tr key={c.categoria} className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}>
+                      <td className="px-3 py-2 font-medium">{c.categoria}</td>
+                      <td className="px-3 py-2 text-right font-mono">{c.fatorMedio.toFixed(2)}x</td>
+                      <td className="px-3 py-2 text-right">{c.pct}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main Component ─────────────────────────────────────────
 
 export default function RateioTab() {
@@ -124,6 +234,8 @@ export default function RateioTab() {
           <ImportExportCotas />
         </DialogContent>
       </Dialog>
+
+      <DashboardRateio />
 
       <div className="flex gap-1 border-b border-border overflow-x-auto">
         {tabs.map((t) => (
