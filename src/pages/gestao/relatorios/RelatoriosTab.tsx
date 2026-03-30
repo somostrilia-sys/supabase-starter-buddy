@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import RelatoriosGeraisTab from "./RelatoriosGeraisTab";
+import GerarRelatorio from "./GerarRelatorio";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -332,6 +333,7 @@ export default function RelatoriosTab() {
           <TabsTrigger value="boletos" className="gap-1"><FileText className="h-3.5 w-3.5" />Boletos</TabsTrigger>
           <TabsTrigger value="gerais" className="gap-1"><BarChart3 className="h-3.5 w-3.5" />Gerais</TabsTrigger>
           <TabsTrigger value="outros" className="gap-1"><BarChart3 className="h-3.5 w-3.5" />Demais</TabsTrigger>
+          <TabsTrigger value="gerar" className="gap-1"><Download className="h-3.5 w-3.5" />Gerar Relatório</TabsTrigger>
         </TabsList>
 
         {/* ── ASSOCIADOS ── */}
@@ -634,6 +636,11 @@ export default function RelatoriosTab() {
               </div>
             </div>
           )}
+        </TabsContent>
+
+        {/* ── GERAR RELATÓRIO ── */}
+        <TabsContent value="gerar" className="mt-4">
+          <GerarRelatorio />
         </TabsContent>
       </Tabs>
 
