@@ -52,7 +52,7 @@ export default function FerramentasTab() {
             key={a.id}
             onClick={() => setView(a.id)}
             className="group relative overflow-hidden rounded-2xl border-l-4 border-l-[#0EA5E9] text-left transition-all duration-200 hover:shadow-xl hover:-translate-y-1 flex flex-col"
-            style={{ background: "linear-gradient(135deg, #003870 0%, #004a8f 100%)" }}
+            style={{ backgroundColor: "#003870" }}
           >
             <div className="absolute top-4 right-4">
               <ChevronRight className="h-5 w-5 text-[#0EA5E9]" />
