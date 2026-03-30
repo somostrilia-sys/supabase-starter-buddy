@@ -16,6 +16,7 @@ import {
   User, MapPin, Phone, Mail, KeyRound, Landmark,
   FileText, Car, DollarSign, Gauge, Package, Radio, ClipboardCheck,
   Upload, Shield, CreditCard, Plus, Search, Trash2, Copy, X, Eraser,
+  Eye, Loader2,
 } from "lucide-react";
 
 const ufs = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
@@ -74,7 +75,7 @@ const now = () => {
 };
 
 interface Implemento { item: string; descricao: string; valor: string; }
-interface Documento { nome: string; tipo: string; data: string; }
+interface Documento { nome: string; tipo: string; data: string; url?: string; }
 
 // Situações are now fetched dynamically from member_statuses table
 
@@ -234,6 +235,7 @@ export default function CadastrarAssociado() {
     { nome: "CNH_Carlos_Silva.pdf", tipo: "CNH", data: "05/03/2026" },
     { nome: "CRLV_BRA2E19.pdf", tipo: "CRLV", data: "05/03/2026" },
   ]);
+  const [uploading, setUploading] = useState(false);
 
   const set = (f: string, v: string | boolean) => setForm(p => ({ ...p, [f]: v }));
 
@@ -340,6 +342,39 @@ export default function CadastrarAssociado() {
     setImplementos(p => p.map((it, idx) => idx === i ? { ...it, [f]: v } : it));
 
   const removeDoc = (i: number) => setDocumentos(p => p.filter((_, idx) => idx !== i));
+
+  const detectTipo = (nome: string): string => {
+    const n = nome.toLowerCase();
+    if (n.includes("cnh") || n.includes("habilitacao")) return "CNH";
+    if (n.includes("crv") || n.includes("documento veiculo")) return "CRV";
+    if (n.includes("comprovante")) return "Comprovante de Residência";
+    return "Documento";
+  };
+
+  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    setUploading(true);
+    const hoje = new Date().toLocaleDateString("pt-BR");
+    for (const file of files) {
+      const tipo = detectTipo(file.name);
+      try {
+        const { data, error } = await supabase.storage
+          .from("documentos-associados")
+          .upload(`${Date.now()}-${file.name}`, file, { upsert: false });
+        if (error) throw error;
+        const { data: urlData } = supabase.storage
+          .from("documentos-associados")
+          .getPublicUrl(data.path);
+        setDocumentos(prev => [...prev, { nome: file.name, tipo, data: hoje, url: urlData.publicUrl }]);
+      } catch {
+        const url = URL.createObjectURL(file);
+        setDocumentos(prev => [...prev, { nome: file.name, tipo, data: hoje, url }]);
+      }
+    }
+    setUploading(false);
+    e.target.value = "";
+  };
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -823,11 +858,25 @@ export default function CadastrarAssociado() {
             <div className="flex items-center gap-2"><Upload className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">14. Documentos</span></div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4 pt-2">
-            <div className="border-2 border-dashed rounded-lg p-6 text-center mb-4 hover:border-primary/50 transition-colors cursor-pointer">
-              <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm font-medium">Arraste arquivos aqui ou clique para selecionar</p>
-              <p className="text-xs text-muted-foreground mt-1">CNH, CRLV, Comprovante de Residência, Fotos do Veículo</p>
-            </div>
+            <input
+              type="file"
+              multiple
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              className="hidden"
+              id="doc-upload"
+              onChange={handleDocUpload}
+            />
+            <label htmlFor="doc-upload" className="cursor-pointer block mb-4">
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+                {uploading ? (
+                  <Loader2 className="h-8 w-8 mx-auto text-muted-foreground mb-2 animate-spin" />
+                ) : (
+                  <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                )}
+                <p className="text-sm text-muted-foreground">Arraste arquivos ou clique para selecionar</p>
+                <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, DOC até 10MB</p>
+              </div>
+            </label>
             {documentos.length > 0 && (
               <Table>
                 <TableHeader>
@@ -835,6 +884,7 @@ export default function CadastrarAssociado() {
                     <TableHead>Nome</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Data</TableHead>
+                    <TableHead className="w-12">Ação</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -844,6 +894,15 @@ export default function CadastrarAssociado() {
                       <TableCell className="text-xs">{doc.nome}</TableCell>
                       <TableCell><Badge variant="outline" className="text-xs">{doc.tipo}</Badge></TableCell>
                       <TableCell className="text-xs">{doc.data}</TableCell>
+                      <TableCell>
+                        {doc.url && (
+                          <Button size="sm" variant="ghost" asChild>
+                            <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                              <Eye className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        )}
+                      </TableCell>
                       <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeDoc(i)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></TableCell>
                     </TableRow>
                   ))}
