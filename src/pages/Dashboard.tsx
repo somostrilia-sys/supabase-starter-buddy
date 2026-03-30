@@ -293,77 +293,81 @@ export default function Dashboard() {
           action="Abrir módulo"
           onAction={() => navigate("/gestao")}
         >
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard label="Associados Ativos" value={stats.associadosAtivos} icon={Users} animDelay={1} />
-            <KpiCard label="Veículos Protegidos" value={stats.veiculos} icon={Car} animDelay={2} />
-            <KpiCard
-              label="Eventos Abertos"
-              value={stats.eventosAbertos}
-              icon={AlertTriangle}
-              subtitle={stats.eventosAbertos > 0 ? "Requer atenção" : "Nenhum pendente"}
-              animDelay={3}
-            />
-            <KpiCard
-              label="Inativos / Suspensos"
-              value={`${stats.associadosInativos} / ${stats.associadosSuspensos}`}
-              icon={Users}
-              animDelay={4}
-            />
+          <div className="rounded-2xl border-2 border-blue-200 bg-white p-4 shadow-sm">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <KpiCard label="Associados Ativos" value={stats.associadosAtivos} icon={Users} animDelay={1} />
+              <KpiCard label="Veículos Protegidos" value={stats.veiculos} icon={Car} animDelay={2} />
+              <KpiCard
+                label="Eventos Abertos"
+                value={stats.eventosAbertos}
+                icon={AlertTriangle}
+                subtitle={stats.eventosAbertos > 0 ? "Requer atenção" : "Nenhum pendente"}
+                animDelay={3}
+              />
+              <KpiCard
+                label="Inativos / Suspensos"
+                value={`${stats.associadosInativos} / ${stats.associadosSuspensos}`}
+                icon={Users}
+                animDelay={4}
+              />
+            </div>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-            <Card className="shadow-sm border card-premium card-glow animate-fade-in-up animate-fade-in-up-5">
-              <CardHeader className="pb-2 pt-5 px-5">
-                <CardTitle className="text-sm font-semibold text-foreground">Crescimento Mensal</CardTitle>
-                <p className="text-xs text-muted-foreground">Associados e veículos cadastrados</p>
-              </CardHeader>
-              <CardContent className="px-3 pb-4">
-                <ChartContainer config={monthlyChartConfig} className="h-[200px] w-full">
-                  <BarChart data={fakeMonthly}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="mes" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="associados" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="veiculos" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-            <Card className="shadow-sm border card-premium card-glow animate-fade-in-up animate-fade-in-up-6">
-              <CardHeader className="pb-2 pt-5 px-5">
-                <CardTitle className="text-sm font-semibold text-foreground">Status dos Associados</CardTitle>
-                <p className="text-xs text-muted-foreground">Distribuição atual da base</p>
-              </CardHeader>
-              <CardContent className="px-3 pb-4">
-                <ChartContainer config={pieChartConfig} className="h-[200px] w-full">
-                  <RPieChart>
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={80}
-                      paddingAngle={2}
-                      dataKey="value"
-                      nameKey="name"
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                  </RPieChart>
-                </ChartContainer>
-                <div className="flex justify-center gap-5 mt-2">
-                  {pieData.map((d) => (
-                    <div key={d.name} className="flex items-center gap-1.5 text-xs">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.fill }} />
-                      <span className="text-muted-foreground font-medium">{d.name}: {d.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+          <div className="rounded-2xl border-2 border-blue-200 bg-white p-4 shadow-sm mt-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card className="shadow-sm border card-premium card-glow animate-fade-in-up animate-fade-in-up-5">
+                <CardHeader className="pb-2 pt-5 px-5">
+                  <CardTitle className="text-sm font-semibold text-foreground">Crescimento Mensal</CardTitle>
+                  <p className="text-xs text-muted-foreground">Associados e veículos cadastrados</p>
+                </CardHeader>
+                <CardContent className="px-3 pb-4">
+                  <ChartContainer config={monthlyChartConfig} className="h-[200px] w-full">
+                    <BarChart data={fakeMonthly}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="mes" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="associados" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="veiculos" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+              <Card className="shadow-sm border card-premium card-glow animate-fade-in-up animate-fade-in-up-6">
+                <CardHeader className="pb-2 pt-5 px-5">
+                  <CardTitle className="text-sm font-semibold text-foreground">Status dos Associados</CardTitle>
+                  <p className="text-xs text-muted-foreground">Distribuição atual da base</p>
+                </CardHeader>
+                <CardContent className="px-3 pb-4">
+                  <ChartContainer config={pieChartConfig} className="h-[200px] w-full">
+                    <RPieChart>
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="value"
+                        nameKey="name"
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                    </RPieChart>
+                  </ChartContainer>
+                  <div className="flex justify-center gap-5 mt-2">
+                    {pieData.map((d) => (
+                      <div key={d.name} className="flex items-center gap-1.5 text-xs">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.fill }} />
+                        <span className="text-muted-foreground font-medium">{d.name}: {d.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </ModuleSection>
 
@@ -377,22 +381,24 @@ export default function Dashboard() {
           action="Abrir módulo"
           onAction={() => navigate("/financeiro")}
         >
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pb-8">
-            <KpiCard
-              label="Recebido Hoje"
-              value={`R$ ${stats.recebidoHoje.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
-              icon={Wallet}
-              animDelay={1}
-            />
-            <KpiCard
-              label="Inadimplência"
-              value={`${stats.inadimplencia}%`}
-              icon={PercentCircle}
-              subtitle={stats.inadimplencia > 20 ? "Acima do aceitável" : "Dentro da meta"}
-              animDelay={2}
-            />
-            <KpiCard label="Receita Semanal" value="R$ 10.350,00" icon={Receipt} subtitle="Últimos 7 dias" animDelay={3} />
-            <KpiCard label="Boletos em Aberto" value="124" icon={FileText} subtitle="Vencendo este mês" animDelay={4} />
+          <div className="rounded-2xl border-2 border-blue-200 bg-white p-4 shadow-sm">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <KpiCard
+                label="Recebido Hoje"
+                value={`R$ ${stats.recebidoHoje.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+                icon={Wallet}
+                animDelay={1}
+              />
+              <KpiCard
+                label="Inadimplência"
+                value={`${stats.inadimplencia}%`}
+                icon={PercentCircle}
+                subtitle={stats.inadimplencia > 20 ? "Acima do aceitável" : "Dentro da meta"}
+                animDelay={2}
+              />
+              <KpiCard label="Receita Semanal" value="R$ 10.350,00" icon={Receipt} subtitle="Últimos 7 dias" animDelay={3} />
+              <KpiCard label="Boletos em Aberto" value="124" icon={FileText} subtitle="Vencendo este mês" animDelay={4} />
+            </div>
           </div>
         </ModuleSection>
       </div>
