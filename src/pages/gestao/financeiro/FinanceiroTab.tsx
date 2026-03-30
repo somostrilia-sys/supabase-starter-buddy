@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  FileText, CheckSquare, Building2, Receipt, Clock, Landmark, ChevronRight, ArrowLeft, Calculator,
+  FileText, CheckSquare, Building2, Receipt, Clock, Landmark, ChevronRight, ArrowLeft, Calculator, Table2,
 } from "lucide-react";
 import BoletosSimulacao from "./BoletosSimulacao";
 import Conferencia from "./Conferencia";
@@ -9,6 +9,7 @@ import BancoIntegracao from "./BancoIntegracao";
 import CobrancasRecibos from "./CobrancasRecibos";
 import HistoricoFinanceiro from "./HistoricoFinanceiro";
 import CalculadoraMensalidade from "./CalculadoraMensalidade";
+import TabelaPlanos from "./TabelaPlanos";
 
 const actions = [
   { id: "boletos", title: "Boletos / Fechamento", icon: FileText, desc: "Simular, gerar e cancelar lotes de boletos" },
@@ -17,6 +18,7 @@ const actions = [
   { id: "cobrancas", title: "Cobranças e Recibos", icon: Receipt, desc: "Gestão de cobranças, recibos e envios" },
   { id: "historico", title: "Histórico", icon: Clock, desc: "Timeline de movimentações financeiras" },
   { id: "calculadora", title: "Calculadora de Mensalidade", icon: Calculator, desc: "Simular mensalidade com taxa admin e rateio" },
+  { id: "tabela-planos", title: "Tabela de Planos", icon: Table2, desc: "Planos com filtro por região e tipo de veículo" },
 ];
 
 export default function FinanceiroTab() {
@@ -28,6 +30,7 @@ export default function FinanceiroTab() {
   if (view === "cobrancas") return <CobrancasRecibos onBack={() => setView(null)} />;
   if (view === "historico") return <HistoricoFinanceiro onBack={() => setView(null)} />;
   if (view === "calculadora") return <CalculadoraMensalidade onBack={() => setView(null)} />;
+  if (view === "tabela-planos") return <TabelaPlanos onBack={() => setView(null)} />;
 
   return (
     <div className="p-6 lg:px-8 flex flex-col min-h-[calc(100vh-7.5rem)]">
