@@ -12,8 +12,10 @@ import {
   Calculator, Upload, Download, Save, Edit, Plus, Loader2,
   ChevronRight, ChevronLeft, CheckCircle2, AlertTriangle,
   Info, Search, ChevronDown, ChevronUp, FileSpreadsheet, Play,
+  ArrowUpDown,
 } from "lucide-react";
 import { toast } from "sonner";
+import ImportExportCotas from "./ImportExportCotas";
 
 // ── Constants ──────────────────────────────────────────────
 
@@ -92,6 +94,7 @@ const mockCargaGestao = regionaisData.map(r => ({
 
 export default function RateioTab() {
   const [subTab, setSubTab] = useState<"estrutura" | "distribuicao" | "historico" | "carga">("estrutura");
+  const [showImportExport, setShowImportExport] = useState(false);
 
   const tabs = [
     { id: "estrutura" as const, label: "Estrutura de Cotas", icon: FileSpreadsheet },
@@ -102,10 +105,25 @@ export default function RateioTab() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-primary">Rateio</h2>
-        <p className="text-sm text-muted-foreground">Estrutura de cotas, distribuição e histórico de rateio</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-primary">Rateio</h2>
+          <p className="text-sm text-muted-foreground">Estrutura de cotas, distribuição e histórico de rateio</p>
+        </div>
+        <Button variant="outline" size="sm" className="gap-2 shrink-0" onClick={() => setShowImportExport(true)}>
+          <ArrowUpDown className="h-4 w-4" />
+          Importar/Exportar
+        </Button>
       </div>
+
+      <Dialog open={showImportExport} onOpenChange={setShowImportExport}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Importar / Exportar Cotas</DialogTitle>
+          </DialogHeader>
+          <ImportExportCotas />
+        </DialogContent>
+      </Dialog>
 
       <div className="flex gap-1 border-b border-border overflow-x-auto">
         {tabs.map((t) => (
