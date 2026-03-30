@@ -4,11 +4,11 @@ export function usePermission() {
   const { profile } = useAuth();
   const role: UserRole = profile?.role ?? 'consultor';
 
-  const canConcretizarVenda = ['cadastro', 'administrativo', 'diretor'].includes(role);
-  const canLiberarCadastro = ['supervisor', 'administrativo', 'diretor'].includes(role);
-  const canEditarAposConcretizacao = ['cadastro', 'administrativo', 'diretor'].includes(role);
-  const canAcessarFinanceiro = ['financeiro', 'administrativo', 'diretor'].includes(role);
-  const isAdmin = ['administrativo', 'diretor'].includes(role);
+  const canConcretizarVenda = ['admin', 'cadastro', 'administrativo', 'diretor'].includes(role);
+  const canLiberarCadastro = ['admin', 'supervisor', 'administrativo', 'diretor'].includes(role);
+  const canEditarAposConcretizacao = ['admin', 'cadastro', 'administrativo', 'diretor'].includes(role);
+  const canAcessarFinanceiro = ['admin', 'financeiro', 'administrativo', 'diretor'].includes(role);
+  const isAdmin = ['admin', 'administrativo', 'diretor'].includes(role);
 
   return {
     role,
@@ -23,7 +23,7 @@ export function usePermission() {
     canConcretizar: canConcretizarVenda,
     canEditarAssociado: canEditarAposConcretizacao,
     canVerFinanceiro: canAcessarFinanceiro,
-    canVerRelatorios: ['supervisor', 'financeiro', 'administrativo', 'diretor'].includes(role),
+    canVerRelatorios: ['admin', 'supervisor', 'financeiro', 'administrativo', 'diretor'].includes(role),
   };
 }
 
