@@ -293,7 +293,7 @@ export default function Dashboard() {
           action="Abrir módulo"
           onAction={() => navigate("/gestao")}
         >
-          <div className="rounded-2xl border-2 border-blue-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border-[3px] border-blue-400/70 bg-white p-4 shadow-sm">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <KpiCard label="Associados Ativos" value={stats.associadosAtivos} icon={Users} animDelay={1} />
               <KpiCard label="Veículos Protegidos" value={stats.veiculos} icon={Car} animDelay={2} />
@@ -312,7 +312,7 @@ export default function Dashboard() {
               />
             </div>
           </div>
-          <div className="rounded-2xl border-2 border-blue-200 bg-white p-4 shadow-sm mt-4">
+          <div className="rounded-2xl border-[3px] border-blue-400/70 bg-white p-4 shadow-sm mt-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <Card className="shadow-sm border card-premium card-glow animate-fade-in-up animate-fade-in-up-5">
                 <CardHeader className="pb-2 pt-5 px-5">
@@ -381,7 +381,7 @@ export default function Dashboard() {
           action="Abrir módulo"
           onAction={() => navigate("/financeiro")}
         >
-          <div className="rounded-2xl border-2 border-blue-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border-[3px] border-blue-400/70 bg-white p-4 shadow-sm">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <KpiCard
                 label="Recebido Hoje"
