@@ -186,16 +186,17 @@ export default function CadastroTab() {
 
       <div className="flex flex-col md:flex-row gap-4 md:gap-6 min-h-[400px] md:min-h-[600px]">
         <div className="md:w-56 shrink-0">
-          <div className="flex md:flex-col gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
+          <div className="flex md:flex-col gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 rounded-2xl border-2 border-[#003870] p-3">
             {groups.map(g => (
               <button
                 key={g.id}
                 onClick={() => { setActiveGroup(g.id); setSubView(0); }}
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors text-left whitespace-nowrap ${
                   activeGroup === g.id
-                    ? "bg-primary text-primary-foreground"
+                    ? "text-white"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
+                style={activeGroup === g.id ? { backgroundColor: "#003870" } : undefined}
               >
                 <g.icon className="h-4 w-4 shrink-0" />
                 {g.label}
