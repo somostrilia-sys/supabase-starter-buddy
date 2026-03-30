@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  FileText, CheckSquare, Building2, Receipt, Clock, Landmark, ChevronRight, ArrowLeft, Calculator, Table2,
+  FileText, CheckSquare, Building2, Receipt, Clock, Landmark, ChevronRight, ArrowLeft, Calculator, Table2, CalendarCheck,
 } from "lucide-react";
 import BoletosSimulacao from "./BoletosSimulacao";
 import Conferencia from "./Conferencia";
@@ -10,6 +10,7 @@ import CobrancasRecibos from "./CobrancasRecibos";
 import HistoricoFinanceiro from "./HistoricoFinanceiro";
 import CalculadoraMensalidade from "./CalculadoraMensalidade";
 import TabelaPlanos from "./TabelaPlanos";
+import FechamentoMensal from "./FechamentoMensal";
 
 const actions = [
   { id: "boletos", title: "Boletos / Fechamento", icon: FileText, desc: "Simular, gerar e cancelar lotes de boletos" },
@@ -19,6 +20,7 @@ const actions = [
   { id: "historico", title: "Histórico", icon: Clock, desc: "Timeline de movimentações financeiras" },
   { id: "calculadora", title: "Calculadora de Mensalidade", icon: Calculator, desc: "Simular mensalidade com taxa admin e rateio" },
   { id: "tabela-planos", title: "Tabela de Planos", icon: Table2, desc: "Planos com filtro por região e tipo de veículo" },
+  { id: "fechamento-mensal", title: "Fechamento Mensal", icon: CalendarCheck, desc: "Ciclo financeiro mensal — boletos, rateio e relatórios" },
 ];
 
 export default function FinanceiroTab() {
@@ -31,6 +33,7 @@ export default function FinanceiroTab() {
   if (view === "historico") return <HistoricoFinanceiro onBack={() => setView(null)} />;
   if (view === "calculadora") return <CalculadoraMensalidade onBack={() => setView(null)} />;
   if (view === "tabela-planos") return <TabelaPlanos onBack={() => setView(null)} />;
+  if (view === "fechamento-mensal") return <FechamentoMensal onBack={() => setView(null)} />;
 
   return (
     <div className="p-6 lg:px-8 flex flex-col min-h-[calc(100vh-7.5rem)]">
