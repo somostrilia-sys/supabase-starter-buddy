@@ -411,7 +411,7 @@ export default function Pipeline() {
             return (
               <div
                 key={col.key}
-                className={`flex flex-col rounded-xl overflow-hidden min-w-[260px] w-[260px] shrink-0 transition-all bg-muted/40 border border-border/50 ${isOver ? "ring-2 shadow-lg" : "shadow-sm"}`}
+                className={`flex flex-col rounded-xl overflow-hidden min-w-[270px] w-[270px] shrink-0 transition-all bg-muted/30 border border-border/70 ${isOver ? "ring-2 ring-primary/30 shadow-lg" : "shadow-sm"}`}
                 style={{ borderTop: `4px solid ${col.color}` }}
                 onDragOver={e => handleDragOver(e, col.key)}
                 onDragLeave={() => setDragOverStage(null)}
@@ -437,10 +437,10 @@ export default function Pipeline() {
                           draggable
                           onDragStart={e => handleDragStart(e, deal.id)}
                           onClick={() => setDetailDeal(deal)}
-                          className={`kanban-card group bg-card border border-l-4 rounded-lg cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${draggedId === deal.id ? "opacity-40" : ""}`}
+                          className={`kanban-card group bg-card border-2 border-border/60 border-l-4 rounded-xl cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-200 ${draggedId === deal.id ? "opacity-40 scale-[0.97]" : ""}`}
                           style={{ borderLeftColor: col.color }}
                         >
-                          <div className="p-3 space-y-1.5">
+                          <div className="p-3.5 space-y-2">
                             {/* Header: nome + código + menu */}
                             <div className="flex items-start justify-between">
                               <div>
@@ -474,12 +474,12 @@ export default function Pipeline() {
                             <div className="flex items-center gap-1.5 text-muted-foreground">
                               <Car className="h-3 w-3 shrink-0" />
                               <span className="text-[11px] truncate">{deal.veiculo_modelo}</span>
-                              <Badge variant="outline" className="text-[9px] font-mono px-1 py-0 rounded-none">{deal.veiculo_placa}</Badge>
+                              <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0.5 rounded border-primary/20 bg-primary/5">{deal.veiculo_placa}</Badge>
                             </div>
 
                             {/* Plano + Valor */}
                             <div className="flex items-center justify-between">
-                              <Badge variant="outline" className="text-[9px] px-1.5 py-0 rounded-none">{deal.plano}</Badge>
+                              <Badge variant="outline" className="text-[9px] px-1.5 py-0.5 rounded border-border">{deal.plano}</Badge>
                               <span className="text-[11px] font-bold text-foreground">R$ {deal.valor_plano.toFixed(2).replace(".", ",")}</span>
                             </div>
 
@@ -505,7 +505,7 @@ export default function Pipeline() {
                             </div>
 
                             {/* Footer: Consultor */}
-                            <div className="flex items-center justify-end gap-1.5 pt-0.5 border-t border-muted/40 mt-1">
+                            <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-border/50 mt-1.5">
                               <div className="w-5 h-5 rounded-full bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center shrink-0">
                                 <span className="text-[9px] font-bold text-primary">{deal.consultor.charAt(0)}</span>
                               </div>

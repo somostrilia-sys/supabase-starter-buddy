@@ -8,7 +8,7 @@ export default function FluxoDiario() {
         <h1 className="text-2xl font-bold tracking-tight">Fluxo Diário</h1>
         <p className="text-muted-foreground text-sm">Movimentação financeira do dia</p>
       </div>
-      <Card className="border-0 shadow-sm">
+      <Card className="border border-border shadow-sm">
         <CardContent className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <Wallet className="h-12 w-12 mb-4 opacity-30" />
           <p className="text-lg font-medium">Em desenvolvimento</p>

@@ -191,10 +191,10 @@ export default function CadastroTab() {
               <button
                 key={g.id}
                 onClick={() => { setActiveGroup(g.id); setSubView(0); }}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors text-left whitespace-nowrap ${
+                className={`flex items-center gap-2.5 px-3.5 py-3 rounded-lg text-[13px] font-medium transition-all text-left whitespace-nowrap border ${
                   activeGroup === g.id
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground border-transparent hover:border-border"
                 }`}
               >
                 <g.icon className="h-4 w-4 shrink-0" />

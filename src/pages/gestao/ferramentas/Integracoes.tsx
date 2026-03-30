@@ -56,7 +56,7 @@ export default function Integracoes({ onBack }: { onBack: () => void }) {
 
       {/* Status Cards */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="border-0 shadow-sm">
+        <Card className="border border-border shadow-sm">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center"><Shield className="h-5 w-5 text-warning" /></div>
             <div className="flex-1">
@@ -66,7 +66,7 @@ export default function Integracoes({ onBack }: { onBack: () => void }) {
             <Badge variant="outline" className="text-warning border-warning/30">Pendente</Badge>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-sm">
+        <Card className="border border-border shadow-sm">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center"><Shield className="h-5 w-5 text-warning" /></div>
             <div className="flex-1">
@@ -76,7 +76,7 @@ export default function Integracoes({ onBack }: { onBack: () => void }) {
             <Badge variant="outline" className="text-warning border-warning/30">Pendente</Badge>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-sm">
+        <Card className="border border-border shadow-sm">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center"><MessageSquare className="h-5 w-5 text-success" /></div>
             <div className="flex-1">
@@ -95,7 +95,7 @@ export default function Integracoes({ onBack }: { onBack: () => void }) {
         </TabsList>
 
         <TabsContent value="disparos" className="space-y-4 mt-4">
-          <Card className="border-0 shadow-sm">
+          <Card className="border border-border shadow-sm">
             <CardHeader className="pb-3"><CardTitle className="text-base">Mensagem</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-1.5">
@@ -115,7 +115,7 @@ export default function Integracoes({ onBack }: { onBack: () => void }) {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-sm">
+          <Card className="border border-border shadow-sm">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Destinatários</CardTitle>
@@ -153,7 +153,7 @@ export default function Integracoes({ onBack }: { onBack: () => void }) {
         </TabsContent>
 
         <TabsContent value="logs" className="mt-4">
-          <Card className="border-0 shadow-sm">
+          <Card className="border border-border shadow-sm">
             <CardContent className="pt-6">
               <Table>
                 <TableHeader>

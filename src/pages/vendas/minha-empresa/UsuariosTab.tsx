@@ -226,7 +226,7 @@ export default function UsuariosTab() {
   return (
     <div className="space-y-4">
       {/* ── Permission Groups Overview ── */}
-      <Card className="border-0 shadow-sm">
+      <Card className="border border-border shadow-sm">
         <CardHeader className="pb-3 cursor-pointer" onClick={() => setShowPermissoes(!showPermissoes)}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -258,7 +258,7 @@ export default function UsuariosTab() {
       </Card>
 
       {/* ── Users Table ── */}
-      <Card className="border-0 shadow-sm">
+      <Card className="border border-border shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-4">
           <div>
             <CardTitle className="text-lg flex items-center gap-2">

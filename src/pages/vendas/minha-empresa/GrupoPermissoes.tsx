@@ -227,7 +227,7 @@ export default function GrupoPermissoes() {
 
   return (
     <div className="space-y-4">
-      <Card className="border-0 shadow-sm">
+      <Card className="border border-border shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-4">
           <div>
             <CardTitle className="text-lg">Grupo de Permissões</CardTitle>
