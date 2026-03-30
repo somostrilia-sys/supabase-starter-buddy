@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Download, FileText, BarChart3, History } from "lucide-react";
 import { toast } from "sonner";
 
-const SUPABASE_URL = "https://yrjiegtqfngdliwclpzo.supabase.co";
+const SUPABASE_URL = "https://dxuoppekxgvdqnytftho.supabase.co";
 const ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyamllZ3RxZm5nZGxpd2NscHpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI3NTIyMzksImV4cCI6MjA1ODMyODIzOX0.bhlDxOOQAHFqBRkOT0oY5IOY5bZ3FBQG0P5DaD0CGPI";
 
