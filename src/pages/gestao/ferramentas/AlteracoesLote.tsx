@@ -55,7 +55,7 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
 
       {step === "config" && (
         <div className="space-y-4">
-          <Card className="border border-border shadow-sm">
+          <Card className="border-0 shadow-sm">
             <CardHeader className="pb-3"><CardTitle className="text-base">Tipo de Operação</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
@@ -72,7 +72,7 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
             </CardContent>
           </Card>
 
-          <Card className="border border-border shadow-sm">
+          <Card className="border-0 shadow-sm">
             <CardHeader className="pb-3"><CardTitle className="text-base">Filtros</CardTitle></CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
@@ -101,7 +101,7 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
             </CardContent>
           </Card>
 
-          <Card className="border border-border shadow-sm">
+          <Card className="border-0 shadow-sm">
             <CardHeader className="pb-3"><CardTitle className="text-base">Produtos</CardTitle></CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
@@ -135,7 +135,7 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
             </CardContent>
           </Card>
 
-          <Card className="border border-border shadow-sm">
+          <Card className="border-0 shadow-sm">
             <CardHeader className="pb-3"><CardTitle className="text-base">Importar CSV (opcional)</CardTitle></CardHeader>
             <CardContent>
               <div className="border-2 border-dashed rounded-lg p-8 text-center text-muted-foreground">
@@ -155,7 +155,7 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
 
       {step === "preview" && (
         <div className="space-y-4">
-          <Card className="border border-border shadow-sm">
+          <Card className="border-0 shadow-sm">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Resumo das Alterações</CardTitle>
@@ -211,7 +211,7 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
       )}
 
       {step === "processing" && (
-        <Card className="border border-border shadow-sm">
+        <Card className="border-0 shadow-sm">
           <CardContent className="py-16 flex flex-col items-center gap-4">
             <RefreshCw className="h-10 w-10 text-primary animate-spin" />
             <p className="font-semibold">Processando alterações...</p>
@@ -224,7 +224,7 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
       )}
 
       {step === "done" && (
-        <Card className="border border-border shadow-sm">
+        <Card className="border-0 shadow-sm">
           <CardContent className="py-16 flex flex-col items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
               <CheckCircle2 className="h-8 w-8 text-success" />

@@ -47,18 +47,18 @@ export default function FinanceiroTab() {
           <button
             key={a.id}
             onClick={() => setView(a.id)}
-            className="group relative overflow-hidden rounded-xl border-2 border-border/80 bg-card text-left transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 hover:border-primary/40 active:scale-[0.99] flex flex-col"
+            className="group relative overflow-hidden rounded-xl border border-border bg-card text-left transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 hover:border-primary/30 flex flex-col"
           >
             
-            <div className="flex items-center gap-5 px-6 py-6 flex-1">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                <a.icon className="h-5 w-5 text-primary" />
+            <div className="flex items-center gap-5 px-6 py-5 flex-1">
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-md">
+                <a.icon className="h-5 w-5 text-accent" />
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-[15px] text-foreground">{a.title}</h3>
-                <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed">{a.desc}</p>
+                <p className="text-[13px] text-muted-foreground mt-0.5 leading-relaxed">{a.desc}</p>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0" />
+              <ChevronRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
             </div>
           </button>
         ))}

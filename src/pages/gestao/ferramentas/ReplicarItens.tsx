@@ -58,7 +58,7 @@ export default function ReplicarItens({ onBack }: { onBack: () => void }) {
           <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft className="h-4 w-4" /></Button>
           <h2 className="text-xl font-bold">Replicar Itens</h2>
         </div>
-        <Card className="border border-border shadow-sm">
+        <Card className="border-0 shadow-sm">
           <CardContent className="py-16 flex flex-col items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
               <CheckCircle2 className="h-8 w-8 text-success" />
@@ -82,7 +82,7 @@ export default function ReplicarItens({ onBack }: { onBack: () => void }) {
         </div>
       </div>
 
-      <Card className="border border-border shadow-sm">
+      <Card className="border-0 shadow-sm">
         <CardHeader className="pb-3"><CardTitle className="text-base">Tipo de Replicação</CardTitle></CardHeader>
         <CardContent className="flex gap-2">
           <Button variant={tipo === "regional" ? "default" : "outline"} size="sm" onClick={() => { setTipo("regional"); setOrigem(""); setDestinos([]); }}>Regional → Regionais</Button>
@@ -91,7 +91,7 @@ export default function ReplicarItens({ onBack }: { onBack: () => void }) {
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Card className="border border-border shadow-sm">
+        <Card className="border-0 shadow-sm">
           <CardHeader className="pb-3"><CardTitle className="text-base">Origem</CardTitle></CardHeader>
           <CardContent>
             <Select value={origem} onValueChange={(v) => { setOrigem(v); setDestinos([]); }}>
@@ -116,7 +116,7 @@ export default function ReplicarItens({ onBack }: { onBack: () => void }) {
           </CardContent>
         </Card>
 
-        <Card className="border border-border shadow-sm">
+        <Card className="border-0 shadow-sm">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Destinos</CardTitle>

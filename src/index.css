@@ -268,24 +268,11 @@
 
   /* Card kanban transition */
   .kanban-card {
-    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
   }
   .kanban-card:hover {
-    box-shadow: 0 8px 20px -4px hsl(var(--primary) / 0.15), 0 4px 8px -2px hsl(0 0% 0% / 0.1);
-    border-color: hsl(var(--primary) / 0.3) !important;
-  }
-
-  /* Section divider for form groups */
-  .form-section {
-    @apply relative pl-4 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-primary/20 before:rounded-full;
-  }
-
-  /* Action card hover lift */
-  .action-card {
-    transition: all 0.2s ease;
-  }
-  .action-card:hover {
-    box-shadow: 0 8px 24px -6px hsl(var(--primary) / 0.12);
+    box-shadow: 0 4px 12px -2px hsl(var(--primary) / 0.12), 0 2px 6px -1px hsl(0 0% 0% / 0.08);
+    transform: translateY(-1px);
   }
 }
 

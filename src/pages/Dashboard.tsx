@@ -109,7 +109,7 @@ function ModuleSection({
         {action && onAction && (
           <button
             onClick={onAction}
-            className="flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-white transition-all border-2 border-accent/50 rounded-lg px-4 py-2 hover:bg-accent hover:border-accent shadow-sm"
+            className="flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent/80 transition-colors border border-accent/20 rounded-lg px-3 py-1.5 hover:bg-accent/5 btn-shimmer"
           >
             {action}
             <ChevronRight className="h-3.5 w-3.5" />
@@ -284,7 +284,7 @@ export default function Dashboard() {
             <button
               key={mod.title}
               onClick={() => navigate(mod.route)}
-              className={`group relative flex items-center gap-5 rounded-xl border-2 border-border bg-card card-premium card-glow p-6 text-left transition-all duration-300 hover:border-primary/40 animate-fade-in-up animate-fade-in-up-${i + 1}`}
+              className={`group relative flex items-center gap-5 rounded-xl border bg-card card-premium card-glow p-6 text-left transition-all duration-300 animate-fade-in-up animate-fade-in-up-${i + 1}`}
             >
               <div
                 className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
