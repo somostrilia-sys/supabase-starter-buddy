@@ -133,10 +133,10 @@ export default function GestaoModule() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`relative flex items-center gap-2 px-4 py-3 text-[13px] whitespace-nowrap transition-colors font-medium rounded-t-lg ${
+                    className={`relative flex items-center gap-2 px-4 py-3 text-[13px] whitespace-nowrap transition-all font-medium rounded-lg mx-0.5 ${
                       isActive
-                        ? "text-accent font-semibold"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        ? "text-accent font-semibold bg-accent/8 border border-accent/25"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent hover:border-border/60"
                     }`}
                   >
                     <tab.icon className="h-4 w-4" />

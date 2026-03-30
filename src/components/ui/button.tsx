@@ -9,13 +9,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "rounded-lg bg-primary text-primary-foreground border border-primary/20 shadow-sm hover:bg-primary/90 hover:shadow-md",
-        destructive: "bg-destructive text-destructive-foreground border border-destructive/20 shadow-sm hover:bg-destructive/90",
-        outline: "rounded-lg border border-primary/70 bg-background text-primary shadow-sm hover:bg-primary hover:text-white hover:border-primary",
-        secondary: "bg-secondary text-secondary-foreground border border-secondary-foreground/20 shadow-sm hover:bg-secondary/80",
-        ghost: "hover:bg-primary/8 hover:text-primary",
+        default: "rounded-lg bg-primary text-primary-foreground border border-primary shadow-sm hover:bg-primary/90 hover:shadow-md active:scale-[0.98]",
+        destructive: "bg-destructive text-destructive-foreground border border-destructive shadow-sm hover:bg-destructive/90 active:scale-[0.98]",
+        outline: "rounded-lg border-2 border-primary/40 bg-background text-primary shadow-sm hover:bg-primary/5 hover:border-primary/70 active:scale-[0.98]",
+        secondary: "bg-secondary text-secondary-foreground border border-border shadow-sm hover:bg-secondary/80 active:scale-[0.98]",
+        ghost: "border border-transparent hover:bg-primary/8 hover:text-primary hover:border-primary/20",
         link: "text-primary underline-offset-4 hover:underline",
-        soft: "bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20",
+        soft: "bg-primary/8 text-primary border border-primary/25 hover:bg-primary/15 hover:border-primary/40 active:scale-[0.98]",
       },
       size: {
         default: "h-10 px-4 py-2",
