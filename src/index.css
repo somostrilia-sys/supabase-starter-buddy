@@ -41,8 +41,8 @@
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
 
-    /* Borders mais sutis */
-    --border: 220 16% 91%;
+    /* Borders visíveis #747474 */
+    --border: 0 0% 45%;
     --input: 220 16% 91%;
     --ring: 214 85% 50%;
 
@@ -108,6 +108,16 @@
 @layer base {
   * {
     @apply border-border;
+  }
+
+  /* Linhas divisórias globais — 2px #747474 */
+  tr, thead tr, tbody tr,
+  [class*="border-b"]:not(input):not(select):not(textarea):not(button),
+  [class*="border-t"]:not(input):not(select):not(textarea):not(button) {
+    border-color: #747474;
+  }
+  tr {
+    border-bottom-width: 2px;
   }
 
   body {
