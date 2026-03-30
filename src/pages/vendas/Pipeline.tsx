@@ -411,17 +411,17 @@ export default function Pipeline() {
             return (
               <div
                 key={col.key}
-                className={`flex flex-col rounded-xl overflow-hidden min-w-[260px] w-[260px] shrink-0 transition-all ${col.bg} ${isOver ? "ring-2 shadow-lg" : "shadow-sm"}`}
+                className={`flex flex-col rounded-xl overflow-hidden min-w-[260px] w-[260px] shrink-0 transition-all bg-muted/40 border border-border/50 ${isOver ? "ring-2 shadow-lg" : "shadow-sm"}`}
                 style={{ borderTop: `4px solid ${col.color}` }}
                 onDragOver={e => handleDragOver(e, col.key)}
                 onDragLeave={() => setDragOverStage(null)}
                 onDrop={() => handleDrop(col.key)}
               >
                 <div className="px-3 pt-3 pb-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between bg-primary/8 rounded-lg px-3 py-2 mb-2">
                     <div className="flex items-center gap-2">
                       <div className={`w-2.5 h-2.5 rounded-full ${col.dot}`} />
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground/80">{col.label}</span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">{col.label}</span>
                     </div>
                     <Badge className="text-[10px] h-5 px-1.5" style={{ backgroundColor: `${col.color}20`, color: col.color, border: `1px solid ${col.color}40` }}>{colDeals.length}</Badge>
                   </div>
@@ -437,8 +437,8 @@ export default function Pipeline() {
                           draggable
                           onDragStart={e => handleDragStart(e, deal.id)}
                           onClick={() => setDetailDeal(deal)}
-                          className={`kanban-card group bg-card border rounded-lg cursor-pointer ${draggedId === deal.id ? "opacity-40" : ""}`}
-                          style={{ borderLeft: `3px solid ${col.color}` }}
+                          className={`kanban-card group bg-card border border-l-4 rounded-lg cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${draggedId === deal.id ? "opacity-40" : ""}`}
+                          style={{ borderLeftColor: col.color }}
                         >
                           <div className="p-3 space-y-1.5">
                             {/* Header: nome + código + menu */}
