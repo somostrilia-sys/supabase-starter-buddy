@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,50 +15,52 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import ImportExportCotas from "./ImportExportCotas";
 
-// ── Constants ──────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────
 
-const categoriasVeiculo = ["Automóvel", "Motocicleta", "Pesados", "Utilitários", "Vans"];
-const regionaisData = [
-  { nome: "Matriz", veiculos: 1265 },
-  { nome: "SP Interior", veiculos: 4748 },
-  { nome: "Sul Interior", veiculos: 1598 },
-  { nome: "Norte Minas Sul", veiculos: 266 },
-  { nome: "Minas Interior", veiculos: 418 },
-  { nome: "Norte", veiculos: 265 },
-  { nome: "Paraná", veiculos: 270 },
-  { nome: "Bahia", veiculos: 291 },
-  { nome: "Ceará", veiculos: 142 },
-  { nome: "Natal", veiculos: 28 },
-  { nome: "Alagoas", veiculos: 48 },
-  { nome: "Mato Grosso Sul", veiculos: 8 },
-];
+interface FaixaFipe {
+  id: string;
+  categoria_id: string | null;
+  fator: number;
+  fipe_inicial: number;
+  fipe_final: number;
+  descricao: string | null;
+  taxa_adm: number | null;
+  ativo: boolean;
+  created_at: string;
+  categoria_nome?: string;
+}
 
-// ── Mock Data ──────────────────────────────────────────────
+interface Regional {
+  id: string;
+  nome: string;
+  estado: string | null;
+  cidade: string | null;
+  cooperativa_id: string | null;
+  ativo: boolean;
+  created_at: string;
+  veiculos?: number;
+}
 
-const mockCotas = [
-  // Automóvel
-  { id: 1, valorInicial: 0, valorFinal: 8000, categoria: "Automóvel", regional: "Todas", fator: 1.0 },
-  { id: 2, valorInicial: 8001, valorFinal: 20000, categoria: "Automóvel", regional: "Todas", fator: 1.2 },
-  { id: 3, valorInicial: 20001, valorFinal: 40000, categoria: "Automóvel", regional: "Todas", fator: 1.5 },
-  // Motocicleta
-  { id: 4, valorInicial: 0, valorFinal: 5000, categoria: "Motocicleta", regional: "Todas", fator: 0.6 },
-  { id: 5, valorInicial: 5001, valorFinal: 15000, categoria: "Motocicleta", regional: "Todas", fator: 0.8 },
-  { id: 6, valorInicial: 15001, valorFinal: 30000, categoria: "Motocicleta", regional: "Todas", fator: 1.0 },
-  // Pesados
-  { id: 7, valorInicial: 0, valorFinal: 50000, categoria: "Pesados", regional: "Todas", fator: 1.8 },
-  { id: 8, valorInicial: 50001, valorFinal: 150000, categoria: "Pesados", regional: "Todas", fator: 2.2 },
-  { id: 9, valorInicial: 150001, valorFinal: 300000, categoria: "Pesados", regional: "Todas", fator: 2.8 },
-  // Utilitários
-  { id: 10, valorInicial: 0, valorFinal: 30000, categoria: "Utilitários", regional: "Todas", fator: 1.1 },
-  { id: 11, valorInicial: 30001, valorFinal: 60000, categoria: "Utilitários", regional: "Todas", fator: 1.3 },
-  { id: 12, valorInicial: 60001, valorFinal: 120000, categoria: "Utilitários", regional: "Todas", fator: 1.6 },
-  // Vans
-  { id: 13, valorInicial: 0, valorFinal: 40000, categoria: "Vans", regional: "Todas", fator: 1.2 },
-  { id: 14, valorInicial: 40001, valorFinal: 80000, categoria: "Vans", regional: "Todas", fator: 1.4 },
-  { id: 15, valorInicial: 80001, valorFinal: 150000, categoria: "Vans", regional: "Todas", fator: 1.7 },
-];
+interface CategoriaVeiculo {
+  id: string;
+  nome: string;
+  ativo: boolean;
+}
+
+interface RateioConfig {
+  id: string;
+  mes_referencia: string;
+  categoria_id: string | null;
+  regional_id: string | null;
+  valor_base: number | null;
+  multiplicador: number | null;
+  valor_calculado: number | null;
+}
+
+// ── Mock data that stays mock ──────────────────────────────
 
 const mockHistImport = [
   { data: "10/12/2025 14:30", usuario: "Admin", arquivo: "cotas_dez2025.xlsx", registros: 45, status: "Sucesso" },
@@ -66,53 +68,172 @@ const mockHistImport = [
   { data: "05/10/2025 16:00", usuario: "Admin", arquivo: "cotas_out2025.xlsx", registros: 38, status: "Parcial (3 erros)" },
 ];
 
-const mockHistDist = [
-  { mes: "Dez/2025", valorTotal: 127840.50, qtdeVeiculos: 9347, regionais: 12, intervalos: 15, usuario: "Admin", dataHora: "15/12/2025 16:30:00", detalhes: [
-    { regional: "Matriz", veiculos: 1265, valor: 17285.40 }, { regional: "SP Interior", veiculos: 4748, valor: 64902.30 }, { regional: "Sul Interior", veiculos: 1598, valor: 21835.60 },
-  ]},
-  { mes: "Nov/2025", valorTotal: 118520.00, qtdeVeiculos: 9210, regionais: 12, intervalos: 15, usuario: "Gerente", dataHora: "14/11/2025 15:45:00", detalhes: [
-    { regional: "Matriz", veiculos: 1240, valor: 16150.00 }, { regional: "SP Interior", veiculos: 4680, valor: 60840.00 },
-  ]},
-  { mes: "Out/2025", valorTotal: 112300.00, qtdeVeiculos: 9050, regionais: 11, intervalos: 15, usuario: "Admin", dataHora: "15/10/2025 14:20:00", detalhes: [
-    { regional: "Matriz", veiculos: 1220, valor: 15860.00 },
-  ]},
-  { mes: "Set/2025", valorTotal: 105800.00, qtdeVeiculos: 8900, regionais: 11, intervalos: 15, usuario: "Admin", dataHora: "15/09/2025 16:10:00", detalhes: [] },
-  { mes: "Ago/2025", valorTotal: 98500.00, qtdeVeiculos: 8750, regionais: 10, intervalos: 12, usuario: "Gerente", dataHora: "14/08/2025 15:55:00", detalhes: [] },
-];
+// ── Hooks for Supabase data ────────────────────────────────
 
-const mockCargaGestao = regionaisData.map(r => ({
-  regional: r.nome,
-  totalVeiculos: r.veiculos,
-  totalCotas: Math.floor(r.veiculos * 1.1),
-  automoveis: Math.floor(r.veiculos * 0.75),
-  motos: Math.floor(r.veiculos * 0.15),
-  pesados: Math.floor(r.veiculos * 0.10),
-  status: r.nome === "Natal" || r.nome === "Alagoas" || r.nome === "Mato Grosso Sul" ? "Pendente" as const : "Executada" as const,
-}));
+function useFaixasFipe() {
+  const [data, setData] = useState<FaixaFipe[]>([]);
+  const [loading, setLoading] = useState(true);
 
-// ── Dashboard helpers ───────────────────────────────────────
+  useEffect(() => {
+    async function fetch() {
+      setLoading(true);
+      // Fetch faixas with categoria name via join
+      const { data: faixas, error } = await supabase
+        .from("faixas_fipe")
+        .select("*, categorias_veiculo:categoria_id(id, nome)")
+        .eq("ativo", true)
+        .order("fipe_inicial", { ascending: true });
 
-const totalVeiculos = regionaisData.reduce((s, r) => s + r.veiculos, 0);
-const regionalMaior = regionaisData.reduce((a, b) => (b.veiculos > a.veiculos ? b : a));
-const maxVeiculos = regionalMaior.veiculos;
+      if (error) {
+        console.error("Erro ao buscar faixas_fipe:", error);
+        toast.error("Erro ao carregar faixas FIPE");
+        setLoading(false);
+        return;
+      }
 
-// Média ponderada dos fatores de cada categoria × R$ 50 base
-const fatorMedioGeral =
-  mockCotas.reduce((s, c) => s + c.fator, 0) / mockCotas.length;
-const custoMedioRateio = fatorMedioGeral * 50;
+      const mapped: FaixaFipe[] = (faixas || []).map((f: any) => ({
+        id: f.id,
+        categoria_id: f.categoria_id,
+        fator: f.fator ?? 1,
+        fipe_inicial: f.fipe_inicial ?? 0,
+        fipe_final: f.fipe_final ?? 0,
+        descricao: f.descricao,
+        taxa_adm: f.taxa_adm,
+        ativo: f.ativo,
+        created_at: f.created_at,
+        categoria_nome: f.categorias_veiculo?.nome ?? "Sem categoria",
+      }));
+      setData(mapped);
+      setLoading(false);
+    }
+    fetch();
+  }, []);
 
-// Resumo por categoria (calculado das mockCotas)
-const categoriaResumo = ["Automóvel", "Motocicleta", "Pesados", "Utilitários", "Vans"].map(cat => {
-  const cotas = mockCotas.filter(c => c.categoria === cat);
-  const fatorMedio = cotas.reduce((s, c) => s + c.fator, 0) / cotas.length;
-  const percFrota: Record<string, number> = { "Automóvel": 71, "Motocicleta": 15, "Pesados": 8, "Utilitários": 4, "Vans": 2 };
-  return { categoria: cat, fatorMedio, pct: percFrota[cat] ?? 0 };
-});
+  return { faixas: data, loading };
+}
+
+function useCategorias() {
+  const [data, setData] = useState<CategoriaVeiculo[]>([]);
+
+  useEffect(() => {
+    async function fetch() {
+      const { data: cats, error } = await supabase
+        .from("categorias_veiculo")
+        .select("id, nome, ativo")
+        .eq("ativo", true)
+        .order("nome");
+
+      if (error) {
+        console.error("Erro ao buscar categorias:", error);
+        return;
+      }
+      setData(cats || []);
+    }
+    fetch();
+  }, []);
+
+  return data;
+}
+
+function useRegionais() {
+  const [data, setData] = useState<Regional[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetch() {
+      setLoading(true);
+      const { data: regs, error } = await supabase
+        .from("regionais")
+        .select("*")
+        .eq("ativo", true)
+        .order("nome");
+
+      if (error) {
+        console.error("Erro ao buscar regionais:", error);
+        toast.error("Erro ao carregar regionais");
+        setLoading(false);
+        return;
+      }
+
+      // For now, vehicle counts are not available from a vehicles table,
+      // so we set veiculos = 0. When a veiculos table exists, query counts here.
+      const mapped: Regional[] = (regs || []).map((r: any) => ({
+        ...r,
+        veiculos: 0,
+      }));
+      setData(mapped);
+      setLoading(false);
+    }
+    fetch();
+  }, []);
+
+  return { regionais: data, loading };
+}
+
+function useRateioConfig() {
+  const [data, setData] = useState<RateioConfig[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetch() {
+      setLoading(true);
+      const { data: configs, error } = await supabase
+        .from("rateio_config")
+        .select("*")
+        .order("mes_referencia", { ascending: false });
+
+      if (error) {
+        console.error("Erro ao buscar rateio_config:", error);
+        toast.error("Erro ao carregar histórico de distribuição");
+        setLoading(false);
+        return;
+      }
+      setData(configs || []);
+      setLoading(false);
+    }
+    fetch();
+  }, []);
+
+  return { configs: data, loading };
+}
 
 // ── Dashboard Component ─────────────────────────────────────
 
 function DashboardRateio() {
   const [open, setOpen] = useState(false);
+  const { faixas, loading: loadingFaixas } = useFaixasFipe();
+  const { regionais, loading: loadingRegionais } = useRegionais();
+
+  const totalVeiculos = regionais.reduce((s, r) => s + (r.veiculos ?? 0), 0);
+  const regionalMaior = regionais.length > 0
+    ? regionais.reduce((a, b) => ((b.veiculos ?? 0) > (a.veiculos ?? 0) ? b : a))
+    : { nome: "—", veiculos: 0 };
+  const maxVeiculos = Math.max(regionalMaior.veiculos ?? 1, 1);
+
+  const fatorMedioGeral = faixas.length > 0
+    ? faixas.reduce((s, c) => s + c.fator, 0) / faixas.length
+    : 0;
+  const custoMedioRateio = fatorMedioGeral * 50;
+
+  // Resumo por categoria
+  const categoriaResumo = useMemo(() => {
+    const catMap = new Map<string, { total: number; count: number }>();
+    faixas.forEach(f => {
+      const cat = f.categoria_nome ?? "Sem categoria";
+      const cur = catMap.get(cat) ?? { total: 0, count: 0 };
+      cur.total += f.fator;
+      cur.count += 1;
+      catMap.set(cat, cur);
+    });
+    const totalFaixas = faixas.length || 1;
+    return Array.from(catMap.entries()).map(([categoria, { total, count }]) => ({
+      categoria,
+      fatorMedio: count > 0 ? total / count : 0,
+      pct: Math.round((count / totalFaixas) * 100),
+    }));
+  }, [faixas]);
+
+  const isLoading = loadingFaixas || loadingRegionais;
 
   return (
     <div className="border border-border rounded-lg overflow-hidden">
@@ -128,72 +249,81 @@ function DashboardRateio() {
 
       {open && (
         <div className="p-5 space-y-6 bg-background">
-          {/* KPI cards */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="border border-border rounded-lg p-4">
-              <p className="text-xs text-muted-foreground mb-1">Total Veículos</p>
-              <p className="text-2xl font-bold text-primary">{totalVeiculos.toLocaleString("pt-BR")}</p>
-              <p className="text-xs text-muted-foreground mt-1">12 regionais</p>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8 gap-2">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <span className="text-sm text-muted-foreground">Carregando dados...</span>
             </div>
-            <div className="border border-border rounded-lg p-4">
-              <p className="text-xs text-muted-foreground mb-1">Regional com Mais Veículos</p>
-              <p className="text-lg font-bold text-primary">{regionalMaior.nome}</p>
-              <p className="text-xs text-muted-foreground mt-1">{regionalMaior.veiculos.toLocaleString("pt-BR")} veículos</p>
-            </div>
-            <div className="border border-border rounded-lg p-4">
-              <p className="text-xs text-muted-foreground mb-1">Custo Médio Rateio</p>
-              <p className="text-2xl font-bold text-primary">
-                {custoMedioRateio.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">fator médio × R$ 50</p>
-            </div>
-          </div>
-
-          {/* Gráfico de barras por regional */}
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Veículos por Regional</p>
-            <div className="space-y-2">
-              {regionaisData.map(r => (
-                <div key={r.nome} className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground w-36 truncate shrink-0">{r.nome}</span>
-                  <div className="flex-1 bg-primary/10 rounded-full h-2 overflow-hidden">
-                    <div
-                      className="bg-primary h-2 rounded-full transition-all"
-                      style={{ width: `${(r.veiculos / maxVeiculos) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-xs font-mono text-foreground w-12 text-right shrink-0">
-                    {r.veiculos.toLocaleString("pt-BR")}
-                  </span>
+          ) : (
+            <>
+              {/* KPI cards */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="border border-border rounded-lg p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Total Veículos</p>
+                  <p className="text-2xl font-bold text-primary">{totalVeiculos.toLocaleString("pt-BR")}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{regionais.length} regionais</p>
                 </div>
-              ))}
-            </div>
-          </div>
+                <div className="border border-border rounded-lg p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Regional com Mais Veículos</p>
+                  <p className="text-lg font-bold text-primary">{regionalMaior.nome}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{(regionalMaior.veiculos ?? 0).toLocaleString("pt-BR")} veículos</p>
+                </div>
+                <div className="border border-border rounded-lg p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Custo Médio Rateio</p>
+                  <p className="text-2xl font-bold text-primary">
+                    {custoMedioRateio.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">fator médio × R$ 50</p>
+                </div>
+              </div>
 
-          {/* Resumo por categoria */}
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Resumo por Categoria</p>
-            <div className="border border-border rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-muted text-xs text-muted-foreground">
-                    <th className="text-left px-3 py-2 font-medium">Categoria</th>
-                    <th className="text-right px-3 py-2 font-medium">Fator Médio</th>
-                    <th className="text-right px-3 py-2 font-medium">% da Frota</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {categoriaResumo.map((c, i) => (
-                    <tr key={c.categoria} className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}>
-                      <td className="px-3 py-2 font-medium">{c.categoria}</td>
-                      <td className="px-3 py-2 text-right font-mono">{c.fatorMedio.toFixed(2)}x</td>
-                      <td className="px-3 py-2 text-right">{c.pct}%</td>
-                    </tr>
+              {/* Gráfico de barras por regional */}
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Veículos por Regional</p>
+                <div className="space-y-2">
+                  {regionais.map(r => (
+                    <div key={r.id} className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground w-36 truncate shrink-0">{r.nome}</span>
+                      <div className="flex-1 bg-primary/10 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="bg-primary h-2 rounded-full transition-all"
+                          style={{ width: `${((r.veiculos ?? 0) / maxVeiculos) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-mono text-foreground w-12 text-right shrink-0">
+                        {(r.veiculos ?? 0).toLocaleString("pt-BR")}
+                      </span>
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                </div>
+              </div>
+
+              {/* Resumo por categoria */}
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Resumo por Categoria</p>
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-muted text-xs text-muted-foreground">
+                        <th className="text-left px-3 py-2 font-medium">Categoria</th>
+                        <th className="text-right px-3 py-2 font-medium">Fator Médio</th>
+                        <th className="text-right px-3 py-2 font-medium">% das Faixas</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {categoriaResumo.map((c, i) => (
+                        <tr key={c.categoria} className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}>
+                          <td className="px-3 py-2 font-medium">{c.categoria}</td>
+                          <td className="px-3 py-2 text-right font-mono">{c.fatorMedio.toFixed(2)}x</td>
+                          <td className="px-3 py-2 text-right">{c.pct}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -267,12 +397,19 @@ export default function RateioTab() {
 // ═══════════════════════════════════════════════════════════
 
 function EstruturaCotas() {
+  const { faixas, loading } = useFaixasFipe();
+  const categorias = useCategorias();
   const [filtroCategoria, setFiltroCategoria] = useState("Todas");
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [showEdit, setShowEdit] = useState<typeof mockCotas[0] | null>(null);
+  const [showEdit, setShowEdit] = useState<FaixaFipe | null>(null);
 
-  const filtered = mockCotas.filter(c => filtroCategoria === "Todas" || c.categoria === filtroCategoria);
+  const filtered = faixas.filter(c => filtroCategoria === "Todas" || c.categoria_nome === filtroCategoria);
+
+  const categoriaNomes = useMemo(() => {
+    const names = new Set(faixas.map(f => f.categoria_nome ?? "Sem categoria"));
+    return Array.from(names).sort();
+  }, [faixas]);
 
   const handleUpload = () => {
     setUploading(true);
@@ -293,7 +430,7 @@ function EstruturaCotas() {
             <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="Todas">Todas</SelectItem>
-              {categoriasVeiculo.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {categoriaNomes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -315,29 +452,46 @@ function EstruturaCotas() {
               <TableHead className="text-xs">Valor Inicial (FIPE)</TableHead>
               <TableHead className="text-xs">Valor Final (FIPE)</TableHead>
               <TableHead className="text-xs">Categoria Veículo</TableHead>
-              <TableHead className="text-xs">Regional</TableHead>
+              <TableHead className="text-xs">Descrição</TableHead>
               <TableHead className="text-xs text-right">Fator Multiplicador</TableHead>
               <TableHead className="text-xs w-[60px]">Ação</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map(c => (
-              <TableRow key={c.id}>
-                <TableCell className="text-sm font-mono">R$ {c.valorInicial.toLocaleString("pt-BR")}</TableCell>
-                <TableCell className="text-sm font-mono">R$ {c.valorFinal.toLocaleString("pt-BR")}</TableCell>
-                <TableCell><Badge variant="outline" className="text-xs border-primary/30 bg-primary/8">{c.categoria}</Badge></TableCell>
-                <TableCell className="text-sm">{c.regional}</TableCell>
-                <TableCell className="text-sm text-right font-bold font-mono">{c.fator.toFixed(1)}x</TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setShowEdit(c)}><Edit className="h-3 w-3" /></Button>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8">
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">Carregando faixas FIPE...</span>
+                  </div>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-sm text-muted-foreground">
+                  Nenhuma faixa FIPE encontrada.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map(c => (
+                <TableRow key={c.id}>
+                  <TableCell className="text-sm font-mono">R$ {c.fipe_inicial.toLocaleString("pt-BR")}</TableCell>
+                  <TableCell className="text-sm font-mono">R$ {c.fipe_final.toLocaleString("pt-BR")}</TableCell>
+                  <TableCell><Badge variant="outline" className="text-xs border-primary/30 bg-primary/8">{c.categoria_nome}</Badge></TableCell>
+                  <TableCell className="text-sm">{c.descricao ?? "—"}</TableCell>
+                  <TableCell className="text-sm text-right font-bold font-mono">{c.fator.toFixed(1)}x</TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setShowEdit(c)}><Edit className="h-3 w-3" /></Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
 
-      {/* Histórico de importações */}
+      {/* Histórico de importações (stays mock) */}
       <Card className="border-border shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm text-primary">Histórico de Importações</CardTitle>
@@ -401,10 +555,10 @@ function EstruturaCotas() {
         <DialogContent>
           <DialogHeader><DialogTitle className="text-primary">Editar Cota</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label className="text-xs">Valor Inicial (R$)</Label><Input defaultValue={showEdit?.valorInicial} /></div>
-            <div><Label className="text-xs">Valor Final (R$)</Label><Input defaultValue={showEdit?.valorFinal} /></div>
+            <div><Label className="text-xs">Valor Inicial (R$)</Label><Input defaultValue={showEdit?.fipe_inicial} /></div>
+            <div><Label className="text-xs">Valor Final (R$)</Label><Input defaultValue={showEdit?.fipe_final} /></div>
             <div><Label className="text-xs">Categoria</Label>
-              <Select defaultValue={showEdit?.categoria}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{categoriasVeiculo.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+              <Select defaultValue={showEdit?.categoria_nome}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{categoriaNomes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
             </div>
             <div><Label className="text-xs">Fator Multiplicador</Label><Input defaultValue={showEdit?.fator} /></div>
           </div>
@@ -425,6 +579,9 @@ function EstruturaCotas() {
 // ═══════════════════════════════════════════════════════════
 
 function DistribuicaoRateio() {
+  const { faixas, loading: loadingFaixas } = useFaixasFipe();
+  const { regionais, loading: loadingRegionais } = useRegionais();
+  const categorias = useCategorias();
   const [step, setStep] = useState(0);
   const [mesRef, setMesRef] = useState("12/2025");
   const [dataLimite, setDataLimite] = useState("2025-12-15");
@@ -436,18 +593,18 @@ function DistribuicaoRateio() {
     "Validação", "Gravar Rateio",
   ];
 
-  const totalVeiculos = regionaisData.reduce((s, r) => s + r.veiculos, 0);
+  const totalVeiculos = regionais.reduce((s, r) => s + (r.veiculos ?? 0), 0);
   const vb = parseFloat(valorBase) || 0;
 
   // Build distribution table
-  const distribuicao = regionaisData.map(r => ({
+  const distribuicao = regionais.map(r => ({
     regional: r.nome,
     categoria: "Automóvel",
-    qtdeVeiculos: r.veiculos,
-    qtdeCotas: Math.floor(r.veiculos * 1.1),
+    qtdeVeiculos: r.veiculos ?? 0,
+    qtdeCotas: Math.floor((r.veiculos ?? 0) * 1.1),
     valorCota: vb,
     valorCotaAlterado: vb,
-    valorRateado: r.veiculos * vb,
+    valorRateado: (r.veiculos ?? 0) * vb,
   }));
 
   const totalRateado = distribuicao.reduce((s, d) => s + d.valorRateado, 0);
@@ -456,6 +613,8 @@ function DistribuicaoRateio() {
     toast.success(`Rateio gravado com sucesso para ${mesRef} — Total: R$ ${totalRateado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`);
     setStep(0);
   };
+
+  const isLoading = loadingFaixas || loadingRegionais;
 
   return (
     <div className="space-y-5">
@@ -518,26 +677,35 @@ function DistribuicaoRateio() {
           {/* Step 2 - Categorias e Regionais */}
           {step === 2 && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{totalVeiculos.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Veículos</p></CardContent></Card>
-                <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{regionaisData.length}</p><p className="text-xs text-muted-foreground">Regionais</p></CardContent></Card>
-                <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{categoriasVeiculo.length}</p><p className="text-xs text-muted-foreground">Categorias</p></CardContent></Card>
-                <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{mockCotas.length}</p><p className="text-xs text-muted-foreground">Intervalos FIPE</p></CardContent></Card>
-              </div>
-              <div className="border rounded-lg border-border overflow-hidden">
-                <Table>
-                  <TableHeader><TableRow className="bg-muted"><TableHead className="text-xs">Regional</TableHead><TableHead className="text-xs text-right">Veículos</TableHead><TableHead className="text-xs text-right">% do Total</TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {regionaisData.map((r, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="text-sm font-medium">{r.nome}</TableCell>
-                        <TableCell className="text-sm text-right">{r.veiculos.toLocaleString("pt-BR")}</TableCell>
-                        <TableCell className="text-sm text-right">{((r.veiculos / totalVeiculos) * 100).toFixed(1)}%</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8 gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Carregando dados...</span>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{totalVeiculos.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Veículos</p></CardContent></Card>
+                    <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{regionais.length}</p><p className="text-xs text-muted-foreground">Regionais</p></CardContent></Card>
+                    <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{categorias.length}</p><p className="text-xs text-muted-foreground">Categorias</p></CardContent></Card>
+                    <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{faixas.length}</p><p className="text-xs text-muted-foreground">Intervalos FIPE</p></CardContent></Card>
+                  </div>
+                  <div className="border rounded-lg border-border overflow-hidden">
+                    <Table>
+                      <TableHeader><TableRow className="bg-muted"><TableHead className="text-xs">Regional</TableHead><TableHead className="text-xs text-right">Veículos</TableHead><TableHead className="text-xs text-right">% do Total</TableHead></TableRow></TableHeader>
+                      <TableBody>
+                        {regionais.map((r) => (
+                          <TableRow key={r.id}>
+                            <TableCell className="text-sm font-medium">{r.nome}</TableCell>
+                            <TableCell className="text-sm text-right">{(r.veiculos ?? 0).toLocaleString("pt-BR")}</TableCell>
+                            <TableCell className="text-sm text-right">{totalVeiculos > 0 ? (((r.veiculos ?? 0) / totalVeiculos) * 100).toFixed(1) : "0.0"}%</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -554,21 +722,28 @@ function DistribuicaoRateio() {
           {step === 4 && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">Valores calculados automaticamente: <strong>Valor Cota = R$ {vb.toFixed(2)} × Fator</strong></p>
-              <div className="border rounded-lg border-border overflow-hidden">
-                <Table>
-                  <TableHeader><TableRow className="bg-muted"><TableHead className="text-xs">Categoria</TableHead><TableHead className="text-xs">Intervalo FIPE</TableHead><TableHead className="text-xs text-right">Fator</TableHead><TableHead className="text-xs text-right">Valor Cota Calculado</TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {mockCotas.map(c => (
-                      <TableRow key={c.id}>
-                        <TableCell className="text-sm">{c.categoria}</TableCell>
-                        <TableCell className="text-sm font-mono">R$ {c.valorInicial.toLocaleString("pt-BR")} — R$ {c.valorFinal.toLocaleString("pt-BR")}</TableCell>
-                        <TableCell className="text-sm text-right font-mono">{c.fator.toFixed(1)}x</TableCell>
-                        <TableCell className="text-sm text-right font-bold">R$ {(vb * c.fator).toFixed(2)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              {loadingFaixas ? (
+                <div className="flex items-center justify-center py-8 gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Carregando faixas...</span>
+                </div>
+              ) : (
+                <div className="border rounded-lg border-border overflow-hidden">
+                  <Table>
+                    <TableHeader><TableRow className="bg-muted"><TableHead className="text-xs">Categoria</TableHead><TableHead className="text-xs">Intervalo FIPE</TableHead><TableHead className="text-xs text-right">Fator</TableHead><TableHead className="text-xs text-right">Valor Cota Calculado</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                      {faixas.map(c => (
+                        <TableRow key={c.id}>
+                          <TableCell className="text-sm">{c.categoria_nome}</TableCell>
+                          <TableCell className="text-sm font-mono">R$ {c.fipe_inicial.toLocaleString("pt-BR")} — R$ {c.fipe_final.toLocaleString("pt-BR")}</TableCell>
+                          <TableCell className="text-sm text-right font-mono">{c.fator.toFixed(1)}x</TableCell>
+                          <TableCell className="text-sm text-right font-bold">R$ {(vb * c.fator).toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </div>
           )}
 
@@ -618,7 +793,7 @@ function DistribuicaoRateio() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-success mb-1" /><p className="text-xs font-medium text-success">Mês: {mesRef}</p></CardContent></Card>
                 <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-success mb-1" /><p className="text-xs font-medium text-success">{totalVeiculos.toLocaleString("pt-BR")} veículos</p></CardContent></Card>
-                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-success mb-1" /><p className="text-xs font-medium text-success">12 regionais</p></CardContent></Card>
+                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-success mb-1" /><p className="text-xs font-medium text-success">{regionais.length} regionais</p></CardContent></Card>
                 <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-success mb-1" /><p className="text-xs font-medium text-success">R$ {totalRateado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p></CardContent></Card>
               </div>
               <div className="p-3 bg-warning/8 border border-yellow-200 rounded-lg text-sm text-warning flex items-start gap-2">
@@ -664,13 +839,54 @@ function DistribuicaoRateio() {
 // ═══════════════════════════════════════════════════════════
 
 function HistoricoDistribuicao() {
+  const { configs, loading: loadingConfigs } = useRateioConfig();
+  const { regionais } = useRegionais();
   const [expandido, setExpandido] = useState<number | null>(null);
   const [filtroRegional, setFiltroRegional] = useState("Todas");
-  const [loading, setLoading] = useState<string | null>(null);
+  const [loadingExport, setLoadingExport] = useState<string | null>(null);
+
+  // Group rateio_config by mes_referencia
+  const histDist = useMemo(() => {
+    const grouped = new Map<string, RateioConfig[]>();
+    configs.forEach(c => {
+      const mes = c.mes_referencia;
+      if (!grouped.has(mes)) grouped.set(mes, []);
+      grouped.get(mes)!.push(c);
+    });
+
+    // Build a regional id->name map
+    const regMap = new Map<string, string>();
+    regionais.forEach(r => regMap.set(r.id, r.nome));
+
+    return Array.from(grouped.entries()).map(([mes, items]) => {
+      const valorTotal = items.reduce((s, i) => s + (i.valor_calculado ?? 0), 0);
+      const regionaisIds = new Set(items.map(i => i.regional_id).filter(Boolean));
+      const detalhes = Array.from(
+        items.reduce((map, i) => {
+          const rid = i.regional_id ?? "unknown";
+          const cur = map.get(rid) ?? { regional: regMap.get(rid) ?? rid, veiculos: 0, valor: 0 };
+          cur.valor += i.valor_calculado ?? 0;
+          // veiculos count not available in rateio_config, approximate from entries
+          cur.veiculos += 1;
+          map.set(rid, cur);
+          return map;
+        }, new Map<string, { regional: string; veiculos: number; valor: number }>()).values()
+      );
+
+      return {
+        mes,
+        valorTotal,
+        qtdeEntradas: items.length,
+        regionais: regionaisIds.size,
+        intervalos: items.length,
+        detalhes,
+      };
+    });
+  }, [configs, regionais]);
 
   const handleExport = () => {
-    setLoading("excel");
-    setTimeout(() => { toast.success("Relatório exportado para Excel"); setLoading(null); }, 900);
+    setLoadingExport("excel");
+    setTimeout(() => { toast.success("Relatório exportado para Excel"); setLoadingExport(null); }, 900);
   };
 
   return (
@@ -690,12 +906,12 @@ function HistoricoDistribuicao() {
             <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="Todas">Todas</SelectItem>
-              {regionaisData.map(r => <SelectItem key={r.nome} value={r.nome}>{r.nome}</SelectItem>)}
+              {regionais.map(r => <SelectItem key={r.id} value={r.nome}>{r.nome}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-        <Button variant="outline" className="gap-2 text-xs border-border ml-auto" disabled={loading === "excel"} onClick={handleExport}>
-          {loading === "excel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exportar Excel
+        <Button variant="outline" className="gap-2 text-xs border-border ml-auto" disabled={loadingExport === "excel"} onClick={handleExport}>
+          {loadingExport === "excel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exportar Excel
         </Button>
       </div>
 
@@ -706,51 +922,62 @@ function HistoricoDistribuicao() {
               <TableHead className="text-xs w-[30px]"></TableHead>
               <TableHead className="text-xs">Mês Referência</TableHead>
               <TableHead className="text-xs text-right">Valor Total Distribuído</TableHead>
-              <TableHead className="text-xs text-right">Qtde Veículos</TableHead>
+              <TableHead className="text-xs text-right">Entradas</TableHead>
               <TableHead className="text-xs text-right">Regionais</TableHead>
-              <TableHead className="text-xs text-right">Intervalos FIPE</TableHead>
-              <TableHead className="text-xs">Usuário</TableHead>
-              <TableHead className="text-xs">Data/Hora</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockHistDist.map((h, i) => (
-              <>
-                <TableRow key={i} className="cursor-pointer hover:bg-muted/50" onClick={() => setExpandido(expandido === i ? null : i)}>
-                  <TableCell className="px-2">
-                    {expandido === i ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                  </TableCell>
-                  <TableCell className="text-sm font-medium">{h.mes}</TableCell>
-                  <TableCell className="text-sm text-right font-bold">R$ {h.valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
-                  <TableCell className="text-sm text-right">{h.qtdeVeiculos.toLocaleString("pt-BR")}</TableCell>
-                  <TableCell className="text-sm text-right">{h.regionais}</TableCell>
-                  <TableCell className="text-sm text-right">{h.intervalos}</TableCell>
-                  <TableCell className="text-sm">{h.usuario}</TableCell>
-                  <TableCell className="text-sm">{h.dataHora}</TableCell>
-                </TableRow>
-                {expandido === i && h.detalhes.length > 0 && (
-                  <TableRow key={`det-${i}`}>
-                    <TableCell colSpan={8} className="bg-muted/50 p-4">
-                      <p className="text-xs font-semibold text-primary mb-2">Detalhes por Regional — {h.mes}</p>
-                      <div className="border rounded border-border overflow-hidden">
-                        <Table>
-                          <TableHeader><TableRow className="bg-muted/40"><TableHead className="text-xs">Regional</TableHead><TableHead className="text-xs text-right">Veículos</TableHead><TableHead className="text-xs text-right">Valor</TableHead></TableRow></TableHeader>
-                          <TableBody>
-                            {h.detalhes.map((d, di) => (
-                              <TableRow key={di}>
-                                <TableCell className="text-sm">{d.regional}</TableCell>
-                                <TableCell className="text-sm text-right">{d.veiculos.toLocaleString("pt-BR")}</TableCell>
-                                <TableCell className="text-sm text-right font-medium">R$ {d.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
+            {loadingConfigs ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8">
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">Carregando histórico...</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : histDist.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-sm text-muted-foreground">
+                  Nenhum histórico de distribuição encontrado.
+                </TableCell>
+              </TableRow>
+            ) : (
+              histDist.map((h, i) => (
+                <>
+                  <TableRow key={i} className="cursor-pointer hover:bg-muted/50" onClick={() => setExpandido(expandido === i ? null : i)}>
+                    <TableCell className="px-2">
+                      {expandido === i ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                     </TableCell>
+                    <TableCell className="text-sm font-medium">{h.mes}</TableCell>
+                    <TableCell className="text-sm text-right font-bold">R$ {h.valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-sm text-right">{h.qtdeEntradas.toLocaleString("pt-BR")}</TableCell>
+                    <TableCell className="text-sm text-right">{h.regionais}</TableCell>
                   </TableRow>
-                )}
-              </>
-            ))}
+                  {expandido === i && h.detalhes.length > 0 && (
+                    <TableRow key={`det-${i}`}>
+                      <TableCell colSpan={5} className="bg-muted/50 p-4">
+                        <p className="text-xs font-semibold text-primary mb-2">Detalhes por Regional — {h.mes}</p>
+                        <div className="border rounded border-border overflow-hidden">
+                          <Table>
+                            <TableHeader><TableRow className="bg-muted/40"><TableHead className="text-xs">Regional</TableHead><TableHead className="text-xs text-right">Entradas</TableHead><TableHead className="text-xs text-right">Valor</TableHead></TableRow></TableHeader>
+                            <TableBody>
+                              {h.detalhes.map((d, di) => (
+                                <TableRow key={di}>
+                                  <TableCell className="text-sm">{d.regional}</TableCell>
+                                  <TableCell className="text-sm text-right">{d.veiculos.toLocaleString("pt-BR")}</TableCell>
+                                  <TableCell className="text-sm text-right font-medium">R$ {d.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
@@ -763,12 +990,26 @@ function HistoricoDistribuicao() {
 // ═══════════════════════════════════════════════════════════
 
 function CargaInicialGestao() {
+  const { regionais, loading: loadingRegionais } = useRegionais();
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const totalVeiculos = mockCargaGestao.reduce((s, r) => s + r.totalVeiculos, 0);
-  const totalCotas = mockCargaGestao.reduce((s, r) => s + r.totalCotas, 0);
-  const executadas = mockCargaGestao.filter(r => r.status === "Executada").length;
+  // Build carga data from regionais
+  const cargaGestao = useMemo(() => {
+    return regionais.map(r => ({
+      regional: r.nome,
+      totalVeiculos: r.veiculos ?? 0,
+      totalCotas: Math.floor((r.veiculos ?? 0) * 1.1),
+      automoveis: Math.floor((r.veiculos ?? 0) * 0.75),
+      motos: Math.floor((r.veiculos ?? 0) * 0.15),
+      pesados: Math.floor((r.veiculos ?? 0) * 0.10),
+      status: (r.veiculos ?? 0) < 50 ? "Pendente" as const : "Executada" as const,
+    }));
+  }, [regionais]);
+
+  const totalVeiculos = cargaGestao.reduce((s, r) => s + r.totalVeiculos, 0);
+  const totalCotas = cargaGestao.reduce((s, r) => s + r.totalCotas, 0);
+  const executadas = cargaGestao.filter(r => r.status === "Executada").length;
 
   const executarCarga = () => {
     setLoading(true);
@@ -801,8 +1042,8 @@ function CargaInicialGestao() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{totalVeiculos.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Veículos</p></CardContent></Card>
         <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{totalCotas.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Cotas</p></CardContent></Card>
-        <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-success">{executadas}/{mockCargaGestao.length}</p><p className="text-xs text-muted-foreground">Regionais Executadas</p></CardContent></Card>
-        <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-warning">{mockCargaGestao.length - executadas}</p><p className="text-xs text-muted-foreground">Pendentes</p></CardContent></Card>
+        <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-success">{executadas}/{cargaGestao.length}</p><p className="text-xs text-muted-foreground">Regionais Executadas</p></CardContent></Card>
+        <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-warning">{cargaGestao.length - executadas}</p><p className="text-xs text-muted-foreground">Pendentes</p></CardContent></Card>
       </div>
 
       {/* Table */}
@@ -820,28 +1061,41 @@ function CargaInicialGestao() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockCargaGestao.map((r, i) => (
-              <TableRow key={i}>
-                <TableCell className="text-sm font-medium">{r.regional}</TableCell>
-                <TableCell className="text-sm text-right">{r.totalVeiculos.toLocaleString("pt-BR")}</TableCell>
-                <TableCell className="text-sm text-right">{r.totalCotas.toLocaleString("pt-BR")}</TableCell>
-                <TableCell className="text-sm text-right">{r.automoveis.toLocaleString("pt-BR")}</TableCell>
-                <TableCell className="text-sm text-right">{r.motos.toLocaleString("pt-BR")}</TableCell>
-                <TableCell className="text-sm text-right">{r.pesados.toLocaleString("pt-BR")}</TableCell>
-                <TableCell>
-                  <Badge className={`text-xs ${r.status === "Executada" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}>{r.status}</Badge>
+            {loadingRegionais ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8">
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">Carregando regionais...</span>
+                  </div>
                 </TableCell>
               </TableRow>
-            ))}
-            <TableRow className="bg-muted font-bold">
-              <TableCell className="text-sm">TOTAL</TableCell>
-              <TableCell className="text-sm text-right">{totalVeiculos.toLocaleString("pt-BR")}</TableCell>
-              <TableCell className="text-sm text-right">{totalCotas.toLocaleString("pt-BR")}</TableCell>
-              <TableCell className="text-sm text-right">{mockCargaGestao.reduce((s, r) => s + r.automoveis, 0).toLocaleString("pt-BR")}</TableCell>
-              <TableCell className="text-sm text-right">{mockCargaGestao.reduce((s, r) => s + r.motos, 0).toLocaleString("pt-BR")}</TableCell>
-              <TableCell className="text-sm text-right">{mockCargaGestao.reduce((s, r) => s + r.pesados, 0).toLocaleString("pt-BR")}</TableCell>
-              <TableCell></TableCell>
-            </TableRow>
+            ) : (
+              <>
+                {cargaGestao.map((r, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="text-sm font-medium">{r.regional}</TableCell>
+                    <TableCell className="text-sm text-right">{r.totalVeiculos.toLocaleString("pt-BR")}</TableCell>
+                    <TableCell className="text-sm text-right">{r.totalCotas.toLocaleString("pt-BR")}</TableCell>
+                    <TableCell className="text-sm text-right">{r.automoveis.toLocaleString("pt-BR")}</TableCell>
+                    <TableCell className="text-sm text-right">{r.motos.toLocaleString("pt-BR")}</TableCell>
+                    <TableCell className="text-sm text-right">{r.pesados.toLocaleString("pt-BR")}</TableCell>
+                    <TableCell>
+                      <Badge className={`text-xs ${r.status === "Executada" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}>{r.status}</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="bg-muted font-bold">
+                  <TableCell className="text-sm">TOTAL</TableCell>
+                  <TableCell className="text-sm text-right">{totalVeiculos.toLocaleString("pt-BR")}</TableCell>
+                  <TableCell className="text-sm text-right">{totalCotas.toLocaleString("pt-BR")}</TableCell>
+                  <TableCell className="text-sm text-right">{cargaGestao.reduce((s, r) => s + r.automoveis, 0).toLocaleString("pt-BR")}</TableCell>
+                  <TableCell className="text-sm text-right">{cargaGestao.reduce((s, r) => s + r.motos, 0).toLocaleString("pt-BR")}</TableCell>
+                  <TableCell className="text-sm text-right">{cargaGestao.reduce((s, r) => s + r.pesados, 0).toLocaleString("pt-BR")}</TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
+              </>
+            )}
           </TableBody>
         </Table>
       </div>
@@ -860,12 +1114,12 @@ function CargaInicialGestao() {
           <div className="space-y-3">
             <div className="p-3 bg-warning/8 border border-yellow-200 rounded-lg text-sm text-warning flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-              <span>Esta ação irá importar os dados do sistema Gestão para as <strong>{mockCargaGestao.length - executadas} regionais pendentes</strong>. Os valores de cota serão zerados (R$ 0,00). Deseja continuar?</span>
+              <span>Esta ação irá importar os dados do sistema Gestão para as <strong>{cargaGestao.length - executadas} regionais pendentes</strong>. Os valores de cota serão zerados (R$ 0,00). Deseja continuar?</span>
             </div>
             <div className="text-xs text-muted-foreground space-y-1">
               <p>• Data Operação: 01/12/2025 16:25:52</p>
               <p>• Data Limite: 31/12/2058</p>
-              <p>• Regionais pendentes: {mockCargaGestao.filter(r => r.status === "Pendente").map(r => r.regional).join(", ")}</p>
+              <p>• Regionais pendentes: {cargaGestao.filter(r => r.status === "Pendente").map(r => r.regional).join(", ")}</p>
             </div>
           </div>
           <DialogFooter>
