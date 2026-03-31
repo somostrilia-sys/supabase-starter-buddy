@@ -16,6 +16,7 @@ import CotacaoTab from "./CotacaoTab";
 import VistoriaTab from "./VistoriaTab";
 import AssinaturaTab from "./AssinaturaTab";
 import FinanceiroNegociacaoTab from "./FinanceiroNegociacaoTab";
+import TagsInline from "@/components/TagsInline";
 import {
   FileText, User, Car, ClipboardCheck, Send, Activity, PenTool, Wallet,
   Phone, Mail, MessageSquare, Video, Plus, Download, CheckCircle, XCircle,
@@ -62,6 +63,10 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
             <Badge className="text-[10px] font-mono bg-white/15 text-white rounded-none">{deal.veiculo_placa}</Badge>
           </DialogTitle>
         </DialogHeader>
+
+        <div className="px-6 py-1.5 border-b bg-muted/30">
+          <TagsInline negociacaoId={deal.id} />
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="mx-6 mt-3 justify-start flex-wrap gap-1">
