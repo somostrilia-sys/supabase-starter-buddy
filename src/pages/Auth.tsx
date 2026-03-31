@@ -64,14 +64,14 @@ export default function Auth() {
 
         {/* Área dos cards — 39% da altura, entre logo e rodapé */}
         <div
-          className="flex flex-col justify-center px-8"
-          style={{ flex: '0 0 39%', pointerEvents: 'auto' }}
+          className="flex flex-col justify-center"
+          style={{ flex: '0 0 39%', pointerEvents: 'auto', paddingLeft: '2rem', paddingRight: '4rem' }}
         >
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 gap-2">
             {features.slice(0, 4).map((f) => (
               <div
                 key={f.title}
-                className="rounded-xl p-3.5 space-y-2"
+                className="rounded-xl p-3 space-y-1.5"
                 style={{
                   backgroundColor: 'rgba(5,15,35,0.72)',
                   border: '1px solid rgba(255,255,255,0.1)',
@@ -88,7 +88,7 @@ export default function Auth() {
           </div>
           <div className="mt-2.5 w-1/2 pr-1.5">
             <div
-              className="rounded-xl p-3.5 space-y-2"
+              className="rounded-xl p-3 space-y-1.5"
               style={{
                 backgroundColor: 'rgba(5,15,35,0.72)',
                 border: '1px solid rgba(255,255,255,0.1)',
@@ -111,7 +111,7 @@ export default function Auth() {
       {/* Direita — 43% — formulário centralizado sobre o painel cinza da imagem */}
       <div className="flex-1 flex flex-col items-center justify-center px-8 py-10">
         {/* Formulário clean sobre o fundo cinza da imagem */}
-        <div className="w-full max-w-[320px] space-y-5">
+        <div className="w-full max-w-[320px] rounded-2xl p-7 space-y-5" style={{ backgroundColor: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(12px)', boxShadow: '0 4px 32px rgba(0,0,0,0.18)' }}>
           <div className="space-y-1">
             <h2 className="text-2xl font-bold tracking-tight" style={{ color: '#1a1a2e' }}>
               {isLogin ? "Bem-vindo de volta" : "Criar sua conta"}
@@ -155,7 +155,7 @@ export default function Auth() {
           <div className="relative">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300" /></div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="px-3 text-gray-400" style={{ backgroundColor: 'transparent' }}>ou</span>
+              <span className="px-3 text-gray-400" style={{ backgroundColor: 'white' }}>ou</span>
             </div>
           </div>
 
@@ -171,6 +171,7 @@ export default function Auth() {
             <div className="flex items-center gap-1.5 text-xs text-gray-500"><Globe className="w-3 h-3" /><span>Cloud</span></div>
           </div>
         </div>
+
       </div>
     </div>
   );
