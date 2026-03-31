@@ -105,7 +105,7 @@ export default function Auth() {
       {/* FORMULÁRIO — painel direito, abaixo da logo GIA (50vh), centralizado em 57-100% da largura */}
       <div style={{
         position: 'absolute',
-        top: '35vh',
+        top: '18vh',
         bottom: '5vh',
         left: '57%',
         right: 0,
