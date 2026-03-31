@@ -181,7 +181,7 @@ export default function PersonalizacaoTab() {
               </Select>
             </div>
             <div><Label>Valor Máximo</Label><Input value={valorMaxDesconto} onChange={e => setValorMaxDesconto(e.target.value)} placeholder="Ex: 15% ou R$ 50,00" /></div>
-            <div className="flex justify-end gap-2 pt-4 border-t">
+            <div className="flex justify-end gap-2 pt-4 border-t-2 border-[#747474]">
               <Button variant="outline" onClick={() => setShowDescontoModal(false)}>Cancelar</Button>
               <Button onClick={() => setShowDescontoModal(false)}>Salvar</Button>
             </div>

@@ -604,7 +604,7 @@ export default function ConsultarAgregado() {
       </Accordion>
 
       {/* Footer */}
-      <div className="sticky bottom-0 bg-background border-t py-3 flex justify-end gap-3 -mx-6 px-6">
+      <div className="sticky bottom-0 bg-background border-t-2 border-[#747474] py-3 flex justify-end gap-3 -mx-6 px-6">
         <Button variant="outline" onClick={() => setSelected(null)} className="gap-1"><ArrowLeft className="h-4 w-4" /> Voltar</Button>
         <Button onClick={salvar} className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"><Save className="h-4 w-4" /> Salvar</Button>
       </div>

@@ -138,7 +138,7 @@ export default function VistoriasVendas() {
             </TableHeader>
             <TableBody>
               {filtered.map((v, i) => (
-                <TableRow key={v.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
+                <TableRow key={v.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b-2 border-[#747474]`}>
                   <TableCell className="font-medium">{v.associado}</TableCell>
                   <TableCell className="text-sm">{v.veiculo}</TableCell>
                   <TableCell><span className="font-mono text-sm bg-muted/50 px-2 py-0.5 rounded">{v.placa}</span></TableCell>
@@ -152,7 +152,7 @@ export default function VistoriasVendas() {
               ))}
             </TableBody>
           </Table>
-          <div className="px-4 py-3 bg-muted/30 border-t border-border/60">
+          <div className="px-4 py-3 bg-muted/30 border-t-2 border-[#747474]">
             <span className="text-xs text-muted-foreground">{filtered.length} vistoria(s)</span>
           </div>
         </CardContent>

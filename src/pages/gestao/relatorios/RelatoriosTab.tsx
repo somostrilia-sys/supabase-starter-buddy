@@ -150,7 +150,7 @@ function ReportActionBar({
 function Pagination({ page, totalPages, onPageChange }: { page: number; totalPages: number; onPageChange: (p: number) => void }) {
   if (totalPages <= 1) return null;
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-t border-border/60">
+    <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-t-2 border-[#747474]">
       <span className="text-xs text-muted-foreground">Página {page} de {totalPages}</span>
       <div className="flex gap-1">
         <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)} className="h-7 px-2">
@@ -567,7 +567,7 @@ export default function RelatoriosTab() {
                 ))}
               </TableBody>
             </Table>
-            <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-t border-border">
+            <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-t-2 border-[#747474]">
               <span className="text-xs text-muted-foreground">{filteredBoletos.length} boleto(s) encontrado(s)</span>
               <span className="text-sm font-bold">Total: R$ {somaBoletosTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
             </div>
@@ -662,7 +662,7 @@ export default function RelatoriosTab() {
                 ))}
                 <div className="flex justify-between"><span className="text-muted-foreground">Situação:</span><Badge className={situacaoColor[detalhe.situacao]}>{detalhe.situacao}</Badge></div>
               </div>
-              <div className="border-t pt-3 space-y-2 text-sm">
+              <div className="border-t-2 border-[#747474] pt-3 space-y-2 text-sm">
                 <h4 className="font-bold">Veículo</h4>
                 {([
                   ["Placa", detalhe.placa], ["Modelo", detalhe.modelo], ["Ano", String(detalhe.ano)],

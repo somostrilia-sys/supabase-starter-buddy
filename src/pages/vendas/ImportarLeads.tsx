@@ -136,14 +136,14 @@ export default function ImportarLeads() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
-                <thead><tr className="border-b bg-muted/30">
+                <thead><tr className="border-b-2 border-[#747474] bg-muted/30">
                   <th className="p-2 text-left text-[10px] uppercase text-muted-foreground">#</th>
                   {csvColumns.map(c => <th key={c} className="p-2 text-left text-[10px] uppercase text-muted-foreground">{c}</th>)}
                   <th className="p-2 text-left text-[10px] uppercase text-muted-foreground">Status</th>
                 </tr></thead>
                 <tbody>
                   {mockCSVData.slice(0,10).map((row, i) => (
-                    <tr key={i} className={`border-b border-border/30 ${!row.valido ? "bg-destructive/5" : ""}`}>
+                    <tr key={i} className={`border-b-2 border-[#747474] ${!row.valido ? "bg-destructive/5" : ""}`}>
                       <td className="p-2 text-muted-foreground">{i + 1}</td>
                       <td className="p-2">{row.nome}</td>
                       <td className={`p-2 ${!row.email ? "text-destructive font-medium" : ""}`}>{row.email || "—"}</td>

@@ -183,7 +183,7 @@ export default function DealDetail() {
 
       {/* 6 Tabs */}
       <Tabs defaultValue="atividades" className="w-full">
-        <TabsList className="w-full justify-start bg-muted/50 h-10">
+        <TabsList className="w-full justify-start">
           <TabsTrigger value="atividades" className="text-xs">Atividades</TabsTrigger>
           <TabsTrigger value="contato" className="text-xs">Contato</TabsTrigger>
           <TabsTrigger value="cotacao" className="text-xs">Cotação</TabsTrigger>
@@ -206,7 +206,7 @@ export default function DealDetail() {
               </div>
               <div className="space-y-3 max-h-[500px] overflow-y-auto">
                 {activities.map((act: any) => (
-                  <div key={act.id} className="flex gap-3 text-sm border-b border-border/30 pb-3 last:border-0">
+                  <div key={act.id} className="flex gap-3 text-sm border-b-2 border-[#747474] pb-3 last:border-0">
                     <div className="mt-0.5">
                       {act.tipo === "nota" ? <MessageSquare className="h-4 w-4 text-muted-foreground" /> : <Clock className="h-4 w-4 text-primary" />}
                     </div>

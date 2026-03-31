@@ -108,15 +108,15 @@ export default function EventoTab() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-1 border-b border-border overflow-x-auto">
+      <div className="flex gap-1 mb-5 overflow-x-auto flex-wrap">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setSubTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
+            className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap transition-all ${
               subTab === t.id
-                ? "border-primary/50 text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                ? "bg-[#002050] text-white shadow-md"
+                : "bg-[#003870] text-white hover:bg-[#002a57]"
             }`}
           >
             <t.icon className="h-4 w-4" />
@@ -694,9 +694,9 @@ function MonitoramentoTab() {
 
   return (
     <div className="space-y-5">
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex gap-1 mb-5 overflow-x-auto flex-wrap">
         {(["eventos", "estado", "processo"] as const).map(t => (
-          <button key={t} onClick={() => setMonTab(t)} className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px transition-colors capitalize ${monTab === t ? "border-primary/50 text-primary" : "border-transparent text-muted-foreground"}`}>
+          <button key={t} onClick={() => setMonTab(t)} className={`rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap transition-all capitalize ${monTab === t ? "bg-[#002050] text-white shadow-md" : "bg-[#003870] text-white hover:bg-[#002a57]"}`}>
             {t === "estado" ? "Estado do Tempo" : t === "processo" ? "Processo" : "Eventos"}
           </button>
         ))}
@@ -787,13 +787,13 @@ function RelatoriosEventoTab() {
 
   return (
     <div className="space-y-5">
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex gap-1 mb-5 overflow-x-auto flex-wrap">
         {([
           { id: "eventos" as const, label: "Relatório de Eventos" },
           { id: "cotacao" as const, label: "Cotação / Orçamento" },
           { id: "sincronismo" as const, label: "Sincronismo" },
         ]).map(t => (
-          <button key={t.id} onClick={() => setRelTab(t.id)} className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px transition-colors ${relTab === t.id ? "border-primary/50 text-primary" : "border-transparent text-muted-foreground"}`}>
+          <button key={t.id} onClick={() => setRelTab(t.id)} className={`rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap transition-all ${relTab === t.id ? "bg-[#002050] text-white shadow-md" : "bg-[#003870] text-white hover:bg-[#002a57]"}`}>
             {t.label}
           </button>
         ))}

@@ -90,7 +90,7 @@ export default function LandingPages() {
             </TableHeader>
             <TableBody>
               {filtered.map((c, i) => (
-                <TableRow key={c.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
+                <TableRow key={c.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b-2 border-[#747474]`}>
                   <TableCell className="font-medium">{c.nome}</TableCell>
                   <TableCell>
                     <span className="font-mono text-xs bg-muted/50 px-2 py-1 rounded">{baseUrl}{c.slug}</span>
@@ -115,7 +115,7 @@ export default function LandingPages() {
               ))}
             </TableBody>
           </Table>
-          <div className="px-4 py-3 bg-muted/30 border-t border-border/60">
+          <div className="px-4 py-3 bg-muted/30 border-t-2 border-[#747474]">
             <span className="text-xs text-muted-foreground">{filtered.length} landing page(s)</span>
           </div>
         </CardContent>

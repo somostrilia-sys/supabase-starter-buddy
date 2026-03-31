@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermission } from "@/hooks/usePermission";
 import { Navigate } from "react-router-dom";
@@ -15,10 +15,19 @@ export function ProtectedRoute({
 }) {
   const { session, profile, loading } = useAuth();
   const perms = usePermission();
+  const [profileTimeout, setProfileTimeout] = useState(false);
 
   // Profile is still loading if session exists but profile hasn't resolved yet
-  const profileLoading = !loading && !!session && profile === null;
+  const profileLoading = !loading && !!session && profile === null && !profileTimeout;
   const hasPermission = !permission || perms[permission];
+
+  // Timeout: se profile não carrega em 3s, redireciona para login
+  useEffect(() => {
+    if (!loading && !!session && profile === null) {
+      const timer = setTimeout(() => setProfileTimeout(true), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, session, profile]);
 
   useEffect(() => {
     if (!loading && !profileLoading && session && permission && !hasPermission) {
@@ -34,7 +43,7 @@ export function ProtectedRoute({
     );
   }
 
-  if (!session) {
+  if (!session || profileTimeout) {
     return <Navigate to="/auth" replace />;
   }
 

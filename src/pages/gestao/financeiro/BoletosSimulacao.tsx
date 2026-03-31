@@ -266,7 +266,7 @@ export default function BoletosSimulacao({ onBack }: { onBack: () => void }) {
             <div className="flex justify-between"><span className="text-muted-foreground">Valor total projetado:</span><span className="font-bold text-success">R$ 198.342,50</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Descontos programados:</span><span className="font-bold">R$ 3.420,00</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Rateios incluídos:</span><span className="font-bold">R$ 12.580,00</span></div>
-            <div className="flex justify-between border-t pt-2"><span className="font-semibold">Valor líquido:</span><span className="font-bold text-lg">R$ 207.502,50</span></div>
+            <div className="flex justify-between border-t-2 border-[#747474] pt-2"><span className="font-semibold">Valor líquido:</span><span className="font-bold text-lg">R$ 207.502,50</span></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSimulacao(false)}>Fechar</Button>

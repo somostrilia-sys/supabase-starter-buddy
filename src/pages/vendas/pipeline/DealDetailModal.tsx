@@ -64,9 +64,9 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="mx-6 mt-3 justify-start flex-wrap h-auto gap-1 bg-transparent p-0">
+          <TabsList className="mx-6 mt-3 justify-start flex-wrap gap-1">
             {tabs.map(t => (
-              <TabsTrigger key={t.v} value={t.v} className="text-xs gap-1.5 rounded-none data-[state=active]:bg-[#1A3A5C] data-[state=active]:text-white">
+              <TabsTrigger key={t.v} value={t.v} className="text-xs gap-1.5">
                 <t.i className="h-3.5 w-3.5" />{t.l}
               </TabsTrigger>
             ))}
@@ -107,7 +107,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
                   <div className="flex gap-2"><Input className="rounded-none" defaultValue="9BWZZZ377VT004251" /><Badge variant="outline" className="rounded-none">Nacional</Badge></div>
                 </div>
               </div>
-              <div className="border-t pt-4 space-y-3">
+              <div className="border-t-2 border-[#747474] pt-4 space-y-3">
                 <h4 className="text-sm font-semibold">Envio para Sistemas</h4>
                 <div className="flex gap-2">
                   <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white"><Send className="h-3.5 w-3.5 mr-1" />Enviar para Gestão</Button>
@@ -195,7 +195,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
                       <div className="mt-1 w-8 h-8 bg-primary/10 flex items-center justify-center shrink-0">
                         <Icon className="h-4 w-4 text-primary" />
                       </div>
-                      <div className="flex-1 border-b pb-3">
+                      <div className="flex-1 border-b-2 border-[#747474] pb-3">
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-[10px] rounded-none">{a.tipo}</Badge>
                           <span className="text-xs text-muted-foreground">{new Date(a.data).toLocaleDateString("pt-BR")} {new Date(a.data).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>

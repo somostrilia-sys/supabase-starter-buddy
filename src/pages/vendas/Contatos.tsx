@@ -131,7 +131,7 @@ export default function Contatos() {
       )}
 
       <Tabs value={tab} onValueChange={v => { setTab(v); setPage(0); }}>
-        <TabsList className="bg-muted/50 flex-wrap h-auto">
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="todos" className="text-xs">Todos</TabsTrigger>
           <TabsTrigger value="novos" className="text-xs">Novos (7d)</TabsTrigger>
           <TabsTrigger value="antigos" className="text-xs">Antigos (+90d)</TabsTrigger>
@@ -176,7 +176,7 @@ export default function Contatos() {
       <Card className="border border-border/50">
         <CardContent className="p-0 overflow-x-auto">
           <table className="w-full text-sm min-w-[800px]">
-            <thead><tr className="border-b bg-muted/30">
+            <thead><tr className="border-b-2 border-[#747474] bg-muted/30">
               <th className="text-left p-3 text-[10px] font-semibold text-foreground/60 tracking-[0.06em] uppercase">Nome</th>
               <th className="text-left p-3 text-[10px] font-semibold text-foreground/60 tracking-[0.06em] uppercase">CPF</th>
               <th className="text-left p-3 text-[10px] font-semibold text-foreground/60 tracking-[0.06em] uppercase">Telefone</th>
@@ -188,7 +188,7 @@ export default function Contatos() {
             </tr></thead>
             <tbody>
               {pageData.map(c => (
-                <tr key={c.id} className="table-row-hover border-b border-border/30 hover:bg-muted/40 cursor-pointer" onClick={() => setSelected(c)}>
+                <tr key={c.id} className="table-row-hover border-b-2 border-[#747474] hover:bg-muted/40 cursor-pointer" onClick={() => setSelected(c)}>
                    <td className="p-3">
                     <div className="flex items-center gap-2">
                       <Avatar className="h-7 w-7"><AvatarFallback className={`text-[10px] ${!c.nome.trim() ? "bg-warning/10 text-warning" : "bg-primary/15 text-primary"}`}>{c.nome ? c.nome.split(" ").map(n=>n[0]).slice(0,2).join("") : "—"}</AvatarFallback></Avatar>

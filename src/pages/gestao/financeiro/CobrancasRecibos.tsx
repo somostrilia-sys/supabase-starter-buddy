@@ -134,7 +134,7 @@ export default function CobrancasRecibos({ onBack }: { onBack: () => void }) {
               <div className="flex justify-between"><span className="text-muted-foreground">Valor:</span><span className="font-bold text-success">R$ {showRecibo.valor.toFixed(2)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Vencimento:</span><span>{new Date(showRecibo.vencimento).toLocaleDateString("pt-BR")}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Data emissão:</span><span>{new Date().toLocaleDateString("pt-BR")}</span></div>
-              <div className="border-t pt-3 text-center text-xs text-muted-foreground">Documento gerado eletronicamente</div>
+              <div className="border-t-2 border-[#747474] pt-3 text-center text-xs text-muted-foreground">Documento gerado eletronicamente</div>
             </div>
           )}
           <DialogFooter><Button variant="outline" onClick={() => setShowRecibo(null)}>Fechar</Button><Button onClick={() => { toast.success("Recibo emitido"); setShowRecibo(null); }}>Imprimir</Button></DialogFooter>

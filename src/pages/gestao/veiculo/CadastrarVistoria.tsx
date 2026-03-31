@@ -380,7 +380,7 @@ export default function CadastrarVistoria() {
       </Accordion>
 
       {/* Footer */}
-      <div className="sticky bottom-0 bg-background border-t py-3 flex justify-end gap-3 -mx-6 px-6">
+      <div className="sticky bottom-0 bg-background border-t-2 border-[#747474] py-3 flex justify-end gap-3 -mx-6 px-6">
         <Button variant="outline" className="gap-1"><X className="h-4 w-4" /> Voltar</Button>
         <Button variant="outline" onClick={limpar} className="gap-1"><Eraser className="h-4 w-4" /> Limpar</Button>
         <Button onClick={salvar} disabled={loading} className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"><Save className="h-4 w-4" /> {loading ? "Salvando..." : "Salvar Vistoria"}</Button>

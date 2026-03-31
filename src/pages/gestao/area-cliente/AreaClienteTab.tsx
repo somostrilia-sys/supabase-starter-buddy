@@ -218,7 +218,7 @@ export default function AreaClienteTab() {
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Tipo:</span><Badge variant="outline">{showChamado.tipo}</Badge></div>
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Status:</span><Badge className={statusChamado[showChamado.status]}>{showChamado.status.replace("_", " ")}</Badge></div>
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Associado:</span><span className="font-medium">{showChamado.associado}</span></div>
-              <div className="border-t pt-3 space-y-3">
+              <div className="border-t-2 border-[#747474] pt-3 space-y-3">
                 <p className="font-semibold text-sm">Mensagens</p>
                 {showChamado.mensagens.map((m, i) => (
                   <div key={i} className={`p-3 rounded-lg text-sm ${m.autor === "Atendimento" ? "bg-primary/5 border-l-2 border-primary" : "bg-muted"}`}>
@@ -227,7 +227,7 @@ export default function AreaClienteTab() {
                   </div>
                 ))}
               </div>
-              <div className="border-t pt-3 space-y-2">
+              <div className="border-t-2 border-[#747474] pt-3 space-y-2">
                 <Label className="text-xs">Responder</Label>
                 <Textarea placeholder="Digite sua resposta..." value={resposta} onChange={e => setResposta(e.target.value)} />
                 <Button size="sm" onClick={() => { toast.success("Resposta enviada"); setResposta(""); }}><Send className="h-4 w-4" />Enviar</Button>

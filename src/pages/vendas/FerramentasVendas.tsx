@@ -86,12 +86,12 @@ export default function FerramentasVendas() {
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="flex-wrap h-auto gap-1 bg-transparent p-0">
-          <TabsTrigger value="powerlink" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Powerlink</TabsTrigger>
-          <TabsTrigger value="formularios" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Formulários Dinâmicos</TabsTrigger>
-          <TabsTrigger value="importacao" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Importação de Lista</TabsTrigger>
-          <TabsTrigger value="metas" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Metas</TabsTrigger>
-          <TabsTrigger value="afiliados" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Afiliados</TabsTrigger>
+        <TabsList className="flex-wrap gap-1">
+          <TabsTrigger value="powerlink" className="text-xs">Powerlink</TabsTrigger>
+          <TabsTrigger value="formularios" className="text-xs">Formulários Dinâmicos</TabsTrigger>
+          <TabsTrigger value="importacao" className="text-xs">Importação de Lista</TabsTrigger>
+          <TabsTrigger value="metas" className="text-xs">Metas</TabsTrigger>
+          <TabsTrigger value="afiliados" className="text-xs">Afiliados</TabsTrigger>
         </TabsList>
 
         {/* TAB 1 - POWERLINK */}

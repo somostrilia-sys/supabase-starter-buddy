@@ -333,7 +333,7 @@ export default function TabelasPrecosTab() {
           )}
 
           {/* Navigation */}
-          <div className="flex justify-between pt-4 border-t">
+          <div className="flex justify-between pt-4 border-t-2 border-[#747474]">
             <Button variant="outline" onClick={() => wizardStep > 0 ? setWizardStep(wizardStep - 1) : setShowWizard(false)} className="gap-2">
               <ChevronLeft className="h-4 w-4" /> {wizardStep === 0 ? "Cancelar" : "Anterior"}
             </Button>

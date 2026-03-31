@@ -191,7 +191,7 @@ export default function NegociacaoDetalhe() {
         {/* LEFT: Tabs */}
         <div className="flex-1 min-w-0">
           <Tabs defaultValue="atividades" className="w-full">
-            <TabsList className="w-full justify-start bg-muted/50 h-10 gap-0.5">
+            <TabsList className="w-full justify-start gap-0.5">
               <TabsTrigger value="atividades" className="text-xs gap-1"><MessageSquare className="h-3.5 w-3.5" /> Atividades</TabsTrigger>
               <TabsTrigger value="contato" className="text-xs gap-1"><User className="h-3.5 w-3.5" /> Contato</TabsTrigger>
               <TabsTrigger value="cotacoes" className="text-xs gap-1"><DollarSign className="h-3.5 w-3.5" /> Cotações</TabsTrigger>
@@ -238,10 +238,10 @@ export default function NegociacaoDetalhe() {
 
               {/* Sub-tabs */}
               <Tabs defaultValue="atividades-lista">
-                <TabsList className="bg-transparent border-b rounded-none h-8 p-0 gap-4">
-                  <TabsTrigger value="atividades-lista" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-1 pb-2 h-auto">Atividades</TabsTrigger>
-                  <TabsTrigger value="anotacoes" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-1 pb-2 h-auto">Anotações</TabsTrigger>
-                  <TabsTrigger value="anexos" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-1 pb-2 h-auto">Anexos</TabsTrigger>
+                <TabsList className="gap-4">
+                  <TabsTrigger value="atividades-lista" className="text-xs">Atividades</TabsTrigger>
+                  <TabsTrigger value="anotacoes" className="text-xs">Anotações</TabsTrigger>
+                  <TabsTrigger value="anexos" className="text-xs">Anexos</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="atividades-lista" className="mt-3 space-y-2">

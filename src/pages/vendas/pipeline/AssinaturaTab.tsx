@@ -130,7 +130,7 @@ export default function AssinaturaTab({ deal }: Props) {
 
       {/* Documento selecionado */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">DOCUMENTO PARA ASSINATURA</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">DOCUMENTO PARA ASSINATURA</legend>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label className={lbl}>Documento</Label>
@@ -175,7 +175,7 @@ export default function AssinaturaTab({ deal }: Props) {
 
       {/* Botões de envio */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">ENVIAR PARA ASSINATURA</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">ENVIAR PARA ASSINATURA</legend>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" className="rounded-none" onClick={() => handleEnviar("email")}>
             <Mail className="h-3.5 w-3.5 mr-1" />Enviar por E-mail
@@ -212,7 +212,7 @@ export default function AssinaturaTab({ deal }: Props) {
 
       {/* Timeline */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">HISTÓRICO DA ASSINATURA</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">HISTÓRICO DA ASSINATURA</legend>
         <div className="relative pl-6 space-y-0">
           {mockTimeline.map((ev, i) => {
             const Icon = tipoIcons[ev.tipo] || Clock;

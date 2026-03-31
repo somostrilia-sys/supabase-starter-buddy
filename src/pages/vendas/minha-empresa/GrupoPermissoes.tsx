@@ -117,7 +117,7 @@ function PermissaoSecao({ titulo, icone: Icone, items, permissoes, onChange }: {
       </CardHeader>
       <CardContent className="space-y-3">
         {items.map((item) => (
-          <div key={item.key} className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0">
+          <div key={item.key} className="flex items-center justify-between py-1.5 border-b-2 border-[#747474] last:border-0">
             <Label htmlFor={item.key} className="text-sm font-normal cursor-pointer">{item.label}</Label>
             <Switch
               id={item.key}

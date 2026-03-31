@@ -94,7 +94,7 @@ export default function ContratoAdesaoTab() {
           <Card>
             <CardContent className="p-0">
               {/* Toolbar */}
-              <div className="flex items-center gap-1 p-2 border-b">
+              <div className="flex items-center gap-1 p-2 border-b-2 border-[#747474]">
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => wrapSelection("b")}><Bold className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => wrapSelection("i")}><Italic className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => wrapSelection("u")}><Underline className="h-4 w-4" /></Button>

@@ -219,7 +219,7 @@ export default function VendasLista() {
 
       <Card>
         <CardContent className="p-0">
-          <div className="flex items-center justify-between p-3 border-b">
+          <div className="flex items-center justify-between p-3 border-b-2 border-[#747474]">
             <span className="text-sm font-medium">{sorted.length} negociações</span>
             <div className="flex items-center gap-2">
               <Button size="sm" variant="outline"><Download className="h-3.5 w-3.5 mr-1" />Exportar Excel</Button>
@@ -283,7 +283,7 @@ export default function VendasLista() {
             </Table>
           </div>
           {totalPages > 1 && (
-            <div className="flex items-center justify-between p-3 border-t">
+            <div className="flex items-center justify-between p-3 border-t-2 border-[#747474]">
               <span className="text-xs text-muted-foreground">Página {page} de {totalPages} ({sorted.length} total)</span>
               <div className="flex gap-1">
                 <Button size="icon" variant="outline" className="h-7 w-7" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft className="h-3.5 w-3.5" /></Button>

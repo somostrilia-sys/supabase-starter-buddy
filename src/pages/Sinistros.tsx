@@ -202,7 +202,7 @@ export default function Sinistros() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-muted/30">
+                  <tr className="border-b-2 border-[#747474] bg-muted/30">
                     {["Tipo", "Associado", "Veículo", "Data", "Status", "Estimado", "Aprovado"].map(h => (
                       <th key={h} className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase whitespace-nowrap">{h}</th>
                     ))}
@@ -232,7 +232,7 @@ export default function Sinistros() {
                   ) : pageData.map(e => (
                     <tr
                       key={e.id}
-                      className="border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-colors"
+                      className="border-b-2 border-[#747474] hover:bg-muted/20 cursor-pointer transition-colors"
                       onClick={() => { setSelected(e); setDetailTab("dados"); setNewStatus(e.status); }}
                     >
                       <td className="p-3">
@@ -299,7 +299,7 @@ export default function Sinistros() {
               <Separator />
 
               <Tabs value={detailTab} onValueChange={setDetailTab}>
-                <TabsList className="bg-muted/50 w-full flex-wrap h-auto gap-1 p-1">
+                <TabsList className="w-full flex-wrap h-auto gap-1">
                   {[
                     ["dados", "Dados"],
                     ["veiculo", "Veículo"],

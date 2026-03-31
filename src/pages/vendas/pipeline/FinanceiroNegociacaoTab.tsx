@@ -82,7 +82,7 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
 
       {/* Forma de pagamento */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">FORMA DE PAGAMENTO</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">FORMA DE PAGAMENTO</legend>
         <div className="flex gap-2">
           {formasPgto.map(f => {
             const selected = formaPgto === f.id;
@@ -108,7 +108,7 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
 
       {/* Split de Pagamento */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">SPLIT DE PAGAMENTO (COMISSÃO)</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">SPLIT DE PAGAMENTO (COMISSÃO)</legend>
         <div className="p-4 rounded border bg-muted/30 space-y-2">
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center p-3 rounded bg-background border">
@@ -134,7 +134,7 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
 
       {/* Tabela de faturas */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">FATURAS E RECIBOS</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">FATURAS E RECIBOS</legend>
         <Table>
           <TableHeader>
             <TableRow>

@@ -355,7 +355,7 @@ export default function Associados() {
       </div>
 
       <Tabs value={tab} onValueChange={v => { setTab(v); setPage(0); }}>
-        <TabsList className="bg-muted/50">
+        <TabsList>
           <TabsTrigger value="todos" className="text-xs">Todos ({mockAssociados.length})</TabsTrigger>
           <TabsTrigger value="ativos" className="text-xs">Ativos</TabsTrigger>
           <TabsTrigger value="inativos" className="text-xs">Inativos</TabsTrigger>
@@ -402,14 +402,14 @@ export default function Associados() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="border-b bg-muted/30">
+              <thead><tr className="border-b-2 border-[#747474] bg-muted/30">
                 {["Código","Nome","CPF","Status","Telefone","Cidade/UF","Plano","Adesão","Venc.","Veíc."].map(h => (
                   <th key={h} className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase whitespace-nowrap">{h}</th>
                 ))}
               </tr></thead>
               <tbody>
                 {pageData.map(a => (
-                  <tr key={a.id} className="border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-colors" onClick={() => setSelected(a)}>
+                  <tr key={a.id} className="border-b-2 border-[#747474] hover:bg-muted/20 cursor-pointer transition-colors" onClick={() => setSelected(a)}>
                     <td className="p-3 text-xs font-mono text-primary">{a.codigo}</td>
                     <td className="p-3">
                       <div className="flex items-center gap-2">

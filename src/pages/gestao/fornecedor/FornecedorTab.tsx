@@ -126,17 +126,17 @@ export default function FornecedorTab() {
 
       {/* ── TABS ── */}
       <Tabs defaultValue="listagem">
-        <TabsList className="bg-muted/50 border border-border">
-          <TabsTrigger value="listagem" className="data-[state=active]:bg-primary data-[state=active]:text-white gap-1.5">
+        <TabsList>
+          <TabsTrigger value="listagem" className="gap-1.5">
             <FileText className="h-3.5 w-3.5" />Listagem
           </TabsTrigger>
-          <TabsTrigger value="sincronismo" className="data-[state=active]:bg-primary data-[state=active]:text-white gap-1.5">
+          <TabsTrigger value="sincronismo" className="gap-1.5">
             <BarChart3 className="h-3.5 w-3.5" />Sincronismo
           </TabsTrigger>
-          <TabsTrigger value="log" className="data-[state=active]:bg-primary data-[state=active]:text-white gap-1.5">
+          <TabsTrigger value="log" className="gap-1.5">
             <Clock className="h-3.5 w-3.5" />Log
           </TabsTrigger>
-          <TabsTrigger value="relatorio" className="data-[state=active]:bg-primary data-[state=active]:text-white gap-1.5">
+          <TabsTrigger value="relatorio" className="gap-1.5">
             <Download className="h-3.5 w-3.5" />Relatório
           </TabsTrigger>
         </TabsList>
@@ -193,7 +193,7 @@ export default function FornecedorTab() {
                 </TableHeader>
                 <TableBody>
                   {filtered.map((f, i) => (
-                    <TableRow key={f.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
+                    <TableRow key={f.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b-2 border-[#747474]`}>
                       <TableCell className="font-mono text-xs text-foreground font-semibold">{f.id}</TableCell>
                       <TableCell className="font-medium text-foreground">{f.nome}</TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">{f.cnpj}</TableCell>
@@ -205,7 +205,7 @@ export default function FornecedorTab() {
                   ))}
                 </TableBody>
               </Table>
-              <div className="px-4 py-3 bg-muted/30 border-t border-border/60 flex justify-between items-center">
+              <div className="px-4 py-3 bg-muted/30 border-t-2 border-[#747474] flex justify-between items-center">
                 <span className="text-xs text-muted-foreground">{filtered.length} fornecedor(es) encontrado(s)</span>
                 <span className="text-xs text-muted-foreground">Total geral: {mockFornecedores.length}</span>
               </div>
@@ -258,7 +258,7 @@ export default function FornecedorTab() {
           {/* Cobertura */}
           <Card className="border-border overflow-hidden">
             
-            <CardHeader className="pb-3 border-b border-border/60">
+            <CardHeader className="pb-3 border-b-2 border-[#747474]">
               <div className="flex items-center gap-2">
                 <Activity className="h-4 w-4 text-foreground" />
                 <CardTitle className="text-base text-primary">Cobertura por Fornecedor</CardTitle>
@@ -283,7 +283,7 @@ export default function FornecedorTab() {
           {/* Vínculo */}
           <Card className="border-border overflow-hidden">
             
-            <CardHeader className="pb-3 border-b border-border/60">
+            <CardHeader className="pb-3 border-b-2 border-[#747474]">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-foreground" />
                 <CardTitle className="text-base text-primary">Vínculo Associado × Fornecedor</CardTitle>
@@ -302,7 +302,7 @@ export default function FornecedorTab() {
                 </TableHeader>
                 <TableBody>
                   {mockFornecedores.filter(f => f.status === "ativo").map((f, i) => (
-                    <TableRow key={f.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
+                    <TableRow key={f.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b-2 border-[#747474]`}>
                       <TableCell className="font-medium text-foreground">{f.nome}</TableCell>
                       <TableCell><Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8">{f.tipo}</Badge></TableCell>
                       <TableCell className="text-right font-medium">{f.associadosVinc}</TableCell>
@@ -324,7 +324,7 @@ export default function FornecedorTab() {
         <TabsContent value="log" className="space-y-4 mt-4">
           <Card className="border-border overflow-hidden">
             
-            <CardHeader className="pb-3 border-b border-border/60">
+            <CardHeader className="pb-3 border-b-2 border-[#747474]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-foreground" />
@@ -349,7 +349,7 @@ export default function FornecedorTab() {
                 </TableHeader>
                 <TableBody>
                   {logSync.map((l, i) => (
-                    <TableRow key={l.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
+                    <TableRow key={l.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b-2 border-[#747474]`}>
                       <TableCell className="text-sm font-mono text-foreground">{l.data}</TableCell>
                       <TableCell className="font-medium text-foreground">{l.fornecedor}</TableCell>
                       <TableCell><Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8">{l.tipo}</Badge></TableCell>
@@ -360,7 +360,7 @@ export default function FornecedorTab() {
                   ))}
                 </TableBody>
               </Table>
-              <div className="px-4 py-3 bg-muted/30 border-t border-border/60 flex justify-between items-center">
+              <div className="px-4 py-3 bg-muted/30 border-t-2 border-[#747474] flex justify-between items-center">
                 <span className="text-xs text-muted-foreground">{logSync.length} execução(ões) registrada(s)</span>
                 <span className="text-xs font-medium text-foreground">
                   {logSync.filter(l => l.status === "sucesso").length} sucesso · {logSync.filter(l => l.status === "erro").length} erro · {logSync.filter(l => l.status === "pendente").length} pendente
@@ -374,7 +374,7 @@ export default function FornecedorTab() {
         <TabsContent value="relatorio" className="space-y-4 mt-4">
           <Card className="border-border overflow-hidden">
             
-            <CardHeader className="border-b border-border/60">
+            <CardHeader className="border-b-2 border-[#747474]">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-foreground" />
                 <div>
@@ -407,7 +407,7 @@ export default function FornecedorTab() {
                   </Select>
                 </div>
               </div>
-              <div className="flex items-center gap-3 pt-2 border-t border-border/60">
+              <div className="flex items-center gap-3 pt-2 border-t-2 border-[#747474]">
                 <Button onClick={exportCsv} className="gap-1.5 bg-primary hover:bg-primary/90 text-white">
                   <Download className="h-4 w-4" />Exportar Excel
                 </Button>
@@ -473,7 +473,7 @@ export default function FornecedorTab() {
               <Textarea className="mt-1 border-border" value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} />
             </div>
           </div>
-          <DialogFooter className="border-t border-border/60 pt-4">
+          <DialogFooter className="border-t-2 border-[#747474] pt-4">
             <Button variant="outline" onClick={() => setShowCadastro(false)} className="border-border">Cancelar</Button>
             <Button onClick={handleSalvar} className="bg-primary hover:bg-primary/90 text-white">Salvar</Button>
           </DialogFooter>

@@ -224,13 +224,13 @@ export default function FechamentoMensal({ onBack }: Props) {
 
       {/* ── Histórico ───────────────────────────────────────────── */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="px-6 py-4 border-b border-border">
+        <div className="px-6 py-4 border-b-2 border-[#747474]">
           <h2 className="text-sm font-semibold">Histórico de Fechamentos</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/40">
+              <tr className="border-b-2 border-[#747474] bg-muted/40">
                 <th className="text-left px-6 py-3 font-medium text-muted-foreground">Mês</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
                 <th className="text-right px-4 py-3 font-medium text-muted-foreground">Boletos</th>
@@ -243,7 +243,7 @@ export default function FechamentoMensal({ onBack }: Props) {
               {HISTORICO.map((row, i) => (
                 <tr
                   key={i}
-                  className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
+                  className="border-b-2 border-[#747474] last:border-0 hover:bg-muted/30 transition-colors"
                 >
                   <td className="px-6 py-3.5 font-medium">{row.mes}</td>
                   <td className="px-4 py-3.5">

@@ -109,7 +109,7 @@ export default function Metas() {
         <CardContent className="p-0 overflow-x-auto">
           <Table className="min-w-[800px]">
             <TableHeader>
-              <TableRow className="bg-muted/60 hover:bg-muted/60 border-b border-border">
+              <TableRow className="bg-muted/60 hover:bg-muted/60 border-b-2 border-[#747474]">
                 <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em]">#</TableHead>
                 <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em]">Consultor</TableHead>
                 <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Meta Contr.</TableHead>
@@ -126,7 +126,7 @@ export default function Metas() {
                 const pctContratos = c.metaContratos > 0 ? (c.atualContratos / c.metaContratos) * 100 : 0;
                 const barColor = pctContratos >= 80 ? "bg-success/80" : pctContratos >= 50 ? "bg-warning/80" : "bg-destructive/80";
                 return (
-                  <TableRow key={c.nome} className="hover:bg-muted/30 transition-colors border-b border-border/40">
+                  <TableRow key={c.nome} className="hover:bg-muted/30 transition-colors border-b-2 border-[#747474]">
                     <TableCell>
                       <div className="flex items-center gap-1">
                         {c.ranking <= 3 && <Trophy className={`h-4 w-4 ${c.ranking === 1 ? "text-yellow-500" : c.ranking === 2 ? "text-gray-400" : "text-warning"}`} />}

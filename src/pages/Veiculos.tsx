@@ -147,7 +147,7 @@ export default function Veiculos() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="border-b bg-muted/30">
+              <thead><tr className="border-b-2 border-[#747474] bg-muted/30">
                 {["Placa","Tipo","Marca/Modelo","Ano","Cor","Valor FIPE","Associado","Status","Inclusão"].map(h => (
                   <th key={h} className="text-left p-3 text-[10px] font-medium text-muted-foreground uppercase whitespace-nowrap">{h}</th>
                 ))}
@@ -181,7 +181,7 @@ export default function Veiculos() {
                 ) : pageData.map(v => {
                   const Icon = tipoIcon[v.tipo] || Car;
                   return (
-                    <tr key={v.id} className="border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-colors" onClick={() => setSelected(v)}>
+                    <tr key={v.id} className="border-b-2 border-[#747474] hover:bg-muted/20 cursor-pointer transition-colors" onClick={() => setSelected(v)}>
                       <td className="p-3"><Badge variant="secondary" className="text-[10px] font-mono">{v.placa}</Badge></td>
                       <td className="p-3"><Icon className="h-4 w-4 text-muted-foreground" /></td>
                       <td className="p-3 text-xs font-medium">{v.marca} {v.modelo}</td>
@@ -234,7 +234,7 @@ export default function Veiculos() {
               <Separator />
 
               <Tabs defaultValue="dados">
-                <TabsList className="bg-muted/50 w-full">
+                <TabsList className="w-full">
                   <TabsTrigger value="dados" className="text-xs flex-1">Dados</TabsTrigger>
                   <TabsTrigger value="condutores" className="text-xs flex-1">Condutores</TabsTrigger>
                   <TabsTrigger value="historico" className="text-xs flex-1">Histórico</TabsTrigger>

@@ -125,11 +125,11 @@ export default function Financeiro() {
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="flex-wrap h-auto gap-1 bg-transparent p-0">
-          <TabsTrigger value="vendas" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Vendas Online</TabsTrigger>
-          <TabsTrigger value="conta" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Conta Bancária (IUGU)</TabsTrigger>
-          <TabsTrigger value="comissoes" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Comissões</TabsTrigger>
-          <TabsTrigger value="faturas" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Faturas Power CRM</TabsTrigger>
+        <TabsList className="flex-wrap h-auto gap-1">
+          <TabsTrigger value="vendas" className="text-xs">Vendas Online</TabsTrigger>
+          <TabsTrigger value="conta" className="text-xs">Conta Bancária (IUGU)</TabsTrigger>
+          <TabsTrigger value="comissoes" className="text-xs">Comissões</TabsTrigger>
+          <TabsTrigger value="faturas" className="text-xs">Faturas Power CRM</TabsTrigger>
         </TabsList>
 
         {/* TAB 1 - VENDAS ONLINE */}
@@ -322,7 +322,7 @@ export default function Financeiro() {
         <DialogContent className="max-w-md"><DialogHeader><DialogTitle>Fatura {faturaModal}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             {[{ item: "Licença Power CRM", valor: 297 }, { item: "Módulo WhatsApp", valor: 100 }, { item: "Módulo Formulários", valor: 100 }].map(i => (
-              <div key={i.item} className="flex items-center justify-between py-2 border-b"><span className="text-sm">{i.item}</span><span className="text-sm font-medium">{fmt(i.valor)}</span></div>
+              <div key={i.item} className="flex items-center justify-between py-2 border-b-2 border-[#747474]"><span className="text-sm">{i.item}</span><span className="text-sm font-medium">{fmt(i.valor)}</span></div>
             ))}
             <div className="flex items-center justify-between pt-2"><span className="text-sm font-bold">Total</span><span className="text-lg font-bold">{fmt(497)}</span></div>
           </div>

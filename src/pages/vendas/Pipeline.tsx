@@ -299,108 +299,80 @@ export default function Pipeline() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      {/* Header — barra com fundo azul escuro */}
+      <div className="flex items-center justify-between flex-wrap gap-3 bg-[#1A3A5C] rounded-xl px-5 py-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Pipeline</h1>
-          <p className="text-sm text-muted-foreground">Funil de vendas - gerencie suas negociações</p>
+          <h1 className="text-2xl font-bold tracking-tight text-white">Pipeline</h1>
+          <p className="text-sm text-white/60">Funil de vendas — gerencie suas negociações</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant={showFilters ? "default" : "outline"} size="sm" onClick={() => setShowFilters(!showFilters)}>
-            <Filter className="h-3.5 w-3.5 mr-1" />Filtros
-            {activeFilterCount > 0 && <Badge className="ml-1.5 h-5 w-5 p-0 flex items-center justify-center text-[10px] rounded-full">{activeFilterCount}</Badge>}
-          </Button>
-          <div className="flex border rounded-lg overflow-hidden">
-            <Button size="icon" variant={viewMode === "kanban" ? "default" : "ghost"} className="rounded-none h-8 w-8" onClick={() => setViewMode("kanban")}><LayoutGrid className="h-4 w-4" /></Button>
-            <Button size="icon" variant={viewMode === "list" ? "default" : "ghost"} className="rounded-none h-8 w-8" onClick={() => setViewMode("list")}><List className="h-4 w-4" /></Button>
+          <div className="flex border border-white/20 rounded-lg overflow-hidden">
+            <Button size="icon" variant={viewMode === "kanban" ? "default" : "ghost"} className="rounded-none h-8 w-8 text-white hover:bg-white/10" onClick={() => setViewMode("kanban")}><LayoutGrid className="h-4 w-4" /></Button>
+            <Button size="icon" variant={viewMode === "list" ? "default" : "ghost"} className="rounded-none h-8 w-8 text-white hover:bg-white/10" onClick={() => setViewMode("list")}><List className="h-4 w-4" /></Button>
           </div>
         </div>
       </div>
 
-      {/* Busca multi-critério */}
-      <Card>
-        <CardContent className="p-3">
-          <div className="flex flex-wrap gap-2 items-end">
-            <div className="flex-1 min-w-[140px] space-y-1">
-              <Label className="text-xs">Placa</Label>
+      {/* Filtros — card único azul, sempre visível */}
+      <Card className="bg-[#2c4a86] border-[#2c4a86] text-white [&_label]:text-white/80">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Filter className="h-4 w-4 text-white/70" />
+            <span className="text-sm font-semibold text-white/90">Filtros</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div className="space-y-1"><Label className="text-xs">Placa</Label>
               <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input className="h-8 text-xs pl-7" placeholder="ABC1234" value={busca.placa}
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/50" />
+                <Input className="h-8 text-xs pl-7 bg-white/10 border-white/20 text-white placeholder:text-white/40" placeholder="ABC1234" value={busca.placa}
                   onChange={e => setBusca(b => ({ ...b, placa: e.target.value }))} />
               </div>
             </div>
-            <div className="flex-1 min-w-[160px] space-y-1">
-              <Label className="text-xs">Nome do Associado</Label>
+            <div className="space-y-1"><Label className="text-xs">Nome do Associado</Label>
               <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input className="h-8 text-xs pl-7" placeholder="Mín. 3 caracteres" value={busca.nome}
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/50" />
+                <Input className="h-8 text-xs pl-7 bg-white/10 border-white/20 text-white placeholder:text-white/40" placeholder="Mín. 3 caracteres" value={busca.nome}
                   onChange={e => setBusca(b => ({ ...b, nome: e.target.value }))} />
               </div>
             </div>
-            <div className="flex-1 min-w-[160px] space-y-1">
-              <Label className="text-xs">Código Negociação</Label>
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input className="h-8 text-xs pl-7 font-mono" placeholder="NEG-20260326-0001" value={busca.codigo}
-                  onChange={e => setBusca(b => ({ ...b, codigo: e.target.value }))} />
-              </div>
+            <div className="space-y-1"><Label className="text-xs">Consultor</Label>
+              <Select value={fConsultor} onValueChange={setFConsultor}><SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="all">Todos</SelectItem>{consultores.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
-            {(busca.placa || busca.nome || busca.codigo) && (
-              <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setBusca({ placa: "", nome: "", codigo: "" })}>
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            )}
+            <div className="space-y-1"><Label className="text-xs">Etapa</Label>
+              <Select value={fEtapa} onValueChange={setFEtapa}><SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="all">Todas</SelectItem>{stageColumns.map(s => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1"><Label className="text-xs">Cooperativa</Label>
+              <Select value={fCoop} onValueChange={setFCoop}><SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="all">Todas</SelectItem>{cooperativas.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1"><Label className="text-xs">Regional</Label>
+              <Select value={fRegional} onValueChange={setFRegional}><SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="all">Todas</SelectItem>{regionais.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1"><Label className="text-xs">Gerente</Label>
+              <Select value={fGerente} onValueChange={setFGerente}><SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="all">Todos</SelectItem>{gerentes.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1"><Label className="text-xs">Data Início</Label><Input type="date" className="h-8 text-xs bg-white/10 border-white/20 text-white" value={fDateStart} onChange={e => setFDateStart(e.target.value)} /></div>
+            <div className="space-y-1"><Label className="text-xs">Data Fim</Label><Input type="date" className="h-8 text-xs bg-white/10 border-white/20 text-white" value={fDateEnd} onChange={e => setFDateEnd(e.target.value)} /></div>
+            <div className="space-y-1"><Label className="text-xs">Tipo Data</Label>
+              <Select value={fDateType} onValueChange={setFDateType}><SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="created_at">Data Criação</SelectItem><SelectItem value="updated_at">Última Movimentação</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end gap-2">
+              <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={clearFilters}><X className="h-3 w-3 mr-1" />Limpar</Button>
+            </div>
           </div>
-          {busca.nome && busca.nome.length < 3 && (
-            <p className="text-xs text-muted-foreground mt-1">Digite ao menos 3 caracteres para buscar por nome</p>
-          )}
         </CardContent>
       </Card>
-
-      {/* Filters */}
-      {showFilters && (
-        <Card>
-          <CardContent className="p-4 space-y-3">
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              <div className="space-y-1"><Label className="text-xs">Consultor</Label>
-                <Select value={fConsultor} onValueChange={setFConsultor}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Todos</SelectItem>{consultores.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1"><Label className="text-xs">Gerente</Label>
-                <Select value={fGerente} onValueChange={setFGerente}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Todos</SelectItem>{gerentes.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1"><Label className="text-xs">Cooperativa</Label>
-                <Select value={fCoop} onValueChange={setFCoop}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Todas</SelectItem>{cooperativas.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1"><Label className="text-xs">Regional</Label>
-                <Select value={fRegional} onValueChange={setFRegional}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Todas</SelectItem>{regionais.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1"><Label className="text-xs">Etapa</Label>
-                <Select value={fEtapa} onValueChange={setFEtapa}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Todas</SelectItem>{stageColumns.map(s => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1"><Label className="text-xs">Data Início</Label><Input type="date" className="h-8 text-xs" value={fDateStart} onChange={e => setFDateStart(e.target.value)} /></div>
-              <div className="space-y-1"><Label className="text-xs">Data Fim</Label><Input type="date" className="h-8 text-xs" value={fDateEnd} onChange={e => setFDateEnd(e.target.value)} /></div>
-              <div className="space-y-1"><Label className="text-xs">Tipo Data</Label>
-                <Select value={fDateType} onValueChange={setFDateType}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="created_at">Data Criação</SelectItem><SelectItem value="updated_at">Última Movimentação</SelectItem></SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-end gap-2">
-                <Button size="sm" variant="outline" onClick={clearFilters}><X className="h-3 w-3 mr-1" />Limpar</Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* KANBAN VIEW */}
       {viewMode === "kanban" ? (
@@ -412,18 +384,14 @@ export default function Pipeline() {
               <div
                 key={col.key}
                 className={`flex flex-col rounded-xl overflow-hidden min-w-[260px] w-[260px] shrink-0 transition-all bg-muted/40 border border-border/50 ${isOver ? "ring-2 shadow-lg" : "shadow-sm"}`}
-                style={{ borderTop: `4px solid ${col.color}` }}
                 onDragOver={e => handleDragOver(e, col.key)}
                 onDragLeave={() => setDragOverStage(null)}
                 onDrop={() => handleDrop(col.key)}
               >
-                <div className="px-3 pt-3 pb-2">
-                  <div className="flex items-center justify-between bg-primary/8 rounded-lg px-3 py-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2.5 h-2.5 rounded-full ${col.dot}`} />
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">{col.label}</span>
-                    </div>
-                    <Badge className="text-[10px] h-5 px-1.5" style={{ backgroundColor: `${col.color}20`, color: col.color, border: `1px solid ${col.color}40` }}>{colDeals.length}</Badge>
+                <div className="px-0 pt-0 pb-2">
+                  <div className="flex items-center justify-between rounded-t-xl px-4 py-2.5" style={{ backgroundColor: col.color }}>
+                    <span className="text-sm font-bold text-white tracking-wide">{col.label}</span>
+                    <Badge className="text-[10px] h-5 px-1.5 bg-white/20 text-white border-white/30">{colDeals.length}</Badge>
                   </div>
                 </div>
                 <ScrollArea className="flex-1 px-2 pb-2">
@@ -437,7 +405,7 @@ export default function Pipeline() {
                           draggable
                           onDragStart={e => handleDragStart(e, deal.id)}
                           onClick={() => setDetailDeal(deal)}
-                          className={`kanban-card group bg-card border border-l-4 rounded-lg cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${draggedId === deal.id ? "opacity-40" : ""}`}
+                          className={`kanban-card group bg-card border-2 border-[#747474] border-l-4 rounded-lg cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${draggedId === deal.id ? "opacity-40" : ""}`}
                           style={{ borderLeftColor: col.color }}
                         >
                           <div className="p-3 space-y-1.5">
@@ -505,7 +473,7 @@ export default function Pipeline() {
                             </div>
 
                             {/* Footer: Consultor */}
-                            <div className="flex items-center justify-end gap-1.5 pt-0.5 border-t border-muted/40 mt-1">
+                            <div className="flex items-center justify-end gap-1.5 pt-0.5 border-t-2 border-[#747474] mt-1">
                               <div className="w-5 h-5 rounded-full bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center shrink-0">
                                 <span className="text-[9px] font-bold text-primary">{deal.consultor.charAt(0)}</span>
                               </div>
@@ -530,7 +498,7 @@ export default function Pipeline() {
         /* LIST VIEW */
         <Card>
           <CardContent className="p-0">
-            <div className="flex items-center justify-between p-3 border-b">
+            <div className="flex items-center justify-between p-3 border-b-2 border-[#747474]">
               <span className="text-sm font-medium">{sorted.length} registros</span>
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline"><Download className="h-3.5 w-3.5 mr-1" />Exportar Excel</Button>
@@ -583,7 +551,7 @@ export default function Pipeline() {
               </Table>
             </div>
             {totalPages > 1 && (
-              <div className="flex items-center justify-between p-3 border-t">
+              <div className="flex items-center justify-between p-3 border-t-2 border-[#747474]">
                 <span className="text-xs text-muted-foreground">Página {page} de {totalPages}</span>
                 <div className="flex gap-1">
                   <Button size="icon" variant="outline" className="h-7 w-7" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft className="h-3.5 w-3.5" /></Button>

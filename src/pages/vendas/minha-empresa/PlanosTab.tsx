@@ -152,7 +152,7 @@ export default function PlanosTab() {
                 ))}
               </div>
             </div>
-            <div className="flex justify-end gap-2 pt-4 border-t">
+            <div className="flex justify-end gap-2 pt-4 border-t-2 border-[#747474]">
               <Button variant="outline" onClick={() => setShowModal(false)}>Cancelar</Button>
               <Button onClick={() => setShowModal(false)}>Salvar Plano</Button>
             </div>

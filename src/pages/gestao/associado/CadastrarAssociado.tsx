@@ -986,7 +986,7 @@ export default function CadastrarAssociado() {
       </Accordion>
 
       {/* Rodapé fixo */}
-      <div className="sticky bottom-0 bg-background border-t py-4 mt-6 flex justify-end gap-3">
+      <div className="sticky bottom-0 bg-background border-t-2 border-[#747474] py-4 mt-6 flex justify-end gap-3">
         <Button variant="outline" onClick={handleLimpar}>Cancelar</Button>
         <Button onClick={handleSalvar} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 text-white">
           {saving ? "Salvando..." : "Salvar Cadastro"}

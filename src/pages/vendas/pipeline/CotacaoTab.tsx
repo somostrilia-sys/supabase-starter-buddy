@@ -237,7 +237,7 @@ export default function CotacaoTab({ deal }: Props) {
 
       {/* SEÇÃO 1 - DADOS DO VEÍCULO */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">DADOS DO VEÍCULO</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">DADOS DO VEÍCULO</legend>
         <div className="grid grid-cols-3 gap-x-4 gap-y-3">
           <div className="space-y-1">
             <Label className={lbl}>Tipo do Veículo</Label>
@@ -388,7 +388,7 @@ export default function CotacaoTab({ deal }: Props) {
 
       {/* SEÇÃO 2 - PLANOS E ENVIO */}
       <fieldset className="space-y-4">
-        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">PLANOS E ENVIO</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">PLANOS E ENVIO</legend>
 
         <div className="grid grid-cols-3 gap-3">
           {planosConfig.map(p => {

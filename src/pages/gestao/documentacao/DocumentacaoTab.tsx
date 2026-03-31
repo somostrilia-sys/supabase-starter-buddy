@@ -104,15 +104,15 @@ export default function DocumentacaoTab() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex gap-1 mb-5 overflow-x-auto flex-wrap">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setSubTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium transition-colors border-b-2 -mb-px ${
+            className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap transition-all ${
               subTab === t.id
-                ? "border-primary/50 text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                ? "bg-[#002050] text-white shadow-md"
+                : "bg-[#003870] text-white hover:bg-[#002a57]"
             }`}
           >
             <t.icon className="h-4 w-4" />

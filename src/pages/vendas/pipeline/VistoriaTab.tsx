@@ -190,7 +190,7 @@ export default function VistoriaTab({ deal }: Props) {
           </div>
 
           {/* Ações */}
-          <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t">
+          <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t-2 border-[#747474]">
             {!codigoGerado ? (
               <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white" onClick={handleSolicitar}>
                 <ClipboardCheck className="h-3.5 w-3.5 mr-1" />Solicitar Vistoria
@@ -293,7 +293,7 @@ export default function VistoriaTab({ deal }: Props) {
 
       {/* Timeline de eventos */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold text-[#1A3A5C] border-b pb-1 w-full">HISTÓRICO DA VISTORIA</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">HISTÓRICO DA VISTORIA</legend>
         <div className="relative pl-6 space-y-0">
           {mockTimeline.map((ev, i) => {
             const Icon = tipoIconMap[ev.tipo] || Clock;

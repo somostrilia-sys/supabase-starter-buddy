@@ -248,7 +248,7 @@ export default function RelatoriosGeraisTab() {
             </Table>
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-t border-border">
+              <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-t-2 border-[#747474]">
                 <span className="text-xs text-muted-foreground">Página {page} de {totalPages}</span>
                 <div className="flex gap-1">
                   <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="h-7 px-2">

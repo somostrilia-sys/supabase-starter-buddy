@@ -129,7 +129,7 @@ export function ModuleLayout({ children }: { children: ReactNode }) {
       </header>
 
       {/* Module navigation */}
-      <nav className="border-b bg-card shrink-0 shadow-sm">
+      <nav className="border-b border-white/10 bg-[#1A3A5C] shrink-0 shadow-sm">
         <ScrollArea className="w-full">
           <div className="flex items-center gap-0.5 px-4 py-1">
             {activeMod.items.map((item) => {
@@ -140,15 +140,15 @@ export function ModuleLayout({ children }: { children: ReactNode }) {
                   to={item.url}
                   className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm transition-colors whitespace-nowrap rounded-t-lg ${
                     isActive
-                      ? "text-accent font-semibold"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      ? "text-white font-semibold bg-white/15"
+                      : "text-white/60 hover:text-white hover:bg-white/10"
                   }`}
                   activeClassName=""
                 >
                   <item.icon className="h-3.5 w-3.5" />
                   <span>{item.title}</span>
                   {isActive && (
-                    <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-accent rounded-full" />
+                    <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-white rounded-full" />
                   )}
                 </NavLink>
               );

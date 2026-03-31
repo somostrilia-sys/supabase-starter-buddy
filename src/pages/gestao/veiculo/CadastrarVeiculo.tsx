@@ -1065,7 +1065,7 @@ export default function CadastrarVeiculo() {
                             <span className="text-muted-foreground">Rateio</span>
                             <span className="font-medium">R$ 0,00</span>
                           </div>
-                          <div className="border-t pt-3 mt-3 flex justify-between items-center">
+                          <div className="border-t-2 border-[#747474] pt-3 mt-3 flex justify-between items-center">
                             <span className="text-sm font-bold uppercase">Total Mensalidade</span>
                             <span className="text-2xl font-bold text-primary">R$ {subtotalProtecoes.toFixed(2).replace(".", ",")}</span>
                           </div>
@@ -1402,7 +1402,7 @@ export default function CadastrarVeiculo() {
         </DialogContent>
       </Dialog>
 
-      <div className="sticky bottom-0 bg-background border-t py-4 mt-6 flex justify-end gap-3">
+      <div className="sticky bottom-0 bg-background border-t-2 border-[#747474] py-4 mt-6 flex justify-end gap-3">
         <Button variant="outline" onClick={handleLimpar}>Cancelar</Button>
         <Button
           onClick={handleSalvar}

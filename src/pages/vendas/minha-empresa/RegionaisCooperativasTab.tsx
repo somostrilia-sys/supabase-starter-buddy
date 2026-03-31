@@ -140,7 +140,7 @@ export default function RegionaisCooperativasTab() {
           <div className="space-y-4">
             <div><Label>Nome</Label><Input value={nomeRegional} onChange={e => setNomeRegional(e.target.value)} placeholder="Ex: Regional Centro-Oeste" /></div>
             <div><Label>Código Integração SGA <span className="text-destructive">*</span></Label><Input value={codigoSgaRegional} onChange={e => setCodigoSgaRegional(e.target.value)} placeholder="Ex: SGA-CO005" /></div>
-            <div className="flex justify-end gap-2 pt-4 border-t">
+            <div className="flex justify-end gap-2 pt-4 border-t-2 border-[#747474]">
               <Button variant="outline" onClick={() => setShowRegionalModal(false)}>Cancelar</Button>
               <Button onClick={() => setShowRegionalModal(false)}>Salvar</Button>
             </div>
@@ -165,7 +165,7 @@ export default function RegionaisCooperativasTab() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex justify-end gap-2 pt-4 border-t">
+            <div className="flex justify-end gap-2 pt-4 border-t-2 border-[#747474]">
               <Button variant="outline" onClick={() => setShowCoopModal(false)}>Cancelar</Button>
               <Button onClick={() => setShowCoopModal(false)}>Salvar</Button>
             </div>

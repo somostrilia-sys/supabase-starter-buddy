@@ -194,7 +194,7 @@ export default function CadastroTab() {
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors text-left whitespace-nowrap ${
                   activeGroup === g.id
                     ? "text-white"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    : "text-[#003870] border border-[#003870]/30 hover:bg-[#003870]/10 hover:border-[#003870]/50"
                 }`}
                 style={activeGroup === g.id ? { backgroundColor: "#003870" } : undefined}
               >
@@ -221,13 +221,13 @@ export default function CadastroTab() {
 // ── SubNav ──
 function SubNav({ items, active, onChange }: { items: string[]; active: number; onChange: (i: number) => void }) {
   return (
-    <div className="flex gap-1 border-b border-border mb-5 overflow-x-auto">
+    <div className="flex gap-1 mb-5 overflow-x-auto flex-wrap">
       {items.map((item, i) => (
         <button
           key={i}
           onClick={() => onChange(i)}
-          className={`px-3 py-2 text-xs font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
-            i === active ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+          className={`rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+            i === active ? "bg-[#002050] text-white shadow-md" : "bg-[#003870] text-white hover:bg-[#002a57]"
           }`}
         >
           {item}

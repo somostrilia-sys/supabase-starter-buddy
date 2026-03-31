@@ -110,7 +110,7 @@ export default function Afiliados() {
             </TableHeader>
             <TableBody>
               {filtered.map((a, i) => (
-                <TableRow key={a.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b border-border/60`}>
+                <TableRow key={a.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b-2 border-[#747474]`}>
                   <TableCell className="font-medium">{a.nome}</TableCell>
                   <TableCell><span className="font-mono text-xs bg-muted/50 px-2 py-0.5 rounded">{a.codigo}</span></TableCell>
                   <TableCell className="text-right font-semibold">{a.indicacoes}</TableCell>
@@ -122,7 +122,7 @@ export default function Afiliados() {
               ))}
             </TableBody>
           </Table>
-          <div className="px-4 py-3 bg-muted/30 border-t border-border/60">
+          <div className="px-4 py-3 bg-muted/30 border-t-2 border-[#747474]">
             <span className="text-xs text-muted-foreground">{filtered.length} afiliado(s)</span>
           </div>
         </CardContent>

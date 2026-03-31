@@ -91,7 +91,7 @@ export default function RelatoriosVendas() {
       )}
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="flex-wrap h-auto gap-1 bg-transparent p-0">
+        <TabsList className="flex-wrap gap-1">
           {[
             { v: "dashboard", l: "Dashboard" },
             { v: "funil", l: "Funil de Vendas" },
@@ -104,7 +104,7 @@ export default function RelatoriosVendas() {
             { v: "veiculos", l: "Veículos s/ Cobertura" },
             { v: "extrato-comissoes", l: "Extrato de Comissões" },
           ].map(t => (
-            <TabsTrigger key={t.v} value={t.v} className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t.l}</TabsTrigger>
+            <TabsTrigger key={t.v} value={t.v} className="text-xs">{t.l}</TabsTrigger>
           ))}
         </TabsList>
 

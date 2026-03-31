@@ -47,7 +47,7 @@ export default function Documentacao() {
       </div>
 
       <Tabs value={cat} onValueChange={setCat}>
-        <TabsList className="bg-muted/50 flex-wrap h-auto gap-1 p-1">
+        <TabsList className="flex-wrap h-auto gap-1">
           {categorias.map(c => <TabsTrigger key={c} value={c} className="text-[10px]">{c}</TabsTrigger>)}
         </TabsList>
       </Tabs>
