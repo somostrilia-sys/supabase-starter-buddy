@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import {
-  ArrowLeft, Shield, Plus, Pencil, CheckCircle2, Filter, Car, Truck, Bike, Bus,
+  ArrowLeft, Shield, Plus, Pencil, CheckCircle2, Filter, Car, Truck, Bike, Bus, Loader2,
 } from "lucide-react";
 
 type CategoriaVeiculo = "Leves" | "Pesados" | "Motos" | "Vans";
@@ -37,90 +39,12 @@ interface PlanoProtecao {
   icone: string;
 }
 
-const todasCoberturas: Cobertura[] = [
-  { id: "c1", nome: "Proteção Roubo/Furto", grupo: "Proteção", valorBase: 45 },
-  { id: "c2", nome: "Proteção Colisão", grupo: "Proteção", valorBase: 55 },
-  { id: "c3", nome: "Proteção Incêndio", grupo: "Proteção", valorBase: 25 },
-  { id: "c4", nome: "Proteção Enchente/Alagamento", grupo: "Proteção", valorBase: 20 },
-  { id: "c5", nome: "Proteção Terceiros", grupo: "Proteção", valorBase: 35 },
-  { id: "c6", nome: "Vidros", grupo: "Proteção", valorBase: 18 },
-  { id: "c7", nome: "Assistência 24h", grupo: "Assistência", valorBase: 29.9 },
-  { id: "c8", nome: "Guincho 200km", grupo: "Assistência", valorBase: 19.9 },
-  { id: "c9", nome: "Carro Reserva 7 dias", grupo: "Benefício", valorBase: 35 },
-  { id: "c10", nome: "Rastreador Veicular", grupo: "Rastreador", valorBase: 59.9 },
-  { id: "c11", nome: "APP (Acidentes Pessoais)", grupo: "Proteção", valorBase: 15 },
-  { id: "c12", nome: "Assistência Residencial", grupo: "Assistência", valorBase: 12 },
-];
-
 const todasRegionais = ["Sul", "Norte", "Sudeste", "Nordeste", "Centro-Oeste"];
 const todasCategorias: CategoriaVeiculo[] = ["Leves", "Pesados", "Motos", "Vans"];
 
 const categoriaIcons: Record<CategoriaVeiculo, typeof Car> = {
   Leves: Car, Pesados: Truck, Motos: Bike, Vans: Bus,
 };
-
-const mockPlanos: PlanoProtecao[] = [
-  {
-    id: "p1", nome: "Premium", descricao: "Cobertura total com todos os benefícios premium.",
-    descricaoAdmin: "Plano top de linha, nunca conceder desconto sem aprovação gerencial.",
-    valorBase: 249.9, ativo: true,
-    coberturas: todasCoberturas,
-    regionais: ["Sul", "Sudeste", "Centro-Oeste"],
-    categorias: ["Leves", "Vans"],
-    regrasEspeciais: "Nunca cobrar rastreador separadamente neste plano.",
-    icone: "🏆",
-  },
-  {
-    id: "p2", nome: "Completo", descricao: "Proteção completa com assistência e benefícios.",
-    descricaoAdmin: "Plano principal de vendas, margem de 22%.",
-    valorBase: 189.9, ativo: true,
-    coberturas: todasCoberturas.filter(c => !["c10", "c12"].includes(c.id)),
-    regionais: todasRegionais,
-    categorias: ["Leves", "Pesados", "Vans"],
-    regrasEspeciais: "",
-    icone: "⭐",
-  },
-  {
-    id: "p3", nome: "Básico", descricao: "Proteção essencial com as principais coberturas.",
-    descricaoAdmin: "Plano de entrada. Foco em volume.",
-    valorBase: 89.9, ativo: true,
-    coberturas: todasCoberturas.filter(c => ["c1", "c2", "c7"].includes(c.id)),
-    regionais: todasRegionais,
-    categorias: todasCategorias,
-    regrasEspeciais: "",
-    icone: "🛡️",
-  },
-  {
-    id: "p4", nome: "Objetivo Leve", descricao: "Plano econômico para veículos leves.",
-    descricaoAdmin: "Exclusivo para veículos com FIPE até R$80.000.",
-    valorBase: 119.9, ativo: true,
-    coberturas: todasCoberturas.filter(c => ["c1", "c2", "c3", "c5", "c7", "c8"].includes(c.id)),
-    regionais: ["Sul", "Sudeste"],
-    categorias: ["Leves"],
-    regrasEspeciais: "Restrito a veículos com FIPE até R$ 80.000.",
-    icone: "🚗",
-  },
-  {
-    id: "p5", nome: "Objetivo Sul", descricao: "Plano exclusivo para a regional Sul.",
-    descricaoAdmin: "Condições especiais negociadas com cooperativas do Sul.",
-    valorBase: 139.9, ativo: true,
-    coberturas: todasCoberturas.filter(c => ["c1", "c2", "c3", "c4", "c5", "c7", "c8", "c9"].includes(c.id)),
-    regionais: ["Sul"],
-    categorias: ["Leves", "Vans"],
-    regrasEspeciais: "Disponível apenas para regional Sul.",
-    icone: "📍",
-  },
-  {
-    id: "p6", nome: "Agregado", descricao: "Plano para veículos agregados e frotas.",
-    descricaoAdmin: "Requer contrato especial com a cooperativa.",
-    valorBase: 169.9, ativo: false,
-    coberturas: todasCoberturas.filter(c => ["c1", "c2", "c3", "c5", "c7", "c8", "c10"].includes(c.id)),
-    regionais: ["Sudeste", "Centro-Oeste"],
-    categorias: ["Pesados", "Vans"],
-    regrasEspeciais: "Exige contrato de frota mínimo de 5 veículos.",
-    icone: "🚚",
-  },
-];
 
 const tierColors: Record<string, { border: string; bg: string; accent: string }> = {
   Premium: { border: "border-amber-500/30", bg: "from-amber-500/10 to-amber-500/5", accent: "text-amber-500" },
@@ -132,7 +56,42 @@ const tierColors: Record<string, { border: string; bg: string; accent: string }>
 };
 
 export default function PlanosProtecao({ onBack }: { onBack: () => void }) {
-  const [planos, setPlanos] = useState(mockPlanos);
+  const { data: planosFromDb = [], isLoading: loadingPlanos } = useQuery({
+    queryKey: ["grupos_produtos"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("grupos_produtos")
+        .select("*, grupo_produto_itens(produto_id, produtos_gia(nome, tipo, valor_base))")
+        .eq("ativo", true);
+      if (error) throw error;
+      return (data || []).map((g: any) => ({
+        id: g.id,
+        nome: g.nome || "Sem nome",
+        descricao: g.descricao || "",
+        descricaoAdmin: g.descricao_admin || "",
+        valorBase: g.valor_base ?? 0,
+        ativo: g.ativo ?? true,
+        coberturas: (g.grupo_produto_itens || []).map((item: any) => ({
+          id: item.produto_id,
+          nome: item.produtos_gia?.nome || "—",
+          grupo: item.produtos_gia?.tipo || "Proteção",
+          valorBase: item.produtos_gia?.valor_base ?? 0,
+        })),
+        regionais: g.regionais || [],
+        categorias: g.categorias || [],
+        regrasEspeciais: g.regras_especiais || "",
+        icone: g.icone || "🛡️",
+      })) as PlanoProtecao[];
+    },
+  });
+
+  const [planos, setPlanos] = useState<PlanoProtecao[]>([]);
+  // Sync DB data into local state for editing
+  useState(() => { if (planosFromDb.length > 0 && planos.length === 0) setPlanos(planosFromDb); });
+  if (planosFromDb.length > 0 && planos.length === 0) setPlanos(planosFromDb);
+
+  const todasCoberturas: Cobertura[] = planos.flatMap(p => p.coberturas).filter((c, i, arr) => arr.findIndex(x => x.id === c.id) === i);
+
   const [filtroRegional, setFiltroRegional] = useState<string>("todas");
   const [filtroCategoria, setFiltroCategoria] = useState<string>("todas");
   const [editing, setEditing] = useState<PlanoProtecao | null>(null);
@@ -198,6 +157,11 @@ export default function PlanosProtecao({ onBack }: { onBack: () => void }) {
       </div>
 
       {/* Cards Grid */}
+      {loadingPlanos && (
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {filteredPlanos.map(p => {
           const colors = tierColors[p.nome] || tierColors["Básico"];

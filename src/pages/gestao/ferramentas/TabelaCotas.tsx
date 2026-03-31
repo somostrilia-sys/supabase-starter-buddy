@@ -1,4 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,15 +24,6 @@ interface FaixaCota {
   produtosVinculados: string;
 }
 
-const mockCotas: FaixaCota[] = [
-  { id: "1", fipeMin: 0, fipeMax: 30000, cotaValor: 45, taxaAdmin: 12, produtosVinculados: "Proteção Básica" },
-  { id: "2", fipeMin: 30001, fipeMax: 50000, cotaValor: 65, taxaAdmin: 15, produtosVinculados: "Proteção Básica, Assistência 24h" },
-  { id: "3", fipeMin: 50001, fipeMax: 80000, cotaValor: 89.9, taxaAdmin: 18, produtosVinculados: "Proteção Completa" },
-  { id: "4", fipeMin: 80001, fipeMax: 120000, cotaValor: 119.9, taxaAdmin: 22, produtosVinculados: "Proteção Completa, Vidros" },
-  { id: "5", fipeMin: 120001, fipeMax: 180000, cotaValor: 149.9, taxaAdmin: 28, produtosVinculados: "Premium" },
-  { id: "6", fipeMin: 180001, fipeMax: 300000, cotaValor: 199.9, taxaAdmin: 35, produtosVinculados: "Premium, Rastreador" },
-  { id: "7", fipeMin: 300001, fipeMax: 500000, cotaValor: 289.9, taxaAdmin: 45, produtosVinculados: "Premium Total" },
-];
 
 const fmtBRL = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
 
@@ -82,7 +75,35 @@ function parseCSV(text: string): { data: FaixaCota[]; errors: string[] } {
 }
 
 export default function TabelaCotas({ onBack }: { onBack: () => void }) {
-  const [cotas, setCotas] = useState<FaixaCota[]>(mockCotas);
+  const { data: faixasDb = [], isLoading: loadingFaixas } = useQuery({
+    queryKey: ["faixas_fipe"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("faixas_fipe")
+        .select("*")
+        .order("fipe_inicial");
+      if (error) throw error;
+      return (data || []).map((f: any) => ({
+        id: String(f.id),
+        fipeMin: f.fipe_inicial ?? 0,
+        fipeMax: f.fipe_final ?? 0,
+        cotaValor: f.cota_valor ?? f.valor_cota ?? 0,
+        taxaAdmin: f.taxa_admin ?? 0,
+        produtosVinculados: f.produtos_vinculados || f.descricao || "",
+      })) as FaixaCota[];
+    },
+  });
+
+  const [cotas, setCotas] = useState<FaixaCota[]>([]);
+  const [dbLoaded, setDbLoaded] = useState(false);
+
+  useEffect(() => {
+    if (faixasDb.length > 0 && !dbLoaded) {
+      setCotas(faixasDb);
+      setDbLoaded(true);
+    }
+  }, [faixasDb, dbLoaded]);
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -219,6 +240,11 @@ export default function TabelaCotas({ onBack }: { onBack: () => void }) {
       )}
 
       {/* Visual table */}
+      {loadingFaixas && (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      )}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">

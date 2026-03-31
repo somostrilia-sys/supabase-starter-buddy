@@ -555,14 +555,111 @@ function CartaoCreditoSub() {
 // ═══════════════════════════════════════════════════════════
 
 function OpcionaisVeiculoSection({ subView, setSubView }: { subView: number; setSubView: (v: number) => void }) {
-  const subs = ["Tipo Veículo", "Categoria", "Cota Veículo", "Cor", "Montadora", "Modelo", "Combustível", "Alienação", "Tipo Carga", "Tipo Carroceria", "Cat. Assoc./Veíc."];
+  const subs = ["Opcionais de Veículo", "Categoria", "Cota Veículo", "Cor", "Montadora", "Modelo", "Combustível", "Alienação", "Tipo Carga", "Tipo Carroceria", "Cat. Assoc./Veíc."];
+
+  // Supabase-backed CRUD for opcionais_veiculos
+  const [opcionais, setOpcionais] = useState<any[]>([]);
+  const [opcModal, setOpcModal] = useState(false);
+  const [opcEditId, setOpcEditId] = useState<string | null>(null);
+  const [opcForm, setOpcForm] = useState<{ nome: string; valor: string; descricao: string; ativo: boolean }>({ nome: "", valor: "", descricao: "", ativo: true });
+  const [opcDeleteId, setOpcDeleteId] = useState<string | null>(null);
+
+  const loadOpcionais = async () => {
+    const { data, error } = await supabase.from("opcionais_veiculos").select("*");
+    if (!error && data) setOpcionais(data);
+  };
+
+  useEffect(() => { loadOpcionais(); }, []);
+
+  const openOpcNew = () => { setOpcEditId(null); setOpcForm({ nome: "", valor: "", descricao: "", ativo: true }); setOpcModal(true); };
+  const openOpcEdit = (row: any) => { setOpcEditId(row.id); setOpcForm({ nome: row.nome, valor: String(row.valor || ""), descricao: row.descricao || "", ativo: row.ativo }); setOpcModal(true); };
+  const saveOpc = async () => {
+    if (!opcForm.nome) { toast.error("Informe o nome do opcional"); return; }
+    const payload = { nome: opcForm.nome, valor: opcForm.valor ? parseFloat(opcForm.valor) : null, descricao: opcForm.descricao, ativo: opcForm.ativo };
+    if (opcEditId) {
+      const { error } = await supabase.from("opcionais_veiculos").update(payload).eq("id", opcEditId);
+      if (error) { toast.error("Erro ao atualizar"); return; }
+      toast.success("Opcional atualizado!");
+    } else {
+      const { error } = await supabase.from("opcionais_veiculos").insert(payload);
+      if (error) { toast.error("Erro ao criar"); return; }
+      toast.success("Opcional criado!");
+    }
+    setOpcModal(false);
+    loadOpcionais();
+  };
+  const deleteOpc = async () => {
+    if (!opcDeleteId) return;
+    const { error } = await supabase.from("opcionais_veiculos").delete().eq("id", opcDeleteId);
+    if (error) { toast.error("Erro ao excluir"); return; }
+    toast.success("Opcional removido!");
+    setOpcDeleteId(null);
+    loadOpcionais();
+  };
 
   return (
     <>
       <SubNav items={subs} active={subView} onChange={setSubView} />
 
-      {subView === 0 && <CrudTable title="Tipos de Veículo" columns={["Tipo", "Descrição"]}
-        initialData={toRows(["Tipo", "Descrição"], [["Automóvel", "Veículos de passeio"],["Pesado", "Caminhões e ônibus"],["Moto", "Motocicletas"],["Utilitário", "Vans e pickups"]])} />}
+      {subView === 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold">Opcionais de Veículo</h4>
+            <Button size="sm" className="h-7 text-xs gap-1" onClick={openOpcNew}><Plus className="h-3 w-3" />Adicionar</Button>
+          </div>
+          <div className="border rounded-lg border-border overflow-x-auto">
+            <Table className="min-w-[600px]">
+              <TableHeader><TableRow className="bg-muted/50"><TableHead className="text-xs">Nome</TableHead><TableHead className="text-xs">Valor</TableHead><TableHead className="text-xs">Descrição</TableHead><TableHead className="text-xs">Status</TableHead><TableHead className="text-xs w-[80px]">Ações</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {opcionais.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="text-sm font-medium">{row.nome}</TableCell>
+                    <TableCell className="text-sm">{row.valor != null ? `R$ ${Number(row.valor).toFixed(2)}` : "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{row.descricao}</TableCell>
+                    <TableCell><Badge className={row.ativo ? "bg-emerald-500/10 text-emerald-600 text-xs" : "bg-muted text-muted-foreground text-xs"}>{row.ativo ? "Ativo" : "Inativo"}</Badge></TableCell>
+                    <TableCell><div className="flex gap-1"><Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openOpcEdit(row)}><Edit className="h-3 w-3" /></Button><Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setOpcDeleteId(row.id)}><Trash2 className="h-3 w-3 text-destructive" /></Button></div></TableCell>
+                  </TableRow>
+                ))}
+                {opcionais.length === 0 && (
+                  <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">Nenhum registro cadastrado</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <Dialog open={opcModal} onOpenChange={setOpcModal}>
+            <DialogContent>
+              <DialogHeader><DialogTitle>{opcEditId ? "Editar" : "Novo"} Opcional de Veículo</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div><Label className="text-xs">Nome</Label><Input value={opcForm.nome} onChange={e => setOpcForm(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Ar condicionado" /></div>
+                <div><Label className="text-xs">Valor (R$)</Label><Input type="number" step="0.01" value={opcForm.valor} onChange={e => setOpcForm(p => ({ ...p, valor: e.target.value }))} placeholder="0.00" /></div>
+                <div><Label className="text-xs">Descrição</Label><Textarea value={opcForm.descricao} onChange={e => setOpcForm(p => ({ ...p, descricao: e.target.value }))} placeholder="Descrição do opcional" /></div>
+                <div><Label className="text-xs">Status</Label>
+                  <Select value={opcForm.ativo ? "Ativo" : "Inativo"} onValueChange={v => setOpcForm(p => ({ ...p, ativo: v === "Ativo" }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="Ativo">Ativo</SelectItem><SelectItem value="Inativo">Inativo</SelectItem></SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpcModal(false)}>Cancelar</Button>
+                <Button onClick={saveOpc}>Salvar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={opcDeleteId !== null} onOpenChange={o => !o && setOpcDeleteId(null)}>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Confirmar Exclusão</DialogTitle></DialogHeader>
+              <p className="text-sm text-muted-foreground">Tem certeza que deseja excluir este opcional?</p>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpcDeleteId(null)}>Cancelar</Button>
+                <Button variant="destructive" onClick={deleteOpc}>Excluir</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
 
       {/* Categoria - REMOVED "Fator" multiplicativo */}
       {subView === 1 && <CrudTable title="Categorias" columns={["Categoria", "Descrição"]}
@@ -660,20 +757,110 @@ function OpcionaisEvento({ subView, setSubView }: { subView: number; setSubView:
 function CooperativaSection({ subView, setSubView }: { subView: number; setSubView: (v: number) => void }) {
   const subs = ["Consulta Cooperativas", "Relatório", "Voluntários", "Comissões", "Rel. Alterações", "Indicação Externa"];
 
+  // Supabase-backed CRUD for cooperativas
+  const [cooperativas, setCooperativas] = useState<any[]>([]);
+  const [coopModal, setCoopModal] = useState(false);
+  const [coopEditId, setCoopEditId] = useState<string | null>(null);
+  const [coopForm, setCoopForm] = useState<{ nome: string; codigo: string; cidade: string; estado: string; ativo: boolean }>({ nome: "", codigo: "", cidade: "", estado: "", ativo: true });
+  const [coopDeleteId, setCoopDeleteId] = useState<string | null>(null);
+
+  const loadCooperativas = async () => {
+    const { data, error } = await supabase.from("cooperativas").select("*");
+    if (!error && data) setCooperativas(data);
+  };
+
+  useEffect(() => { loadCooperativas(); }, []);
+
+  const openCoopNew = () => { setCoopEditId(null); setCoopForm({ nome: "", codigo: "", cidade: "", estado: "", ativo: true }); setCoopModal(true); };
+  const openCoopEdit = (row: any) => { setCoopEditId(row.id); setCoopForm({ nome: row.nome, codigo: row.codigo || "", cidade: row.cidade || "", estado: row.estado || "", ativo: row.ativo }); setCoopModal(true); };
+  const saveCoop = async () => {
+    if (!coopForm.nome) { toast.error("Informe o nome da cooperativa"); return; }
+    const payload: any = { nome: coopForm.nome, codigo: coopForm.codigo || null, cidade: coopForm.cidade || null, estado: coopForm.estado || null, ativo: coopForm.ativo };
+    if (coopEditId) {
+      const { error } = await supabase.from("cooperativas").update(payload).eq("id", coopEditId);
+      if (error) { toast.error("Erro ao atualizar"); return; }
+      toast.success("Cooperativa atualizada!");
+    } else {
+      const { error } = await supabase.from("cooperativas").insert(payload);
+      if (error) { toast.error("Erro ao criar"); return; }
+      toast.success("Cooperativa criada!");
+    }
+    setCoopModal(false);
+    loadCooperativas();
+  };
+  const deleteCoop = async () => {
+    if (!coopDeleteId) return;
+    const { error } = await supabase.from("cooperativas").delete().eq("id", coopDeleteId);
+    if (error) { toast.error("Erro ao excluir"); return; }
+    toast.success("Cooperativa removida!");
+    setCoopDeleteId(null);
+    loadCooperativas();
+  };
+
   return (
     <>
       <SubNav items={subs} active={subView} onChange={setSubView} />
 
       {subView === 0 && (
-        <CrudTable title="Cooperativas" columns={["Nome", "CNPJ", "Regional", "Qtde Associados", "Status"]}
-          initialData={toRows(["Nome", "CNPJ", "Regional", "Qtde Associados", "Status"], [
-            ["Central SP", "12.345.678/0001-90", "São Paulo", "320", "Ativa"],
-            ["Campinas Proteção", "23.456.789/0001-01", "Campinas", "210", "Ativa"],
-            ["Litoral Sul", "34.567.890/0001-12", "Santos", "130", "Ativa"],
-            ["Ribeirão Preto", "45.678.901/0001-23", "Ribeirão", "95", "Ativa"],
-            ["Norte PR", "56.789.012/0001-34", "Londrina", "45", "Inativa"],
-          ])}
-          fieldOptions={{ Status: ["Ativa", "Inativa"] }} />
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold">Cooperativas</h4>
+            <Button size="sm" className="h-7 text-xs gap-1" onClick={openCoopNew}><Plus className="h-3 w-3" />Adicionar</Button>
+          </div>
+          <div className="border rounded-lg border-border overflow-x-auto">
+            <Table className="min-w-[600px]">
+              <TableHeader><TableRow className="bg-muted/50"><TableHead className="text-xs">Nome</TableHead><TableHead className="text-xs">Código</TableHead><TableHead className="text-xs">Cidade</TableHead><TableHead className="text-xs">Estado</TableHead><TableHead className="text-xs">Status</TableHead><TableHead className="text-xs w-[80px]">Ações</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {cooperativas.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="text-sm font-medium">{row.nome}</TableCell>
+                    <TableCell className="text-sm">{row.codigo || "---"}</TableCell>
+                    <TableCell className="text-sm">{row.cidade || "---"}</TableCell>
+                    <TableCell className="text-sm">{row.estado || "---"}</TableCell>
+                    <TableCell><Badge className={row.ativo ? "bg-emerald-500/10 text-emerald-600 text-xs" : "bg-muted text-muted-foreground text-xs"}>{row.ativo ? "Ativa" : "Inativa"}</Badge></TableCell>
+                    <TableCell><div className="flex gap-1"><Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openCoopEdit(row)}><Edit className="h-3 w-3" /></Button><Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setCoopDeleteId(row.id)}><Trash2 className="h-3 w-3 text-destructive" /></Button></div></TableCell>
+                  </TableRow>
+                ))}
+                {cooperativas.length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Nenhum registro cadastrado</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <Dialog open={coopModal} onOpenChange={setCoopModal}>
+            <DialogContent>
+              <DialogHeader><DialogTitle>{coopEditId ? "Editar" : "Nova"} Cooperativa</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div><Label className="text-xs">Nome</Label><Input value={coopForm.nome} onChange={e => setCoopForm(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Central SP" /></div>
+                <div><Label className="text-xs">Código</Label><Input value={coopForm.codigo} onChange={e => setCoopForm(p => ({ ...p, codigo: e.target.value }))} placeholder="Código" /></div>
+                <div><Label className="text-xs">Cidade</Label><Input value={coopForm.cidade} onChange={e => setCoopForm(p => ({ ...p, cidade: e.target.value }))} placeholder="Cidade" /></div>
+                <div><Label className="text-xs">Estado</Label><Input value={coopForm.estado} onChange={e => setCoopForm(p => ({ ...p, estado: e.target.value }))} placeholder="UF" /></div>
+                <div><Label className="text-xs">Status</Label>
+                  <Select value={coopForm.ativo ? "Ativa" : "Inativa"} onValueChange={v => setCoopForm(p => ({ ...p, ativo: v === "Ativa" }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="Ativa">Ativa</SelectItem><SelectItem value="Inativa">Inativa</SelectItem></SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setCoopModal(false)}>Cancelar</Button>
+                <Button onClick={saveCoop}>Salvar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={coopDeleteId !== null} onOpenChange={o => !o && setCoopDeleteId(null)}>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Confirmar Exclusão</DialogTitle></DialogHeader>
+              <p className="text-sm text-muted-foreground">Tem certeza que deseja excluir esta cooperativa?</p>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setCoopDeleteId(null)}>Cancelar</Button>
+                <Button variant="destructive" onClick={deleteCoop}>Excluir</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       )}
 
       {subView === 1 && (

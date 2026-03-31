@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { subDays } from "date-fns";
+import { subDays, startOfWeek, startOfMonth, endOfMonth, getWeek, getDay, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,24 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Car, FileText, CheckCircle, CalendarCheck, Users, AlertTriangle, Loader2, BarChart3 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, AreaChart, Area } from "recharts";
-
-const boletosDoMesData = [
-  { semana: "Sem 1", gerados: 210, recebidos: 145 },
-  { semana: "Sem 2", gerados: 195, recebidos: 178 },
-  { semana: "Sem 3", gerados: 230, recebidos: 201 },
-  { semana: "Sem 4", gerados: 212, recebidos: 99 },
-];
-
-const veiculosDiaData = [
-  { dia: "Seg", cadastrados: 8 },
-  { dia: "Ter", cadastrados: 14 },
-  { dia: "Qua", cadastrados: 6 },
-  { dia: "Qui", cadastrados: 19 },
-  { dia: "Sex", cadastrados: 12 },
-  { dia: "Sáb", cadastrados: 3 },
-  { dia: "Dom", cadastrados: 1 },
-];
-
 
 const recebimentoDiarioData = [
   { hora: "08h", valor: 1200 },
@@ -173,6 +156,63 @@ export default function DashboardTab() {
       if (error) throw error;
       const rows = (data || []) as { status: string }[];
       return { gerados: rows.length, recebidos: rows.filter(r => r.status === "pago").length };
+    },
+  });
+
+  // ── Boletos do mês agrupados por semana ──
+  const now = new Date();
+  const mesInicio = startOfMonth(now);
+  const mesFim = endOfMonth(now);
+
+  const { data: boletosDoMesData = [] } = useQuery({
+    queryKey: ["chart_boletos_semana", mesAtual],
+    queryFn: async () => {
+      const { data, error } = await (supabase
+        .from("mensalidades")
+        .select("status, created_at")
+        .gte("created_at", mesInicio.toISOString())
+        .lte("created_at", mesFim.toISOString()) as any);
+      if (error) throw error;
+      const rows = (data || []) as { status: string; created_at: string }[];
+      const weeks: Record<number, { gerados: number; recebidos: number }> = {};
+      rows.forEach(r => {
+        const d = new Date(r.created_at);
+        const weekNum = Math.ceil(d.getDate() / 7);
+        if (!weeks[weekNum]) weeks[weekNum] = { gerados: 0, recebidos: 0 };
+        weeks[weekNum].gerados += 1;
+        if (r.status === "pago") weeks[weekNum].recebidos += 1;
+      });
+      return [1, 2, 3, 4, 5].filter(w => weeks[w]).map(w => ({
+        semana: `Sem ${w}`,
+        gerados: weeks[w].gerados,
+        recebidos: weeks[w].recebidos,
+      }));
+    },
+  });
+
+  // ── Veículos cadastrados na semana agrupados por dia ──
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+  const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+  const { data: veiculosDiaData = [] } = useQuery({
+    queryKey: ["chart_veiculos_dia", weekStart.toISOString()],
+    queryFn: async () => {
+      const { data, error } = await (supabase
+        .from("veiculos")
+        .select("created_at")
+        .gte("created_at", weekStart.toISOString()) as any);
+      if (error) throw error;
+      const rows = (data || []) as { created_at: string }[];
+      const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 0: 0 };
+      rows.forEach(r => {
+        const dayIdx = getDay(new Date(r.created_at));
+        counts[dayIdx] = (counts[dayIdx] || 0) + 1;
+      });
+      // Return Mon-Sun order
+      return [1, 2, 3, 4, 5, 6, 0].map(d => ({
+        dia: diasSemana[d],
+        cadastrados: counts[d] || 0,
+      }));
     },
   });
 

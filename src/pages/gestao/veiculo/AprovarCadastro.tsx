@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckCircle, XCircle, Search, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
 const situacoesVeiculo = ["Todos", "Ativo", "Inativo", "Negado", "Pendente", "Inadimplente", "Inativo-Com Pendência", "Pendente de Revistoria", "Inativo-Retirada Rastreador"];
 const situacoesAssociado = ["Todos", "Ativo", "Inativo", "Negado", "Pendente", "Inadimplente"];
@@ -25,18 +26,24 @@ const statusColor = (s: string) => {
   }
 };
 
-const mockRegistros = [
-  { id: 1, nome: "Carlos Alberto Silva", placa: "ABC-1D23", regional: "Capital", dataCadastro: "10/01/2025", dataContrato: "15/01/2025", diaVenc: 10, valorFipe: "92.500", cota: "Cota A", sitVeiculo: "Pendente", sitAssociado: "Ativo", cooperativa: "Cooperativa São Paulo", tipoAdesao: "Normal", opApp: "Sim", validacao: "Pendente", produtos: 3 },
-  { id: 2, nome: "Maria Aparecida Santos", placa: "DEF-4G56", regional: "Interior", dataCadastro: "12/01/2025", dataContrato: "18/01/2025", diaVenc: 15, valorFipe: "85.000", cota: "Cota B", sitVeiculo: "Pendente", sitAssociado: "Ativo", cooperativa: "Cooperativa São Paulo", tipoAdesao: "Normal", opApp: "Não", validacao: "Pendente", produtos: 4 },
-  { id: 3, nome: "José Roberto Oliveira", placa: "GHI-7J89", regional: "Metropolitana", dataCadastro: "15/02/2025", dataContrato: "20/02/2025", diaVenc: 5, valorFipe: "145.000", cota: "Cota C", sitVeiculo: "Pendente", sitAssociado: "Pendente", cooperativa: "Cooperativa Rio", tipoAdesao: "Transferência", opApp: "Sim", validacao: "Pendente", produtos: 5 },
-  { id: 4, nome: "Ana Paula Ferreira", placa: "JKL-2M34", regional: "Capital", dataCadastro: "01/03/2025", dataContrato: "05/03/2025", diaVenc: 20, valorFipe: "162.000", cota: "Cota A", sitVeiculo: "Ativo", sitAssociado: "Ativo", cooperativa: "Cooperativa Minas", tipoAdesao: "Normal", opApp: "Sim", validacao: "Aprovado", produtos: 3 },
-  { id: 5, nome: "Francisco das Chagas Lima", placa: "MNO-5P67", regional: "Litoral", dataCadastro: "10/03/2025", dataContrato: "12/03/2025", diaVenc: 10, valorFipe: "265.000", cota: "Cota D", sitVeiculo: "Pendente", sitAssociado: "Ativo", cooperativa: "Cooperativa Sul", tipoAdesao: "Normal", opApp: "Não", validacao: "Pendente", produtos: 6 },
-  { id: 6, nome: "Francisca Helena Costa", placa: "QRS-8T90", regional: "Interior", dataCadastro: "15/03/2025", dataContrato: "18/03/2025", diaVenc: 25, valorFipe: "88.000", cota: "Cota B", sitVeiculo: "Negado", sitAssociado: "Inativo", cooperativa: "Cooperativa Centro-Oeste", tipoAdesao: "Normal", opApp: "Sim", validacao: "Negado", produtos: 2 },
-  { id: 7, nome: "Antônio Carlos Pereira", placa: "UVW-1X23", regional: "Capital", dataCadastro: "20/03/2025", dataContrato: "22/03/2025", diaVenc: 15, valorFipe: "178.000", cota: "Cota C", sitVeiculo: "Pendente", sitAssociado: "Ativo", cooperativa: "Cooperativa São Paulo", tipoAdesao: "2ª Via", opApp: "Não", validacao: "Pendente", produtos: 4 },
-  { id: 8, nome: "Adriana Souza Rodrigues", placa: "YZA-4B56", regional: "Metropolitana", dataCadastro: "25/03/2025", dataContrato: "28/03/2025", diaVenc: 5, valorFipe: "95.000", cota: "Cota A", sitVeiculo: "Pendente", sitAssociado: "Ativo", cooperativa: "Cooperativa Rio", tipoAdesao: "Normal", opApp: "Sim", validacao: "Pendente", produtos: 3 },
-  { id: 9, nome: "Paulo Henrique Almeida", placa: "BCD-5E67", regional: "Capital", dataCadastro: "01/04/2025", dataContrato: "03/04/2025", diaVenc: 10, valorFipe: "138.000", cota: "Cota B", sitVeiculo: "Pendente", sitAssociado: "Ativo", cooperativa: "Cooperativa São Paulo", tipoAdesao: "Normal", opApp: "Sim", validacao: "Pendente", produtos: 5 },
-  { id: 10, nome: "Juliana Cristina Nascimento", placa: "FGH-8I90", regional: "Interior", dataCadastro: "05/04/2025", dataContrato: "08/04/2025", diaVenc: 20, valorFipe: "82.000", cota: "Cota A", sitVeiculo: "Inativo", sitAssociado: "Inativo", cooperativa: "Cooperativa Minas", tipoAdesao: "Normal", opApp: "Não", validacao: "Aprovado", produtos: 2 },
-];
+type RegistroRow = {
+  id: number;
+  nome: string;
+  placa: string;
+  regional: string;
+  dataCadastro: string;
+  dataContrato: string;
+  diaVenc: number;
+  valorFipe: string;
+  cota: string;
+  sitVeiculo: string;
+  sitAssociado: string;
+  cooperativa: string;
+  tipoAdesao: string;
+  opApp: string;
+  validacao: string;
+  produtos: number;
+};
 
 export default function AprovarCadastro() {
   const [sitVeicSel, setSitVeicSel] = useState<string[]>(["Todos"]);
@@ -48,7 +55,8 @@ export default function AprovarCadastro() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [perPage, setPerPage] = useState(10);
   const [page, setPage] = useState(1);
-  const [results, setResults] = useState<typeof mockRegistros>([]);
+  const [results, setResults] = useState<RegistroRow[]>([]);
+  const [loadingSearch, setLoadingSearch] = useState(false);
 
   const toggleCheckbox = (arr: string[], val: string, setter: (v: string[]) => void) => {
     if (val === "Todos") { setter(arr.includes("Todos") ? [] : ["Todos"]); return; }
@@ -56,10 +64,54 @@ export default function AprovarCadastro() {
     setter(next);
   };
 
-  const pesquisar = () => {
-    setResults(mockRegistros);
-    setPage(1);
-    toast.success(`${mockRegistros.length} registros encontrados`);
+  const pesquisar = async () => {
+    setLoadingSearch(true);
+    try {
+      let query = (supabase as any)
+        .from("veiculos")
+        .select("*, associados(nome, cpf, status, regional, cooperativa)")
+        .eq("status", "pendente")
+        .order("created_at", { ascending: false });
+
+      if (nome) query = query.ilike("associados.nome", `%${nome}%`);
+      if (placa) query = query.ilike("placa", `%${placa}%`);
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const fmtDate = (d: string | null) => {
+        if (!d) return "—";
+        const dt = new Date(d);
+        return `${String(dt.getDate()).padStart(2, "0")}/${String(dt.getMonth() + 1).padStart(2, "0")}/${dt.getFullYear()}`;
+      };
+
+      const mapped: RegistroRow[] = (data || []).map((v: any, idx: number) => ({
+        id: v.id ?? idx + 1,
+        nome: v.associados?.nome || "—",
+        placa: v.placa || "—",
+        regional: v.associados?.regional || v.regional || "—",
+        dataCadastro: fmtDate(v.created_at),
+        dataContrato: fmtDate(v.data_contrato || v.created_at),
+        diaVenc: v.dia_vencimento || 10,
+        valorFipe: v.valor_fipe ? Number(v.valor_fipe).toLocaleString("pt-BR") : "—",
+        cota: v.cota || "—",
+        sitVeiculo: v.status ? v.status.charAt(0).toUpperCase() + v.status.slice(1) : "Pendente",
+        sitAssociado: v.associados?.status ? v.associados.status.charAt(0).toUpperCase() + v.associados.status.slice(1) : "—",
+        cooperativa: v.associados?.cooperativa || v.cooperativa || "—",
+        tipoAdesao: v.tipo_adesao || "Normal",
+        opApp: v.op_app ? "Sim" : "Não",
+        validacao: v.validacao || "Pendente",
+        produtos: v.produtos_count || 0,
+      }));
+
+      setResults(mapped);
+      setPage(1);
+      toast.success(`${mapped.length} registros encontrados`);
+    } catch (err: any) {
+      toast.error("Erro ao buscar: " + (err.message || "erro desconhecido"));
+    } finally {
+      setLoadingSearch(false);
+    }
   };
 
   const filtered = results.filter(r =>
@@ -132,7 +184,9 @@ export default function AprovarCadastro() {
             <div><Label className="text-xs">Nome</Label><Input value={nome} onChange={e => setNome(e.target.value)} placeholder="Filtrar por nome" /></div>
             <div><Label className="text-xs">Placa</Label><Input value={placa} onChange={e => setPlaca(e.target.value.toUpperCase())} placeholder="ABC-1D23" /></div>
           </div>
-          <Button onClick={pesquisar} className="gap-1"><Search className="h-4 w-4" /> Pesquisar</Button>
+          <Button onClick={pesquisar} disabled={loadingSearch} className="gap-1">
+            {loadingSearch ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} Pesquisar
+          </Button>
         </CardContent>
       </Card>
 

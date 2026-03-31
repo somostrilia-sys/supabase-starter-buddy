@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,16 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Upload, Trash2, RefreshCw, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Upload, Trash2, RefreshCw, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-const mockPreview = [
-  { cpf: "123.456.789-00", nome: "Carlos Silva", placa: "BRA2E19", produto: "Rastreador", acao: "Adicionar" },
-  { cpf: "987.654.321-00", nome: "Maria Santos", placa: "RIO3A45", produto: "Rastreador", acao: "Adicionar" },
-  { cpf: "456.789.123-00", nome: "João Oliveira", placa: "SPO1B23", produto: "Rastreador", acao: "Adicionar" },
-  { cpf: "321.654.987-00", nome: "Ana Costa", placa: "MNA4C67", produto: "Rastreador", acao: "Adicionar" },
-  { cpf: "654.321.789-00", nome: "Pedro Lima", placa: "GOI5D89", produto: "Rastreador", acao: "Adicionar" },
-];
+type PreviewRow = { cpf: string; nome: string; placa: string; produto: string; acao: string };
 
 export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
   const [operacao, setOperacao] = useState("adicionar");
@@ -26,6 +21,42 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
   const [cooperativa, setCooperativa] = useState("todas");
   const [step, setStep] = useState<"config" | "preview" | "processing" | "done">("config");
   const [progress, setProgress] = useState(0);
+  const [previewData, setPreviewData] = useState<PreviewRow[]>([]);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  const fetchPreview = async () => {
+    setLoadingPreview(true);
+    try {
+      let query = (supabase as any).from("associados").select("cpf, nome, veiculos(placa)").eq("status", "ativo");
+      if (regional !== "todas") query = query.eq("regional", regional);
+      if (cooperativa !== "todas") query = query.eq("cooperativa", cooperativa);
+      const { data, error } = await query.limit(50);
+      if (error) throw error;
+
+      const acaoLabel = operacao === "adicionar" ? "Adicionar" : operacao === "remover" ? "Remover" : "Substituir";
+      const prodLabel = produtoOrigem || "—";
+      const rows: PreviewRow[] = (data || []).flatMap((a: any) => {
+        const veiculos = a.veiculos || [];
+        if (veiculos.length === 0) {
+          return [{ cpf: a.cpf || "—", nome: a.nome || "—", placa: "—", produto: prodLabel, acao: acaoLabel }];
+        }
+        return veiculos.map((v: any) => ({
+          cpf: a.cpf || "—",
+          nome: a.nome || "—",
+          placa: v.placa || "—",
+          produto: prodLabel,
+          acao: acaoLabel,
+        }));
+      });
+      setPreviewData(rows);
+      setStep("preview");
+      toast.success(`${rows.length} registros encontrados`);
+    } catch (err: any) {
+      toast.error("Erro ao buscar preview: " + (err.message || "erro desconhecido"));
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
 
   const handleProcess = () => {
     setStep("processing");
@@ -148,7 +179,10 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
           </Card>
 
           <div className="flex justify-end">
-            <Button onClick={() => setStep("preview")} disabled={!produtoOrigem}>Pré-visualizar Alterações</Button>
+            <Button onClick={fetchPreview} disabled={!produtoOrigem || loadingPreview} className="gap-1.5">
+              {loadingPreview && <Loader2 className="h-4 w-4 animate-spin" />}
+              Pré-visualizar Alterações
+            </Button>
           </div>
         </div>
       )}
@@ -159,7 +193,7 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Resumo das Alterações</CardTitle>
-                <Badge variant="secondary">{mockPreview.length} registros</Badge>
+                <Badge variant="secondary">{previewData.length} registros</Badge>
               </div>
             </CardHeader>
             <CardContent>
@@ -188,7 +222,7 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockPreview.map((r, i) => (
+                  {previewData.map((r, i) => (
                     <TableRow key={i}>
                       <TableCell className="font-mono text-xs">{r.cpf}</TableCell>
                       <TableCell>{r.nome}</TableCell>
@@ -230,7 +264,7 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
               <CheckCircle2 className="h-8 w-8 text-success" />
             </div>
             <p className="font-semibold text-lg">Processamento Concluído!</p>
-            <p className="text-sm text-muted-foreground">{mockPreview.length} registros alterados com sucesso</p>
+            <p className="text-sm text-muted-foreground">{previewData.length} registros alterados com sucesso</p>
             <Button variant="outline" onClick={() => { setStep("config"); setProdutoOrigem(""); }}>Nova Operação</Button>
           </CardContent>
         </Card>
