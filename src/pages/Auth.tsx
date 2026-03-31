@@ -57,71 +57,94 @@ export default function Auth() {
         backgroundRepeat: 'no-repeat',
       }}
     >
-      {/* Cards sobrepostos — área azul do meio, lado esquerdo */}
-      <div className="hidden lg:flex flex-col justify-center w-[55%] px-10 py-8 self-end mb-16">
-        <div className="grid grid-cols-2 gap-3 max-w-lg">
-          {features.slice(0, 4).map((f) => (
-            <div
-              key={f.title}
-              className="rounded-xl p-4 space-y-2"
-              style={{ backgroundColor: 'rgba(0,20,60,0.65)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(4px)' }}
-            >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2563EB' }}>
-                <f.icon className="w-4 h-4 text-white" />
+      {/* Esquerda — 57% — cards posicionados na faixa 53%-92% da altura */}
+      <div className="hidden lg:flex lg:w-[57%] flex-col" style={{ pointerEvents: 'none' }}>
+        {/* Espaço para a logo (53% do topo) */}
+        <div style={{ flex: '0 0 53%' }} />
+
+        {/* Área dos cards — 39% da altura, entre logo e rodapé */}
+        <div
+          className="flex flex-col justify-center px-8"
+          style={{ flex: '0 0 39%', pointerEvents: 'auto' }}
+        >
+          <div className="grid grid-cols-2 gap-2.5">
+            {features.slice(0, 4).map((f) => (
+              <div
+                key={f.title}
+                className="rounded-xl p-3.5 space-y-2"
+                style={{
+                  backgroundColor: 'rgba(5,15,35,0.72)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  backdropFilter: 'blur(6px)',
+                }}
+              >
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2563EB' }}>
+                  <f.icon className="w-3.5 h-3.5 text-white" />
+                </div>
+                <h3 className="font-semibold text-xs text-white leading-tight">{f.title}</h3>
+                <p className="text-[11px] text-white/45 leading-relaxed">{f.desc}</p>
               </div>
-              <h3 className="font-semibold text-sm text-white">{f.title}</h3>
-              <p className="text-xs text-white/50 leading-relaxed">{f.desc}</p>
+            ))}
+          </div>
+          <div className="mt-2.5 w-1/2 pr-1.5">
+            <div
+              className="rounded-xl p-3.5 space-y-2"
+              style={{
+                backgroundColor: 'rgba(5,15,35,0.72)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                backdropFilter: 'blur(6px)',
+              }}
+            >
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2563EB' }}>
+                <Zap className="w-3.5 h-3.5 text-white" />
+              </div>
+              <h3 className="font-semibold text-xs text-white leading-tight">Suporte 24 horas</h3>
+              <p className="text-[11px] text-white/45 leading-relaxed">Atendimento especializado disponível a qualquer momento</p>
             </div>
-          ))}
-        </div>
-        <div className="mt-3 w-1/2 pr-1.5">
-          <div
-            className="rounded-xl p-4 space-y-2"
-            style={{ backgroundColor: 'rgba(0,20,60,0.65)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(4px)' }}
-          >
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2563EB' }}>
-              <Zap className="w-4 h-4 text-white" />
-            </div>
-            <h3 className="font-semibold text-sm text-white">Suporte 24 horas</h3>
-            <p className="text-xs text-white/50 leading-relaxed">Atendimento especializado disponível a qualquer momento</p>
           </div>
         </div>
+
+        {/* Rodapé — 8% */}
+        <div style={{ flex: '0 0 8%' }} />
       </div>
 
-      {/* Formulário — lado direito, flutuando sobre a imagem */}
-      <div className="flex-1 flex items-center justify-center p-8" style={{ backgroundColor: "transparent" }}>
-        <div
-          className="w-full max-w-[360px] rounded-2xl p-8 space-y-6"
-          style={{ backgroundColor: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(12px)', boxShadow: '0 8px 40px rgba(0,0,0,0.25)' }}
-        >
+      {/* Direita — 43% — formulário centralizado sobre o painel cinza da imagem */}
+      <div className="flex-1 flex flex-col items-center justify-center px-8 py-10">
+        {/* Formulário clean sobre o fundo cinza da imagem */}
+        <div className="w-full max-w-[320px] space-y-5">
           <div className="space-y-1">
-            <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+            <h2 className="text-2xl font-bold tracking-tight" style={{ color: '#1a1a2e' }}>
               {isLogin ? "Bem-vindo de volta" : "Criar sua conta"}
             </h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm" style={{ color: '#666' }}>
               {isLogin ? "Acesse o sistema com suas credenciais" : "Preencha os dados para começar"}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
             {!isLogin && (
               <div className="space-y-1.5">
-                <Label className="text-sm text-gray-700">Nome completo</Label>
-                <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Seu nome" required className="h-11 bg-white border-gray-200" />
+                <Label className="text-sm font-medium" style={{ color: '#444' }}>Nome completo</Label>
+                <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Seu nome" required className="h-11 bg-white border-gray-300 text-gray-900" />
               </div>
             )}
             <div className="space-y-1.5">
-              <Label className="text-sm text-gray-700">E-mail</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required className="h-11 bg-white border-gray-200" />
+              <Label className="text-sm font-medium" style={{ color: '#444' }}>E-mail</Label>
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required className="h-11 bg-white border-gray-300 text-gray-900" />
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label className="text-sm text-gray-700">Senha</Label>
+                <Label className="text-sm font-medium" style={{ color: '#444' }}>Senha</Label>
                 {isLogin && <button type="button" className="text-xs text-blue-600 hover:underline">Esqueceu a senha?</button>}
               </div>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} className="h-11 bg-white border-gray-200" />
+              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} className="h-11 bg-white border-gray-300 text-gray-900" />
             </div>
-            <Button type="submit" className="w-full h-11 font-semibold text-white" style={{ backgroundColor: '#003870' }} disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full h-11 font-semibold text-white mt-1"
+              style={{ backgroundColor: '#003870' }}
+              disabled={loading}
+            >
               {loading ? "Aguarde..." : isLogin
                 ? <><LogIn className="mr-2 h-4 w-4" /> Entrar</>
                 : <><UserPlus className="mr-2 h-4 w-4" /> Criar conta</>
@@ -130,9 +153,9 @@ export default function Auth() {
           </form>
 
           <div className="relative">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300" /></div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-3 text-gray-400">ou</span>
+              <span className="px-3 text-gray-400" style={{ backgroundColor: 'transparent' }}>ou</span>
             </div>
           </div>
 
@@ -142,10 +165,10 @@ export default function Auth() {
             </button>
           </div>
 
-          <div className="flex items-center justify-center gap-5 pt-1">
-            <div className="flex items-center gap-1.5 text-xs text-gray-400"><Lock className="w-3 h-3" /><span>SSL Seguro</span></div>
-            <div className="flex items-center gap-1.5 text-xs text-gray-400"><Shield className="w-3 h-3" /><span>LGPD</span></div>
-            <div className="flex items-center gap-1.5 text-xs text-gray-400"><Globe className="w-3 h-3" /><span>Cloud</span></div>
+          <div className="flex items-center justify-center gap-5">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500"><Lock className="w-3 h-3" /><span>SSL</span></div>
+            <div className="flex items-center gap-1.5 text-xs text-gray-500"><Shield className="w-3 h-3" /><span>LGPD</span></div>
+            <div className="flex items-center gap-1.5 text-xs text-gray-500"><Globe className="w-3 h-3" /><span>Cloud</span></div>
           </div>
         </div>
       </div>
