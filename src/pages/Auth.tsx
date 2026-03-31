@@ -47,133 +47,129 @@ export default function Auth() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      width: '100%',
-      position: 'relative',
-      backgroundImage: "url('/login-bg.png')",
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
-    }}>
+    <div style={{ minHeight: '100vh', display: 'flex' }}>
 
-      {/* CARDS — dentro do painel esquerdo (0-57%), entre 56vh e 90vh */}
+      {/* PAINEL ESQUERDO — imagem ocupa 57%, cards no terço inferior */}
       <div style={{
-        position: 'absolute',
-        top: '56vh',
-        bottom: '8vh',
-        left: '3%',
-        width: '51%', /* 3% + 51% = 54% — dentro do painel de 57% */
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
+        width: '57%',
+        position: 'relative',
+        backgroundImage: "url('/login-bg.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'left center',
+        backgroundRepeat: 'no-repeat',
+        minHeight: '100vh',
       }}>
-        <div style={{ width: '100%', maxWidth: '340px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            {features.slice(0, 4).map((f) => (
-              <div key={f.title} style={{
-                borderRadius: '10px',
-                padding: '10px',
-                backgroundColor: 'rgba(5,15,35,0.78)',
+        {/* Cards no terço inferior da imagem */}
+        <div style={{
+          position: 'absolute',
+          bottom: '8%',
+          left: '6%',
+          right: '6%',
+          display: 'flex',
+          justifyContent: 'center',
+        }}>
+          <div style={{ width: '100%', maxWidth: '360px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {features.slice(0, 4).map((f) => (
+                <div key={f.title} style={{
+                  borderRadius: '10px', padding: '10px 12px',
+                  backgroundColor: 'rgba(5,15,35,0.80)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  backdropFilter: 'blur(6px)',
+                }}>
+                  <div style={{ width: '26px', height: '26px', borderRadius: '7px', backgroundColor: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px' }}>
+                    <f.icon style={{ width: '13px', height: '13px', color: 'white' }} />
+                  </div>
+                  <div style={{ fontWeight: 600, fontSize: '11px', color: 'white', marginBottom: '3px', lineHeight: 1.3 }}>{f.title}</div>
+                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>{f.desc}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: '8px', width: '47%' }}>
+              <div style={{
+                borderRadius: '10px', padding: '10px 12px',
+                backgroundColor: 'rgba(5,15,35,0.80)',
                 border: '1px solid rgba(255,255,255,0.1)',
                 backdropFilter: 'blur(6px)',
               }}>
                 <div style={{ width: '26px', height: '26px', borderRadius: '7px', backgroundColor: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px' }}>
-                  <f.icon style={{ width: '13px', height: '13px', color: 'white' }} />
+                  <Zap style={{ width: '13px', height: '13px', color: 'white' }} />
                 </div>
-                <div style={{ fontWeight: 600, fontSize: '11px', color: 'white', lineHeight: 1.3, marginBottom: '3px' }}>{f.title}</div>
-                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>{f.desc}</div>
+                <div style={{ fontWeight: 600, fontSize: '11px', color: 'white', marginBottom: '3px', lineHeight: 1.3 }}>Suporte 24 horas</div>
+                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>Atendimento especializado disponível a qualquer momento</div>
               </div>
-            ))}
-          </div>
-          <div style={{ marginTop: '8px', width: '47%' }}>
-            <div style={{
-              borderRadius: '10px',
-              padding: '10px',
-              backgroundColor: 'rgba(5,15,35,0.78)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              backdropFilter: 'blur(6px)',
-            }}>
-              <div style={{ width: '26px', height: '26px', borderRadius: '7px', backgroundColor: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px' }}>
-                <Zap style={{ width: '13px', height: '13px', color: 'white' }} />
-              </div>
-              <div style={{ fontWeight: 600, fontSize: '11px', color: 'white', lineHeight: 1.3, marginBottom: '3px' }}>Suporte 24 horas</div>
-              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>Atendimento especializado disponível a qualquer momento</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* FORMULÁRIO — painel direito (57-100%), logo abaixo da logo GIA (~43vh) centralizado */}
+      {/* PAINEL DIREITO — fundo cinza igual ao da imagem, formulário centralizado */}
       <div style={{
-        position: 'absolute',
-        top: '43vh',
-        bottom: '5vh',
-        left: '57%',
-        right: '2%',
+        flex: 1,
+        backgroundColor: '#EBEBEC',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        padding: '24px',
+        minHeight: '100vh',
       }}>
         <div style={{
           width: '100%',
-          maxWidth: '300px',
+          maxWidth: '310px',
           borderRadius: '16px',
-          padding: '24px',
-          backgroundColor: 'rgba(255,255,255,0.97)',
-          backdropFilter: 'blur(12px)',
-          boxShadow: '0 4px 32px rgba(0,0,0,0.14)',
+          padding: '28px 24px',
+          backgroundColor: 'white',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
         }}>
-          <div style={{ marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '17px', fontWeight: 700, color: '#1a1a2e', margin: 0 }}>
+          <div style={{ marginBottom: '18px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1a1a2e', margin: 0 }}>
               {isLogin ? "Bem-vindo de volta" : "Criar sua conta"}
             </h2>
-            <p style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>
+            <p style={{ fontSize: '12px', color: '#999', marginTop: '3px' }}>
               {isLogin ? "Acesse o sistema com suas credenciais" : "Preencha os dados para começar"}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {!isLogin && (
               <div>
                 <Label className="text-xs font-medium text-gray-600">Nome completo</Label>
-                <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Seu nome" required className="h-9 bg-white border-gray-200 text-sm mt-1" />
+                <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Seu nome" required className="h-10 bg-white border-gray-200 text-sm mt-1" />
               </div>
             )}
             <div>
               <Label className="text-xs font-medium text-gray-600">E-mail</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required className="h-9 bg-white border-gray-200 text-sm mt-1" />
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required className="h-10 bg-white border-gray-200 text-sm mt-1" />
             </div>
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                 <Label className="text-xs font-medium text-gray-600">Senha</Label>
                 {isLogin && <button type="button" style={{ fontSize: '11px', color: '#2563EB' }}>Esqueceu?</button>}
               </div>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} className="h-9 bg-white border-gray-200 text-sm mt-1" />
+              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} className="h-10 bg-white border-gray-200 text-sm" />
             </div>
-            <Button type="submit" className="w-full h-9 font-semibold text-white text-sm" style={{ backgroundColor: '#003870' }} disabled={loading}>
+            <Button type="submit" className="w-full h-10 font-semibold text-white text-sm" style={{ backgroundColor: '#003870' }} disabled={loading}>
               {loading ? "Aguarde..." : isLogin
-                ? <><LogIn className="mr-2 h-3.5 w-3.5" /> Entrar</>
-                : <><UserPlus className="mr-2 h-3.5 w-3.5" /> Criar conta</>}
+                ? <><LogIn className="mr-2 h-4 w-4" /> Entrar</>
+                : <><UserPlus className="mr-2 h-4 w-4" /> Criar conta</>}
             </Button>
           </form>
 
-          <div style={{ position: 'relative', margin: '12px 0', textAlign: 'center' }}>
+          <div style={{ position: 'relative', margin: '14px 0', textAlign: 'center' }}>
             <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderTop: '1px solid #e5e7eb' }} />
-            <span style={{ position: 'relative', background: 'white', padding: '0 8px', fontSize: '10px', color: '#aaa', textTransform: 'uppercase' }}>ou</span>
+            <span style={{ position: 'relative', background: 'white', padding: '0 10px', fontSize: '10px', color: '#bbb', textTransform: 'uppercase' }}>ou</span>
           </div>
 
-          <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-            <button type="button" onClick={() => setIsLogin(!isLogin)} style={{ fontSize: '11px', color: '#2563EB' }}>
+          <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+            <button type="button" onClick={() => setIsLogin(!isLogin)} style={{ fontSize: '12px', color: '#2563EB' }}>
               {isLogin ? "Não tem conta? Cadastre-se" : "Já tem conta? Faça login"}
             </button>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
             {[{ icon: Lock, label: 'SSL' }, { icon: Shield, label: 'LGPD' }, { icon: Globe, label: 'Cloud' }].map(({ icon: Icon, label }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#aaa' }}>
-                <Icon style={{ width: '11px', height: '11px' }} />{label}
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#bbb' }}>
+                <Icon style={{ width: '12px', height: '12px' }} />{label}
               </div>
             ))}
           </div>
