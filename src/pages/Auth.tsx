@@ -57,11 +57,11 @@ export default function Auth() {
       {/* Esquerda — imagem + cards */}
       <div className="hidden lg:flex lg:w-[58%] flex-col">
         {/* Imagem fullscreen sem corte */}
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0" style={{ minHeight: '400px' }}>
           <img
             src="/login-bg.png"
             alt="GIA"
-            className="w-full h-full object-contain"
+            className="w-full h-full object-cover"
             style={{ display: 'block' }}
           />
         </div>
@@ -94,12 +94,8 @@ export default function Auth() {
 
       {/* Direita — fundo claro, logo + form */}
       <div className="flex-1 flex flex-col items-center justify-between p-8 sm:p-12 bg-gray-50">
-        {/* Logo centralizada no topo */}
-        <div className="w-full flex justify-center pt-4">
-          {brand.logoUrl && (
-            <img src={brand.logoUrl} alt={brand.name} className="h-16 object-contain" />
-          )}
-        </div>
+        {/* Spacer topo */}
+        <div className="w-full h-8" />
 
         {/* Formulário centralizado */}
         <div className="w-full max-w-[360px] space-y-6">
