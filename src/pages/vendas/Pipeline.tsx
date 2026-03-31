@@ -88,6 +88,24 @@ export default function Pipeline() {
   // Hook de negociações (Supabase real)
   const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao } = useNegociacoes();
 
+  // Dados reais de cooperativas, regionais, consultores do banco
+  const { data: usuariosReais } = useQuery({
+    queryKey: ["usuarios_reais"],
+    queryFn: async () => {
+      const { data } = await supabase.from("usuarios").select("nome, funcao, cooperativa, regional, gerente").eq("status", "ativo");
+      return data || [];
+    },
+  });
+  const consultoresReais = [...new Set((usuariosReais || []).map((u: any) => u.nome).filter(Boolean))];
+  const cooperativasReais = [...new Set((usuariosReais || []).map((u: any) => u.cooperativa).filter(Boolean))];
+  const regionaisReais = [...new Set((usuariosReais || []).map((u: any) => u.regional).filter(Boolean))];
+  const gerentesReais = [...new Set((usuariosReais || []).map((u: any) => u.gerente).filter(Boolean))];
+
+  // Usar reais se disponíveis, senão fallback mock
+  const consultoresLista = consultoresReais.length > 0 ? consultoresReais : consultores;
+  const cooperativasLista = cooperativasReais.length > 0 ? cooperativasReais : cooperativas;
+  const regionaisLista = regionaisReais.length > 0 ? regionaisReais : regionais;
+
   // Supabase leads query with busca + RBAC scope
   const { data: leadsData } = useQuery({
     queryKey: ["leads", busca, leadScope],
@@ -347,7 +365,7 @@ export default function Pipeline() {
             </div>
             <div className="space-y-1"><Label className="text-xs">Consultor</Label>
               <Select value={fConsultor} onValueChange={setFConsultor}><SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">Todos</SelectItem>{consultores.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="all">Todos</SelectItem>{consultoresLista.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1"><Label className="text-xs">Etapa</Label>
@@ -357,12 +375,12 @@ export default function Pipeline() {
             </div>
             <div className="space-y-1"><Label className="text-xs">Cooperativa</Label>
               <Select value={fCoop} onValueChange={setFCoop}><SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">Todas</SelectItem>{cooperativas.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="all">Todas</SelectItem>{cooperativasLista.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1"><Label className="text-xs">Regional</Label>
               <Select value={fRegional} onValueChange={setFRegional}><SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">Todas</SelectItem>{regionais.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="all">Todas</SelectItem>{regionaisLista.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1"><Label className="text-xs">Gerente</Label>
@@ -628,19 +646,19 @@ export default function Pipeline() {
               </div>
               <div className="space-y-1.5"><Label>Cooperativa</Label>
                 <Select value={form.cooperativa} onValueChange={v => setForm({ ...form, cooperativa: v })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{cooperativas.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  <SelectContent>{cooperativasLista.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Regional</Label>
                 <Select value={form.regional} onValueChange={v => setForm({ ...form, regional: v })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{regionais.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                  <SelectContent>{regionaisLista.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5"><Label>Consultor Responsável</Label>
                 <Select value={form.consultor} onValueChange={v => setForm({ ...form, consultor: v })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{consultores.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  <SelectContent>{consultoresLista.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>

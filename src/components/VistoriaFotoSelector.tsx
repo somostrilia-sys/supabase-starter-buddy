@@ -121,15 +121,15 @@ export default function VistoriaFotoSelector({ selected: controlledSelected, onC
                     <CheckCircle2 className="h-5 w-5 text-white drop-shadow-lg" />
                   </div>
                 )}
-              </div>
 
-              {/* Label */}
-              <div className={`px-2 py-1.5 text-center text-xs font-semibold transition-colors ${
-                isSelected
-                  ? "bg-primary text-white"
-                  : "bg-muted text-muted-foreground"
-              }`}>
-                {parte.label}
+                {/* Label overlay on top of photo */}
+                <div className={`absolute bottom-0 left-0 right-0 px-2 py-1.5 text-center text-xs font-semibold ${
+                  isSelected
+                    ? "bg-primary/90 text-white"
+                    : "bg-black/60 text-white"
+                }`}>
+                  {parte.label}
+                </div>
               </div>
             </button>
           );

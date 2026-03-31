@@ -105,7 +105,7 @@ interface PlanoConfig {
   coberturas: string[];
 }
 
-const planosConfig: PlanoConfig[] = [
+const planosConfigDefault: PlanoConfig[] = [
   {
     nome: "Básico", icon: Shield, cor: "border-blue-200 bg-primary/6",
     percentual: 0.028,
@@ -122,6 +122,16 @@ const planosConfig: PlanoConfig[] = [
     coberturas: ["Roubo/Furto", "Perda Total", "Colisão", "Assistência 24h", "Carro Reserva 30 dias", "Vidros", "Faróis", "Terceiros R$100k", "APP Passageiros", "Rastreador incluso"],
   },
 ];
+
+// Lookup na tabela_precos real por valor FIPE
+async function buscarPrecosReais(valorFipe: number): Promise<{ plano: string; cota: number; adesao: number; rastreador: string; instalacao: number; tipo_franquia: string; valor_franquia: number }[]> {
+  const { data } = await supabase.from("tabela_precos" as any)
+    .select("*")
+    .lte("valor_menor", valorFipe)
+    .gte("valor_maior", valorFipe)
+    .order("plano");
+  return (data || []) as any[];
+}
 
 interface Props { deal: PipelineDeal; }
 

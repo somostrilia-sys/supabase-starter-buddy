@@ -17,6 +17,9 @@ import VistoriaTab from "./VistoriaTab";
 import AssinaturaTab from "./AssinaturaTab";
 import FinanceiroNegociacaoTab from "./FinanceiroNegociacaoTab";
 import TagsInline from "@/components/TagsInline";
+import DocumentoUpload from "@/components/DocumentoUpload";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   FileText, User, Car, ClipboardCheck, Send, Activity, PenTool, Wallet,
   Phone, Mail, MessageSquare, Video, Plus, Download, CheckCircle, XCircle,
@@ -44,6 +47,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
     { v: "cotacao", l: "Cotação", i: FileText },
     { v: "associado", l: "Associado", i: User },
     { v: "veiculo", l: "Veículo", i: Car },
+    { v: "documentos", l: "Documentos", i: Image },
     { v: "vistoria", l: "Vistoria", i: ClipboardCheck },
     { v: "assinatura", l: "Assinatura", i: PenTool },
     { v: "financeiro", l: "Financeiro", i: Wallet },
@@ -122,7 +126,26 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
               </div>
             </TabsContent>
 
-            {/* TAB 4 - Vistoria */}
+            {/* TAB - Documentos OCR */}
+            <TabsContent value="documentos" className="mt-0 space-y-3">
+              <p className="text-xs text-muted-foreground">Anexe CNH e CRLV para preenchimento automático dos dados do associado e veículo.</p>
+              <DocumentoUpload negociacaoId={deal.id} tipo="cnh" onDadosExtraidos={async (dados) => {
+                await supabase.from("negociacoes").update({
+                  lead_nome: dados.nome || deal.lead_nome,
+                  cpf_cnpj: dados.cpf || deal.cpf_cnpj,
+                } as any).eq("id", deal.id);
+                toast.success("Dados do associado preenchidos automaticamente");
+              }} />
+              <DocumentoUpload negociacaoId={deal.id} tipo="crlv" onDadosExtraidos={async (dados) => {
+                await supabase.from("negociacoes").update({
+                  veiculo_placa: dados.placa || deal.veiculo_placa,
+                  veiculo_modelo: dados.modelo || deal.veiculo_modelo,
+                } as any).eq("id", deal.id);
+                toast.success("Dados do veículo preenchidos automaticamente");
+              }} />
+            </TabsContent>
+
+            {/* TAB - Vistoria */}
             <TabsContent value="vistoria" className="mt-0">
               <VistoriaTab deal={deal} />
             </TabsContent>
