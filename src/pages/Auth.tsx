@@ -47,105 +47,110 @@ export default function Auth() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        width: '100%',
-        position: 'relative',
-        backgroundImage: "url('/login-bg.png')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      }}
-    >
-      {/* CARDS — painel esquerdo, faixa 55vh-90vh, centralizado em 0-57% da largura */}
+    <div style={{
+      minHeight: '100vh',
+      width: '100%',
+      position: 'relative',
+      backgroundImage: "url('/login-bg.png')",
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+    }}>
+
+      {/* CARDS — dentro do painel esquerdo (0-57%), entre 56vh e 90vh */}
       <div style={{
         position: 'absolute',
-        top: '55vh',
+        top: '56vh',
         bottom: '8vh',
-        left: 0,
-        width: '57%',
+        left: '3%',
+        width: '51%', /* 3% + 51% = 54% — dentro do painel de 57% */
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '0 6%',
+        overflow: 'hidden',
       }}>
-        <div style={{ width: '100%', maxWidth: '380px' }}>
-          <div className="grid grid-cols-2 gap-2">
+        <div style={{ width: '100%', maxWidth: '340px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             {features.slice(0, 4).map((f) => (
-              <div key={f.title} className="rounded-xl p-3 space-y-1.5" style={{
-                backgroundColor: 'rgba(5,15,35,0.75)',
+              <div key={f.title} style={{
+                borderRadius: '10px',
+                padding: '10px',
+                backgroundColor: 'rgba(5,15,35,0.78)',
                 border: '1px solid rgba(255,255,255,0.1)',
                 backdropFilter: 'blur(6px)',
               }}>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2563EB' }}>
-                  <f.icon className="w-3.5 h-3.5 text-white" />
+                <div style={{ width: '26px', height: '26px', borderRadius: '7px', backgroundColor: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px' }}>
+                  <f.icon style={{ width: '13px', height: '13px', color: 'white' }} />
                 </div>
-                <h3 className="font-semibold text-xs text-white leading-tight">{f.title}</h3>
-                <p className="text-[11px] text-white/50 leading-relaxed">{f.desc}</p>
+                <div style={{ fontWeight: 600, fontSize: '11px', color: 'white', lineHeight: 1.3, marginBottom: '3px' }}>{f.title}</div>
+                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>{f.desc}</div>
               </div>
             ))}
           </div>
-          <div className="mt-2" style={{ width: '47%' }}>
-            <div className="rounded-xl p-3 space-y-1.5" style={{
-              backgroundColor: 'rgba(5,15,35,0.75)',
+          <div style={{ marginTop: '8px', width: '47%' }}>
+            <div style={{
+              borderRadius: '10px',
+              padding: '10px',
+              backgroundColor: 'rgba(5,15,35,0.78)',
               border: '1px solid rgba(255,255,255,0.1)',
               backdropFilter: 'blur(6px)',
             }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2563EB' }}>
-                <Zap className="w-3.5 h-3.5 text-white" />
+              <div style={{ width: '26px', height: '26px', borderRadius: '7px', backgroundColor: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px' }}>
+                <Zap style={{ width: '13px', height: '13px', color: 'white' }} />
               </div>
-              <h3 className="font-semibold text-xs text-white leading-tight">Suporte 24 horas</h3>
-              <p className="text-[11px] text-white/50 leading-relaxed">Atendimento especializado disponível a qualquer momento</p>
+              <div style={{ fontWeight: 600, fontSize: '11px', color: 'white', lineHeight: 1.3, marginBottom: '3px' }}>Suporte 24 horas</div>
+              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>Atendimento especializado disponível a qualquer momento</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* FORMULÁRIO — painel direito, abaixo da logo GIA (50vh), centralizado em 57-100% da largura */}
+      {/* FORMULÁRIO — painel direito (57-100%), logo abaixo da logo GIA (~43vh) centralizado */}
       <div style={{
         position: 'absolute',
-        top: '18vh',
+        top: '43vh',
         bottom: '5vh',
         left: '57%',
-        right: 0,
+        right: '2%',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '0 5%',
       }}>
-        <div className="w-full rounded-2xl p-6 space-y-4" style={{
-          maxWidth: '320px',
+        <div style={{
+          width: '100%',
+          maxWidth: '300px',
+          borderRadius: '16px',
+          padding: '24px',
           backgroundColor: 'rgba(255,255,255,0.97)',
           backdropFilter: 'blur(12px)',
-          boxShadow: '0 4px 32px rgba(0,0,0,0.15)',
+          boxShadow: '0 4px 32px rgba(0,0,0,0.14)',
         }}>
-          <div className="space-y-0.5">
-            <h2 className="text-lg font-bold tracking-tight" style={{ color: '#1a1a2e' }}>
+          <div style={{ marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '17px', fontWeight: 700, color: '#1a1a2e', margin: 0 }}>
               {isLogin ? "Bem-vindo de volta" : "Criar sua conta"}
             </h2>
-            <p className="text-xs" style={{ color: '#888' }}>
+            <p style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>
               {isLogin ? "Acesse o sistema com suas credenciais" : "Preencha os dados para começar"}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {!isLogin && (
-              <div className="space-y-1">
+              <div>
                 <Label className="text-xs font-medium text-gray-600">Nome completo</Label>
-                <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Seu nome" required className="h-9 bg-white border-gray-200 text-sm" />
+                <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Seu nome" required className="h-9 bg-white border-gray-200 text-sm mt-1" />
               </div>
             )}
-            <div className="space-y-1">
+            <div>
               <Label className="text-xs font-medium text-gray-600">E-mail</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required className="h-9 bg-white border-gray-200 text-sm" />
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required className="h-9 bg-white border-gray-200 text-sm mt-1" />
             </div>
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Label className="text-xs font-medium text-gray-600">Senha</Label>
-                {isLogin && <button type="button" className="text-[11px] text-blue-600 hover:underline">Esqueceu?</button>}
+                {isLogin && <button type="button" style={{ fontSize: '11px', color: '#2563EB' }}>Esqueceu?</button>}
               </div>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} className="h-9 bg-white border-gray-200 text-sm" />
+              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} className="h-9 bg-white border-gray-200 text-sm mt-1" />
             </div>
             <Button type="submit" className="w-full h-9 font-semibold text-white text-sm" style={{ backgroundColor: '#003870' }} disabled={loading}>
               {loading ? "Aguarde..." : isLogin
@@ -154,23 +159,23 @@ export default function Auth() {
             </Button>
           </form>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-3 text-gray-400">ou</span>
-            </div>
+          <div style={{ position: 'relative', margin: '12px 0', textAlign: 'center' }}>
+            <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderTop: '1px solid #e5e7eb' }} />
+            <span style={{ position: 'relative', background: 'white', padding: '0 8px', fontSize: '10px', color: '#aaa', textTransform: 'uppercase' }}>ou</span>
           </div>
 
-          <div className="text-center">
-            <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-xs text-blue-600 hover:underline font-medium">
+          <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+            <button type="button" onClick={() => setIsLogin(!isLogin)} style={{ fontSize: '11px', color: '#2563EB' }}>
               {isLogin ? "Não tem conta? Cadastre-se" : "Já tem conta? Faça login"}
             </button>
           </div>
 
-          <div className="flex items-center justify-center gap-4">
-            <div className="flex items-center gap-1 text-[11px] text-gray-400"><Lock className="w-3 h-3" /><span>SSL</span></div>
-            <div className="flex items-center gap-1 text-[11px] text-gray-400"><Shield className="w-3 h-3" /><span>LGPD</span></div>
-            <div className="flex items-center gap-1 text-[11px] text-gray-400"><Globe className="w-3 h-3" /><span>Cloud</span></div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '14px' }}>
+            {[{ icon: Lock, label: 'SSL' }, { icon: Shield, label: 'LGPD' }, { icon: Globe, label: 'Cloud' }].map(({ icon: Icon, label }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#aaa' }}>
+                <Icon style={{ width: '11px', height: '11px' }} />{label}
+              </div>
+            ))}
           </div>
         </div>
       </div>
