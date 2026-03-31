@@ -89,7 +89,7 @@ export default function Auth() {
       </div>
 
       {/* Formulário — lado direito, flutuando sobre a imagem */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-8" style={{ backgroundColor: "transparent" }}>
         <div
           className="w-full max-w-[360px] rounded-2xl p-8 space-y-6"
           style={{ backgroundColor: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(12px)', boxShadow: '0 8px 40px rgba(0,0,0,0.25)' }}
