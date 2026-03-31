@@ -54,23 +54,22 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Esquerda — imagem + cards */}
-      <div className="hidden lg:flex lg:w-[58%] flex-col">
-        {/* Imagem fullscreen sem corte */}
-        <div className="flex-1 min-h-0" style={{ minHeight: '400px' }}>
-          <img
-            src="/login-bg.png"
-            alt="GIA"
-            className="w-full h-full object-cover"
-            style={{ display: 'block' }}
-          />
-        </div>
-
-        {/* Cards de funcionalidades */}
-        <div className="bg-[#0a1628] px-8 py-6">
+      {/* Esquerda — imagem background + cards sobrepostos */}
+      <div
+        className="hidden lg:flex lg:w-[58%] flex-col justify-end"
+        style={{
+          backgroundImage: "url('/login-bg.png')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center top',
+          backgroundRepeat: 'no-repeat',
+          minHeight: '100vh',
+        }}
+      >
+        {/* Cards de funcionalidades na parte inferior */}
+        <div className="px-8 py-6" style={{ background: 'linear-gradient(to top, rgba(10,22,40,0.97) 60%, transparent)' }}>
           <div className="grid grid-cols-2 gap-3">
             {features.slice(0, 4).map((f) => (
-              <div key={f.title} className="rounded-xl p-4 space-y-2" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div key={f.title} className="rounded-xl p-4 space-y-2" style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2563EB' }}>
                   <f.icon className="w-4 h-4 text-white" />
                 </div>
@@ -79,9 +78,8 @@ export default function Auth() {
               </div>
             ))}
           </div>
-          {/* Card suporte — largura metade */}
           <div className="mt-3 w-1/2 pr-1.5">
-            <div className="rounded-xl p-4 space-y-2" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="rounded-xl p-4 space-y-2" style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2563EB' }}>
                 <Zap className="w-4 h-4 text-white" />
               </div>
