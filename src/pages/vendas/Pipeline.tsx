@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  PipelineDeal, PipelineStage, stageColumns,
+  PipelineDeal, PipelineStage, stageColumns, DRAG_ALLOWED,
   consultores, gerentes, cooperativas, regionais, planos,
 } from "./pipeline/mockData";
 import DealDetailModal from "./pipeline/DealDetailModal";
@@ -258,10 +258,20 @@ export default function Pipeline() {
   }
 
   function handleDragStart(e: React.DragEvent, id: string) { setDraggedId(id); e.dataTransfer.effectAllowed = "move"; }
-  function handleDragOver(e: React.DragEvent, stage: PipelineStage) { e.preventDefault(); setDragOverStage(stage); }
+  function handleDragOver(e: React.DragEvent, stage: PipelineStage) {
+    if (!draggedId) return;
+    const source = dealsToShow.find(d => d.id === draggedId);
+    if (!source || !DRAG_ALLOWED[source.stage]?.includes(stage)) return;
+    e.preventDefault(); setDragOverStage(stage);
+  }
   async function handleDrop(stage: PipelineStage) {
     if (draggedId) {
-      // Verifica se é uma negociação real (UUID) ou lead antigo
+      const source = dealsToShow.find(d => d.id === draggedId);
+      if (!source || !DRAG_ALLOWED[source.stage]?.includes(stage)) {
+        setDraggedId(null); setDragOverStage(null);
+        toast.error(`Não é permitido mover de "${source?.stage}" para "${stage}"`);
+        return;
+      }
       const isNegociacao = negociacoes.some(n => n.id === draggedId);
       if (isNegociacao) {
         const { error } = await updateNegociacao(draggedId, { stage });

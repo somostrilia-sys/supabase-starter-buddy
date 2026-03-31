@@ -206,15 +206,15 @@ export default function VistoriaTab({ deal }: Props) {
                 <Button size="sm" variant="outline" className="rounded-none" onClick={() => toast.info("Solicitado reenvio de fotos ao cliente.")}>
                   <RotateCcw className="h-3.5 w-3.5 mr-1" />Solicitar Reenvio
                 </Button>
-                {status !== "aprovada" && (
-                  <>
-                    <Button size="sm" className="rounded-none bg-success hover:bg-success/90 text-white" onClick={handleAprovar}>
-                      <CheckCircle className="h-3.5 w-3.5 mr-1" />Aprovar
-                    </Button>
-                    <Button size="sm" variant="destructive" className="rounded-none" onClick={handleReprovar}>
-                      <XCircle className="h-3.5 w-3.5 mr-1" />Reprovar
-                    </Button>
-                  </>
+                {status === "reprovada" && isAdmin && (
+                  <Button size="sm" className="rounded-none bg-blue-600 hover:bg-blue-700 text-white" onClick={handleAprovar}>
+                    <CheckCircle className="h-3.5 w-3.5 mr-1" />Aprovar (Exceção)
+                  </Button>
+                )}
+                {status === "reprovada" && !isAdmin && (
+                  <Badge variant="outline" className="rounded-none text-xs text-destructive border-red-300">
+                    <AlertCircle className="h-3 w-3 mr-1" />Reprovada pela IA — solicite exceção ao diretor
+                  </Badge>
                 )}
                 <Button size="sm" variant="outline" className="rounded-none" onClick={() => toast.info("Gerando laudo PDF...")}>
                   <Download className="h-3.5 w-3.5 mr-1" />Laudo PDF
