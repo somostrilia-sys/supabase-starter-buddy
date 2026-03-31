@@ -52,7 +52,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[92vh] p-0 gap-0 overflow-hidden rounded-none">
+      <DialogContent className="max-w-4xl max-h-[92vh] p-0 gap-0 flex flex-col rounded-none">
         {/* Header com nome e código */}
         <DialogHeader className="px-6 pt-5 pb-3 border-b" style={{ backgroundColor: "#1A3A5C" }}>
           <DialogTitle className="flex items-center gap-3 text-white">
@@ -72,7 +72,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
             ))}
           </TabsList>
 
-          <ScrollArea className="flex-1 px-6 py-4">
+          <ScrollArea className="flex-1 px-6 py-4 overflow-y-auto" style={{ maxHeight: 'calc(92vh - 140px)' }}>
             {/* TAB 1 - Cotação */}
             <TabsContent value="cotacao" className="mt-0">
               <CotacaoTab deal={deal} />

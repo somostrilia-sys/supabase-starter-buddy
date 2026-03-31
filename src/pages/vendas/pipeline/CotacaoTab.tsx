@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { PipelineDeal } from "./mockData";
+import { supabase, callEdge } from "@/integrations/supabase/client";
 import { MessageSquare, Mail, Link2, CreditCard, CheckCircle, Shield, ShieldCheck, ShieldPlus, Search, Loader2 } from "lucide-react";
 
 /* ─── FIPE mock data ─── */
@@ -169,7 +170,38 @@ export default function CotacaoTab({ deal }: Props) {
 
   const set = (field: string, value: string | boolean) => setForm(prev => ({ ...prev, [field]: value }));
 
-  const handleEnviar = (tipo: string) => toast.success(`Cotação enviada via ${tipo}!`);
+  const handleEnviar = async (tipo: string) => {
+    // Criar cotação no banco se não existe
+    const { data: cotacao } = await supabase
+      .from("cotacoes")
+      .insert({
+        negociacao_id: deal.id,
+        todos_planos: [{ nome: deal.plano, valor_mensal: valorFipe * 0.015 }],
+        desconto_aplicado: 0,
+      } as any)
+      .select()
+      .single();
+
+    if (cotacao) {
+      await supabase.from("negociacoes").update({
+        cotacao_id: (cotacao as any).id,
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", deal.id);
+
+      // Auto-transição: em_contato → em_negociacao
+      if (deal.stage === "em_contato") {
+        await supabase.from("negociacoes").update({ stage: "em_negociacao" } as any).eq("id", deal.id);
+        await supabase.from("pipeline_transicoes").insert({
+          negociacao_id: deal.id,
+          stage_anterior: "em_contato",
+          stage_novo: "em_negociacao",
+          motivo: `Cotação enviada via ${tipo}`,
+          automatica: true,
+        } as any);
+      }
+    }
+    toast.success(`Cotação enviada via ${tipo}!`);
+  };
 
   const lbl = "text-sm font-semibold";
 

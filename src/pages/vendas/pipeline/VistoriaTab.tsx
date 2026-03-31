@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { PipelineDeal } from "./mockData";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, callEdge } from "@/integrations/supabase/client";
 import { usePermission } from "@/hooks/usePermission";
 import {
   ClipboardCheck, Copy, Link2, MessageSquare, CheckCircle, XCircle,
@@ -63,8 +63,46 @@ interface Props { deal: PipelineDeal; }
 
 export default function VistoriaTab({ deal }: Props) {
   const { isAdmin } = usePermission();
-  const [codigoGerado, setCodigoGerado] = useState(true); // mock: já gerado
-  const [codigo] = useState("VST-2026-0042");
+
+  // Buscar vistoria real do banco
+  const { data: vistoriaReal } = useQuery({
+    queryKey: ["vistoria_real", deal.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("vistorias" as any)
+        .select("*")
+        .eq("negociacao_id", deal.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data as any;
+    }
+  });
+
+  // Buscar timeline real do pipeline_transicoes
+  const { data: timelineReal } = useQuery({
+    queryKey: ["vistoria_timeline", deal.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("pipeline_transicoes" as any)
+        .select("*")
+        .eq("negociacao_id", deal.id)
+        .order("created_at", { ascending: false });
+      return (data || []) as any[];
+    }
+  });
+
+  const timeline: TimelineEvent[] = (timelineReal && timelineReal.length > 0)
+    ? timelineReal.map((t: any) => ({
+        data: new Date(t.created_at).toLocaleString("pt-BR"),
+        descricao: `${t.stage_anterior} → ${t.stage_novo}${t.motivo ? ` — ${t.motivo}` : ""}`,
+        tipo: t.automatica ? "analise" : "solicitacao",
+        usuario: t.automatica ? "Sistema" : "Consultor",
+      }))
+    : mockTimeline;
+
+  const [codigoGerado, setCodigoGerado] = useState(!!vistoriaReal);
+  const [codigo] = useState(vistoriaReal?.token_publico || "VST-2026-0042");
   const [status, setStatus] = useState<VistoriaStatus>("em_aprovacao");
   const [prazo, setPrazo] = useState("7");
   const [selectedFotos, setSelectedFotos] = useState<string[]>([
@@ -200,8 +238,15 @@ export default function VistoriaTab({ deal }: Props) {
                 <Button size="sm" variant="outline" className="rounded-none" onClick={() => toast.success("Código reenviado via WhatsApp!")}>
                   <MessageSquare className="h-3.5 w-3.5 mr-1" />Reenviar WhatsApp
                 </Button>
-                <Button size="sm" variant="outline" className="rounded-none" onClick={() => toast.success("Link web copiado!")}>
-                  <Globe className="h-3.5 w-3.5 mr-1" />Gerar Link Web
+                <Button size="sm" variant="outline" className="rounded-none" onClick={() => {
+                  const link = `${window.location.origin}/vistoria/${codigo}`;
+                  navigator.clipboard.writeText(link);
+                  toast.success("Link web copiado!");
+                }}>
+                  <Globe className="h-3.5 w-3.5 mr-1" />Copiar Link Web
+                </Button>
+                <Button size="sm" variant="outline" className="rounded-none" onClick={() => window.open(`${window.location.origin}/vistoria/${codigo}`, "_blank")}>
+                  <Eye className="h-3.5 w-3.5 mr-1" />Visualizar Vistoria
                 </Button>
                 <Button size="sm" variant="outline" className="rounded-none" onClick={() => toast.info("Solicitado reenvio de fotos ao cliente.")}>
                   <RotateCcw className="h-3.5 w-3.5 mr-1" />Solicitar Reenvio
@@ -295,10 +340,10 @@ export default function VistoriaTab({ deal }: Props) {
       <fieldset className="space-y-3">
         <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">HISTÓRICO DA VISTORIA</legend>
         <div className="relative pl-6 space-y-0">
-          {mockTimeline.map((ev, i) => {
+          {timeline.map((ev, i) => {
             const Icon = tipoIconMap[ev.tipo] || Clock;
             const iconColor = tipoColorMap[ev.tipo] || "bg-gray-400 text-white";
-            const isLast = i === mockTimeline.length - 1;
+            const isLast = i === timeline.length - 1;
             return (
               <div key={i} className="relative pb-4">
                 {/* Vertical line */}

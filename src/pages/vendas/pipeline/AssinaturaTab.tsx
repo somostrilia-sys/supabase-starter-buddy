@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { PipelineDeal } from "./mockData";
+import { supabase, callEdge } from "@/integrations/supabase/client";
 import {
   PenTool, Mail, MessageSquare, FileText, CheckCircle, Clock,
   Eye, Send, AlertTriangle, Copy, ExternalLink, RotateCcw,
@@ -70,16 +71,35 @@ export default function AssinaturaTab({ deal }: Props) {
   const StIcon = st.icon;
   const doc = mockDocumentos.find(d => d.id === docSelecionado)!;
 
-  const handleEnviar = (canal: "email" | "whatsapp" | "ambos") => {
+  const handleEnviar = async (canal: "email" | "whatsapp" | "ambos") => {
+    const result = await callEdge("gia-gerar-contrato", {
+      negociacao_id: deal.id,
+      canal,
+    });
     setEnviado(true);
     setStatus("enviado");
     const msg = canal === "ambos" ? "e-mail e WhatsApp" : canal === "email" ? "e-mail" : "WhatsApp";
-    toast.success(`Documento enviado para assinatura via ${msg}!`);
+    if (result.sucesso === false) {
+      toast.error(result.error || "Erro ao gerar contrato");
+    } else {
+      toast.success(`Contrato enviado para assinatura via ${msg}!`);
+    }
   };
 
-  const handleSimularAssinatura = () => {
+  const handleSimularAssinatura = async () => {
     setStatus("assinado");
-    toast.success("Assinatura confirmada! Negociação avançada para Vendas Concretizadas.", { duration: 5000 });
+    // Auto-transição: liberado_cadastro → concluido
+    if (deal.stage === "liberado_cadastro") {
+      await supabase.from("negociacoes").update({ stage: "concluido" } as any).eq("id", deal.id);
+      await supabase.from("pipeline_transicoes").insert({
+        negociacao_id: deal.id,
+        stage_anterior: "liberado_cadastro",
+        stage_novo: "concluido",
+        motivo: "Contrato assinado",
+        automatica: true,
+      } as any);
+    }
+    toast.success("Assinatura confirmada! Negociação concluída.", { duration: 5000 });
   };
 
   const lbl = "text-sm font-semibold";
