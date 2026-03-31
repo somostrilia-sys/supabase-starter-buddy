@@ -13,7 +13,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import {
   Search, Plus, AlertTriangle, Car, FileText, DollarSign, Clock,
-  Upload, CheckCircle2, ChevronLeft, ChevronRight, Download, Loader2,
+  Upload, CheckCircle2, ChevronLeft, ChevronRight, Download, Loader2, ShieldOff,
 } from "lucide-react";
 
 type SinistroStatus = "aberto" | "em_analise" | "aprovado" | "negado" | "finalizado";
@@ -210,7 +210,25 @@ export default function Sinistros() {
                 </thead>
                 <tbody>
                   {pageData.length === 0 ? (
-                    <tr><td colSpan={7} className="p-6 text-center text-xs text-muted-foreground">Nenhum sinistro encontrado</td></tr>
+                    <tr>
+                      <td colSpan={7} className="p-0">
+                        <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                          <div className="p-4 rounded-full bg-muted/40">
+                            <ShieldOff className="h-8 w-8 text-muted-foreground/50" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">
+                              {search ? "Nenhum sinistro encontrado" : "Nenhum evento registrado"}
+                            </p>
+                            <p className="text-xs text-muted-foreground/60 mt-1">
+                              {search
+                                ? "Tente buscar por outro associado ou placa."
+                                : "Quando ocorrerem sinistros, eles aparecerão aqui."}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
                   ) : pageData.map(e => (
                     <tr
                       key={e.id}

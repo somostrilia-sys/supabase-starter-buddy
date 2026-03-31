@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Search, Filter, Download, Plus, ChevronLeft, ChevronRight, Car, Bike, Truck,
-  User, ExternalLink, Trash2, Calendar,
+  User, ExternalLink, Trash2, Calendar, SearchX,
 } from "lucide-react";
 
 const statusMap: Record<string, { label: string; class: string }> = {
@@ -153,7 +153,32 @@ export default function Veiculos() {
                 ))}
               </tr></thead>
               <tbody>
-                {pageData.map(v => {
+                {pageData.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="p-0">
+                      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                        <div className="p-4 rounded-full bg-muted/40">
+                          <SearchX className="h-8 w-8 text-muted-foreground/50" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">
+                            {search ? "Nenhum veículo encontrado" : "Nenhum veículo cadastrado"}
+                          </p>
+                          <p className="text-xs text-muted-foreground/60 mt-1">
+                            {search
+                              ? "Tente buscar por outra placa, marca, modelo ou associado."
+                              : "Cadastre o primeiro veículo clicando em \"Novo Veículo\"."}
+                          </p>
+                        </div>
+                        {!search && (
+                          <Button size="sm" variant="outline" className="mt-1">
+                            <Plus className="h-4 w-4 mr-1" /> Novo Veículo
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ) : pageData.map(v => {
                   const Icon = tipoIcon[v.tipo] || Car;
                   return (
                     <tr key={v.id} className="border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-colors" onClick={() => setSelected(v)}>

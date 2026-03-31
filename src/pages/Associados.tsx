@@ -10,11 +10,24 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { toast } from "sonner";
 import {
   Search, Filter, Download, Plus, ChevronLeft, ChevronRight, Phone, Mail,
   MapPin, Car, CreditCard, User, MessageSquare, ExternalLink, Shield,
-  ArrowRight, Check,
+  ArrowRight, Check, Loader2, DatabaseZap,
 } from "lucide-react";
+
+const SGA_URL = "https://yrjiegtqfngdliwclpzo.supabase.co/functions/v1/gia-associado-buscar";
+const SGA_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyamllZ3RxZm5nZGxpd2NscHpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MTY3MzMsImV4cCI6MjA5MDI5MjczM30.yZWSOqQwWhG_OcF-uNLvvy_ZwRYd2OC_Jjr5R_9Gucw";
+
+interface SgaResult {
+  nome?: string;
+  cpf?: string;
+  veiculo?: string;
+  situacao?: string;
+  valorFipe?: string | number;
+  [key: string]: unknown;
+}
 
 const ufs = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
 
@@ -94,6 +107,43 @@ export default function Associados() {
   const [modalOpen, setModalOpen] = useState(false);
   const [step, setStep] = useState(1);
 
+  // SGA search state
+  const [sgaOpen, setSgaOpen] = useState(false);
+  const [sgaTerm, setSgaTerm] = useState("");
+  const [sgaLoading, setSgaLoading] = useState(false);
+  const [sgaResult, setSgaResult] = useState<SgaResult | null>(null);
+  const [sgaError, setSgaError] = useState<string | null>(null);
+
+  async function handleSgaBuscar() {
+    if (!sgaTerm.trim()) return;
+    setSgaLoading(true);
+    setSgaResult(null);
+    setSgaError(null);
+    try {
+      const res = await fetch(SGA_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${SGA_ANON_KEY}`,
+          "apikey": SGA_ANON_KEY,
+        },
+        body: JSON.stringify({ term: sgaTerm.trim() }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Erro ${res.status}: ${text}`);
+      }
+      const json = await res.json();
+      setSgaResult(json);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
+      setSgaError(msg);
+      toast.error("Erro ao buscar no SGA: " + msg);
+    } finally {
+      setSgaLoading(false);
+    }
+  }
+
   const filtered = useMemo(() => {
     let list = mockAssociados;
     if (search) {
@@ -121,6 +171,93 @@ export default function Associados() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1" /> CSV</Button>
+
+          {/* Buscar no SGA */}
+          <Dialog open={sgaOpen} onOpenChange={o => { setSgaOpen(o); if (!o) { setSgaTerm(""); setSgaResult(null); setSgaError(null); } }}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="border-sky-500/40 text-sky-400 hover:bg-sky-500/10">
+                <DatabaseZap className="h-4 w-4 mr-1" /> Buscar no SGA
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle className="flex items-center gap-2"><DatabaseZap className="h-4 w-4 text-sky-400" /> Buscar no SGA</DialogTitle></DialogHeader>
+              <div className="space-y-3 mt-2">
+                <p className="text-xs text-muted-foreground">Informe CPF, placa ou telefone para consultar no SGA.</p>
+                <div className="flex gap-2">
+                  <Input
+                    className="h-9 text-xs flex-1"
+                    placeholder="CPF, placa ou telefone..."
+                    value={sgaTerm}
+                    onChange={e => setSgaTerm(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleSgaBuscar()}
+                  />
+                  <Button size="sm" onClick={handleSgaBuscar} disabled={sgaLoading || !sgaTerm.trim()}>
+                    {sgaLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </Button>
+                </div>
+
+                {sgaError && (
+                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-xs text-destructive">
+                    {sgaError}
+                  </div>
+                )}
+
+                {sgaResult && !sgaError && (
+                  <div className="p-3 rounded-lg border border-border/50 bg-card space-y-2">
+                    <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-2">Resultado SGA</p>
+                    {sgaResult.nome && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <User className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-medium">{String(sgaResult.nome)}</span>
+                      </div>
+                    )}
+                    {sgaResult.cpf && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-mono">{String(sgaResult.cpf)}</span>
+                      </div>
+                    )}
+                    {sgaResult.veiculo && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <Car className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span>{String(sgaResult.veiculo)}</span>
+                      </div>
+                    )}
+                    {sgaResult.situacao && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+                        <Badge className="text-[9px] bg-emerald-500/15 text-emerald-400 border-0">{String(sgaResult.situacao)}</Badge>
+                      </div>
+                    )}
+                    {sgaResult.valorFipe != null && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-muted-foreground">FIPE:</span>
+                        <span className="font-mono text-emerald-400">
+                          {typeof sgaResult.valorFipe === "number"
+                            ? `R$ ${sgaResult.valorFipe.toLocaleString("pt-BR")}`
+                            : String(sgaResult.valorFipe)}
+                        </span>
+                      </div>
+                    )}
+                    {/* fallback: show all keys if standard fields are missing */}
+                    {!sgaResult.nome && !sgaResult.cpf && !sgaResult.veiculo && (
+                      <pre className="text-[10px] text-muted-foreground whitespace-pre-wrap break-all">
+                        {JSON.stringify(sgaResult, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+                )}
+
+                {sgaLoading && (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-sky-400" />
+                    <span className="ml-2 text-xs text-muted-foreground">Consultando SGA...</span>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={modalOpen} onOpenChange={o => { setModalOpen(o); if (!o) setStep(1); }}>
             <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" /> Novo Associado</Button></DialogTrigger>
             <DialogContent className="max-w-lg">
