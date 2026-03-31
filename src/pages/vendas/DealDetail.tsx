@@ -194,7 +194,7 @@ export default function DealDetail() {
 
         {/* Tab 1: Atividades */}
         <TabsContent value="atividades" className="space-y-4">
-          <Card className="border border-border shadow-sm">
+          <Card className="border-0 shadow-sm">
             <CardContent className="p-4 space-y-4">
               <div className="flex gap-2">
                 <Input placeholder="Adicionar nota ou atividade..." value={newNote}
@@ -224,7 +224,7 @@ export default function DealDetail() {
 
         {/* Tab 2: Contato */}
         <TabsContent value="contato" className="space-y-4">
-          <Card className="border border-border shadow-sm">
+          <Card className="border-0 shadow-sm">
             <CardContent className="p-4">
               {editing ? (
                 <div className="space-y-3">
@@ -258,7 +258,7 @@ export default function DealDetail() {
 
         {/* Tab 3: Cotação */}
         <TabsContent value="cotacao" className="space-y-4">
-          <Card className="border border-border shadow-sm">
+          <Card className="border-0 shadow-sm">
             <CardContent className="p-4">
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -284,7 +284,7 @@ export default function DealDetail() {
 
         {/* Tab 4: Vistoria */}
         <TabsContent value="vistoria" className="space-y-4">
-          <Card className="border border-border shadow-sm">
+          <Card className="border-0 shadow-sm">
             <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Eye className="h-10 w-10 mb-3 opacity-30" />
               <p className="text-sm font-medium">Módulo de Vistoria</p>
@@ -331,13 +331,13 @@ export default function DealDetail() {
                 </CardContent>
               </Card>
             ))}
-            {propostas.length === 0 && <Card className="border border-border shadow-sm"><CardContent className="flex flex-col items-center justify-center py-8 text-muted-foreground"><FileText className="h-8 w-8 mb-2 opacity-30" /><p className="text-xs">Nenhuma proposta criada</p></CardContent></Card>}
+            {propostas.length === 0 && <Card className="border-0 shadow-sm"><CardContent className="flex flex-col items-center justify-center py-8 text-muted-foreground"><FileText className="h-8 w-8 mb-2 opacity-30" /><p className="text-xs">Nenhuma proposta criada</p></CardContent></Card>}
           </div>
         </TabsContent>
 
         {/* Tab 6: Tags */}
         <TabsContent value="tags" className="space-y-4">
-          <Card className="border border-border shadow-sm">
+          <Card className="border-0 shadow-sm">
             <CardContent className="p-4 space-y-4">
               <p className="text-xs font-medium text-muted-foreground uppercase">Tags aplicadas</p>
               <div className="flex flex-wrap gap-2">

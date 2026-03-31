@@ -281,7 +281,7 @@ export default function RelatoriosGeraisTab() {
           <button
             key={rt.id}
             onClick={() => loadReport(rt.id)}
-            className="group relative overflow-hidden rounded-xl border-2 border-border/80 bg-card text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/40 active:scale-[0.99] flex flex-col"
+            className="group relative overflow-hidden rounded-xl border border-border bg-card text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 flex flex-col"
           >
             <div className={`h-1 ${rt.cor}`} />
             <div className="flex items-center gap-4 px-5 py-4 flex-1">

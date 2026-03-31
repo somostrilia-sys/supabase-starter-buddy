@@ -8,7 +8,7 @@ export default function Parametros() {
         <h1 className="text-2xl font-bold tracking-tight">Parâmetros</h1>
         <p className="text-muted-foreground text-sm">Configurações gerais do sistema</p>
       </div>
-      <Card className="border border-border shadow-sm">
+      <Card className="border-0 shadow-sm">
         <CardContent className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <SlidersHorizontal className="h-12 w-12 mb-4 opacity-30" />
           <p className="text-lg font-medium">Em desenvolvimento</p>

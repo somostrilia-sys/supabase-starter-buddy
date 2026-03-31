@@ -18,33 +18,8 @@ import {
 } from "@/components/ui/chart";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  PieChart as RPieChart, Pie, Cell, AreaChart, Area,
+  PieChart as RPieChart, Pie, Cell,
 } from "recharts";
-
-/* ─── Module definitions ─── */
-const modules = [
-  {
-    title: "Gestão",
-    subtitle: "Associados, veículos, sinistros e documentação",
-    icon: Shield,
-    route: "/gestao",
-    color: "hsl(var(--gestao))",
-  },
-  {
-    title: "Financeiro",
-    subtitle: "Fluxo diário, boletos e conciliação",
-    icon: DollarSign,
-    route: "/financeiro",
-    color: "hsl(var(--financeiro))",
-  },
-  {
-    title: "Vendas",
-    subtitle: "Pipeline, contatos, metas e afiliados",
-    icon: Target,
-    route: "/vendas/pipeline",
-    color: "hsl(var(--vendas))",
-  },
-];
 
 /* ─── Chart configs ─── */
 const monthlyChartConfig = {
@@ -56,9 +31,6 @@ const pieChartConfig = {
   inativo: { label: "Inativos", color: "hsl(var(--chart-4))" },
   suspenso: { label: "Suspensos", color: "hsl(var(--chart-3))" },
 };
-const areaChartConfig = {
-  valor: { label: "Recebido", color: "hsl(var(--chart-2))" },
-};
 
 const fakeMonthly = [
   { mes: "Jan", associados: 12, veiculos: 18 },
@@ -68,14 +40,30 @@ const fakeMonthly = [
   { mes: "Mai", associados: 42, veiculos: 51 },
   { mes: "Jun", associados: 48, veiculos: 58 },
 ];
-const fakeArea = [
-  { dia: "Seg", valor: 1200 },
-  { dia: "Ter", valor: 850 },
-  { dia: "Qua", valor: 2100 },
-  { dia: "Qui", valor: 1600 },
-  { dia: "Sex", valor: 3200 },
-  { dia: "Sáb", valor: 900 },
-  { dia: "Dom", valor: 400 },
+
+/* ─── Module buttons config ─── */
+const modules = [
+  {
+    title: "GESTÃO",
+    subtitle: "ASSOCIADOS, VEÍCULOS, SINISTROS E DOCUMENTAÇÃO",
+    icon: Shield,
+    route: "/gestao",
+    bg: "linear-gradient(135deg, #1B8C3D 0%, #25A84C 100%)",
+  },
+  {
+    title: "FINANCEIRO",
+    subtitle: "FLUXO DIÁRIO, BOLETOS E CONCILIAÇÃO",
+    icon: DollarSign,
+    route: "/financeiro",
+    bg: "linear-gradient(135deg, #1A3A5C 0%, #087DBE 100%)",
+  },
+  {
+    title: "VENDAS",
+    subtitle: "PIPELINE, CONTATOS, METAS E AFILIADOS",
+    icon: Target,
+    route: "/vendas/pipeline",
+    bg: "linear-gradient(135deg, #C42B2B 0%, #E04040 100%)",
+  },
 ];
 
 /* ─── Components ─── */
@@ -238,8 +226,9 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background dot-pattern relative">
       <BackgroundEffects />
+
       {/* ══════════ HEADER ══════════ */}
-      <header className="border-b border-white/10 sticky top-0 z-20 gradient-header shadow-lg relative relative">
+      <header className="border-b border-white/10 sticky top-0 z-20 gradient-header shadow-lg relative">
         <div className="px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="h-9 object-contain brightness-0 invert" />}
@@ -264,39 +253,34 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="px-6 lg:px-8 py-8 s relative z-10pace-y-10">
-        {/* ══════════ PAGE TITLE ══════════ */}
-        <div className="flex items-center gap-3 animate-fade-in-up">
-          <div className="w-10 h-10 rounded-xl gradient-accent flex items-center justify-center shadow-lg shadow-accent/25">
-            <Zap className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Painel Principal</h1>
-            <p className="text-sm text-muted-foreground">
-              Visão consolidada da sua associação de proteção veicular
-            </p>
-          </div>
+      <div className="px-6 lg:px-8 py-8 relative z-10 space-y-8">
+
+        {/* ══════════ PAGE TITLE (centered) ══════════ */}
+        <div className="text-center animate-fade-in-up">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground uppercase">
+            Painel Principal
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Visão consolidada da sua associação de proteção veicular
+          </p>
         </div>
 
-        {/* ══════════ MODULE NAVIGATION ══════════ */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* ══════════ MODULE NAVIGATION (colored pills) ══════════ */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           {modules.map((mod, i) => (
             <button
               key={mod.title}
               onClick={() => navigate(mod.route)}
-              className={`group relative flex items-center gap-5 rounded-xl border-2 border-border bg-card card-premium card-glow p-6 text-left transition-all duration-300 hover:border-primary/40 animate-fade-in-up animate-fade-in-up-${i + 1}`}
+              className={`group relative flex items-center gap-4 rounded-2xl px-7 py-4 text-left transition-all duration-300 hover:scale-[1.03] hover:shadow-xl shadow-lg animate-fade-in-up animate-fade-in-up-${i + 1} min-w-[220px] sm:min-w-[240px]`}
+              style={{ background: mod.bg }}
             >
-              <div
-                className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
-                style={{ backgroundColor: mod.color, boxShadow: `0 4px 14px -3px ${mod.color}50` }}
-              >
+              <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
                 <mod.icon className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="font-semibold text-base text-foreground">{mod.title}</h2>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{mod.subtitle}</p>
+                <h2 className="font-extrabold text-lg text-white tracking-wide">{mod.title}</h2>
+                <p className="text-[10px] text-white/70 mt-0.5 leading-tight font-medium">{mod.subtitle}</p>
               </div>
-              <ArrowRight className="h-5 w-5 text-border group-hover:text-accent transition-colors shrink-0" />
             </button>
           ))}
         </div>
@@ -393,7 +377,7 @@ export default function Dashboard() {
           action="Abrir módulo"
           onAction={() => navigate("/financeiro")}
         >
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pb-8">
             <KpiCard
               label="Recebido Hoje"
               value={`R$ ${stats.recebidoHoje.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
@@ -409,55 +393,6 @@ export default function Dashboard() {
             />
             <KpiCard label="Receita Semanal" value="R$ 10.350,00" icon={Receipt} subtitle="Últimos 7 dias" animDelay={3} />
             <KpiCard label="Boletos em Aberto" value="124" icon={FileText} subtitle="Vencendo este mês" animDelay={4} />
-          </div>
-          <div className="mt-4">
-            <Card className="shadow-sm border card-premium card-glow animate-fade-in-up animate-fade-in-up-5">
-              <CardHeader className="pb-2 pt-5 px-5">
-                <CardTitle className="text-sm font-semibold text-foreground">Receitas da Semana</CardTitle>
-                <p className="text-xs text-muted-foreground">Recebimentos diários acumulados</p>
-              </CardHeader>
-              <CardContent className="px-3 pb-4">
-                <ChartContainer config={areaChartConfig} className="h-[200px] w-full">
-                  <AreaChart data={fakeArea}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="dia" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <defs>
-                      <linearGradient id="colorValor" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.15} />
-                        <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <Area type="monotone" dataKey="valor" stroke="hsl(var(--chart-2))" fill="url(#colorValor)" strokeWidth={2} />
-                  </AreaChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </ModuleSection>
-
-        <div className="h-px bg-border" />
-
-        {/* ══════════ VENDAS SECTION ══════════ */}
-        <ModuleSection
-          icon={Target}
-          title="Vendas"
-          color="hsl(var(--vendas))"
-          action="Abrir módulo"
-          onAction={() => navigate("/vendas/pipeline")}
-        >
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pb-8">
-            <KpiCard label="Negociações Ativas" value={stats.negociacoesAtivas} icon={Handshake} animDelay={1} />
-            <KpiCard label="Vendas no Mês" value={stats.vendasMes} icon={TrendingUp} animDelay={2} />
-            <KpiCard
-              label="Taxa de Conversão"
-              value={`${stats.conversao}%`}
-              icon={Target}
-              subtitle={stats.conversao >= 30 ? "Boa performance" : "Abaixo da meta"}
-              animDelay={3}
-            />
-            <KpiCard label="Leads no Pipeline" value="47" icon={CircleDot} subtitle="Em qualificação" animDelay={4} />
           </div>
         </ModuleSection>
       </div>
