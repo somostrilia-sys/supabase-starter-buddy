@@ -100,13 +100,13 @@ export default function FechamentoMensal({ onBack }: Props) {
 
     try {
       const res = await fetch(
-        "https://dxuoppekxgvdqnytftho.supabase.co/functions/v1/fechamento-mensal",
+        "https://yrjiegtqfngdliwclpzo.supabase.co/functions/v1/fechamento-mensal",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization:
-              "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyamllZ3RxZm5nZGxpd2NscHpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI3NTIyMzksImV4cCI6MjA1ODMyODIzOX0.bhlDxOOQAHFqBRkOT0oY5IOY5bZ3FBQG0P5DaD0CGPI",
+              "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyamllZ3RxZm5nZGxpd2NscHpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MTY3MzMsImV4cCI6MjA5MDI5MjczM30.yZWSOqQwWhG_OcF-uNLvvy_ZwRYd2OC_Jjr5R_9Gucw",
           },
           body: JSON.stringify(body),
         }

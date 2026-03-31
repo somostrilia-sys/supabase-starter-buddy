@@ -31,8 +31,8 @@ interface Props {
 }
 
 const ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyamllZ3RxZm5nZGxpd2NscHpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI3NTIyMzksImV4cCI6MjA1ODMyODIzOX0.bhlDxOOQAHFqBRkOT0oY5IOY5bZ3FBQG0P5DaD0CGPI";
-const SUPABASE_FN = "https://dxuoppekxgvdqnytftho.supabase.co/functions/v1";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyamllZ3RxZm5nZGxpd2NscHpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MTY3MzMsImV4cCI6MjA5MDI5MjczM30.yZWSOqQwWhG_OcF-uNLvvy_ZwRYd2OC_Jjr5R_9Gucw";
+const SUPABASE_FN = "https://yrjiegtqfngdliwclpzo.supabase.co/functions/v1";
 
 const PLANOS = [
   { id: "basico", label: "Básico", valor: 149.9 },
