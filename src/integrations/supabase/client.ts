@@ -15,3 +15,29 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
   }
 });
+
+export const EDGE_URL = `${SUPABASE_URL}/functions/v1`;
+
+export async function callEdge(functionName: string, body: Record<string, unknown>) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const resp = await fetch(`${EDGE_URL}/${functionName}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+  return resp.json();
+}
+
+export async function callEdgePublic(functionName: string, options?: { method?: string; body?: Record<string, unknown> }) {
+  const { method = 'POST', body } = options ?? {};
+  const resp = await fetch(`${EDGE_URL}/${functionName}`, {
+    method,
+    headers: { 'Content-Type': 'application/json', apikey: SUPABASE_PUBLISHABLE_KEY },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  return resp.json();
+}

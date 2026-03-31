@@ -100,7 +100,7 @@ export default function FechamentoMensal({ onBack }: Props) {
 
     try {
       const res = await fetch(
-        "https://yrjiegtqfngdliwclpzo.supabase.co/functions/v1/fechamento-mensal",
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fechamento-mensal`,
         {
           method: "POST",
           headers: {

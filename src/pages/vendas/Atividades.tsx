@@ -24,6 +24,8 @@ import {
   PhoneCall, Send, Eye, AlertCircle, Flame,
 } from "lucide-react";
 import { consultores, cooperativas, regionais } from "./pipeline/mockData";
+import { callEdge } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Atividade {
   id: string;
@@ -115,6 +117,25 @@ const alertaColors: Record<string, string> = {
 
 function AIAdvisorSection() {
   const [showAdvisor, setShowAdvisor] = useState(true);
+  const { profile } = useAuth();
+  const [aiData, setAiData] = useState<any>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+
+  const fetchAI = async () => {
+    if (!profile?.id) return;
+    setAiLoading(true); setAiError("");
+    try {
+      const res = await callEdge("gia-conselheiro-ia", { consultor_id: profile.id });
+      if (res.sucesso === false) setAiError(res.error || "Erro ao consultar IA");
+      else setAiData(res);
+    } catch { setAiError("Erro de conexão"); }
+    setAiLoading(false);
+  };
+
+  const nextAction = aiData?.proxima_melhor_acao || mockNextAction;
+  const analise = aiData?.analise_pipeline || mockAnalise;
+  const agenda = aiData?.agenda_sugerida || mockAgenda;
 
   if (!showAdvisor) {
     return (
@@ -136,7 +157,13 @@ function AIAdvisorSection() {
             <p className="text-[11px] text-muted-foreground">Análise inteligente do seu pipeline em tempo real</p>
           </div>
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowAdvisor(false)}><X className="h-3.5 w-3.5" /></Button>
+        <div className="flex gap-1">
+          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={fetchAI} disabled={aiLoading}>
+            {aiLoading ? <Flame className="h-3 w-3 mr-1 animate-spin" /> : <Brain className="h-3 w-3 mr-1" />}
+            {aiLoading ? "Consultando..." : "Atualizar IA"}
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowAdvisor(false)}><X className="h-3.5 w-3.5" /></Button>
+        </div>
       </div>
 
       {/* Row 1: Next Best Action + Task Suggestion */}
@@ -150,18 +177,18 @@ function AIAdvisorSection() {
           <CardContent className="px-4 pb-4 space-y-2">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="text-sm font-bold">{mockNextAction.lead}</p>
-                <p className="text-[11px] text-muted-foreground">{mockNextAction.motivo}</p>
+                <p className="text-sm font-bold">{nextAction.nome_lead || nextAction.lead}</p>
+                <p className="text-[11px] text-muted-foreground">{nextAction.motivo || `etapa ${nextAction.stage}`}</p>
               </div>
-              <Badge className={cn("text-[9px] shrink-0", prioridadeColors[mockNextAction.urgencia])}>
-                {mockNextAction.urgencia.toUpperCase()}
+              <Badge className={cn("text-[9px] shrink-0", prioridadeColors[nextAction.urgencia || "alta"])}>
+                {(nextAction.urgencia || "alta").toUpperCase()}
               </Badge>
             </div>
             <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <PhoneCall className="h-3 w-3" /><span>Canal sugerido: <strong className="text-foreground">{mockNextAction.canal}</strong></span>
+              <PhoneCall className="h-3 w-3" /><span>Canal sugerido: <strong className="text-foreground">{nextAction.canal_sugerido || nextAction.canal}</strong></span>
             </div>
             <p className="text-xs bg-white/60 dark:bg-white/5 rounded p-2 border border-violet-200/50 dark:border-violet-800/50 italic">
-              💡 {mockNextAction.argumento}
+              💡 {nextAction.mensagem_sugerida || nextAction.argumento}
             </p>
             <Button size="sm" className="w-full bg-violet-600 hover:bg-violet-700 text-white text-xs h-8">
               <PhoneCall className="h-3 w-3 mr-1" />Executar Agora <ArrowRight className="h-3 w-3 ml-auto" />
@@ -204,19 +231,19 @@ function AIAdvisorSection() {
           <CardContent className="px-4 pb-4">
             <div className="grid grid-cols-2 gap-2">
               <div className="p-2.5 rounded-lg bg-destructive/8 dark:bg-red-950/20 border border-red-200/50 dark:border-red-800/50">
-                <p className="text-lg font-bold text-destructive dark:text-red-400">{mockAnalise.leadsParados}</p>
+                <p className="text-lg font-bold text-destructive dark:text-red-400">{analise.leads_parados ?? analise.leadsParados}</p>
                 <p className="text-[10px] text-muted-foreground">Leads Parados</p>
               </div>
               <div className="p-2.5 rounded-lg bg-success/8 dark:bg-green-950/20 border border-green-200/50 dark:border-green-800/50">
-                <p className="text-lg font-bold text-success dark:text-green-400">{mockAnalise.leadsQuentes}</p>
+                <p className="text-lg font-bold text-success dark:text-green-400">{analise.leads_quentes ?? analise.leadsQuentes}</p>
                 <p className="text-[10px] text-muted-foreground">Leads Quentes</p>
               </div>
               <div className="p-2.5 rounded-lg bg-primary/6 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/50">
-                <p className="text-lg font-bold text-primary dark:text-blue-400">{mockAnalise.taxaConversao}%</p>
+                <p className="text-lg font-bold text-primary dark:text-blue-400">{analise.taxa_conversao ?? analise.taxaConversao}%</p>
                 <p className="text-[10px] text-muted-foreground">Taxa Conversão</p>
               </div>
               <div className="p-2.5 rounded-lg bg-violet-50 dark:bg-violet-950/20 border border-violet-200/50 dark:border-violet-800/50">
-                <p className="text-lg font-bold text-violet-700 dark:text-violet-400">{mockAnalise.oportunidades}</p>
+                <p className="text-lg font-bold text-violet-700 dark:text-violet-400">{analise.oportunidade_valor ? `R$ ${Number(analise.oportunidade_valor).toLocaleString("pt-BR")}` : analise.oportunidades}</p>
                 <p className="text-[10px] text-muted-foreground">Oportunidades</p>
               </div>
             </div>
@@ -250,7 +277,7 @@ function AIAdvisorSection() {
         </CardHeader>
         <CardContent className="px-4 pb-4">
           <div className="space-y-1.5">
-            {mockAgenda.map((item, i) => (
+            {agenda.map((item, i) => (
               <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors group">
                 <span className="text-xs font-mono font-bold text-muted-foreground w-12 shrink-0">{item.hora}</span>
                 <div className="h-8 w-[2px] rounded-full bg-emerald-300 dark:bg-emerald-700 shrink-0" />

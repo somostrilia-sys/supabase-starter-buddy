@@ -32,7 +32,7 @@ interface Props {
 
 const ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyamllZ3RxZm5nZGxpd2NscHpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MTY3MzMsImV4cCI6MjA5MDI5MjczM30.yZWSOqQwWhG_OcF-uNLvvy_ZwRYd2OC_Jjr5R_9Gucw";
-const SUPABASE_FN = "https://yrjiegtqfngdliwclpzo.supabase.co/functions/v1";
+const SUPABASE_FN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
 const PLANOS = [
   { id: "basico", label: "Básico", valor: 149.9 },
