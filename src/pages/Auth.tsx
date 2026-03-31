@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Shield, LogIn, UserPlus, BarChart3, Users, Car, FileText, ChevronRight, Zap, Lock, Globe } from "lucide-react";
+import { Shield, LogIn, UserPlus, BarChart3, Users, Car, FileText, Zap, Lock, Globe } from "lucide-react";
 import { useBrand } from "@/hooks/useBrand";
 
 export default function Auth() {
@@ -20,7 +20,6 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -36,17 +35,10 @@ export default function Auth() {
           },
         });
         if (error) throw error;
-        toast({
-          title: "Cadastro realizado!",
-          description: "Verifique seu e-mail para confirmar a conta.",
-        });
+        toast({ title: "Cadastro realizado!", description: "Verifique seu e-mail para confirmar a conta." });
       }
     } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -57,211 +49,123 @@ export default function Auth() {
     { icon: Car, title: "Controle de Veículos", desc: "Frota, vistorias e sinistros em uma única plataforma" },
     { icon: BarChart3, title: "Pipeline de Vendas", desc: "CRM completo com Kanban, metas e comissões" },
     { icon: FileText, title: "Financeiro Inteligente", desc: "Fluxo de caixa, boletos e conciliação automática" },
-  ];
-
-  const differentials = [
     { icon: Zap, title: "Suporte 24 horas", desc: "Atendimento especializado disponível a qualquer momento" },
   ];
 
   return (
     <div className="min-h-screen flex">
-      {/* Left side - Hero with gradient */}
-      <div className="hidden lg:flex lg:w-[58%] relative gradient-hero overflow-hidden">
-        {/* Animated orbs */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="orb orb-1" />
-          <div className="orb orb-2" />
-          <div className="orb orb-3" />
-          {/* Grid pattern overlay */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{
-            backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-            backgroundSize: '60px 60px'
-          }} />
+      {/* Esquerda — imagem + cards */}
+      <div className="hidden lg:flex lg:w-[58%] flex-col">
+        {/* Imagem fullscreen sem corte */}
+        <div className="flex-1 min-h-0">
+          <img
+            src="/login-bg.png"
+            alt="GIA"
+            className="w-full h-full object-contain"
+            style={{ display: 'block' }}
+          />
         </div>
 
-        <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
-          {/* Top - Logo */}
-          <div className="flex items-center gap-3">
-            {brand.logoUrl && (
-              <img src={brand.logoUrl} alt={brand.name} className="h-10 object-contain brightness-0 invert" />
-            )}
-            <div>
-              <h1 className="text-xl font-bold text-white tracking-tight">{brand.name}</h1>
-              <p className="text-xs text-white/40 uppercase tracking-wider">{brand.subtitle}</p>
-            </div>
-          </div>
-
-          {/* Center - Main content */}
-          <div className="space-y-10 max-w-xl">
-            <div className="space-y-5">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass text-xs text-accent font-medium">
-                <Zap className="w-3.5 h-3.5" />
-                Plataforma Inteligente de Gestão
+        {/* Cards de funcionalidades */}
+        <div className="bg-[#0a1628] px-8 py-6">
+          <div className="grid grid-cols-2 gap-3">
+            {features.slice(0, 4).map((f) => (
+              <div key={f.title} className="rounded-xl p-4 space-y-2" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2563EB' }}>
+                  <f.icon className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="font-semibold text-sm text-white">{f.title}</h3>
+                <p className="text-xs text-white/40 leading-relaxed">{f.desc}</p>
               </div>
-              <h2 className="text-4xl xl:text-5xl font-bold text-white leading-[1.1] tracking-tight">
-                Software completo para
-                <span className="text-accent"> proteção veicular</span>
-              </h2>
-              <p className="text-base text-white/50 leading-relaxed max-w-md">
-                Unifique vendas, financeiro e gestão com uma plataforma moderna, segura e escalável.
-              </p>
-            </div>
-
-            {/* Feature cards - 2x2 grid */}
-            <div className="grid grid-cols-2 gap-3">
-              {features.map((f) => (
-                <div key={f.title} className="glass rounded-xl p-4 space-y-2.5 hover:bg-white/10 transition-colors group cursor-default">
-                  <div className="w-9 h-9 rounded-lg gradient-accent flex items-center justify-center">
-                    <f.icon className="w-4.5 h-4.5 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-sm text-white">{f.title}</h3>
-                  <p className="text-xs text-white/40 leading-relaxed">{f.desc}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Differential highlight */}
-            <div className="flex items-center gap-4 pt-2">
-              {differentials.map((d) => (
-                <div key={d.title} className="flex items-center gap-3 glass rounded-xl px-5 py-3">
-                  <div className="w-10 h-10 rounded-lg gradient-accent flex items-center justify-center">
-                    <d.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold text-white">{d.title}</p>
-                    <p className="text-xs text-white/50">{d.desc}</p>
-                  </div>
-                </div>
-              ))}
+            ))}
+          </div>
+          {/* Card suporte — largura metade */}
+          <div className="mt-3 w-1/2 pr-1.5">
+            <div className="rounded-xl p-4 space-y-2" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2563EB' }}>
+                <Zap className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="font-semibold text-sm text-white">Suporte 24 horas</h3>
+              <p className="text-xs text-white/40 leading-relaxed">Atendimento especializado disponível a qualquer momento</p>
             </div>
           </div>
-
-          {/* Bottom */}
-          <p className="text-xs text-white/20">
-            © 2026 {brand.name} — Todos os direitos reservados
-          </p>
         </div>
       </div>
 
-      {/* Right side - Login form */}
-      <div className="flex-1 flex items-center justify-center bg-background p-6 sm:p-10 relative overflow-hidden">
-        {/* Subtle orbs on right side too */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none lg:hidden">
-          <div className="orb orb-1" />
-          <div className="orb orb-2" />
+      {/* Direita — fundo claro, logo + form */}
+      <div className="flex-1 flex flex-col items-center justify-between p-8 sm:p-12 bg-gray-50">
+        {/* Logo centralizada no topo */}
+        <div className="w-full flex justify-center pt-4">
+          {brand.logoUrl && (
+            <img src={brand.logoUrl} alt={brand.name} className="h-16 object-contain" />
+          )}
         </div>
-        <div className="w-full max-w-[380px] space-y-8 relative z-10 login-glow">
-          {/* Mobile logo */}
-          <div className="text-center lg:hidden space-y-3">
-            {brand.logoUrl && (
-              <img src={brand.logoUrl} alt={brand.name} className="h-12 mx-auto object-contain" />
-            )}
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-foreground">{brand.name}</h1>
-              <p className="text-sm text-muted-foreground">{brand.subtitle}</p>
-            </div>
-          </div>
 
-          {/* Form header */}
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold tracking-tight text-foreground">
+        {/* Formulário centralizado */}
+        <div className="w-full max-w-[360px] space-y-6">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900">
               {isLogin ? "Bem-vindo de volta" : "Criar sua conta"}
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-gray-500">
               {isLogin ? "Acesse o sistema com suas credenciais" : "Preencha os dados para começar"}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Nome completo</Label>
-                <Input
-                  id="fullName"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Seu nome"
-                  required
-                  className="h-11"
-                />
+              <div className="space-y-1.5">
+                <Label htmlFor="fullName" className="text-sm text-gray-700">Nome completo</Label>
+                <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Seu nome" required className="h-11 bg-white border-gray-200" />
               </div>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-                required
-                className="h-11"
-              />
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-sm text-gray-700">E-mail</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required className="h-11 bg-white border-gray-200" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Senha</Label>
+                <Label htmlFor="password" className="text-sm text-gray-700">Senha</Label>
                 {isLogin && (
-                  <button type="button" className="text-xs text-accent hover:underline">
-                    Esqueceu a senha?
-                  </button>
+                  <button type="button" className="text-xs text-blue-600 hover:underline">Esqueceu a senha?</button>
                 )}
               </div>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                minLength={6}
-                className="h-11"
-              />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} className="h-11 bg-white border-gray-200" />
             </div>
-            <Button type="submit" className="w-full h-11 gradient-accent border-0 text-white font-semibold shadow-lg shadow-accent/25 hover:shadow-accent/40 transition-all btn-shimmer" disabled={loading}>
-              {loading ? "Aguarde..." : isLogin ? (
-                <><LogIn className="mr-2 h-4 w-4" /> Entrar</>
-              ) : (
-                <><UserPlus className="mr-2 h-4 w-4" /> Criar conta</>
-              )}
+            <Button type="submit" className="w-full h-11 font-semibold text-white" style={{ backgroundColor: '#003870' }} disabled={loading}>
+              {loading ? "Aguarde..." : isLogin ? <><LogIn className="mr-2 h-4 w-4" /> Entrar</> : <><UserPlus className="mr-2 h-4 w-4" /> Criar conta</>}
             </Button>
           </form>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t" />
+              <div className="w-full border-t border-gray-200" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-3 text-muted-foreground">ou</span>
+              <span className="bg-gray-50 px-3 text-gray-400">ou</span>
             </div>
           </div>
 
           <div className="text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-accent hover:underline font-medium"
-            >
+            <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-sm text-blue-600 hover:underline font-medium">
               {isLogin ? "Não tem conta? Cadastre-se" : "Já tem conta? Faça login"}
             </button>
           </div>
 
-          {/* Trust badges */}
-          <div className="flex items-center justify-center gap-6 pt-4">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Lock className="w-3.5 h-3.5" />
-              <span>SSL Seguro</span>
+          <div className="flex items-center justify-center gap-6 pt-2">
+            <div className="flex items-center gap-1.5 text-xs text-gray-400">
+              <Lock className="w-3.5 h-3.5" /><span>SSL Seguro</span>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Shield className="w-3.5 h-3.5" />
-              <span>LGPD</span>
+            <div className="flex items-center gap-1.5 text-xs text-gray-400">
+              <Shield className="w-3.5 h-3.5" /><span>LGPD</span>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Globe className="w-3.5 h-3.5" />
-              <span>Cloud</span>
+            <div className="flex items-center gap-1.5 text-xs text-gray-400">
+              <Globe className="w-3.5 h-3.5" /><span>Cloud</span>
             </div>
           </div>
         </div>
+
+        <div className="w-full" /> {/* spacer bottom */}
       </div>
     </div>
   );
