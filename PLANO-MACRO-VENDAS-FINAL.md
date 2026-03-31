@@ -359,3 +359,71 @@ tabela_precos, negociacoes, pipeline_transicoes, excecoes_aprovacao, cotacoes, v
 7. **Logo em alta resolução** — pra PDFs
 
 Posso começar a implementar pelos blocos 1-5 (FIPE, preços reais, PDF, card, aceitação)?
+
+---
+
+## BLOCO 13 — REGIONAIS E COOPERATIVAS
+
+### 13.1 Regionais (tabelas de preço vinculadas)
+
+| Regional | Tabela | Abrangência |
+|----------|--------|------------|
+| SP Capital | 156851 | SP Capital + RJ + DF + cidades grandes não-interior |
+| SP Interior | 156894 | Interior de SP (exceto capital e cidades da regional capital) |
+| Norte | 156854 | PA, AM, AP, RR, AC, RO, TO |
+| Espírito Santo | 156891 | ES |
+| Rio Grande do Sul | 156892 | RS |
+| Alagoas | 156893 | AL, SE |
+| Ceará | 156895 | CE, PI, MA |
+| Natal | 156896 | RN, PB |
+| Minas Interior | 156897 | MG interior |
+| Paraná | 156898 | PR |
+| Bahia | 156899 | BA |
+
+### 13.2 Cooperativas (45 ativas)
+- Cada cooperativa vinculada a UMA regional (sem repetição)
+- Cooperativas são filiais/escritórios locais
+- Gestores/diretores podem criar, editar, excluir regionais e cooperativas
+- Vínculo: cooperativa pertence a regional → ao selecionar cooperativa no card, regional é preenchida automaticamente → preço correto é puxado
+
+### 13.3 Regras no Pipeline
+- Ao criar negociação: seleciona cooperativa → regional é definida automaticamente
+- Preços da cotação vêm da tabela_precos WHERE regional = regional da cooperativa
+- Se veículo não tem preço na regional → "Sem precificação para esta regional"
+
+### 13.4 Minha Empresa → Regionais & Cooperativas
+- CRUD de regionais (nome, abrangência, ativa)
+- CRUD de cooperativas (nome, regional vinculada, endereço, telefone, ativa)
+- Cooperativa só pode estar em UMA regional
+- Drag ou select pra mover cooperativa entre regionais
+
+---
+
+## DADOS JÁ IMPORTADOS NO BANCO
+
+| Tabela | Registros |
+|--------|-----------|
+| usuarios | 37 |
+| tabela_precos | 17.191 (11 regionais) |
+| marcas_veiculo | 145 |
+| modelos_veiculo (aceitos) | 9.793 |
+| modelos_veiculo (não aceitos) | 1.342 |
+| cooperativas | 45 |
+| regionais | 17 |
+| vistoria_modelos_foto | 29 |
+
+---
+
+## RESUMO DE TODAS AS TABELAS NO SUPABASE
+
+### Tabelas core (existiam)
+associados, veiculos, contratos, boletos, boletos_log, cotacoes, vistorias, leads, negociacoes, profiles, usuarios, regionais, cooperativas, categorias_veiculo, planos, planos_gia, produtos, produtos_gia, plano_produtos, produto_regras, veiculo_produtos, fornecedores_gia, contas_pagar, contas_receber, rateio_config, system_configs, audit_log, atividades, lead_atividades, pipeline
+
+### Tabelas pipeline v3 (criadas nesta sessão)
+pipeline_transicoes, excecoes_aprovacao, vistoria_fotos, vistoria_modelos_foto, documentos_ocr, pagamentos_cotacao, negociacao_tags, tags
+
+### Tabelas novas features (criadas nesta sessão)
+atividades_sugeridas, metas_vendas, afiliados, indicacoes, landing_pages, tabela_precos, marcas_veiculo, modelos_veiculo
+
+### Tabelas a criar (próxima sessão)
+coberturas_plano, config_empresa, negociacao_veiculos, acessorios_vistoria, comissoes_consultor, powerlinks
