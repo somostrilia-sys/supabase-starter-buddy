@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import {
   ChevronRight, ChevronLeft, Upload, Trash2, TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import EventoDetalhe from "./EventoDetalhe";
 
 // ── Types & Constants ──────────────────────────────────────
@@ -34,41 +35,7 @@ const statusColor: Record<string, string> = {
   "Reembolso": "bg-success/10 text-success",
 };
 
-// ── Mock Data ──────────────────────────────────────────────
-
-const mockConsulta = [
-  { protocolo: "EVT-2025-0341", associado: "Carlos Eduardo Silva", placa: "BRA2E19", tipo: "Colisão", data: "2025-06-15", status: "Em reparo", responsavel: "João Mendes" },
-  { protocolo: "EVT-2025-0298", associado: "Maria Fernanda Oliveira", placa: "RIO4H77", tipo: "Roubo", data: "2025-06-20", status: "Em análise", responsavel: "Ana Costa" },
-  { protocolo: "EVT-2025-0315", associado: "João Pedro Santos", placa: "SPO1C33", tipo: "Furto", data: "2025-06-25", status: "Aguardando docs", responsavel: "Pedro Lima" },
-  { protocolo: "EVT-2025-0322", associado: "Ana Carolina Ferreira", placa: "MGA5B22", tipo: "Colisão", data: "2025-07-01", status: "Indenização integral", responsavel: "João Mendes" },
-  { protocolo: "EVT-2025-0330", associado: "Roberto Almeida Neto", placa: "BSB3K11", tipo: "Fenômeno Natural", data: "2025-07-03", status: "Negado", responsavel: "Ana Costa" },
-  { protocolo: "EVT-2025-0335", associado: "Fernanda Lima Costa", placa: "CWB7D55", tipo: "Incêndio", data: "2025-07-05", status: "Reembolso", responsavel: "Pedro Lima" },
-  { protocolo: "EVT-2025-0340", associado: "Lucas Martins Souza", placa: "POA8F44", tipo: "Periférico", data: "2025-07-08", status: "Em análise", responsavel: "João Mendes" },
-  { protocolo: "EVT-2025-0345", associado: "Patricia Rocha Lima", placa: "REC2G88", tipo: "Colisão", data: "2025-07-10", status: "Em reparo", responsavel: "Ana Costa" },
-];
-
-const mockEventosRateio = [
-  { id: 1, mes: "07/2025", descricao: "Rateio Administrativo", valorTotal: 0, categoria: "Passeio", regional: "Central SP" },
-  { id: 2, mes: "06/2025", descricao: "Ajuste Mensal Frota", valorTotal: 1500, categoria: "Utilitário", regional: "Campinas" },
-  { id: 3, mes: "05/2025", descricao: "Evento Zerado - Adm", valorTotal: 0, categoria: "Passeio", regional: "Litoral SP" },
-];
-
-const mockDistribuicao = [
-  { regional: "Central SP", categoria: "Passeio", qtdeVeiculos: 320, valorBase: 85.50, fator: 1.0, valorCalc: 85.50 },
-  { regional: "Central SP", categoria: "Utilitário", qtdeVeiculos: 85, valorBase: 85.50, fator: 1.3, valorCalc: 111.15 },
-  { regional: "Campinas", categoria: "Passeio", qtdeVeiculos: 210, valorBase: 85.50, fator: 0.9, valorCalc: 76.95 },
-  { regional: "Campinas", categoria: "Caminhão", qtdeVeiculos: 45, valorBase: 85.50, fator: 1.8, valorCalc: 153.90 },
-  { regional: "Ribeirão Preto", categoria: "Passeio", qtdeVeiculos: 130, valorBase: 85.50, fator: 0.85, valorCalc: 72.68 },
-  { regional: "Litoral SP", categoria: "Moto", qtdeVeiculos: 57, valorBase: 85.50, fator: 0.6, valorCalc: 51.30 },
-];
-
-const mockHistDist = [
-  { mes: "07/2025", valorTotal: 95420.00, qtdeVeiculos: 847, regionais: 4, usuario: "Admin", data: "2025-07-15" },
-  { mes: "06/2025", valorTotal: 78350.00, qtdeVeiculos: 832, regionais: 4, usuario: "Gerente", data: "2025-06-14" },
-  { mes: "05/2025", valorTotal: 62100.00, qtdeVeiculos: 820, regionais: 3, usuario: "Admin", data: "2025-05-15" },
-  { mes: "04/2025", valorTotal: 87200.00, qtdeVeiculos: 815, regionais: 4, usuario: "Gerente", data: "2025-04-14" },
-  { mes: "03/2025", valorTotal: 54800.00, qtdeVeiculos: 808, regionais: 3, usuario: "Admin", data: "2025-03-15" },
-];
+// ── Mock Data (kept for complex UI sections) ─────────────
 
 const mockTimeline = [
   { protocolo: "EVT-2025-0341", movimentacoes: [
@@ -141,8 +108,26 @@ export default function EventoTab() {
 function CadastroEventoTab() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [placaBusca, setPlacaBusca] = useState("");
   const [dadosCarregados, setDadosCarregados] = useState(false);
+  const [dadosVeiculo, setDadosVeiculo] = useState<any>(null);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    tipo: "Colisão",
+    motivo: "",
+    descricao: "",
+    associado_nome: "",
+    placa: "",
+    modelo: "",
+    ano_modelo: "",
+    valor_fipe: 0,
+    valor_estimado: 0,
+    valor_real: 0,
+    status: "Em análise",
+    data_evento: "",
+  });
 
   const steps = [
     "Informações Gerais", "Dados da Ocorrência", "Dados do Condutor",
@@ -150,15 +135,85 @@ function CadastroEventoTab() {
     "Reparo Patrimonial", "Parâmetros Rateio", "Termos",
   ];
 
-  const buscarPlaca = () => {
+  const buscarPlaca = async () => {
     if (!placaBusca) return;
     setLoading(true);
-    setTimeout(() => { setDadosCarregados(true); setLoading(false); toast.success("Dados carregados da placa " + placaBusca); }, 800);
+    try {
+      // Try to find vehicle/associado by placa in existing eventos
+      const { data, error } = await supabase
+        .from("eventos")
+        .select("associado_nome, placa, modelo, ano_modelo, valor_fipe")
+        .eq("placa", placaBusca)
+        .limit(1)
+        .maybeSingle();
+
+      if (data) {
+        setDadosVeiculo(data);
+        setFormData(prev => ({
+          ...prev,
+          associado_nome: data.associado_nome || "",
+          placa: data.placa || placaBusca,
+          modelo: data.modelo || "",
+          ano_modelo: data.ano_modelo || "",
+          valor_fipe: data.valor_fipe || 0,
+        }));
+        setDadosCarregados(true);
+        toast.success("Dados carregados da placa " + placaBusca);
+      } else {
+        setDadosVeiculo(null);
+        setFormData(prev => ({ ...prev, placa: placaBusca }));
+        setDadosCarregados(true);
+        toast.info("Placa não encontrada em eventos anteriores. Preencha manualmente.");
+      }
+    } catch (err) {
+      toast.error("Erro ao buscar placa");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const salvarEvento = () => {
-    toast.success("Evento cadastrado com sucesso — Protocolo EVT-2025-0350");
-    setStep(0); setDadosCarregados(false); setPlacaBusca("");
+  const salvarEvento = async () => {
+    setSaving(true);
+    try {
+      const protocolo = `EVT-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9999)).padStart(4, "0")}`;
+
+      const { data, error } = await supabase
+        .from("eventos")
+        .insert({
+          protocolo,
+          tipo: formData.tipo,
+          motivo: formData.motivo,
+          descricao: formData.descricao,
+          associado_nome: formData.associado_nome,
+          placa: formData.placa,
+          modelo: formData.modelo,
+          ano_modelo: formData.ano_modelo,
+          valor_fipe: formData.valor_fipe,
+          valor_estimado: formData.valor_estimado,
+          valor_real: formData.valor_real,
+          status: formData.status,
+          data_evento: formData.data_evento || new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success(`Evento cadastrado com sucesso — Protocolo ${protocolo}`);
+      setStep(0);
+      setDadosCarregados(false);
+      setPlacaBusca("");
+      setDadosVeiculo(null);
+      setFormData({
+        tipo: "Colisão", motivo: "", descricao: "", associado_nome: "",
+        placa: "", modelo: "", ano_modelo: "", valor_fipe: 0,
+        valor_estimado: 0, valor_real: 0, status: "Em análise", data_evento: "",
+      });
+    } catch (err: any) {
+      toast.error("Erro ao salvar evento: " + (err.message || "Erro desconhecido"));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -204,13 +259,19 @@ function CadastroEventoTab() {
               </div>
               {dadosCarregados && (
                 <div className="grid grid-cols-2 gap-3 p-4 bg-muted rounded-lg border border-border">
-                  <div><Label className="text-xs text-muted-foreground">Associado</Label><p className="text-sm font-medium">Carlos Eduardo Silva</p></div>
-                  <div><Label className="text-xs text-muted-foreground">CPF</Label><p className="text-sm">123.456.789-00</p></div>
-                  <div><Label className="text-xs text-muted-foreground">Veículo</Label><p className="text-sm">Chevrolet Onix Plus 2023</p></div>
-                  <div><Label className="text-xs text-muted-foreground">Placa</Label><p className="text-sm font-mono">{placaBusca || "BRA2E19"}</p></div>
-                  <div><Label className="text-xs text-muted-foreground">Chassi</Label><p className="text-sm font-mono">9BGKS48U0MG123456</p></div>
-                  <div><Label className="text-xs text-muted-foreground">Cooperativa</Label><p className="text-sm">Central SP</p></div>
-                  <div><Label className="text-xs text-muted-foreground">Cota</Label><p className="text-sm">R$ 50-70 mil</p></div>
+                  <div><Label className="text-xs text-muted-foreground">Associado</Label>
+                    <Input className="text-sm font-medium" value={formData.associado_nome} onChange={e => setFormData(prev => ({ ...prev, associado_nome: e.target.value }))} />
+                  </div>
+                  <div><Label className="text-xs text-muted-foreground">Modelo</Label>
+                    <Input className="text-sm" value={formData.modelo} onChange={e => setFormData(prev => ({ ...prev, modelo: e.target.value }))} />
+                  </div>
+                  <div><Label className="text-xs text-muted-foreground">Placa</Label><p className="text-sm font-mono">{formData.placa || placaBusca}</p></div>
+                  <div><Label className="text-xs text-muted-foreground">Ano Modelo</Label>
+                    <Input className="text-sm" value={formData.ano_modelo} onChange={e => setFormData(prev => ({ ...prev, ano_modelo: e.target.value }))} />
+                  </div>
+                  <div><Label className="text-xs text-muted-foreground">Valor FIPE</Label>
+                    <Input type="number" className="text-sm" value={formData.valor_fipe} onChange={e => setFormData(prev => ({ ...prev, valor_fipe: Number(e.target.value) }))} />
+                  </div>
                   <div><Label className="text-xs text-muted-foreground">Status</Label><Badge className="bg-success/10 text-success">Ativo</Badge></div>
                 </div>
               )}
@@ -220,34 +281,34 @@ function CadastroEventoTab() {
           {/* Step 1 - Dados da Ocorrência */}
           {step === 1 && (
             <div className="grid grid-cols-2 gap-4">
-              <div><Label className="text-xs">Data do Evento *</Label><Input type="date" defaultValue="2025-07-10" /></div>
+              <div><Label className="text-xs">Data do Evento *</Label><Input type="date" value={formData.data_evento} onChange={e => setFormData(prev => ({ ...prev, data_evento: e.target.value }))} /></div>
               <div><Label className="text-xs">Hora</Label><Input type="time" defaultValue="14:30" /></div>
-              <div><Label className="text-xs">Data do Reporte</Label><Input type="date" defaultValue="2025-07-10" /></div>
+              <div><Label className="text-xs">Data do Reporte</Label><Input type="date" defaultValue={new Date().toISOString().split("T")[0]} /></div>
               <div>
                 <Label className="text-xs">Tipo de Evento *</Label>
-                <Select defaultValue="Colisão"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{tiposEvento.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
+                <Select value={formData.tipo} onValueChange={v => setFormData(prev => ({ ...prev, tipo: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{tiposEvento.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
               </div>
-              <div className="col-span-2"><Label className="text-xs">Descrição da Ocorrência</Label><Textarea defaultValue="Colisão traseira no semáforo da Av. Paulista, altura do nº 1.000. Condutor relata que o veículo de trás não freou a tempo." className="min-h-[80px]" /></div>
-              <div className="col-span-2"><Label className="text-xs">Responsável pelo Atendimento</Label><Input defaultValue="João Mendes" /></div>
+              <div className="col-span-2"><Label className="text-xs">Descrição da Ocorrência</Label><Textarea value={formData.descricao} onChange={e => setFormData(prev => ({ ...prev, descricao: e.target.value }))} placeholder="Descreva o que aconteceu..." className="min-h-[80px]" /></div>
+              <div className="col-span-2"><Label className="text-xs">Motivo</Label><Input value={formData.motivo} onChange={e => setFormData(prev => ({ ...prev, motivo: e.target.value }))} placeholder="Motivo do evento" /></div>
             </div>
           )}
 
           {/* Step 2 - Dados do Condutor */}
           {step === 2 && (
             <div className="grid grid-cols-2 gap-4">
-              <div><Label className="text-xs">Nome do Condutor</Label><Input defaultValue="Carlos Eduardo Silva" /></div>
-              <div><Label className="text-xs">CPF</Label><Input defaultValue="123.456.789-00" /></div>
-              <div><Label className="text-xs">CNH</Label><Input defaultValue="04512378900" /></div>
-              <div><Label className="text-xs">Data de Nascimento</Label><Input type="date" defaultValue="1985-03-15" /></div>
-              <div><Label className="text-xs">Telefone</Label><Input defaultValue="(11) 99876-5432" /></div>
-              <div className="col-span-2"><Label className="text-xs">Observações</Label><Textarea defaultValue="Condutor é o próprio associado. CNH categoria B, válida." /></div>
+              <div><Label className="text-xs">Nome do Condutor</Label><Input defaultValue={formData.associado_nome} /></div>
+              <div><Label className="text-xs">CPF</Label><Input placeholder="000.000.000-00" /></div>
+              <div><Label className="text-xs">CNH</Label><Input placeholder="00000000000" /></div>
+              <div><Label className="text-xs">Data de Nascimento</Label><Input type="date" /></div>
+              <div><Label className="text-xs">Telefone</Label><Input placeholder="(00) 00000-0000" /></div>
+              <div className="col-span-2"><Label className="text-xs">Observações</Label><Textarea placeholder="Observações sobre o condutor..." /></div>
             </div>
           )}
 
           {/* Step 3 - Reparo Veículo Associado */}
           {step === 3 && (
             <div className="grid grid-cols-2 gap-4">
-              <div><Label className="text-xs">Oficina</Label><Input defaultValue="Auto Center Paulista" /></div>
+              <div><Label className="text-xs">Oficina</Label><Input placeholder="Nome da oficina" /></div>
               <div>
                 <Label className="text-xs">Tipo de Reparo</Label>
                 <Select defaultValue="funilaria"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
@@ -257,10 +318,10 @@ function CadastroEventoTab() {
                   <SelectItem value="vidros">Vidros</SelectItem>
                 </SelectContent></Select>
               </div>
-              <div className="col-span-2"><Label className="text-xs">Descrição do Serviço</Label><Textarea defaultValue="Troca do para-choque traseiro, lanterna esquerda e pintura. Alinhamento estrutural." /></div>
-              <div><Label className="text-xs">Valor Estimado</Label><Input defaultValue="R$ 8.500,00" /></div>
-              <div><Label className="text-xs">Valor Aprovado</Label><Input defaultValue="R$ 7.200,00" /></div>
-              <div><Label className="text-xs">Previsão de Conclusão</Label><Input type="date" defaultValue="2025-08-05" /></div>
+              <div className="col-span-2"><Label className="text-xs">Descrição do Serviço</Label><Textarea placeholder="Descreva os serviços necessários..." /></div>
+              <div><Label className="text-xs">Valor Estimado</Label><Input type="number" value={formData.valor_estimado} onChange={e => setFormData(prev => ({ ...prev, valor_estimado: Number(e.target.value) }))} /></div>
+              <div><Label className="text-xs">Valor Real/Aprovado</Label><Input type="number" value={formData.valor_real} onChange={e => setFormData(prev => ({ ...prev, valor_real: Number(e.target.value) }))} /></div>
+              <div><Label className="text-xs">Previsão de Conclusão</Label><Input type="date" /></div>
               <div>
                 <Label className="text-xs">Status do Reparo</Label>
                 <Select defaultValue="em-andamento"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
@@ -280,11 +341,11 @@ function CadastroEventoTab() {
                 <CardHeader className="pb-2"><CardTitle className="text-sm text-primary">Terceiro #1 — Dados Pessoais</CardTitle></CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><Label className="text-xs">Nome</Label><Input defaultValue="Marcos Pereira da Silva" /></div>
-                    <div><Label className="text-xs">CPF</Label><Input defaultValue="567.890.123-00" /></div>
-                    <div><Label className="text-xs">CNH</Label><Input defaultValue="09876543210" /></div>
-                    <div><Label className="text-xs">Telefone</Label><Input defaultValue="(11) 98765-4321" /></div>
-                    <div><Label className="text-xs">E-mail</Label><Input defaultValue="marcos.pereira@email.com" /></div>
+                    <div><Label className="text-xs">Nome</Label><Input placeholder="Nome completo" /></div>
+                    <div><Label className="text-xs">CPF</Label><Input placeholder="000.000.000-00" /></div>
+                    <div><Label className="text-xs">CNH</Label><Input placeholder="00000000000" /></div>
+                    <div><Label className="text-xs">Telefone</Label><Input placeholder="(00) 00000-0000" /></div>
+                    <div><Label className="text-xs">E-mail</Label><Input placeholder="email@exemplo.com" /></div>
                     <div>
                       <Label className="text-xs">Situação</Label>
                       <Select defaultValue="envolvido"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
@@ -300,12 +361,12 @@ function CadastroEventoTab() {
                 <CardHeader className="pb-2"><CardTitle className="text-sm text-primary">Terceiro #1 — Dados do Veículo</CardTitle></CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><Label className="text-xs">Placa</Label><Input defaultValue="XYZ9A88" /></div>
-                    <div><Label className="text-xs">Chassi</Label><Input defaultValue="9BWZZZ377VT054321" /></div>
-                    <div><Label className="text-xs">Marca</Label><Input defaultValue="Volkswagen" /></div>
-                    <div><Label className="text-xs">Modelo</Label><Input defaultValue="Gol 1.0" /></div>
-                    <div><Label className="text-xs">Ano</Label><Input defaultValue="2020" /></div>
-                    <div><Label className="text-xs">Cor</Label><Input defaultValue="Prata" /></div>
+                    <div><Label className="text-xs">Placa</Label><Input placeholder="ABC1D23" /></div>
+                    <div><Label className="text-xs">Chassi</Label><Input placeholder="Chassi do veículo" /></div>
+                    <div><Label className="text-xs">Marca</Label><Input placeholder="Marca" /></div>
+                    <div><Label className="text-xs">Modelo</Label><Input placeholder="Modelo" /></div>
+                    <div><Label className="text-xs">Ano</Label><Input placeholder="2024" /></div>
+                    <div><Label className="text-xs">Cor</Label><Input placeholder="Cor" /></div>
                   </div>
                 </CardContent>
               </Card>
@@ -318,13 +379,13 @@ function CadastroEventoTab() {
           {/* Step 5 - Reparo Terceiro */}
           {step === 5 && (
             <div className="grid grid-cols-2 gap-4">
-              <div><Label className="text-xs">Oficina</Label><Input defaultValue="Funilaria Brasil" /></div>
-              <div className="col-span-2"><Label className="text-xs">Descrição do Serviço</Label><Textarea defaultValue="Reparo no para-choque dianteiro e troca do farol esquerdo do veículo terceiro." /></div>
-              <div><Label className="text-xs">Valor do Orçamento</Label><Input defaultValue="R$ 3.200,00" /></div>
-              <div><Label className="text-xs">Valor Aprovado</Label><Input defaultValue="R$ 2.800,00" /></div>
+              <div><Label className="text-xs">Oficina</Label><Input placeholder="Nome da oficina" /></div>
+              <div className="col-span-2"><Label className="text-xs">Descrição do Serviço</Label><Textarea placeholder="Descreva os reparos do terceiro..." /></div>
+              <div><Label className="text-xs">Valor do Orçamento</Label><Input type="number" placeholder="0.00" /></div>
+              <div><Label className="text-xs">Valor Aprovado</Label><Input type="number" placeholder="0.00" /></div>
               <div>
                 <Label className="text-xs">Status</Label>
-                <Select defaultValue="aprovado"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <Select defaultValue="orcamento"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                   <SelectItem value="orcamento">Orçamento</SelectItem>
                   <SelectItem value="aprovado">Aprovado</SelectItem>
                   <SelectItem value="em-andamento">Em andamento</SelectItem>
@@ -337,19 +398,19 @@ function CadastroEventoTab() {
           {/* Step 6 - Reparo Patrimonial */}
           {step === 6 && (
             <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2"><Label className="text-xs">Descrição do Dano Patrimonial</Label><Textarea defaultValue="Poste de iluminação danificado na colisão. Muro do estabelecimento comercial atingido." /></div>
-              <div><Label className="text-xs">Valor Estimado</Label><Input defaultValue="R$ 4.500,00" /></div>
-              <div><Label className="text-xs">Valor Aprovado</Label><Input defaultValue="R$ 4.000,00" /></div>
+              <div className="col-span-2"><Label className="text-xs">Descrição do Dano Patrimonial</Label><Textarea placeholder="Descreva os danos patrimoniais..." /></div>
+              <div><Label className="text-xs">Valor Estimado</Label><Input type="number" placeholder="0.00" /></div>
+              <div><Label className="text-xs">Valor Aprovado</Label><Input type="number" placeholder="0.00" /></div>
               <div>
                 <Label className="text-xs">Situação</Label>
-                <Select defaultValue="em-analise"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <Select defaultValue="pendente"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                   <SelectItem value="pendente">Pendente</SelectItem>
                   <SelectItem value="em-analise">Em análise</SelectItem>
                   <SelectItem value="aprovado">Aprovado</SelectItem>
                   <SelectItem value="pago">Pago</SelectItem>
                 </SelectContent></Select>
               </div>
-              <div className="col-span-2"><Label className="text-xs">Observações</Label><Textarea defaultValue="Aguardando laudo da prefeitura para o poste. Proprietário do muro notificado." /></div>
+              <div className="col-span-2"><Label className="text-xs">Observações</Label><Textarea placeholder="Observações adicionais..." /></div>
             </div>
           )}
 
@@ -368,7 +429,7 @@ function CadastroEventoTab() {
                 <Label className="text-xs">Categoria do Veículo</Label>
                 <Select defaultValue="Passeio"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{categoriasVeiculo.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
               </div>
-              <div><Label className="text-xs">Valor do Evento para Rateio</Label><Input defaultValue="R$ 14.000,00" /></div>
+              <div><Label className="text-xs">Valor do Evento para Rateio</Label><Input type="number" placeholder="0.00" /></div>
             </div>
           )}
 
@@ -385,19 +446,14 @@ function CadastroEventoTab() {
               </div>
               <div className="space-y-2">
                 <Label className="text-xs">Documentos Anexados</Label>
-                {["Boletim_Ocorrencia.pdf", "Fotos_Veiculo.zip", "CNH_Condutor.jpg"].map((doc, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 border rounded border-border bg-muted">
-                    <div className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /><span className="text-sm">{doc}</span></div>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Trash2 className="h-3.5 w-3.5 text-muted-foreground" /></Button>
-                  </div>
-                ))}
+                <p className="text-xs text-muted-foreground">Nenhum documento anexado ainda.</p>
               </div>
               <div className="p-3 bg-muted rounded-lg border border-border">
                 <p className="text-xs font-semibold text-primary mb-2">Registro de Aceite de Termos</p>
                 <div className="space-y-1.5">
                   {[
-                    { termo: "Termo de Responsabilidade", aceito: true, data: "10/07/2025 14:35" },
-                    { termo: "Termo de Ciência de Rateio", aceito: true, data: "10/07/2025 14:36" },
+                    { termo: "Termo de Responsabilidade", aceito: false, data: "" },
+                    { termo: "Termo de Ciência de Rateio", aceito: false, data: "" },
                     { termo: "Autorização de Vistoria", aceito: false, data: "" },
                   ].map((t, i) => (
                     <div key={i} className="flex items-center gap-2 text-xs">
@@ -423,8 +479,8 @@ function CadastroEventoTab() {
             Próximo<ChevronRight className="h-4 w-4" />
           </Button>
         ) : (
-          <Button onClick={salvarEvento} className="gap-2 bg-primary hover:bg-primary/90 text-white">
-            <Save className="h-4 w-4" />Salvar Evento
+          <Button onClick={salvarEvento} disabled={saving} className="gap-2 bg-primary hover:bg-primary/90 text-white">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Salvar Evento
           </Button>
         )}
       </div>
@@ -437,15 +493,41 @@ function CadastroEventoTab() {
 function ConsultarEventosTab() {
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("Todos");
-  const [filtroResp, setFiltroResp] = useState("Todos");
-  const [selectedEvento, setSelectedEvento] = useState<typeof mockConsulta[0] | null>(null);
+  const [eventos, setEventos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedEvento, setSelectedEvento] = useState<any | null>(null);
 
-  const responsaveis = ["Todos", ...Array.from(new Set(mockConsulta.map(e => e.responsavel)))];
+  const fetchEventos = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("eventos")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50);
 
-  const filtered = mockConsulta.filter(e => {
+      if (error) throw error;
+      setEventos(data || []);
+    } catch (err: any) {
+      toast.error("Erro ao carregar eventos: " + (err.message || ""));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEventos();
+  }, [fetchEventos]);
+
+  const filtered = eventos.filter(e => {
     if (filtroStatus !== "Todos" && e.status !== filtroStatus) return false;
-    if (filtroResp !== "Todos" && e.responsavel !== filtroResp) return false;
-    if (busca && !e.associado.toLowerCase().includes(busca.toLowerCase()) && !e.placa.toLowerCase().includes(busca.toLowerCase()) && !e.protocolo.toLowerCase().includes(busca.toLowerCase())) return false;
+    if (busca) {
+      const term = busca.toLowerCase();
+      const matchAssociado = (e.associado_nome || "").toLowerCase().includes(term);
+      const matchPlaca = (e.placa || "").toLowerCase().includes(term);
+      const matchProtocolo = (e.protocolo || "").toLowerCase().includes(term);
+      if (!matchAssociado && !matchPlaca && !matchProtocolo) return false;
+    }
     return true;
   });
 
@@ -460,47 +542,51 @@ function ConsultarEventosTab() {
           <Label className="text-xs">Status</Label>
           <Select value={filtroStatus} onValueChange={setFiltroStatus}><SelectTrigger className="w-48"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Todos">Todos</SelectItem>{statusConsulta.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
         </div>
-        <div>
-          <Label className="text-xs">Responsável</Label>
-          <Select value={filtroResp} onValueChange={setFiltroResp}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent>{responsaveis.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>
-        </div>
+        <Button variant="outline" className="gap-2 border-border" onClick={fetchEventos} disabled={loading}>
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}Atualizar
+        </Button>
       </div>
 
-      <div className="border rounded-lg border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted">
-              <TableHead className="text-xs">Protocolo</TableHead>
-              <TableHead className="text-xs">Associado</TableHead>
-              <TableHead className="text-xs">Placa</TableHead>
-              <TableHead className="text-xs">Tipo</TableHead>
-              <TableHead className="text-xs">Data</TableHead>
-              <TableHead className="text-xs">Status</TableHead>
-              <TableHead className="text-xs">Responsável</TableHead>
-              <TableHead className="text-xs w-16">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map(e => (
-              <TableRow key={e.protocolo} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedEvento(e)}>
-                <TableCell className="font-mono text-xs">{e.protocolo}</TableCell>
-                <TableCell className="text-sm font-medium">{e.associado}</TableCell>
-                <TableCell className="font-mono text-sm">{e.placa}</TableCell>
-                <TableCell><Badge variant="outline" className="text-xs border-primary/30 bg-primary/8">{e.tipo}</Badge></TableCell>
-                <TableCell className="text-sm">{new Date(e.data).toLocaleDateString("pt-BR")}</TableCell>
-                <TableCell><Badge className={`text-xs ${statusColor[e.status] || "bg-gray-100 text-gray-800"}`}>{e.status}</Badge></TableCell>
-                <TableCell className="text-sm">{e.responsavel}</TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(ev) => { ev.stopPropagation(); setSelectedEvento(e); }}>
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
-                </TableCell>
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-3 text-muted-foreground">Carregando eventos...</span>
+        </div>
+      ) : (
+        <div className="border rounded-lg border-border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted">
+                <TableHead className="text-xs">Protocolo</TableHead>
+                <TableHead className="text-xs">Associado</TableHead>
+                <TableHead className="text-xs">Placa</TableHead>
+                <TableHead className="text-xs">Tipo</TableHead>
+                <TableHead className="text-xs">Data</TableHead>
+                <TableHead className="text-xs">Status</TableHead>
+                <TableHead className="text-xs w-16">Ações</TableHead>
               </TableRow>
-            ))}
-            {filtered.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nenhum evento encontrado</TableCell></TableRow>}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {filtered.map(e => (
+                <TableRow key={e.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedEvento(e)}>
+                  <TableCell className="font-mono text-xs">{e.protocolo}</TableCell>
+                  <TableCell className="text-sm font-medium">{e.associado_nome || "—"}</TableCell>
+                  <TableCell className="font-mono text-sm">{e.placa || "—"}</TableCell>
+                  <TableCell><Badge variant="outline" className="text-xs border-primary/30 bg-primary/8">{e.tipo || "—"}</Badge></TableCell>
+                  <TableCell className="text-sm">{e.data_evento ? new Date(e.data_evento).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                  <TableCell><Badge className={`text-xs ${statusColor[e.status] || "bg-gray-100 text-gray-800"}`}>{e.status || "—"}</Badge></TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(ev) => { ev.stopPropagation(); setSelectedEvento(e); }}>
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhum evento encontrado</TableCell></TableRow>}
+            </TableBody>
+          </Table>
+        </div>
+      )}
       <p className="text-xs text-muted-foreground">{filtered.length} evento(s) encontrado(s)</p>
 
       {selectedEvento && (
@@ -517,6 +603,64 @@ function EventosRateioTab() {
   const [valor, setValor] = useState("");
   const [cat, setCat] = useState("");
   const [reg, setReg] = useState("");
+  const [eventosRateio, setEventosRateio] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const fetchEventosRateio = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("evento_rateio")
+        .select("*, eventos(protocolo, tipo, associado_nome)")
+        .eq("tipo", "ficticio")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setEventosRateio(data || []);
+    } catch (err: any) {
+      toast.error("Erro ao carregar eventos de rateio: " + (err.message || ""));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEventosRateio();
+  }, [fetchEventosRateio]);
+
+  const criarEventoFicticio = async () => {
+    if (!mes) {
+      toast.error("Mês de referência é obrigatório");
+      return;
+    }
+    setSaving(true);
+    try {
+      const distribuicao: Record<string, any> = {};
+      if (cat) distribuicao.categoria = cat;
+      if (reg) distribuicao.regional = reg;
+
+      const { error } = await supabase
+        .from("evento_rateio")
+        .insert({
+          tipo: "ficticio",
+          mes_referencia: mes,
+          valor_distribuido: valor ? parseFloat(valor.replace(/[^\d.,]/g, "").replace(",", ".")) : 0,
+          distribuicao,
+        });
+
+      if (error) throw error;
+      toast.success("Evento fictício criado para " + mes);
+      setValor("");
+      setCat("");
+      setReg("");
+      fetchEventosRateio();
+    } catch (err: any) {
+      toast.error("Erro ao criar evento: " + (err.message || ""));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -538,8 +682,8 @@ function EventosRateioTab() {
               <Select value={reg} onValueChange={setReg}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{regionais.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>
             </div>
           </div>
-          <Button className="mt-4 gap-2 bg-primary hover:bg-primary/90 text-white" onClick={() => toast.success("Evento fictício criado para " + mes)}>
-            <Plus className="h-4 w-4" />Criar Evento
+          <Button className="mt-4 gap-2 bg-primary hover:bg-primary/90 text-white" disabled={saving} onClick={criarEventoFicticio}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}Criar Evento
           </Button>
         </CardContent>
       </Card>
@@ -547,30 +691,40 @@ function EventosRateioTab() {
       <Card className="border-border shadow-sm">
         <CardHeader className="pb-3"><CardTitle className="text-base text-primary">Eventos Fictícios Cadastrados</CardTitle></CardHeader>
         <CardContent>
-          <div className="border rounded-lg border-border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted">
-                  <TableHead className="text-xs">Mês</TableHead>
-                  <TableHead className="text-xs">Descrição</TableHead>
-                  <TableHead className="text-xs text-right">Valor Total</TableHead>
-                  <TableHead className="text-xs">Categoria</TableHead>
-                  <TableHead className="text-xs">Regional</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockEventosRateio.map(e => (
-                  <TableRow key={e.id}>
-                    <TableCell className="text-sm font-mono">{e.mes}</TableCell>
-                    <TableCell className="text-sm">{e.descricao}</TableCell>
-                    <TableCell className="text-sm text-right font-medium">R$ {e.valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
-                    <TableCell className="text-sm">{e.categoria}</TableCell>
-                    <TableCell className="text-sm">{e.regional}</TableCell>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="ml-3 text-muted-foreground">Carregando...</span>
+            </div>
+          ) : (
+            <div className="border rounded-lg border-border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted">
+                    <TableHead className="text-xs">Mês</TableHead>
+                    <TableHead className="text-xs">Evento Vinculado</TableHead>
+                    <TableHead className="text-xs text-right">Valor Distribuído</TableHead>
+                    <TableHead className="text-xs">Categoria</TableHead>
+                    <TableHead className="text-xs">Regional</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {eventosRateio.map(e => (
+                    <TableRow key={e.id}>
+                      <TableCell className="text-sm font-mono">{e.mes_referencia || "—"}</TableCell>
+                      <TableCell className="text-sm">{e.eventos?.protocolo || "Sem vínculo"}</TableCell>
+                      <TableCell className="text-sm text-right font-medium">R$ {(e.valor_distribuido || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-sm">{e.distribuicao?.categoria || "—"}</TableCell>
+                      <TableCell className="text-sm">{e.distribuicao?.regional || "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                  {eventosRateio.length === 0 && (
+                    <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhum evento fictício cadastrado</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -583,8 +737,89 @@ function DistribuicaoRateioTab() {
   const [mesRef, setMesRef] = useState("07/2025");
   const [dataLimite, setDataLimite] = useState("2025-07-25");
   const [valorBase, setValorBase] = useState("85.50");
+  const [distribuicaoData, setDistribuicaoData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const totalDistribuido = mockDistribuicao.reduce((s, d) => s + (d.qtdeVeiculos * d.valorCalc), 0);
+  const fetchDistribuicao = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("evento_rateio")
+        .select("*")
+        .eq("tipo", "real")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Transform data for display - extract from distribuicao JSONB
+      const rows = (data || []).flatMap(r => {
+        const dist = r.distribuicao;
+        if (dist && Array.isArray(dist)) {
+          return dist.map((d: any) => ({
+            id: r.id,
+            regional: d.regional || "—",
+            categoria: d.categoria || "—",
+            qtdeVeiculos: d.qtdeVeiculos || 0,
+            valorBase: d.valorBase || parseFloat(valorBase) || 0,
+            fator: d.fator || 1.0,
+            valorCalc: d.valorCalc || 0,
+          }));
+        }
+        // Single distribution row
+        return [{
+          id: r.id,
+          regional: dist?.regional || "—",
+          categoria: dist?.categoria || "—",
+          qtdeVeiculos: dist?.qtdeVeiculos || 0,
+          valorBase: dist?.valorBase || parseFloat(valorBase) || 0,
+          fator: dist?.fator || 1.0,
+          valorCalc: dist?.valorCalc || r.valor_distribuido || 0,
+        }];
+      });
+
+      setDistribuicaoData(rows);
+    } catch (err: any) {
+      toast.error("Erro ao carregar distribuição: " + (err.message || ""));
+    } finally {
+      setLoading(false);
+    }
+  }, [valorBase]);
+
+  useEffect(() => {
+    fetchDistribuicao();
+  }, [fetchDistribuicao]);
+
+  const totalDistribuido = distribuicaoData.reduce((s, d) => s + (d.qtdeVeiculos * d.valorCalc), 0);
+
+  const gravarRateio = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("evento_rateio")
+        .insert({
+          tipo: "real",
+          mes_referencia: mesRef,
+          valor_distribuido: totalDistribuido,
+          distribuicao: distribuicaoData.map(d => ({
+            regional: d.regional,
+            categoria: d.categoria,
+            qtdeVeiculos: d.qtdeVeiculos,
+            valorBase: d.valorBase,
+            fator: d.fator,
+            valorCalc: d.valorCalc,
+          })),
+        });
+
+      if (error) throw error;
+      toast.success("Rateio gravado com sucesso para " + mesRef);
+      fetchDistribuicao();
+    } catch (err: any) {
+      toast.error("Erro ao gravar rateio: " + (err.message || ""));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -594,39 +829,49 @@ function DistribuicaoRateioTab() {
         <div><Label className="text-xs">Valor Base (1ª cota)</Label><Input value={valorBase} onChange={e => setValorBase(e.target.value)} className="w-32" /></div>
       </div>
 
-      <div className="border rounded-lg border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted">
-              <TableHead className="text-xs">Regional</TableHead>
-              <TableHead className="text-xs">Categoria</TableHead>
-              <TableHead className="text-xs text-right">Qtde Veículos</TableHead>
-              <TableHead className="text-xs text-right">Valor Base</TableHead>
-              <TableHead className="text-xs text-right">Fator Multiplicador</TableHead>
-              <TableHead className="text-xs text-right">Valor Calculado</TableHead>
-              <TableHead className="text-xs text-right">Subtotal</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {mockDistribuicao.map((d, i) => (
-              <TableRow key={i}>
-                <TableCell className="text-sm font-medium">{d.regional}</TableCell>
-                <TableCell className="text-sm">{d.categoria}</TableCell>
-                <TableCell className="text-sm text-right">{d.qtdeVeiculos}</TableCell>
-                <TableCell className="text-sm text-right">R$ {d.valorBase.toFixed(2)}</TableCell>
-                <TableCell className="text-sm text-right font-mono">{d.fator.toFixed(2)}x</TableCell>
-                <TableCell className="text-sm text-right font-medium">R$ {d.valorCalc.toFixed(2)}</TableCell>
-                <TableCell className="text-sm text-right font-medium">R$ {(d.qtdeVeiculos * d.valorCalc).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-3 text-muted-foreground">Carregando distribuição...</span>
+        </div>
+      ) : (
+        <div className="border rounded-lg border-border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted">
+                <TableHead className="text-xs">Regional</TableHead>
+                <TableHead className="text-xs">Categoria</TableHead>
+                <TableHead className="text-xs text-right">Qtde Veículos</TableHead>
+                <TableHead className="text-xs text-right">Valor Base</TableHead>
+                <TableHead className="text-xs text-right">Fator Multiplicador</TableHead>
+                <TableHead className="text-xs text-right">Valor Calculado</TableHead>
+                <TableHead className="text-xs text-right">Subtotal</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {distribuicaoData.map((d, i) => (
+                <TableRow key={i}>
+                  <TableCell className="text-sm font-medium">{d.regional}</TableCell>
+                  <TableCell className="text-sm">{d.categoria}</TableCell>
+                  <TableCell className="text-sm text-right">{d.qtdeVeiculos}</TableCell>
+                  <TableCell className="text-sm text-right">R$ {(d.valorBase || 0).toFixed(2)}</TableCell>
+                  <TableCell className="text-sm text-right font-mono">{(d.fator || 0).toFixed(2)}x</TableCell>
+                  <TableCell className="text-sm text-right font-medium">R$ {(d.valorCalc || 0).toFixed(2)}</TableCell>
+                  <TableCell className="text-sm text-right font-medium">R$ {(d.qtdeVeiculos * d.valorCalc).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                </TableRow>
+              ))}
+              {distribuicaoData.length === 0 && (
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhuma distribuição encontrada</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-primary">Total Distribuído: R$ {totalDistribuido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
-        <Button className="gap-2 bg-primary hover:bg-primary/90 text-white" onClick={() => toast.success("Rateio gravado com sucesso para " + mesRef)}>
-          <Save className="h-4 w-4" />Gravar Rateio
+        <Button className="gap-2 bg-primary hover:bg-primary/90 text-white" disabled={saving} onClick={gravarRateio}>
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Gravar Rateio
         </Button>
       </div>
     </div>
@@ -636,6 +881,62 @@ function DistribuicaoRateioTab() {
 // ── 5) HISTÓRICO DE DISTRIBUIÇÃO ───────────────────────────
 
 function HistoricoDistribuicaoTab() {
+  const [historico, setHistorico] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistorico = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("evento_rateio")
+          .select("*")
+          .order("mes_referencia", { ascending: false });
+
+        if (error) throw error;
+
+        // Group by mes_referencia
+        const grouped: Record<string, { valorTotal: number; count: number; createdAt: string }> = {};
+        (data || []).forEach(r => {
+          const mes = r.mes_referencia || "Sem mês";
+          if (!grouped[mes]) {
+            grouped[mes] = { valorTotal: 0, count: 0, createdAt: r.created_at };
+          }
+          grouped[mes].valorTotal += r.valor_distribuido || 0;
+          grouped[mes].count += 1;
+          // Keep the latest created_at
+          if (r.created_at > grouped[mes].createdAt) {
+            grouped[mes].createdAt = r.created_at;
+          }
+        });
+
+        const rows = Object.entries(grouped).map(([mes, info]) => ({
+          mes,
+          valorTotal: info.valorTotal,
+          registros: info.count,
+          data: info.createdAt,
+        }));
+
+        setHistorico(rows);
+      } catch (err: any) {
+        toast.error("Erro ao carregar histórico: " + (err.message || ""));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHistorico();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground">Carregando histórico...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       <div className="border rounded-lg border-border overflow-hidden">
@@ -644,23 +945,22 @@ function HistoricoDistribuicaoTab() {
             <TableRow className="bg-muted">
               <TableHead className="text-xs">Mês Referência</TableHead>
               <TableHead className="text-xs text-right">Valor Total Distribuído</TableHead>
-              <TableHead className="text-xs text-right">Qtde Veículos</TableHead>
-              <TableHead className="text-xs text-right">Regionais</TableHead>
-              <TableHead className="text-xs">Usuário Responsável</TableHead>
+              <TableHead className="text-xs text-right">Registros</TableHead>
               <TableHead className="text-xs">Data Lançamento</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockHistDist.map((h, i) => (
+            {historico.map((h, i) => (
               <TableRow key={i}>
                 <TableCell className="text-sm font-mono font-medium">{h.mes}</TableCell>
                 <TableCell className="text-sm text-right font-bold">R$ {h.valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
-                <TableCell className="text-sm text-right">{h.qtdeVeiculos}</TableCell>
-                <TableCell className="text-sm text-right">{h.regionais}</TableCell>
-                <TableCell className="text-sm">{h.usuario}</TableCell>
-                <TableCell className="text-sm">{new Date(h.data).toLocaleDateString("pt-BR")}</TableCell>
+                <TableCell className="text-sm text-right">{h.registros}</TableCell>
+                <TableCell className="text-sm">{h.data ? new Date(h.data).toLocaleDateString("pt-BR") : "—"}</TableCell>
               </TableRow>
             ))}
+            {historico.length === 0 && (
+              <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Nenhum histórico encontrado</TableCell></TableRow>
+            )}
           </TableBody>
         </Table>
       </div>
@@ -672,24 +972,71 @@ function HistoricoDistribuicaoTab() {
 
 function MonitoramentoTab() {
   const [monTab, setMonTab] = useState<"eventos" | "estado" | "processo">("eventos");
+  const [kpiData, setKpiData] = useState({ colisao: 0, rouboFurto: 0, totalReparos: 0, valorTotal: 0, mediaCusto: 0 });
+  const [statusCounts, setStatusCounts] = useState<{ status: string; qtde: number; cor: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMonitoramento = async () => {
+      setLoading(true);
+      try {
+        const { data: eventos, error } = await supabase
+          .from("eventos")
+          .select("tipo, status, valor_real, valor_estimado")
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        const all = eventos || [];
+
+        // KPIs
+        const colisao = all.filter(e => e.tipo === "Colisão").length;
+        const rouboFurto = all.filter(e => e.tipo === "Roubo" || e.tipo === "Furto").length;
+        const totalReparos = all.filter(e => e.status === "Em reparo").length;
+        const valorTotal = all.reduce((s, e) => s + (e.valor_real || e.valor_estimado || 0), 0);
+        const mediaCusto = all.length > 0 ? valorTotal / all.length : 0;
+
+        setKpiData({ colisao, rouboFurto, totalReparos, valorTotal, mediaCusto });
+
+        // Status counts
+        const statusMap: Record<string, number> = {};
+        all.forEach(e => {
+          const s = e.status || "Sem status";
+          statusMap[s] = (statusMap[s] || 0) + 1;
+        });
+
+        const statusColorMap: Record<string, string> = {
+          "Em análise": "bg-warning/10 text-warning",
+          "Em reparo": "bg-primary/8 text-primary",
+          "Aguardando docs": "bg-warning/10 text-warning",
+          "Indenização integral": "bg-accent/8 text-accent",
+          "Negado": "bg-destructive/8 text-destructive",
+          "Reembolso": "bg-success/10 text-success",
+        };
+
+        setStatusCounts(
+          Object.entries(statusMap).map(([status, qtde]) => ({
+            status,
+            qtde,
+            cor: statusColorMap[status] || "bg-gray-100 text-gray-800",
+          }))
+        );
+      } catch (err: any) {
+        toast.error("Erro ao carregar monitoramento: " + (err.message || ""));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMonitoramento();
+  }, []);
 
   const kpis = [
-    { label: "Colisão", valor: 12, icon: Car },
-    { label: "Roubo/Furto", valor: 5, icon: AlertTriangle },
-    { label: "Total Reparos", valor: 14, icon: Wrench },
-    { label: "Valor Total", valor: "R$ 187.500", icon: DollarSign },
-    { label: "Média Custo", valor: "R$ 11.030", icon: TrendingUp },
-  ];
-
-  const estadoDoTempo = [
-    { status: "Aguardando cota", qtde: 3, cor: "bg-warning/10 text-warning" },
-    { status: "Aprovados", qtde: 8, cor: "bg-success/10 text-success" },
-    { status: "Em reparação", qtde: 5, cor: "bg-primary/8 text-primary" },
-    { status: "Indenização integral", qtde: 2, cor: "bg-accent/8 text-accent" },
-    { status: "Negados", qtde: 1, cor: "bg-destructive/8 text-destructive" },
-    { status: "Reembolso", qtde: 3, cor: "bg-success/10 text-emerald-800" },
-    { status: "Aguardando documentos", qtde: 4, cor: "bg-warning/10 text-warning" },
-    { status: "Encerrados", qtde: 15, cor: "bg-gray-100 text-gray-800" },
+    { label: "Colisão", valor: kpiData.colisao, icon: Car },
+    { label: "Roubo/Furto", valor: kpiData.rouboFurto, icon: AlertTriangle },
+    { label: "Total Reparos", valor: kpiData.totalReparos, icon: Wrench },
+    { label: "Valor Total", valor: `R$ ${kpiData.valorTotal.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`, icon: DollarSign },
+    { label: "Média Custo", valor: `R$ ${kpiData.mediaCusto.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`, icon: TrendingUp },
   ];
 
   return (
@@ -702,61 +1049,73 @@ function MonitoramentoTab() {
         ))}
       </div>
 
-      {monTab === "eventos" && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          {kpis.map((k, i) => (
-            <Card key={i} className="border-border">
-              <CardContent className="p-4 text-center">
-                <k.icon className="h-5 w-5 mx-auto mb-1 text-primary" />
-                <p className="text-xl font-bold text-primary">{k.valor}</p>
-                <p className="text-xs text-muted-foreground">{k.label}</p>
-              </CardContent>
-            </Card>
-          ))}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-3 text-muted-foreground">Carregando...</span>
         </div>
-      )}
+      ) : (
+        <>
+          {monTab === "eventos" && (
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {kpis.map((k, i) => (
+                <Card key={i} className="border-border">
+                  <CardContent className="p-4 text-center">
+                    <k.icon className="h-5 w-5 mx-auto mb-1 text-primary" />
+                    <p className="text-xl font-bold text-primary">{k.valor}</p>
+                    <p className="text-xs text-muted-foreground">{k.label}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
-      {monTab === "estado" && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {estadoDoTempo.map((e, i) => (
-            <Card key={i} className="border-border">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">{e.status}</p>
-                </div>
-                <Badge className={`text-sm font-bold ${e.cor}`}>{e.qtde}</Badge>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+          {monTab === "estado" && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {statusCounts.map((e, i) => (
+                <Card key={i} className="border-border">
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">{e.status}</p>
+                    </div>
+                    <Badge className={`text-sm font-bold ${e.cor}`}>{e.qtde}</Badge>
+                  </CardContent>
+                </Card>
+              ))}
+              {statusCounts.length === 0 && (
+                <p className="col-span-4 text-center py-8 text-muted-foreground">Nenhum evento encontrado</p>
+              )}
+            </div>
+          )}
 
-      {monTab === "processo" && (
-        <div className="space-y-6">
-          {mockTimeline.map((evt, ei) => (
-            <Card key={ei} className="border-border shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-primary">Protocolo {evt.protocolo}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="relative pl-6">
-                  <div className="absolute left-2 top-0 bottom-0 w-px bg-border" />
-                  <div className="space-y-3">
-                    {evt.movimentacoes.map((m, mi) => (
-                      <div key={mi} className="relative flex gap-3">
-                        <div className="absolute -left-4 top-1 w-3 h-3 rounded-full bg-primary border-2 border-white" />
-                        <div>
-                          <p className="text-sm font-medium">{m.acao}</p>
-                          <p className="text-xs text-muted-foreground">{m.data} — {m.usuario}</p>
-                        </div>
+          {monTab === "processo" && (
+            <div className="space-y-6">
+              {mockTimeline.map((evt, ei) => (
+                <Card key={ei} className="border-border shadow-sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm text-primary">Protocolo {evt.protocolo}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="relative pl-6">
+                      <div className="absolute left-2 top-0 bottom-0 w-px bg-border" />
+                      <div className="space-y-3">
+                        {evt.movimentacoes.map((m, mi) => (
+                          <div key={mi} className="relative flex gap-3">
+                            <div className="absolute -left-4 top-1 w-3 h-3 rounded-full bg-primary border-2 border-white" />
+                            <div>
+                              <p className="text-sm font-medium">{m.acao}</p>
+                              <p className="text-xs text-muted-foreground">{m.data} — {m.usuario}</p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -766,11 +1125,34 @@ function MonitoramentoTab() {
 
 function RelatoriosEventoTab() {
   const [relTab, setRelTab] = useState<"eventos" | "cotacao" | "sincronismo">("eventos");
-  const [loading, setLoading] = useState<string | null>(null);
+  const [loadingExport, setLoadingExport] = useState<string | null>(null);
+  const [eventos, setEventos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEventos = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("eventos")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(50);
+
+        if (error) throw error;
+        setEventos(data || []);
+      } catch (err: any) {
+        toast.error("Erro ao carregar eventos: " + (err.message || ""));
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEventos();
+  }, []);
 
   const handleExport = (tipo: string) => {
-    setLoading(tipo);
-    setTimeout(() => { toast.success(`Relatório de ${tipo} exportado para Excel`); setLoading(null); }, 900);
+    setLoadingExport(tipo);
+    setTimeout(() => { toast.success(`Relatório de ${tipo} exportado para Excel`); setLoadingExport(null); }, 900);
   };
 
   const mockCotacao = [
@@ -807,36 +1189,45 @@ function RelatoriosEventoTab() {
             <div><Label className="text-xs">Tipo</Label>
               <Select defaultValue="Todos"><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Todos">Todos</SelectItem>{tiposEvento.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
             </div>
-            <Button variant="outline" className="gap-2 border-border" disabled={loading === "eventos"} onClick={() => handleExport("eventos")}>
-              {loading === "eventos" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exportar Excel
+            <Button variant="outline" className="gap-2 border-border" disabled={loadingExport === "eventos"} onClick={() => handleExport("eventos")}>
+              {loadingExport === "eventos" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exportar Excel
             </Button>
           </div>
-          <div className="border rounded-lg border-border overflow-hidden">
-            <Table>
-              <TableHeader><TableRow className="bg-muted"><TableHead className="text-xs">Protocolo</TableHead><TableHead className="text-xs">Associado</TableHead><TableHead className="text-xs">Placa</TableHead><TableHead className="text-xs">Tipo</TableHead><TableHead className="text-xs">Data</TableHead><TableHead className="text-xs">Status</TableHead><TableHead className="text-xs">Responsável</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {mockConsulta.map(e => (
-                  <TableRow key={e.protocolo}>
-                    <TableCell className="font-mono text-xs">{e.protocolo}</TableCell>
-                    <TableCell className="text-sm">{e.associado}</TableCell>
-                    <TableCell className="font-mono text-sm">{e.placa}</TableCell>
-                    <TableCell className="text-sm">{e.tipo}</TableCell>
-                    <TableCell className="text-sm">{new Date(e.data).toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell><Badge className={`text-xs ${statusColor[e.status] || ""}`}>{e.status}</Badge></TableCell>
-                    <TableCell className="text-sm">{e.responsavel}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-3 text-muted-foreground">Carregando...</span>
+            </div>
+          ) : (
+            <div className="border rounded-lg border-border overflow-hidden">
+              <Table>
+                <TableHeader><TableRow className="bg-muted"><TableHead className="text-xs">Protocolo</TableHead><TableHead className="text-xs">Associado</TableHead><TableHead className="text-xs">Placa</TableHead><TableHead className="text-xs">Tipo</TableHead><TableHead className="text-xs">Data</TableHead><TableHead className="text-xs">Status</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {eventos.map(e => (
+                    <TableRow key={e.id}>
+                      <TableCell className="font-mono text-xs">{e.protocolo}</TableCell>
+                      <TableCell className="text-sm">{e.associado_nome || "—"}</TableCell>
+                      <TableCell className="font-mono text-sm">{e.placa || "—"}</TableCell>
+                      <TableCell className="text-sm">{e.tipo || "—"}</TableCell>
+                      <TableCell className="text-sm">{e.data_evento ? new Date(e.data_evento).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                      <TableCell><Badge className={`text-xs ${statusColor[e.status] || ""}`}>{e.status || "—"}</Badge></TableCell>
+                    </TableRow>
+                  ))}
+                  {eventos.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhum evento encontrado</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </div>
       )}
 
       {relTab === "cotacao" && (
         <div className="space-y-4">
           <div className="flex justify-end">
-            <Button variant="outline" className="gap-2 border-border" disabled={loading === "cotacao"} onClick={() => handleExport("cotação")}>
-              {loading === "cotacao" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exportar Excel
+            <Button variant="outline" className="gap-2 border-border" disabled={loadingExport === "cotacao"} onClick={() => handleExport("cotação")}>
+              {loadingExport === "cotacao" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exportar Excel
             </Button>
           </div>
           <div className="border rounded-lg border-border overflow-hidden">
@@ -864,8 +1255,8 @@ function RelatoriosEventoTab() {
       {relTab === "sincronismo" && (
         <div className="space-y-4">
           <div className="flex justify-end">
-            <Button variant="outline" className="gap-2 border-border" disabled={loading === "sincronismo"} onClick={() => handleExport("sincronismo")}>
-              {loading === "sincronismo" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exportar Excel
+            <Button variant="outline" className="gap-2 border-border" disabled={loadingExport === "sincronismo"} onClick={() => handleExport("sincronismo")}>
+              {loadingExport === "sincronismo" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exportar Excel
             </Button>
           </div>
           <div className="border rounded-lg border-border overflow-hidden">

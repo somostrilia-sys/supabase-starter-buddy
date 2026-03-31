@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,24 +51,30 @@ export default function VincularAssociado() {
   const [resultsA, setResultsA] = useState<MockAssoc[]>([]);
   const [resultsV, setResultsV] = useState<MockVeic[]>([]);
 
-  const buscarAssociado = () => {
+  const buscarAssociado = async () => {
     if (!searchA.trim()) return;
-    const q = searchA.toLowerCase().replace(/\D/g, "") || searchA.toLowerCase();
-    const r = assocMock.filter(a =>
-      a.nome.toLowerCase().includes(searchA.toLowerCase()) ||
-      a.cpf.replace(/\D/g, "").includes(q)
-    );
+    const isNum = /^\d+$/.test(searchA.replace(/\D/g, ""));
+    let query = supabase.from("associados").select("id, nome, cpf, status, telefone, email").limit(20);
+    if (isNum) query = query.ilike("cpf", `%${searchA.replace(/\D/g, "")}%`);
+    else query = query.ilike("nome", `%${searchA}%`);
+    const { data } = await query;
+    const r: MockAssoc[] = (data ?? []).map((a: any) => ({
+      id: a.id, nome: a.nome ?? "", cpf: a.cpf ?? "", situacao: a.status ?? "Ativo",
+      regional: "", telefone: a.telefone ?? "", email: a.email ?? "", cooperativa: "",
+    }));
     setResultsA(r);
     if (r.length === 0) toast.info("Nenhum associado encontrado");
   };
 
-  const buscarVeiculo = () => {
+  const buscarVeiculo = async () => {
     if (!searchV.trim()) return;
-    const q = searchV.toLowerCase();
-    const r = veicMock.filter(v =>
-      v.placa.toLowerCase().replace("-", "").includes(q.replace("-", "")) ||
-      v.chassi.toLowerCase().includes(q)
-    );
+    let query = supabase.from("veiculos").select("id, placa, modelo, marca, ano_modelo, cor, chassi, status").limit(20);
+    query = query.or(`placa.ilike.%${searchV.replace("-","")}%,chassi.ilike.%${searchV}%`);
+    const { data } = await query;
+    const r: MockVeic[] = (data ?? []).map((v: any) => ({
+      id: v.id, placa: v.placa ?? "", modelo: v.modelo ?? "", marca: v.marca ?? "",
+      ano: v.ano_modelo ?? 0, cor: v.cor ?? "", chassi: v.chassi ?? "", situacao: v.status ?? "Disponível",
+    }));
     setResultsV(r);
     if (r.length === 0) toast.info("Nenhum veículo encontrado");
   };

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -254,19 +255,33 @@ export default function ConsultarVeiculo() {
 
   const setF = (k: string, v: string) => setFilters(p => ({ ...p, [k]: v }));
 
-  const buscar = () => {
-    let r = [...mockVeiculos];
-    if (filters.placa) r = r.filter(v => v.placa.toLowerCase().replace("-","").includes(filters.placa.toLowerCase().replace("-","")));
-    if (filters.chassi) r = r.filter(v => v.chassi.toLowerCase().includes(filters.chassi.toLowerCase()));
-    if (filters.idExterno) r = r.filter(v => v.idExterno.toLowerCase().includes(filters.idExterno.toLowerCase()));
-    if (filters.proprietario) r = r.filter(v => v.nome.toLowerCase().includes(filters.proprietario.toLowerCase()));
-    if (filters.idVeiculo) r = r.filter(v => v.id.toLowerCase().includes(filters.idVeiculo.toLowerCase()));
+  const [loading, setLoading] = useState(false);
+
+  const buscar = async () => {
+    setLoading(true);
+    let query = supabase.from("veiculos").select("*, associados(nome, cpf, status, telefone, email)").limit(100);
+    if (filters.placa) query = query.ilike("placa", `%${filters.placa.replace("-","")}%`);
+    if (filters.chassi) query = query.ilike("chassi", `%${filters.chassi}%`);
+    if (filters.proprietario) query = query.ilike("associados.nome", `%${filters.proprietario}%`);
+    const { data } = await query;
+    const mapped: Veiculo[] = (data ?? []).map((v: any) => ({
+      id: v.id, nome: v.associados?.nome ?? "—", placa: v.placa ?? "", chassi: v.chassi ?? "",
+      idExterno: v.codigo_sga ?? "", modelo: v.modelo ?? "", marca: v.marca ?? "",
+      anoFab: v.ano_fabricacao ?? 0, anoMod: v.ano_modelo ?? 0, cor: v.cor ?? "",
+      valorFipe: v.valor_fipe ?? 0, cota: "", combustivel: v.combustivel ?? "", km: 0,
+      regional: "", cooperativa: "", tipoAdesao: "",
+      dataCadastro: v.created_at?.split("T")[0] ?? "", dataContrato: "", diaVenc: 0,
+      sitVeiculo: v.status ?? "Ativo", sitAssociado: v.associados?.status ?? "",
+      condutores: [], lancamentos: [], agregados: [], vistorias: [],
+      documentos: [], observacoes: [], fornecedores: [], contratos: [],
+    }));
+    let r = mapped;
     if (filters.sitVeiculo !== "Todos") r = r.filter(v => v.sitVeiculo === filters.sitVeiculo);
     if (filters.sitAssociado !== "Todos") r = r.filter(v => v.sitAssociado === filters.sitAssociado);
-    if (filters.cooperativa !== "Todos") r = r.filter(v => v.cooperativa === filters.cooperativa);
     setResults(r);
     setSearched(true);
     setPage(1);
+    setLoading(false);
   };
 
   const limpar = () => { setFilters({ placa:"",chassi:"",idExterno:"",proprietario:"",idVeiculo:"",sitVeiculo:"Todos",sitAssociado:"Todos",cooperativa:"Todos" }); setResults([]); setSearched(false); };

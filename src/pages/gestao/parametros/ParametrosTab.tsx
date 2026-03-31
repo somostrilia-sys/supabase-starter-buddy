@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,9 +14,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useBrand } from "@/hooks/useBrand";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function ParametrosTab() {
   const { brand, updateBrand } = useBrand();
+  const [loading, setLoading] = useState(true);
+
   // Gerais
   const [menuGestao, setMenuGestao] = useState(true);
   const [menuFinanceiro, setMenuFinanceiro] = useState(true);
@@ -58,7 +61,145 @@ export default function ParametrosTab() {
 
   const toggleCampo = (campo: string) => setCamposCadastro((prev: any) => ({ ...prev, [campo]: !prev[campo] }));
 
-  const handleSalvar = () => toast.success("Parâmetros salvos com sucesso!");
+  // Load configs from Supabase on mount
+  useEffect(() => {
+    async function loadConfigs() {
+      try {
+        const { data, error } = await supabase
+          .from("system_configs")
+          .select("key, value")
+          .in("key", ["regra_revistoria_dias", "boleto_config", "mensagens_padrao", "area_associado", "exibicao"]);
+
+        if (error) {
+          console.error("Erro ao carregar configurações:", error);
+          toast.error("Erro ao carregar configurações");
+          setLoading(false);
+          return;
+        }
+
+        if (data) {
+          const configMap: Record<string, any> = {};
+          data.forEach((row: any) => {
+            try {
+              configMap[row.key] = typeof row.value === "string" ? JSON.parse(row.value) : row.value;
+            } catch {
+              configMap[row.key] = row.value;
+            }
+          });
+
+          // regra_revistoria_dias
+          if (configMap.regra_revistoria_dias) {
+            const rv = configMap.regra_revistoria_dias;
+            if (rv.prazoAbertura !== undefined) setPrazoAbertura(String(rv.prazoAbertura));
+            if (rv.exigirBO !== undefined) setExigirBO(rv.exigirBO);
+            if (rv.notificarEvento !== undefined) setNotificarEvento(rv.notificarEvento);
+            if (rv.consultaAutomatica !== undefined) setConsultaAutomatica(rv.consultaAutomatica);
+            if (rv.scoreMinimo !== undefined) setScoreMinimo(String(rv.scoreMinimo));
+            if (rv.twoFactor !== undefined) setTwoFactor(rv.twoFactor);
+            if (rv.maxTentativas !== undefined) setMaxTentativas(String(rv.maxTentativas));
+            if (rv.bloqueioMinutos !== undefined) setBloqueioMinutos(String(rv.bloqueioMinutos));
+          }
+
+          // boleto_config
+          if (configMap.boleto_config) {
+            const bc = configMap.boleto_config;
+            if (bc.datasPagamento !== undefined) setDatasPagamento(bc.datasPagamento);
+            if (bc.descontoPontualidade !== undefined) setDescontoPontualidade(String(bc.descontoPontualidade));
+            if (bc.jurosAtraso !== undefined) setJurosAtraso(String(bc.jurosAtraso));
+            if (bc.exibirVencidos !== undefined) setExibirVencidos(bc.exibirVencidos);
+            if (bc.exibirRateioBoleto !== undefined) setExibirRateioBoleto(bc.exibirRateioBoleto);
+            if (bc.alertaVencido !== undefined) setAlertaVencido(bc.alertaVencido);
+            if (bc.prazoAlerta !== undefined) setPrazoAlerta(String(bc.prazoAlerta));
+            if (bc.textoInformativo !== undefined) setTextoInformativo(bc.textoInformativo);
+            if (bc.fonteInformativo !== undefined) setFonteInformativo(String(bc.fonteInformativo));
+            if (bc.exigirObsBoleto !== undefined) setExigirObsBoleto(bc.exigirObsBoleto);
+            if (bc.bancoIntegracao !== undefined) setBancoIntegracao(bc.bancoIntegracao);
+            if (bc.layoutBoleto !== undefined) setLayoutBoleto(bc.layoutBoleto);
+          }
+
+          // mensagens_padrao
+          if (configMap.mensagens_padrao) {
+            const mp = configMap.mensagens_padrao;
+            if (mp.camposCadastro !== undefined) setCamposCadastro(mp.camposCadastro);
+          }
+
+          // area_associado
+          if (configMap.area_associado) {
+            const aa = configMap.area_associado;
+            if (aa.portalBoletos !== undefined) setPortalBoletos(aa.portalBoletos);
+            if (aa.portalVistorias !== undefined) setPortalVistorias(aa.portalVistorias);
+            if (aa.portalDocumentos !== undefined) setPortalDocumentos(aa.portalDocumentos);
+            if (aa.portalSinistros !== undefined) setPortalSinistros(aa.portalSinistros);
+          }
+
+          // exibicao
+          if (configMap.exibicao) {
+            const ex = configMap.exibicao;
+            if (ex.menuGestao !== undefined) setMenuGestao(ex.menuGestao);
+            if (ex.menuFinanceiro !== undefined) setMenuFinanceiro(ex.menuFinanceiro);
+            if (ex.menuVendas !== undefined) setMenuVendas(ex.menuVendas);
+            if (ex.exibirDetalheRateio !== undefined) setExibirDetalheRateio(ex.exibirDetalheRateio);
+            if (ex.tipoDistribuicao !== undefined) setTipoDistribuicao(ex.tipoDistribuicao);
+          }
+        }
+      } catch (err) {
+        console.error("Erro inesperado ao carregar configurações:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadConfigs();
+  }, []);
+
+  const handleSalvar = async () => {
+    const now = new Date().toISOString();
+
+    const configs = [
+      {
+        key: "regra_revistoria_dias",
+        value: JSON.stringify({ prazoAbertura, exigirBO, notificarEvento, consultaAutomatica, scoreMinimo, twoFactor, maxTentativas, bloqueioMinutos }),
+        updated_at: now,
+      },
+      {
+        key: "boleto_config",
+        value: JSON.stringify({ datasPagamento, descontoPontualidade, jurosAtraso, exibirVencidos, exibirRateioBoleto, alertaVencido, prazoAlerta, textoInformativo, fonteInformativo, exigirObsBoleto, bancoIntegracao, layoutBoleto }),
+        updated_at: now,
+      },
+      {
+        key: "mensagens_padrao",
+        value: JSON.stringify({ camposCadastro }),
+        updated_at: now,
+      },
+      {
+        key: "area_associado",
+        value: JSON.stringify({ portalBoletos, portalVistorias, portalDocumentos, portalSinistros }),
+        updated_at: now,
+      },
+      {
+        key: "exibicao",
+        value: JSON.stringify({ menuGestao, menuFinanceiro, menuVendas, exibirDetalheRateio, tipoDistribuicao }),
+        updated_at: now,
+      },
+    ];
+
+    const { error } = await supabase.from("system_configs").upsert(configs, { onConflict: "key" });
+
+    if (error) {
+      console.error("Erro ao salvar configurações:", error);
+      toast.error("Erro ao salvar configurações");
+    } else {
+      toast.success("Parâmetros salvos com sucesso!");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <p className="text-sm text-muted-foreground">Carregando configurações...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">

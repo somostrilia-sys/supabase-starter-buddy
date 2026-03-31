@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Mail, Receipt, Search, Send } from "lucide-react";
-import { mockCobrancas } from "./mockFinanceiro";
+import { ArrowLeft, Mail, Receipt, Search, Send, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const statusCobranca: Record<string, string> = {
@@ -17,6 +17,7 @@ const statusCobranca: Record<string, string> = {
   atrasado: "bg-destructive/8 text-destructive dark:bg-red-900 dark:text-red-300",
   negativado: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
   renegociado: "bg-primary/8 text-primary dark:bg-blue-900 dark:text-blue-300",
+  aberto: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
 };
 
 const enviosMock = [
@@ -29,12 +30,29 @@ const enviosMock = [
 export default function CobrancasRecibos({ onBack }: { onBack: () => void }) {
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("todos");
-  const [showRecibo, setShowRecibo] = useState<typeof mockCobrancas[0] | null>(null);
+  const [cobrancas, setCobrancas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showRecibo, setShowRecibo] = useState<any | null>(null);
   const [showEnviar, setShowEnviar] = useState(false);
 
-  const filtered = mockCobrancas.filter(c => {
+  useEffect(() => {
+    async function fetchCobrancas() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("boletos")
+        .select("*")
+        .eq("status", "aberto")
+        .order("vencimento")
+        .limit(50);
+      if (!error && data) setCobrancas(data);
+      setLoading(false);
+    }
+    fetchCobrancas();
+  }, []);
+
+  const filtered = cobrancas.filter(c => {
     if (filtroStatus !== "todos" && c.status !== filtroStatus) return false;
-    if (busca && !c.associado.toLowerCase().includes(busca.toLowerCase())) return false;
+    if (busca && !(c.associado_nome || "").toLowerCase().includes(busca.toLowerCase())) return false;
     return true;
   });
 
@@ -66,33 +84,40 @@ export default function CobrancasRecibos({ onBack }: { onBack: () => void }) {
             <div className="flex items-end"><Button className="gap-1" onClick={() => setShowEnviar(true)}><Mail className="h-4 w-4" />Enviar Boletos</Button></div>
           </div>
 
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow><TableHead>ID</TableHead><TableHead>Associado</TableHead><TableHead>Tipo</TableHead><TableHead className="text-right">Valor</TableHead><TableHead>Vencimento</TableHead><TableHead>Status</TableHead><TableHead>Ações</TableHead></TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map(c => (
-                    <TableRow key={c.id}>
-                      <TableCell className="font-mono text-xs">{c.id}</TableCell>
-                      <TableCell className="font-medium">{c.associado}</TableCell>
-                      <TableCell className="text-sm">{c.tipo}</TableCell>
-                      <TableCell className="text-right">R$ {c.valor.toFixed(2)}</TableCell>
-                      <TableCell>{new Date(c.vencimento).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell><Badge className={statusCobranca[c.status]}>{c.status.replace("_", " ")}</Badge></TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setShowRecibo(c)}><Receipt className="h-3 w-3" />Recibo</Button>
-                          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => toast.success(`Boleto enviado para ${c.associado}`)}><Send className="h-3 w-3" />Enviar</Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">Carregando cobranças...</span>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow><TableHead>ID</TableHead><TableHead>Associado</TableHead><TableHead>Tipo</TableHead><TableHead className="text-right">Valor</TableHead><TableHead>Vencimento</TableHead><TableHead>Status</TableHead><TableHead>Ações</TableHead></TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map(c => (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-mono text-xs">{c.nosso_numero || c.id}</TableCell>
+                        <TableCell className="font-medium">{c.associado_nome}</TableCell>
+                        <TableCell className="text-sm">{c.tipo || "Mensalidade"}</TableCell>
+                        <TableCell className="text-right">R$ {Number(c.valor || 0).toFixed(2)}</TableCell>
+                        <TableCell>{c.vencimento ? new Date(c.vencimento).toLocaleDateString("pt-BR") : ""}</TableCell>
+                        <TableCell><Badge className={statusCobranca[c.status] || "bg-muted text-muted-foreground"}>{(c.status || "").replace("_", " ")}</Badge></TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setShowRecibo(c)}><Receipt className="h-3 w-3" />Recibo</Button>
+                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => toast.success(`Boleto enviado para ${c.associado_nome}`)}><Send className="h-3 w-3" />Enviar</Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="envios">
@@ -129,10 +154,10 @@ export default function CobrancasRecibos({ onBack }: { onBack: () => void }) {
                 <p className="font-bold text-lg">RECIBO DE PAGAMENTO</p>
                 <p className="text-muted-foreground text-xs">Associação de Proteção Veicular</p>
               </div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Associado:</span><span className="font-medium">{showRecibo.associado}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Referência:</span><span>{showRecibo.tipo}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Valor:</span><span className="font-bold text-success">R$ {showRecibo.valor.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Vencimento:</span><span>{new Date(showRecibo.vencimento).toLocaleDateString("pt-BR")}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Associado:</span><span className="font-medium">{showRecibo.associado_nome}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Referência:</span><span>{showRecibo.tipo || "Mensalidade"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Valor:</span><span className="font-bold text-success">R$ {Number(showRecibo.valor || 0).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Vencimento:</span><span>{showRecibo.vencimento ? new Date(showRecibo.vencimento).toLocaleDateString("pt-BR") : ""}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Data emissão:</span><span>{new Date().toLocaleDateString("pt-BR")}</span></div>
               <div className="border-t-2 border-[#747474] pt-3 text-center text-xs text-muted-foreground">Documento gerado eletronicamente</div>
             </div>

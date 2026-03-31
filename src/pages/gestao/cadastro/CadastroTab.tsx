@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import {
   ArrowRightLeft, FileText, Shield,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // ── Types ──
 type Group = "produtos" | "financeiros" | "veiculo" | "evento" | "cooperativa" | "vistoria";
@@ -249,32 +250,43 @@ function toRows(columns: string[], data: string[][]): CrudRow[] {
 function GrupoProdutos({ subView, setSubView }: { subView: number; setSubView: (v: number) => void }) {
   const subs = ["Grupo de Cadastros", "Classificação", "Substituição Fornecedor", "Relatórios"];
 
-  // Grupo de Produtos - editable with proper modal (NO "Valor Mensal" - plano only groups products)
-  const grupoCols = ["Grupo", "Produtos", "Status"];
-  const [grupos, setGrupos] = useState<CrudRow[]>([
-    { Grupo: "Plano Básico", Produtos: "Rateio + Assistência 24h", Status: "Ativo" },
-    { Grupo: "Plano Completo", Produtos: "Rateio + Assistência + Rastreador + Carro Reserva", Status: "Ativo" },
-    { Grupo: "Plano Premium", Produtos: "Rateio + Assistência + Rastreador + Carro Reserva + Vidros", Status: "Ativo" },
-    { Grupo: "Plano Moto", Produtos: "Rateio + Assistência 24h Moto", Status: "Ativo" },
-    { Grupo: "Plano Pesados", Produtos: "Rateio + Assistência Pesados + Rastreador", Status: "Inativo" },
-  ]);
+  // Grupo de Produtos - Supabase-backed CRUD
+  const [grupos, setGrupos] = useState<any[]>([]);
   const [grupoModal, setGrupoModal] = useState(false);
-  const [grupoEditIdx, setGrupoEditIdx] = useState<number | null>(null);
-  const [grupoForm, setGrupoForm] = useState<{ Grupo: string; Produtos: string; Status: string }>({ Grupo: "", Produtos: "", Status: "Ativo" });
-  const [grupoDeleteIdx, setGrupoDeleteIdx] = useState<number | null>(null);
+  const [grupoEditId, setGrupoEditId] = useState<string | null>(null);
+  const [grupoForm, setGrupoForm] = useState<{ nome: string; descricao: string; ativo: boolean }>({ nome: "", descricao: "", ativo: true });
+  const [grupoDeleteId, setGrupoDeleteId] = useState<string | null>(null);
 
-  const openGrupoNew = () => { setGrupoEditIdx(null); setGrupoForm({ Grupo: "", Produtos: "", Status: "Ativo" }); setGrupoModal(true); };
-  const openGrupoEdit = (i: number) => { setGrupoEditIdx(i); setGrupoForm({ Grupo: grupos[i].Grupo, Produtos: grupos[i].Produtos, Status: grupos[i].Status }); setGrupoModal(true); };
-  const saveGrupo = () => {
-    if (!grupoForm.Grupo) { toast.error("Informe o nome do grupo"); return; }
-    if (grupoEditIdx !== null) {
-      setGrupos(p => p.map((r, i) => i === grupoEditIdx ? { ...grupoForm } : r));
+  const loadGrupos = async () => {
+    const { data, error } = await supabase.from("grupos_produtos").select("*");
+    if (!error && data) setGrupos(data);
+  };
+
+  useEffect(() => { loadGrupos(); }, []);
+
+  const openGrupoNew = () => { setGrupoEditId(null); setGrupoForm({ nome: "", descricao: "", ativo: true }); setGrupoModal(true); };
+  const openGrupoEdit = (row: any) => { setGrupoEditId(row.id); setGrupoForm({ nome: row.nome, descricao: row.descricao || "", ativo: row.ativo }); setGrupoModal(true); };
+  const saveGrupo = async () => {
+    if (!grupoForm.nome) { toast.error("Informe o nome do grupo"); return; }
+    if (grupoEditId) {
+      const { error } = await supabase.from("grupos_produtos").update({ nome: grupoForm.nome, descricao: grupoForm.descricao, ativo: grupoForm.ativo }).eq("id", grupoEditId);
+      if (error) { toast.error("Erro ao atualizar"); return; }
       toast.success("Grupo atualizado!");
     } else {
-      setGrupos(p => [...p, { ...grupoForm }]);
+      const { error } = await supabase.from("grupos_produtos").insert({ nome: grupoForm.nome, descricao: grupoForm.descricao, ativo: grupoForm.ativo });
+      if (error) { toast.error("Erro ao criar"); return; }
       toast.success("Grupo criado!");
     }
     setGrupoModal(false);
+    loadGrupos();
+  };
+  const deleteGrupo = async () => {
+    if (!grupoDeleteId) return;
+    const { error } = await supabase.from("grupos_produtos").delete().eq("id", grupoDeleteId);
+    if (error) { toast.error("Erro ao excluir"); return; }
+    toast.success("Grupo removido!");
+    setGrupoDeleteId(null);
+    loadGrupos();
   };
 
   return (
@@ -292,28 +304,31 @@ function GrupoProdutos({ subView, setSubView }: { subView: number; setSubView: (
           </div>
           <div className="border rounded-lg border-border overflow-x-auto">
             <Table className="min-w-[600px]">
-              <TableHeader><TableRow className="bg-muted/50"><TableHead className="text-xs">Grupo</TableHead><TableHead className="text-xs">Produtos Vinculados</TableHead><TableHead className="text-xs">Status</TableHead><TableHead className="text-xs w-[80px]">Ações</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow className="bg-muted/50"><TableHead className="text-xs">Grupo</TableHead><TableHead className="text-xs">Descrição</TableHead><TableHead className="text-xs">Status</TableHead><TableHead className="text-xs w-[80px]">Ações</TableHead></TableRow></TableHeader>
               <TableBody>
-                {grupos.map((row, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="text-sm font-medium">{row.Grupo}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{row.Produtos}</TableCell>
-                    <TableCell><Badge className={row.Status === "Ativo" ? "bg-emerald-500/10 text-emerald-600 text-xs" : "bg-muted text-muted-foreground text-xs"}>{row.Status}</Badge></TableCell>
-                    <TableCell><div className="flex gap-1"><Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openGrupoEdit(i)}><Edit className="h-3 w-3" /></Button><Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setGrupoDeleteIdx(i)}><Trash2 className="h-3 w-3 text-destructive" /></Button></div></TableCell>
+                {grupos.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="text-sm font-medium">{row.nome}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{row.descricao}</TableCell>
+                    <TableCell><Badge className={row.ativo ? "bg-emerald-500/10 text-emerald-600 text-xs" : "bg-muted text-muted-foreground text-xs"}>{row.ativo ? "Ativo" : "Inativo"}</Badge></TableCell>
+                    <TableCell><div className="flex gap-1"><Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openGrupoEdit(row)}><Edit className="h-3 w-3" /></Button><Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setGrupoDeleteId(row.id)}><Trash2 className="h-3 w-3 text-destructive" /></Button></div></TableCell>
                   </TableRow>
                 ))}
+                {grupos.length === 0 && (
+                  <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-8">Nenhum registro cadastrado</TableCell></TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
 
           <Dialog open={grupoModal} onOpenChange={setGrupoModal}>
             <DialogContent>
-              <DialogHeader><DialogTitle>{grupoEditIdx !== null ? "Editar" : "Novo"} Grupo de Produtos</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{grupoEditId ? "Editar" : "Novo"} Grupo de Produtos</DialogTitle></DialogHeader>
               <div className="space-y-3">
-                <div><Label className="text-xs">Nome do Grupo</Label><Input value={grupoForm.Grupo} onChange={e => setGrupoForm(p => ({ ...p, Grupo: e.target.value }))} placeholder="Ex: Plano Especial" /></div>
-                <div><Label className="text-xs">Produtos Vinculados</Label><Textarea value={grupoForm.Produtos} onChange={e => setGrupoForm(p => ({ ...p, Produtos: e.target.value }))} placeholder="Ex: Rateio + Assistência 24h + Rastreador" /></div>
+                <div><Label className="text-xs">Nome do Grupo</Label><Input value={grupoForm.nome} onChange={e => setGrupoForm(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Plano Especial" /></div>
+                <div><Label className="text-xs">Descrição</Label><Textarea value={grupoForm.descricao} onChange={e => setGrupoForm(p => ({ ...p, descricao: e.target.value }))} placeholder="Ex: Rateio + Assistência 24h + Rastreador" /></div>
                 <div><Label className="text-xs">Status</Label>
-                  <Select value={grupoForm.Status} onValueChange={v => setGrupoForm(p => ({ ...p, Status: v }))}>
+                  <Select value={grupoForm.ativo ? "Ativo" : "Inativo"} onValueChange={v => setGrupoForm(p => ({ ...p, ativo: v === "Ativo" }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent><SelectItem value="Ativo">Ativo</SelectItem><SelectItem value="Inativo">Inativo</SelectItem></SelectContent>
                   </Select>
@@ -326,13 +341,13 @@ function GrupoProdutos({ subView, setSubView }: { subView: number; setSubView: (
             </DialogContent>
           </Dialog>
 
-          <Dialog open={grupoDeleteIdx !== null} onOpenChange={o => !o && setGrupoDeleteIdx(null)}>
+          <Dialog open={grupoDeleteId !== null} onOpenChange={o => !o && setGrupoDeleteId(null)}>
             <DialogContent>
               <DialogHeader><DialogTitle>Confirmar Exclusão</DialogTitle></DialogHeader>
               <p className="text-sm text-muted-foreground">Tem certeza que deseja excluir este grupo?</p>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setGrupoDeleteIdx(null)}>Cancelar</Button>
-                <Button variant="destructive" onClick={() => { setGrupos(p => p.filter((_, i) => i !== grupoDeleteIdx)); toast.success("Grupo removido!"); setGrupoDeleteIdx(null); }}>Excluir</Button>
+                <Button variant="outline" onClick={() => setGrupoDeleteId(null)}>Cancelar</Button>
+                <Button variant="destructive" onClick={deleteGrupo}>Excluir</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import RelatoriosGeraisTab from "./RelatoriosGeraisTab";
@@ -33,26 +33,9 @@ const situacoesAssociado = [
   "PENDENTE",
 ];
 
-const regionaisLista = [
-  "1 - OBJETIVO PATRIMONIAL MUTUALISTA", "2 - MATO GROSSO DO SUL", "3 - REGIONAL NORTE",
-  "4 - REGIONAL ALAGOAS", "5 - REGIONAL NORTE, MINAS E SUL", "6 - REGIONAL SP INTERIOR",
-  "7 - REGIONAL CEARÁ", "8 - REGIONAL NATAL", "9 - REGIONAL MINAS INTERIOR",
-  "10 - REGIONAL BAHIA", "11 - REGIONAL PARANÁ", "12 - REGIONAL SUL (INTERIOR)",
-];
-
-const cooperativasLista = [
-  "COOPERATIVA ALPHAVILLE", "COOPERATIVA PORTO VELHO", "FILIAL FEIRA DE SANTANA", "FILIAL GUARULHOS",
-  "FILIAL ALAGOAS", "FILIAL BARUERI", "FILIAL CAJAMAR", "FILIAL CAMAÇARI",
-  "FILIAL CAMPINAS", "FILIAL CAMPO LIMPO PAULISTA", "FILIAL CARAPICUÍBA", "FILIAL CAXIAS DO SUL",
-  "FILIAL COTIA", "FILIAL CURITIBA", "FILIAL DUQUE DE CAXIAS", "FILIAL GUARUJÁ",
-  "FILIAL ITAPETININGA", "FILIAL ITAPEVI", "FILIAL ITUPEVA", "FILIAL JACAREÍ",
-  "FILIAL JUAZEIRO", "FILIAL JUNDIAÍ", "FILIAL MATO GROSSO DO SUL", "FILIAL OSASCO",
-  "FILIAL OURINHOS", "FILIAL PALHOÇA SC", "FILIAL PALMAS", "FILIAL PARÁ DE MINAS",
-  "FILIAL PASSO FUNDO", "FILIAL PIEDADE", "FILIAL PONTA GROSSA", "FILIAL PRAIA GRANDE",
-  "FILIAL RIBEIRÃO PRETO", "FILIAL SANTA CRUZ", "FILIAL SANTANA DE PARNAÍBA", "FILIAL SANTO ANDRÉ",
-  "FILIAL SÃO BERNARDO", "FILIAL SÃO VICENTE", "FILIAL SOROCABA", "FILIAL VÁRZEA PAULISTA",
-  "FILIAL VOTORANTIM", "OBJETIVO AUTO BENEFÍCIOS", "OBJETIVO AUTO E TRUCK TIJUCAS - SC", "OBJETIVO CAPÃO REDONDO",
-];
+// regionaisLista and cooperativasLista are loaded from Supabase at runtime
+const regionaisListaFallback: string[] = [];
+const cooperativasListaFallback: string[] = [];
 
 const tiposVeiculo = [
   "AUTOMÓVEL LEVE", "UTILITÁRIO", "MOTOCICLETA", "CAMINHÃO", "VAN/FURGÃO", "ÔNIBUS/MICRO",
@@ -167,33 +150,7 @@ function Pagination({ page, totalPages, onPageChange }: { page: number; totalPag
   );
 }
 
-// ── Mock data ──
-const cooperativasSimples = ["Central SP", "Central RJ", "Norte MG", "Oeste PR", "Sul RS"];
-const regionaisSimples = ["Grande SP", "Campinas", "Rio de Janeiro", "Triângulo Mineiro", "Curitiba", "Porto Alegre"];
-
-const mockAssociados = [
-  { id: 1, nome: "Carlos Eduardo Silva", cpf: "123.456.789-00", telefone: "(11) 98765-4321", email: "carlos@email.com", placa: "BRA2E19", modelo: "Onix Plus", ano: 2023, tipo: "Automóvel leve", categoria: "Passeio", cota: "R$ 50-70 mil", cooperativa: "Central SP", regional: "Grande SP", situacao: "ativo", dataCadastro: "2024-01-15", dataContrato: "2024-02-01", nascimento: "1985-03-22", endereco: "Rua das Flores, 123 - São Paulo/SP" },
-  { id: 2, nome: "Maria Fernanda Oliveira", cpf: "987.654.321-00", telefone: "(21) 97654-3210", email: "maria@email.com", placa: "RIO4F56", modelo: "HB20", ano: 2022, tipo: "Automóvel leve", categoria: "Passeio", cota: "R$ 40-50 mil", cooperativa: "Central RJ", regional: "Rio de Janeiro", situacao: "ativo", dataCadastro: "2024-02-10", dataContrato: "2024-03-01", nascimento: "1990-07-14", endereco: "Av. Brasil, 456 - Rio de Janeiro/RJ" },
-  { id: 3, nome: "José Roberto Santos", cpf: "456.789.123-00", telefone: "(31) 96543-2109", email: "jose@email.com", placa: "MGA7B32", modelo: "Strada", ano: 2024, tipo: "Utilitário", categoria: "Trabalho", cota: "R$ 70-100 mil", cooperativa: "Norte MG", regional: "Triângulo Mineiro", situacao: "ativo", dataCadastro: "2024-03-05", dataContrato: "2024-04-01", nascimento: "1978-11-30", endereco: "Rua Minas, 789 - Uberlândia/MG" },
-  { id: 4, nome: "Ana Paula Costa", cpf: "321.654.987-00", telefone: "(21) 95432-1098", email: "ana@email.com", placa: "RJO3K21", modelo: "Kicks", ano: 2023, tipo: "Automóvel leve", categoria: "Passeio", cota: "R$ 70-100 mil", cooperativa: "Central RJ", regional: "Rio de Janeiro", situacao: "inadimplente", dataCadastro: "2023-11-20", dataContrato: "2024-01-01", nascimento: "1992-05-08", endereco: "Rua Copacabana, 321 - Rio de Janeiro/RJ" },
-  { id: 5, nome: "Pedro Henrique Lima", cpf: "654.321.987-00", telefone: "(31) 94321-0987", email: "pedro@email.com", placa: "MGB5C44", modelo: "Hilux", ano: 2021, tipo: "Utilitário", categoria: "Trabalho", cota: "R$ 100-150 mil", cooperativa: "Norte MG", regional: "Triângulo Mineiro", situacao: "inativo", dataCadastro: "2023-08-15", dataContrato: "2023-09-01", nascimento: "1983-09-17", endereco: "Av. Amazonas, 654 - Belo Horizonte/MG" },
-  { id: 6, nome: "Fernanda Rodrigues", cpf: "789.123.456-00", telefone: "(41) 93210-9876", email: "fernanda@email.com", placa: "CWB1D45", modelo: "T-Cross", ano: 2024, tipo: "Automóvel leve", categoria: "Passeio", cota: "R$ 70-100 mil", cooperativa: "Oeste PR", regional: "Curitiba", situacao: "ativo", dataCadastro: "2024-04-10", dataContrato: "2024-05-01", nascimento: "1995-01-25", endereco: "Rua XV de Novembro, 987 - Curitiba/PR" },
-  { id: 7, nome: "Ricardo Almeida", cpf: "147.258.369-00", telefone: "(19) 92109-8765", email: "ricardo@email.com", placa: "CPR8H67", modelo: "Corolla Cross", ano: 2024, tipo: "Automóvel leve", categoria: "Passeio", cota: "R$ 100-150 mil", cooperativa: "Central SP", regional: "Campinas", situacao: "pendente", dataCadastro: "2024-05-01", dataContrato: "2024-06-01", nascimento: "1988-12-03", endereco: "Rua Barão, 147 - Campinas/SP" },
-  { id: 8, nome: "Juliana Martins", cpf: "258.369.147-00", telefone: "(21) 91098-7654", email: "juliana@email.com", placa: "RJM2L89", modelo: "Argo", ano: 2022, tipo: "Automóvel leve", categoria: "Passeio", cota: "R$ 30-40 mil", cooperativa: "Central RJ", regional: "Rio de Janeiro", situacao: "ativo", dataCadastro: "2024-01-25", dataContrato: "2024-02-15", nascimento: "1997-06-19", endereco: "Rua Tijuca, 258 - Rio de Janeiro/RJ" },
-];
-
-const mockBoletos = [
-  { id: "BOL-001", associado: "Carlos Eduardo Silva", cpf: "123.456.789-00", valor: 189.90, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: "2025-07-08", situacao: "pago_dia", unidade: "Matriz São Paulo", consultor: "Ana Oliveira", tipoCobranca: "Mensalidade", banco: "Banco do Brasil", formaPagamento: "Boleto", contrato: "CTR-2025-001" },
-  { id: "BOL-002", associado: "Maria Fernanda Oliveira", cpf: "987.654.321-00", valor: 245.50, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: null, situacao: "pendente", unidade: "Filial RJ", consultor: "Pedro Santos", tipoCobranca: "Mensalidade", banco: "Itaú", formaPagamento: "PIX", contrato: "CTR-2025-002" },
-  { id: "BOL-003", associado: "José Roberto Santos", cpf: "456.789.123-00", valor: 312.00, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: "2025-07-12", situacao: "pago_atraso", unidade: "Filial MG", consultor: "Lucas Ferreira", tipoCobranca: "Taxa administrativa", banco: "Bradesco", formaPagamento: "Boleto", contrato: "CTR-2025-003" },
-  { id: "BOL-004", associado: "Ana Paula Costa", cpf: "321.654.987-00", valor: 178.40, gerado: "2025-05-25", vencimento: "2025-06-10", pagamento: null, situacao: "vencido", unidade: "Filial RJ", consultor: "Pedro Santos", tipoCobranca: "Mensalidade", banco: "Caixa", formaPagamento: "Boleto", contrato: "CTR-2025-004" },
-  { id: "BOL-005", associado: "Fernanda Rodrigues", cpf: "789.123.456-00", valor: 198.30, gerado: "2025-06-25", vencimento: "2025-07-10", pagamento: "2025-07-09", situacao: "pago_dia", unidade: "Filial PR", consultor: "Ana Oliveira", tipoCobranca: "Mensalidade", banco: "Banco do Brasil", formaPagamento: "Cartão", contrato: "CTR-2025-005" },
-  { id: "BOL-006", associado: "Ricardo Almeida", cpf: "147.258.369-00", valor: 450.00, gerado: "2025-06-20", vencimento: "2025-07-05", pagamento: null, situacao: "vencido", unidade: "Matriz São Paulo", consultor: "Lucas Ferreira", tipoCobranca: "Multa", banco: "Itaú", formaPagamento: "Boleto", contrato: "CTR-2025-006" },
-  { id: "BOL-007", associado: "Juliana Martins", cpf: "258.369.147-00", valor: 135.00, gerado: "2025-07-01", vencimento: "2025-07-15", pagamento: null, situacao: "pendente", unidade: "Filial RJ", consultor: "Pedro Santos", tipoCobranca: "Mensalidade", banco: "Santander", formaPagamento: "PIX", contrato: "CTR-2025-007" },
-  { id: "BOL-008", associado: "Pedro Henrique Lima", cpf: "654.321.987-00", valor: 520.00, gerado: "2025-06-15", vencimento: "2025-07-01", pagamento: "2025-06-30", situacao: "pago_dia", unidade: "Filial MG", consultor: "Ana Oliveira", tipoCobranca: "Taxa administrativa", banco: "Banco do Brasil", formaPagamento: "Boleto", contrato: "CTR-2025-008" },
-  { id: "BOL-009", associado: "Carlos Eduardo Silva", cpf: "123.456.789-00", valor: 89.90, gerado: "2025-07-01", vencimento: "2025-07-20", pagamento: null, situacao: "cancelado", unidade: "Matriz São Paulo", consultor: "Ana Oliveira", tipoCobranca: "Mensalidade", banco: "Bradesco", formaPagamento: "Boleto", contrato: "CTR-2025-001" },
-  { id: "BOL-010", associado: "Marcos Vinicius Souza", cpf: "963.852.741-00", valor: 275.60, gerado: "2025-06-28", vencimento: "2025-07-12", pagamento: "2025-07-11", situacao: "pago_dia", unidade: "Filial PR", consultor: "Lucas Ferreira", tipoCobranca: "Mensalidade", banco: "Caixa", formaPagamento: "Cartão", contrato: "CTR-2025-009" },
-];
+// ── Data loaded from Supabase (see hooks inside component) ──
 
 const situacaoColor: Record<string, string> = {
   ativo: "bg-success/10 text-success dark:bg-green-900 dark:text-green-300",
@@ -240,7 +197,7 @@ export default function RelatoriosTab() {
   const [busca, setBusca] = useState("");
   const [buscaVeic, setBuscaVeic] = useState("");
   const [buscaBol, setBuscaBol] = useState("");
-  const [detalhe, setDetalhe] = useState<typeof mockAssociados[0] | null>(null);
+  const [detalhe, setDetalhe] = useState<any | null>(null);
   const [selectedCols, setSelectedCols] = useState<string[]>(["nome", "cpf", "telefone", "placa", "cooperativa", "situacao"]);
   const [outroAtivo, setOutroAtivo] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(true);
@@ -248,13 +205,68 @@ export default function RelatoriosTab() {
   const [pageVeic, setPageVeic] = useState(1);
   const [pageBol, setPageBol] = useState(1);
 
+  // Fetch regionais from Supabase
+  const { data: regionaisData } = useQuery({
+    queryKey: ["regionais-lista"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("regionais").select("nome");
+      if (error) throw error;
+      return (data || []).map((r: any) => r.nome as string);
+    },
+  });
+  const regionaisLista = regionaisData?.length ? regionaisData : regionaisListaFallback;
+
+  // Fetch cooperativas from Supabase
+  const { data: cooperativasData } = useQuery({
+    queryKey: ["cooperativas-lista"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("cooperativas").select("nome");
+      if (error) throw error;
+      return (data || []).map((c: any) => c.nome as string);
+    },
+  });
+  const cooperativasLista = cooperativasData?.length ? cooperativasData : cooperativasListaFallback;
+
+  // Fetch associados from Supabase
+  const { data: associadosData } = useQuery({
+    queryKey: ["associados-relatorio"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("associados").select("*").limit(100);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  const realAssociados: any[] = associadosData || [];
+
+  // Fetch boletos from Supabase
+  const { data: boletosData } = useQuery({
+    queryKey: ["boletos-relatorio"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("boletos").select("*").limit(100);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  const realBoletos: any[] = boletosData || [];
+
+  // Derived simple lists for "Demais" tab filters
+  const cooperativasSimples = cooperativasLista.slice(0, 10);
+  const regionaisSimples = regionaisLista.slice(0, 10);
+
   const [selSitVeiculo, setSelSitVeiculo] = useState<Set<string>>(new Set(situacoesVeiculo));
-  const [selRegional, setSelRegional] = useState<Set<string>>(new Set(regionaisLista));
+  const [selRegional, setSelRegional] = useState<Set<string>>(new Set());
   const [selCooperativa, setSelCooperativa] = useState<Set<string>>(new Set());
   const [selSitAssociado, setSelSitAssociado] = useState<Set<string>>(new Set(situacoesAssociado));
   const [selTipoVeiculo, setSelTipoVeiculo] = useState<Set<string>>(new Set(tiposVeiculo));
   const [selCota, setSelCota] = useState<Set<string>>(new Set(cotasVeiculo));
   const [selCategoria, setSelCategoria] = useState<Set<string>>(new Set(categoriasVeiculo));
+
+  // Auto-select all regionais when they load from Supabase
+  useEffect(() => {
+    if (regionaisLista.length > 0) {
+      setSelRegional(new Set(regionaisLista));
+    }
+  }, [regionaisLista]);
 
   // Boleto advanced filters
   const [bolFiltroData, setBolFiltroData] = useState("vencimento");
@@ -275,24 +287,23 @@ export default function RelatoriosTab() {
     setFn(prev => { const next = new Set(prev); if (next.has(item)) next.delete(item); else next.add(item); return next; });
   };
 
-  const filteredAssoc = mockAssociados.filter(a => {
-    if (busca && !a.nome.toLowerCase().includes(busca.toLowerCase()) && !a.cpf.includes(busca) && !a.placa.includes(busca.toUpperCase())) return false;
+  const filteredAssoc = realAssociados.filter((a: any) => {
+    const nome = (a.nome || "").toLowerCase();
+    const cpf = a.cpf || "";
+    const placa = a.placa || "";
+    if (busca && !nome.includes(busca.toLowerCase()) && !cpf.includes(busca) && !placa.includes(busca.toUpperCase())) return false;
     return true;
   });
 
-  const filteredBoletos = mockBoletos.filter(b => {
-    if (buscaBol && !b.associado.toLowerCase().includes(buscaBol.toLowerCase()) && !b.id.toLowerCase().includes(buscaBol.toLowerCase()) && !b.cpf.includes(buscaBol)) return false;
-    if (bolStatus !== "todos" && b.situacao !== bolStatus) return false;
-    if (bolUnidade !== "todas" && b.unidade !== bolUnidade) return false;
-    if (bolConsultor !== "todos" && b.consultor !== bolConsultor) return false;
-    if (bolTipoCobranca !== "todos" && b.tipoCobranca !== bolTipoCobranca) return false;
-    if (bolBanco !== "todos" && b.banco !== bolBanco) return false;
-    if (bolFormaPgto !== "todos" && b.formaPagamento !== bolFormaPgto) return false;
-    if (bolNumero && !b.id.toLowerCase().includes(bolNumero.toLowerCase())) return false;
-    if (bolContrato && !b.contrato.toLowerCase().includes(bolContrato.toLowerCase())) return false;
-    if (bolValorMin && b.valor < parseFloat(bolValorMin)) return false;
-    if (bolValorMax && b.valor > parseFloat(bolValorMax)) return false;
-    const dateField = bolFiltroData === "emissao" ? b.gerado : bolFiltroData === "pagamento" ? b.pagamento : b.vencimento;
+  const filteredBoletos = realBoletos.filter((b: any) => {
+    const bNome = (b.associado_nome || "").toLowerCase();
+    const bId = (b.nosso_numero || b.id || "").toString().toLowerCase();
+    const bCpf = b.cpf || "";
+    if (buscaBol && !bNome.includes(buscaBol.toLowerCase()) && !bId.includes(buscaBol.toLowerCase()) && !bCpf.includes(buscaBol)) return false;
+    if (bolStatus !== "todos" && b.status !== bolStatus) return false;
+    if (bolValorMin && (b.valor || 0) < parseFloat(bolValorMin)) return false;
+    if (bolValorMax && (b.valor || 0) > parseFloat(bolValorMax)) return false;
+    const dateField = bolFiltroData === "pagamento" ? b.data_pagamento : b.vencimento;
     if (bolDataDe && dateField && dateField < bolDataDe) return false;
     if (bolDataAte && dateField && dateField > bolDataAte) return false;
     return true;
@@ -315,7 +326,7 @@ export default function RelatoriosTab() {
   const totalPagesBol = Math.ceil(filteredBoletos.length / PAGE_SIZE);
   const pagedBoletos = filteredBoletos.slice((pageBol - 1) * PAGE_SIZE, pageBol * PAGE_SIZE);
 
-  const somaBoletosTotal = filteredBoletos.reduce((s, b) => s + b.valor, 0);
+  const somaBoletosTotal = filteredBoletos.reduce((s: number, b: any) => s + (b.valor || 0), 0);
 
   return (
     <div className="p-6 space-y-6">
@@ -430,7 +441,7 @@ export default function RelatoriosTab() {
               busca={buscaVeic}
               setBusca={setBuscaVeic}
               onGenerate={() => { setPageVeic(1); toast.success("Relatório gerado"); }}
-              onExport={() => exportCsv(mockAssociados.map(a => ({ placa: a.placa, modelo: a.modelo, ano: a.ano, tipo: a.tipo, categoria: a.categoria, cota: a.cota, associado: a.nome, cooperativa: a.cooperativa })), "veiculos")}
+              onExport={() => exportCsv(realAssociados.map((a: any) => ({ placa: a.placa, modelo: a.modelo, ano: a.ano, tipo: a.tipo, categoria: a.categoria, cota: a.cota, associado: a.nome, cooperativa: a.cooperativa })), "veiculos")}
               placeholder="Busca por placa ou modelo..."
             />
           </div>
@@ -439,7 +450,7 @@ export default function RelatoriosTab() {
             <Table>
               <TableHeader><TableRow><TableHead className="font-bold text-xs uppercase">Placa</TableHead><TableHead className="font-bold text-xs uppercase">Modelo</TableHead><TableHead className="font-bold text-xs uppercase">Ano</TableHead><TableHead className="font-bold text-xs uppercase">Tipo</TableHead><TableHead className="font-bold text-xs uppercase">Categoria</TableHead><TableHead className="font-bold text-xs uppercase">Cota</TableHead><TableHead className="font-bold text-xs uppercase">Associado</TableHead><TableHead className="font-bold text-xs uppercase">Cooperativa</TableHead></TableRow></TableHeader>
               <TableBody>
-                {mockAssociados.map(a => (
+                {realAssociados.map((a: any) => (
                   <TableRow key={a.id}><TableCell className="font-mono">{a.placa}</TableCell><TableCell className="">{a.modelo}</TableCell><TableCell className="">{a.ano}</TableCell><TableCell><Badge variant="outline">{a.tipo}</Badge></TableCell><TableCell className="">{a.categoria}</TableCell><TableCell className="">{a.cota}</TableCell><TableCell className="font-medium">{a.nome}</TableCell><TableCell className="">{a.cooperativa}</TableCell></TableRow>
                 ))}
               </TableBody>
@@ -452,9 +463,9 @@ export default function RelatoriosTab() {
           {/* KPIs */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{filteredBoletos.length}</p><p className="text-xs text-muted-foreground">Filtrados</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-success">{filteredBoletos.filter(b => b.situacao === "pago_dia").length}</p><p className="text-xs text-muted-foreground">Pagos em dia</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-warning">{filteredBoletos.filter(b => b.situacao === "pago_atraso").length}</p><p className="text-xs text-muted-foreground">Pagos em atraso</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-destructive">{filteredBoletos.filter(b => b.situacao === "vencido").length}</p><p className="text-xs text-muted-foreground">Vencidos</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-success">{filteredBoletos.filter((b: any) => b.status === "pago_dia").length}</p><p className="text-xs text-muted-foreground">Pagos em dia</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-warning">{filteredBoletos.filter((b: any) => b.status === "pago_atraso").length}</p><p className="text-xs text-muted-foreground">Pagos em atraso</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-destructive">{filteredBoletos.filter((b: any) => b.status === "vencido").length}</p><p className="text-xs text-muted-foreground">Vencidos</p></CardContent></Card>
             <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">R$ {somaBoletosTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p><p className="text-xs text-muted-foreground">Valor total</p></CardContent></Card>
           </div>
 
@@ -547,22 +558,22 @@ export default function RelatoriosTab() {
                 {pagedBoletos.length === 0 && (
                   <TableRow><TableCell colSpan={14} className="text-center py-8 text-muted-foreground">Nenhum boleto encontrado com os filtros aplicados</TableCell></TableRow>
                 )}
-                {pagedBoletos.map((b, i) => (
+                {pagedBoletos.map((b: any, i: number) => (
                   <TableRow key={b.id} className={i % 2 === 0 ? "bg-card" : "bg-muted/30"}>
-                    <TableCell className="font-mono text-xs">{b.id}</TableCell>
-                    <TableCell className="font-medium text-sm">{b.associado}</TableCell>
-                    <TableCell className="font-mono text-xs">{b.cpf}</TableCell>
-                    <TableCell className="text-right font-semibold">R$ {b.valor.toFixed(2)}</TableCell>
-                    <TableCell className="text-sm">{new Date(b.gerado).toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell className="text-sm">{new Date(b.vencimento).toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell className="text-sm">{b.pagamento ? new Date(b.pagamento).toLocaleDateString("pt-BR") : "—"}</TableCell>
-                    <TableCell><Badge className={situacaoColor[b.situacao]}>{statusBoletoLabels[b.situacao] ?? b.situacao}</Badge></TableCell>
-                    <TableCell className="text-xs">{b.unidade}</TableCell>
-                    <TableCell className="text-xs">{b.consultor}</TableCell>
-                    <TableCell className="text-xs">{b.tipoCobranca}</TableCell>
-                    <TableCell className="text-xs">{b.banco}</TableCell>
-                    <TableCell className="text-xs">{b.formaPagamento}</TableCell>
-                    <TableCell className="font-mono text-xs">{b.contrato}</TableCell>
+                    <TableCell className="font-mono text-xs">{b.nosso_numero || b.id}</TableCell>
+                    <TableCell className="font-medium text-sm">{b.associado_nome || "—"}</TableCell>
+                    <TableCell className="font-mono text-xs">{b.cpf || "—"}</TableCell>
+                    <TableCell className="text-right font-semibold">R$ {(b.valor || 0).toFixed(2)}</TableCell>
+                    <TableCell className="text-sm">{b.created_at ? new Date(b.created_at).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                    <TableCell className="text-sm">{b.vencimento ? new Date(b.vencimento).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                    <TableCell className="text-sm">{b.data_pagamento ? new Date(b.data_pagamento).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                    <TableCell><Badge className={situacaoColor[b.status] || ""}>{statusBoletoLabels[b.status] ?? b.status}</Badge></TableCell>
+                    <TableCell className="text-xs">{b.unidade || "—"}</TableCell>
+                    <TableCell className="text-xs">{b.consultor || "—"}</TableCell>
+                    <TableCell className="text-xs">{b.tipo || "—"}</TableCell>
+                    <TableCell className="text-xs">{b.banco || "—"}</TableCell>
+                    <TableCell className="text-xs">{b.forma_pagamento || "—"}</TableCell>
+                    <TableCell className="font-mono text-xs">{b.contrato || "—"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

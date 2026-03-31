@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ArrowLeft, Table2, Info, Calculator } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, Table2, Info, Calculator, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -28,79 +28,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   onBack: () => void;
 }
 
-const PLANOS = [
-  {
-    id: "basico",
-    label: "Básico",
-    valor: 149.9,
-    coberturas: [
-      "Colisão",
-      "Roubo e furto",
-      "Incêndio",
-      "Assistência 24h básica",
-    ],
-    carencias: [
-      { tipo: "Colisão", prazo: "90 dias" },
-      { tipo: "Roubo/Furto", prazo: "60 dias" },
-      { tipo: "Incêndio", prazo: "30 dias" },
-      { tipo: "Assistência 24h", prazo: "0 dias (imediato)" },
-    ],
-  },
-  {
-    id: "intermediario",
-    label: "Intermediário",
-    valor: 199.9,
-    coberturas: [
-      "Colisão",
-      "Roubo e furto",
-      "Incêndio",
-      "Assistência 24h completa",
-      "Vidros e retrovisores",
-      "Carro reserva (5 dias)",
-    ],
-    carencias: [
-      { tipo: "Colisão", prazo: "90 dias" },
-      { tipo: "Roubo/Furto", prazo: "60 dias" },
-      { tipo: "Incêndio", prazo: "30 dias" },
-      { tipo: "Vidros", prazo: "45 dias" },
-      { tipo: "Carro reserva", prazo: "60 dias" },
-      { tipo: "Assistência 24h", prazo: "0 dias (imediato)" },
-    ],
-  },
-  {
-    id: "completo",
-    label: "Completo",
-    valor: 299.9,
-    coberturas: [
-      "Colisão",
-      "Roubo e furto",
-      "Incêndio",
-      "Assistência 24h premium",
-      "Vidros e retrovisores",
-      "Carro reserva (15 dias)",
-      "Danos a terceiros",
-      "Proteção contra enchente e granizo",
-    ],
-    carencias: [
-      { tipo: "Colisão", prazo: "90 dias" },
-      { tipo: "Roubo/Furto", prazo: "60 dias" },
-      { tipo: "Incêndio", prazo: "30 dias" },
-      { tipo: "Vidros", prazo: "45 dias" },
-      { tipo: "Carro reserva", prazo: "60 dias" },
-      { tipo: "Danos a terceiros", prazo: "90 dias" },
-      { tipo: "Enchente/Granizo", prazo: "90 dias" },
-      { tipo: "Assistência 24h", prazo: "0 dias (imediato)" },
-    ],
-  },
-] as const;
-
-type PlanoId = (typeof PLANOS)[number]["id"];
-type Plano = (typeof PLANOS)[number];
+interface Plano {
+  id: string;
+  nome: string;
+  tipo: string;
+  valor_base: number;
+  ativo: boolean;
+}
 
 const TIPOS_VEICULO = [
   { id: "todos", label: "Todos", multiplicador: 1.0 },
@@ -138,10 +78,10 @@ function fmt(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function badgeClass(planoId: PlanoId) {
-  if (planoId === "basico")
+function badgeClass(tipo: string) {
+  if (tipo === "basico" || tipo === "Básico")
     return "bg-muted text-muted-foreground border border-border";
-  if (planoId === "intermediario")
+  if (tipo === "intermediario" || tipo === "Intermediário")
     return "bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800";
   return "bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800";
 }
@@ -151,6 +91,22 @@ export default function TabelaPlanos({ onBack }: Props) {
   const [tipoVeiculo, setTipoVeiculo] = useState("todos");
   const [faixaFipe, setFaixaFipe] = useState("todas");
   const [detalhe, setDetalhe] = useState<Plano | null>(null);
+  const [planos, setPlanos] = useState<Plano[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchPlanos() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("produtos_gia")
+        .select("*")
+        .eq("ativo", true)
+        .order("nome");
+      if (!error && data) setPlanos(data);
+      setLoading(false);
+    }
+    fetchPlanos();
+  }, []);
 
   const fatorRegional = REGIONAIS.find((r) => r.id === regional)?.fator ?? 1.0;
   const multiplicador =
@@ -269,67 +225,76 @@ export default function TabelaPlanos({ onBack }: Props) {
       </div>
 
       {/* Tabela */}
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Plano</TableHead>
-                <TableHead className="text-right">Valor Base</TableHead>
-                <TableHead className="text-right">Multiplicador</TableHead>
-                <TableHead className="text-right">Fator Regional</TableHead>
-                <TableHead className="text-right font-semibold">
-                  Valor Final
-                </TableHead>
-                <TableHead className="text-center w-[160px]">Ação</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {PLANOS.map((plano) => {
-                const valorFinal = plano.valor * multiplicador * fatorRegional;
-                return (
-                  <TableRow
-                    key={plano.id}
-                    className="cursor-pointer select-none hover:bg-muted/40"
-                    onDoubleClick={() => setDetalhe(plano)}
-                  >
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClass(plano.id)}`}
-                      >
-                        {plano.label}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {fmt(plano.valor)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums text-muted-foreground">
-                      {multiplicador.toFixed(1)}×
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums text-muted-foreground">
-                      {fatorRegional.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums font-semibold text-primary">
-                      {fmt(valorFinal)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2.5 text-xs gap-1.5"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Calculator className="h-3 w-3" />
-                        Usar na Calculadora
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">Carregando planos...</span>
+        </div>
+      ) : planos.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">Nenhum plano encontrado.</div>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Plano</TableHead>
+                  <TableHead className="text-right">Valor Base</TableHead>
+                  <TableHead className="text-right">Multiplicador</TableHead>
+                  <TableHead className="text-right">Fator Regional</TableHead>
+                  <TableHead className="text-right font-semibold">
+                    Valor Final
+                  </TableHead>
+                  <TableHead className="text-center w-[160px]">Ação</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {planos.map((plano) => {
+                  const valorFinal = (plano.valor_base || 0) * multiplicador * fatorRegional;
+                  return (
+                    <TableRow
+                      key={plano.id}
+                      className="cursor-pointer select-none hover:bg-muted/40"
+                      onDoubleClick={() => setDetalhe(plano)}
+                    >
+                      <TableCell>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClass(plano.tipo || plano.nome)}`}
+                        >
+                          {plano.nome}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {fmt(plano.valor_base || 0)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-muted-foreground">
+                        {multiplicador.toFixed(1)}x
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-muted-foreground">
+                        {fatorRegional.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums font-semibold text-primary">
+                        {fmt(valorFinal)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2.5 text-xs gap-1.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Calculator className="h-3 w-3" />
+                          Usar na Calculadora
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Dialog de Detalhes */}
       <Dialog
@@ -343,59 +308,33 @@ export default function TabelaPlanos({ onBack }: Props) {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-base">
                 <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClass(detalhe.id)}`}
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClass(detalhe.tipo || detalhe.nome)}`}
                 >
-                  {detalhe.label}
+                  {detalhe.nome}
                 </span>
                 Detalhes do Plano
               </DialogTitle>
             </DialogHeader>
 
             <div className="space-y-5 pt-1">
-              {/* Coberturas */}
+              {/* Info do plano */}
               <div>
-                <p className="text-sm font-medium mb-2">
-                  Coberturas incluídas
-                </p>
-                <ul className="space-y-1.5">
-                  {detalhe.coberturas.map((c) => (
-                    <li
-                      key={c}
-                      className="flex items-center gap-2 text-sm text-muted-foreground"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                      {c}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Carências */}
-              <div>
-                <p className="text-sm font-medium mb-2">
-                  Carências por tipo de sinistro
-                </p>
+                <p className="text-sm font-medium mb-2">Informações</p>
                 <div className="rounded-lg border overflow-hidden">
                   <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-muted/50">
-                        <th className="text-left px-3 py-2 font-medium text-muted-foreground text-xs">
-                          Tipo de Sinistro
-                        </th>
-                        <th className="text-right px-3 py-2 font-medium text-muted-foreground text-xs">
-                          Carência
-                        </th>
-                      </tr>
-                    </thead>
                     <tbody>
-                      {detalhe.carencias.map((c) => (
-                        <tr key={c.tipo} className="border-t">
-                          <td className="px-3 py-2 text-sm">{c.tipo}</td>
-                          <td className="px-3 py-2 text-right text-sm text-muted-foreground">
-                            {c.prazo}
-                          </td>
-                        </tr>
-                      ))}
+                      <tr className="border-b">
+                        <td className="px-3 py-2 text-muted-foreground">Nome</td>
+                        <td className="px-3 py-2 font-medium">{detalhe.nome}</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="px-3 py-2 text-muted-foreground">Tipo</td>
+                        <td className="px-3 py-2">{detalhe.tipo}</td>
+                      </tr>
+                      <tr>
+                        <td className="px-3 py-2 text-muted-foreground">Valor Base</td>
+                        <td className="px-3 py-2 font-medium">{fmt(detalhe.valor_base || 0)}</td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
@@ -424,7 +363,7 @@ export default function TabelaPlanos({ onBack }: Props) {
                           <tr key={t.id} className="border-t">
                             <td className="px-3 py-2 text-sm">{t.label}</td>
                             <td className="px-3 py-2 text-right text-sm font-medium">
-                              {fmt(detalhe.valor * t.multiplicador)}
+                              {fmt((detalhe.valor_base || 0) * t.multiplicador)}
                             </td>
                           </tr>
                         )
