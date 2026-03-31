@@ -279,10 +279,10 @@ function AIAdvisorSection() {
           <div className="space-y-1.5">
             {agenda.map((item, i) => (
               <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors group">
-                <span className="text-xs font-mono font-bold text-muted-foreground w-12 shrink-0">{item.hora}</span>
+                <span className="text-xs font-mono font-bold text-muted-foreground w-12 shrink-0">{item.horario || item.hora}</span>
                 <div className="h-8 w-[2px] rounded-full bg-emerald-300 dark:bg-emerald-700 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate">{item.tarefa}</p>
+                  <p className="text-xs font-medium truncate">{item.descricao || item.tarefa}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-[10px] text-muted-foreground">{item.canal}</span>
                     <Badge className={cn("text-[9px]", prioridadeColors[item.prioridade])}>{item.prioridade}</Badge>
