@@ -76,7 +76,7 @@ export default function Auth() {
             padding: '0 10%',
           }}
         >
-          <div style={{ width: '100%', maxWidth: '400px' }}>
+          <div style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }}>
             <div className="grid grid-cols-2 gap-2.5">
               {features.slice(0, 4).map((f) => (
                 <div
@@ -124,9 +124,9 @@ export default function Auth() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'flex-end', /* alinhado à base, abaixo da logo GIA da imagem */
-          paddingBottom: '6%',
-          paddingTop: '0',
+          justifyContent: 'center',
+          paddingBottom: '4%',
+          paddingTop: '52%', /* empurrar abaixo da logo GIA */
           paddingLeft: '4%',
           paddingRight: '4%',
         }}
