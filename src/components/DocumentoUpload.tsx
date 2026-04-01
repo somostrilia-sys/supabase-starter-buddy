@@ -121,7 +121,18 @@ export default function DocumentoUpload({ negociacaoId, tipo, onDadosExtraidos }
             </div>
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">Documento enviado, aguardando processamento.</p>
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">Documento enviado, aguardando processamento.</p>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="text-xs rounded-none h-7" onClick={() => { setProcessando(true); callEdge("gia-ocr-documento", { documento_id: doc.id }).then(r => { if (r.sucesso) { setDoc((p: any) => ({ ...p, dados_extraidos: r.dados_extraidos, confianca: (r.confianca || 0) * 100 })); onDadosExtraidos?.(r.dados_extraidos); toast.success(`${label} processado!`); } else { toast.error(r.error || "Erro no OCR"); } setProcessando(false); }).catch(() => setProcessando(false)); }}>
+                <RotateCcw className="h-3 w-3 mr-1" />Reprocessar
+              </Button>
+              <label className="inline-flex items-center gap-1 text-xs border rounded-none px-2 h-7 cursor-pointer hover:bg-muted/30">
+                <Upload className="h-3 w-3" />Reenviar
+                <input type="file" accept="image/*,.pdf" onChange={handleUpload} className="hidden" />
+              </label>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
