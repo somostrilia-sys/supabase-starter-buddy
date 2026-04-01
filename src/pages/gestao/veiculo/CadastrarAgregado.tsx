@@ -15,7 +15,7 @@ import {
   Car, Plus, Search, Trash2, X, Eraser, Upload, ArrowLeft,
   Package, DollarSign, FileText, Settings, Users, MapPin, RefreshCw,
 } from "lucide-react";
-import { mockVeiculos } from "./mockVeiculos";
+import { supabase } from "@/integrations/supabase/client";
 
 const SelectWithAdd = ({ label, value, onValueChange, options, placeholder, required }: {
   label: string; value: string; onValueChange: (v: string) => void;
@@ -85,7 +85,7 @@ export default function CadastrarAgregado() {
   const [form, setForm] = useState(initialForm);
   const [searchPlaca, setSearchPlaca] = useState("");
   const [searchChassi, setSearchChassi] = useState("");
-  const [veiculoPrincipal, setVeiculoPrincipal] = useState<typeof mockVeiculos[0] | null>(null);
+  const [veiculoPrincipal, setVeiculoPrincipal] = useState<any>(null);
   const [produtosVinculados, setProdutosVinculados] = useState<ProdutoVinculado[]>([]);
   const [produtosAdicionais, setProdutosAdicionais] = useState<ProdutoAdicional[]>([]);
   const [selectedProdutos, setSelectedProdutos] = useState<string[]>([]);
@@ -94,13 +94,15 @@ export default function CadastrarAgregado() {
 
   const set = (f: string, v: any) => setForm(p => ({ ...p, [f]: v }));
 
-  const buscarVeiculoPrincipal = () => {
-    const found = mockVeiculos.find(v =>
-      (searchPlaca && v.placa.toLowerCase().replace("-", "").includes(searchPlaca.toLowerCase().replace("-", ""))) ||
-      (searchChassi && v.chassi.toLowerCase().includes(searchChassi.toLowerCase()))
-    );
-    if (found) {
-      setVeiculoPrincipal(found);
+  const buscarVeiculoPrincipal = async () => {
+    let query = supabase.from("veiculos").select("*, associados(nome)").limit(1);
+    if (searchPlaca) query = query.ilike("placa", `%${searchPlaca.replace("-","")}%`);
+    else if (searchChassi) query = query.ilike("chassi", `%${searchChassi}%`);
+    else return;
+    const { data } = await query;
+    if (data && data.length > 0) {
+      const v = data[0] as any;
+      setVeiculoPrincipal({ ...v, associadoNome: v.associados?.nome || "" });
       toast.success("Veículo principal encontrado!");
     } else {
       toast.error("Veículo não encontrado.");
@@ -123,8 +125,7 @@ export default function CadastrarAgregado() {
   const carregarExemplo = () => {
     setForm(exampleData as any);
     setSearchPlaca("ABC");
-    const v = mockVeiculos[0];
-    setVeiculoPrincipal(v);
+    setVeiculoPrincipal(null);
     setProdutosVinculados([
       { nome: "Proteção Roubo/Furto", valor: "45,00" },
       { nome: "Assistência 24h", valor: "30,00" },
@@ -337,9 +338,11 @@ export default function CadastrarAgregado() {
               <Select value={form.substituirPlaca} onValueChange={v => set("substituirPlaca", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione veículo" /></SelectTrigger>
                 <SelectContent>
-                  {mockVeiculos.slice(0, 5).map(v => (
-                    <SelectItem key={v.id} value={v.placa}>{v.placa} - {v.marca} {v.modelo}</SelectItem>
-                  ))}
+                  {veiculoPrincipal ? (
+                    <SelectItem value={veiculoPrincipal.placa}>{veiculoPrincipal.placa} - {veiculoPrincipal.marca} {veiculoPrincipal.modelo}</SelectItem>
+                  ) : (
+                    <SelectItem value="" disabled>Busque o veículo principal primeiro</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>

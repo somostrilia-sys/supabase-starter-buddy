@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Car, Link2, RefreshCw, ArrowRightLeft, Search, Check } from "lucide-react";
-import { mockVeiculos } from "./mockVeiculos";
 
 interface PainelData {
   placa: string; chassi: string; modelo: string; marca: string; regional: string; associado: string; found: boolean;
@@ -19,12 +19,15 @@ const PainelVeiculo = ({ title, icon, data, setData, color }: {
   title: string; icon: React.ReactNode; data: PainelData;
   setData: (d: PainelData) => void; color: string;
 }) => {
-  const buscar = () => {
-    const found = mockVeiculos.find(v =>
-      v.placa.toLowerCase().replace("-", "").includes(data.placa.toLowerCase().replace("-", ""))
-    );
-    if (found) {
-      setData({ placa: found.placa, chassi: found.chassi, modelo: found.modelo, marca: found.marca, regional: found.regional, associado: found.associadoNome, found: true });
+  const buscar = async () => {
+    if (!data.placa.trim()) return;
+    const { data: veics } = await supabase.from("veiculos")
+      .select("placa, chassi, modelo, marca, associados(nome)")
+      .ilike("placa", `%${data.placa.replace("-","")}%`)
+      .limit(1);
+    if (veics && veics.length > 0) {
+      const v = veics[0] as any;
+      setData({ placa: v.placa, chassi: v.chassi || "", modelo: v.modelo || "", marca: v.marca || "", regional: "", associado: v.associados?.nome || "", found: true });
       toast.success(`${title} encontrado!`);
     } else {
       toast.error("Veículo não encontrado.");
@@ -100,7 +103,7 @@ export default function GestaoAgregados() {
           </div>
           <div className="text-xs text-muted-foreground p-3 border rounded bg-muted/50">
             <p className="font-medium mb-1">Placas para teste:</p>
-            <p>{mockVeiculos.slice(0, 6).map(v => v.placa).join(" • ")}</p>
+            <p className="text-muted-foreground italic">Digite a placa do veículo para buscar</p>
           </div>
         </TabsContent>
 

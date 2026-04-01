@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,19 +8,24 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Upload, Download, FileText, Wifi, WifiOff, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
-const extratoMock = [
-  { data: "2025-07-08", descricao: "Pagamento boleto BOL-001", tipo: "credito", valor: 189.90 },
-  { data: "2025-07-08", descricao: "Pagamento boleto BOL-006", tipo: "credito", valor: 198.30 },
-  { data: "2025-07-07", descricao: "Tarifa bancária", tipo: "debito", valor: 12.50 },
-  { data: "2025-07-06", descricao: "Pagamento boleto BOL-003", tipo: "credito", valor: 312.00 },
-  { data: "2025-07-05", descricao: "Taxa de registro de boletos", tipo: "debito", valor: 84.70 },
-  { data: "2025-07-04", descricao: "Pagamento boleto BOL-002", tipo: "credito", valor: 245.50 },
-  { data: "2025-07-03", descricao: "Pagamento boleto BOL-007", tipo: "credito", valor: 342.10 },
-];
-
 export default function BancoIntegracao({ onBack }: { onBack: () => void }) {
   const [processando, setProcessando] = useState(false);
   const [progresso, setProgresso] = useState(0);
+  const [extratoMock, setExtratoMock] = useState<{data: string; descricao: string; tipo: string; valor: number}[]>([]);
+
+  useEffect(() => {
+    supabase.from("boletos").select("nosso_numero, associado_nome, valor, data_pagamento, status")
+      .eq("status", "baixado").not("data_pagamento", "is", null)
+      .order("data_pagamento", { ascending: false }).limit(20)
+      .then(({ data }) => {
+        if (data) setExtratoMock(data.map((b: any) => ({
+          data: b.data_pagamento || "",
+          descricao: `Pgto boleto ${b.nosso_numero} - ${b.associado_nome || ""}`,
+          tipo: "credito",
+          valor: b.valor || 0,
+        })));
+      });
+  }, []);
 
   const handleGerarRemessa = () => {
     setProcessando(true);
