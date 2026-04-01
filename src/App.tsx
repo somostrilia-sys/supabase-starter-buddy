@@ -58,6 +58,7 @@ import ImportarLeads from "./pages/vendas/ImportarLeads";
 import MinhaEmpresa from "./pages/vendas/MinhaEmpresa";
 import MinhaConta from "./pages/vendas/MinhaConta";
 import ConfigComissoes from "./pages/vendas/ConfigComissoes";
+import LandingPagePublica from "./pages/public/LandingPagePublica";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,7 @@ const App = () => (
           <BrandProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/lp/:slug" element={<LandingPagePublica />} />
             <Route path="/" element={<D><Dashboard /></D>} />
 
             {/* Gestão - New */}
