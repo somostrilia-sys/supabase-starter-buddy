@@ -41,8 +41,9 @@ export const stageColumns: { key: PipelineStage; label: string; color: string; b
   { key: "aguardando_vistoria", label: "Aguardando Vistoria", color: "#8B5CF6", bg: "bg-muted/20", dot: "bg-purple-500" },
   { key: "liberado_cadastro", label: "Liberado p/ Cadastro", color: "#84CC16", bg: "bg-muted/20", dot: "bg-lime-500" },
   { key: "concluido", label: "Concluído", color: "#22C55E", bg: "bg-muted/20", dot: "bg-green-500" },
-  { key: "perdido", label: "Perdido", color: "#EF4444", bg: "bg-muted/20", dot: "bg-red-500" },
 ];
+
+export const stageColumnPerdido = { key: "perdido" as PipelineStage, label: "Perdido / Arquivado", color: "#EF4444", bg: "bg-muted/20", dot: "bg-red-500" };
 
 // Transições permitidas por drag manual
 export const DRAG_ALLOWED: Record<PipelineStage, PipelineStage[]> = {

@@ -27,13 +27,7 @@ function gerarCPF(i: number) {
   return `${n.slice(0,3)}.${n.slice(3,6)}.${n.slice(6,9)}-${n.slice(9,11)}`;
 }
 
-const nomes = [
-  "Ana Beatriz Silva","Bruno Costa","Camila Oliveira","Daniel Santos","Elisa Ferreira",
-  "Fernando Almeida","Gabriela Lima","Henrique Souza","Isabela Rocha","João Pedro Nunes",
-  "Karla Mendes","Leonardo Barbosa","Mariana Dias","Nicolas Ribeiro","Patrícia Cardoso",
-  "Rafael Martins","Sabrina Pereira","Thiago Araújo","Vanessa Castro","William Gomes",
-  "Yasmin Teixeira","Arthur Correia","Bianca Pinto","Caio Monteiro","Débora Nascimento",
-];
+const nomes: string[] = [];
 
 const cidades = [
   ["São Paulo","SP"],["Rio de Janeiro","RJ"],["Belo Horizonte","MG"],["Campinas","SP"],
@@ -47,25 +41,7 @@ const cidades = [
 const now = Date.now();
 const day = 86400000;
 
-const mockContatos: Contato[] = [
-  // 2 contatos sem nome para simular o problema
-  { id: "csn1", nome: "", cpf: "000.000.000-01", telefone: "(11) 90000-0001", email: "", cidade: "São Paulo", estado: "SP", dataCadastro: new Date(now - 2 * day).toISOString(), ultimaInteracao: new Date(now - day).toISOString(), nascimento: "1990-01-01", negociacoes: 1, sexo: "M" },
-  { id: "csn2", nome: "", cpf: "000.000.000-02", telefone: "(11) 90000-0002", email: "", cidade: "Rio de Janeiro", estado: "RJ", dataCadastro: new Date(now - 3 * day).toISOString(), ultimaInteracao: new Date(now - 2 * day).toISOString(), nascimento: "1985-06-15", negociacoes: 0, sexo: "F" },
-  ...nomes.map((nome, i) => ({
-    id: `c${i}`,
-    nome,
-    cpf: gerarCPF(i),
-    telefone: `(11) 9${String(8000 + i * 37).slice(0,4)}-${String(1000 + i * 53).slice(0,4)}`,
-    email: nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").split(" ").slice(0,2).join(".") + "@email.com",
-    cidade: cidades[i][0],
-    estado: cidades[i][1],
-    dataCadastro: new Date(now - (i * 5 + 1) * day).toISOString(),
-    ultimaInteracao: new Date(now - (i * 3) * day).toISOString(),
-    nascimento: `${1980 + (i % 20)}-${String(((new Date().getMonth() + 1) % 12) + 1).padStart(2,"0")}-${String((i % 28) + 1).padStart(2,"0")}`,
-    negociacoes: i % 5 === 0 ? 0 : (i % 3) + 1,
-    sexo: i % 2 === 0 ? "F" : "M",
-  })),
-];
+const mockContatos: Contato[] = [];
 
 function timeAgo(d: string) {
   const diff = now - new Date(d).getTime();
@@ -136,7 +112,7 @@ export default function Contatos() {
           <TabsTrigger value="novos" className="text-xs">Novos (7d)</TabsTrigger>
           <TabsTrigger value="antigos" className="text-xs">Antigos (+90d)</TabsTrigger>
           <TabsTrigger value="sem-dados" className="text-xs">Sem Dados</TabsTrigger>
-          <TabsTrigger value="aniversariantes" className="text-xs">🎂 Aniversariantes</TabsTrigger>
+          <TabsTrigger value="aniversariantes" className="text-xs">🎂 </TabsTrigger>
           {contatosSemNome > 0 && <TabsTrigger value="sem-nome" className="text-xs text-warning">⚠️ Sem Nome ({contatosSemNome})</TabsTrigger>}
         </TabsList>
       </Tabs>
