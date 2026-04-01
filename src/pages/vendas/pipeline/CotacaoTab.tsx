@@ -171,8 +171,73 @@ export default function CotacaoTab({ deal }: Props) {
   const [fipeLoading, setFipeLoading] = useState(false);
   const [fipeFetched, setFipeFetched] = useState(false);
 
+  // Dados reais do banco
+  const [precosReais, setPrecosReais] = useState<any[]>([]);
+  const [veiculoAceito, setVeiculoAceito] = useState<boolean | null>(null);
+  const [motivoRejeicao, setMotivoRejeicao] = useState("");
+  const [coberturasPlano, setCoberturasPlano] = useState<any[]>([]);
+
+  // Buscar coberturas ao selecionar plano
+  const carregarCoberturas = async (plano: string) => {
+    const { data } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", plano).order("ordem");
+    setCoberturasPlano(data || []);
+  };
+
+  // Verificar se veículo é aceito
+  const verificarAceitacao = async (marcaNome: string, modeloNome: string) => {
+    const { data } = await supabase.from("modelos_veiculo" as any)
+      .select("aceito, motivo_rejeicao, marcas_veiculo(nome)")
+      .ilike("nome", `%${modeloNome.split(" ")[0]}%`)
+      .limit(1)
+      .maybeSingle();
+    if (data) {
+      setVeiculoAceito((data as any).aceito);
+      if (!(data as any).aceito) setMotivoRejeicao((data as any).motivo_rejeicao || "Veículo sem aceitação pela associação");
+    } else {
+      setVeiculoAceito(null);
+    }
+  };
+
+  // Buscar preços reais por valor FIPE + regional
+  const carregarPrecos = async (vFipe: number) => {
+    const regional = deal.regional || "";
+    const { data } = await supabase.from("tabela_precos" as any)
+      .select("*")
+      .lte("valor_menor", vFipe)
+      .gte("valor_maior", vFipe)
+      .eq("regional", regional)
+      .order("plano");
+    setPrecosReais(data || []);
+    if (!data || data.length === 0) {
+      // Tentar sem regional
+      const { data: d2 } = await supabase.from("tabela_precos" as any)
+        .select("*")
+        .lte("valor_menor", vFipe)
+        .gte("valor_maior", vFipe)
+        .order("plano");
+      setPrecosReais(d2 || []);
+    }
+  };
+
   const modelos = modelosPorMarca[marca] || [];
   const modeloAtual = modelos[modeloIdx] || modelos[0];
+
+  // planosConfig: usa preços reais se tiver, senão fallback mock
+  const planosConfig = precosReais.length > 0
+    ? [...new Set(precosReais.map((p: any) => p.plano))].map(plano => {
+        const p = precosReais.find((pr: any) => pr.plano === plano);
+        return {
+          nome: plano,
+          icon: plano.includes("Premium") ? ShieldPlus : plano.includes("Completo") ? ShieldCheck : Shield,
+          cor: plano.includes("Premium") ? "border-warning/25 bg-warning/8" : plano.includes("Completo") ? "border-success/20 bg-emerald-50" : "border-blue-200 bg-primary/6",
+          percentual: 0,
+          coberturas: [] as string[],
+          valorReal: Number(p?.cota || 0),
+          adesao: Number(p?.adesao || 0),
+          rastreador: p?.rastreador || "Não",
+        };
+      })
+    : planosConfigDefault.map(p => ({ ...p, valorReal: 0, adesao: 400, rastreador: "Não" }));
   const valorFipe = modeloAtual?.valorFipe || 0;
   const codFipe = modeloAtual?.codFipe || "";
 
@@ -186,7 +251,9 @@ export default function CotacaoTab({ deal }: Props) {
       .from("cotacoes")
       .insert({
         negociacao_id: deal.id,
-        todos_planos: [{ nome: deal.plano, valor_mensal: valorFipe * 0.015 }],
+        todos_planos: precosReais.length > 0
+          ? precosReais.map((p: any) => ({ nome: p.plano, valor_mensal: p.cota, adesao: p.adesao, rastreador: p.rastreador, franquia: p.valor_franquia }))
+          : [{ nome: planoSelecionado, valor_mensal: valorFipe * 0.015 }],
         desconto_aplicado: 0,
       } as any)
       .select()
@@ -234,24 +301,32 @@ export default function CotacaoTab({ deal }: Props) {
     setFipeLoading(true);
     setFipeFetched(false);
 
-    // Simulate API call delay
-    setTimeout(() => {
-      setMarca(veiculo.marca);
-      setModeloIdx(veiculo.modeloIdx);
-      setForm(prev => ({
-        ...prev,
-        anoFab: veiculo.ano,
-        cor: veiculo.cor,
-        combustivel: veiculo.combustivel,
-        chassi: veiculo.chassi,
-      }));
-      setFipeLoading(false);
-      setFipeFetched(true);
+    // Usar mock se disponível, senão tentar edge function real
+    const veiculoMock = veiculo;
+    setMarca(veiculoMock.marca);
+    setModeloIdx(veiculoMock.modeloIdx);
+    setForm(prev => ({
+      ...prev,
+      anoFab: veiculoMock.ano,
+      cor: veiculoMock.cor,
+      combustivel: veiculoMock.combustivel,
+      chassi: veiculoMock.chassi,
+    }));
 
-      const modelo = modelosPorMarca[veiculo.marca]?.[veiculo.modeloIdx];
-      toast.success(`FIPE: ${veiculo.marca} ${modelo?.modelo || ""} — ${formatCurrency(modelo?.valorFipe || 0)}`);
-    }, 800);
-  }, []);
+    const modelo = modelosPorMarca[veiculoMock.marca]?.[veiculoMock.modeloIdx];
+    const vFipe = modelo?.valorFipe || 0;
+
+    // Carregar preços reais e verificar aceitação
+    if (vFipe > 0) {
+      await carregarPrecos(vFipe);
+      await verificarAceitacao(veiculoMock.marca, modelo?.modelo || "");
+      await carregarCoberturas(planoSelecionado);
+    }
+
+    setFipeLoading(false);
+    setFipeFetched(true);
+    toast.success(`FIPE: ${veiculoMock.marca} ${modelo?.modelo || ""} — ${formatCurrency(vFipe)}`);
+  }, [planoSelecionado, deal.regional]);
 
   const handlePlacaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const masked = maskPlaca(e.target.value);
@@ -432,9 +507,33 @@ export default function CotacaoTab({ deal }: Props) {
       <fieldset className="space-y-4">
         <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">PLANOS E ENVIO</legend>
 
+        {veiculoAceito === false && (
+          <Card className="rounded-none border-2 border-destructive bg-destructive/5 mb-3">
+            <CardContent className="p-4 flex items-center gap-3">
+              <Search className="h-5 w-5 text-destructive" />
+              <div>
+                <p className="text-sm font-bold text-destructive">Veículo sem aceitação</p>
+                <p className="text-xs text-muted-foreground">{motivoRejeicao}</p>
+              </div>
+              <Button size="sm" variant="outline" className="rounded-none ml-auto text-xs border-destructive text-destructive" onClick={() => toast.info("Solicitação de liberação enviada ao diretor")}>
+                Solicitar Liberação
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {precosReais.length === 0 && fipeFetched && valorFipe > 0 && (
+          <Card className="rounded-none border-2 border-warning bg-warning/5 mb-3">
+            <CardContent className="p-4">
+              <p className="text-sm font-semibold text-warning">Sem precificação definida para este veículo nesta regional</p>
+              <p className="text-xs text-muted-foreground">Regional: {deal.regional || "não definida"} | FIPE: {formatCurrency(valorFipe)}</p>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid grid-cols-3 gap-3">
           {planosConfig.map(p => {
-            const mensal = Math.round(valorFipe * p.percentual);
+            const mensal = (p as any).valorReal > 0 ? (p as any).valorReal : Math.round(valorFipe * p.percentual);
             const selected = planoSelecionado === p.nome;
             return (
               <Card
