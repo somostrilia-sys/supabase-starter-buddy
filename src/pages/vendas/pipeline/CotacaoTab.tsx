@@ -370,13 +370,23 @@ export default function CotacaoTab({ deal }: Props) {
 
   const handleEnviar = async (tipo: string) => {
     if (tipo === "PDF") { handleBaixarPdf(); return; }
-    // Criar cotação no banco se não existe
+    // Buscar regional pela cidade/estado de circulação
+    const regionalCot = await buscarRegionalPrecos(form.estadoCirc || "", form.cidadeCirc || "");
+
+    // Criar cotação com planos filtrados pela regional
+    const planosFiltrados = precosReais.length > 0
+      ? precosReais.filter((p: any) => !regionalCot || (p.regional_normalizado || "").toUpperCase() === regionalCot.toUpperCase())
+      : precosReais;
+
     const { data: cotacao } = await supabase
       .from("cotacoes")
       .insert({
         negociacao_id: deal.id,
-        todos_planos: precosReais.length > 0
-          ? precosReais.map((p: any) => ({ nome: p.plano, valor_mensal: p.cota, adesao: p.adesao, rastreador: p.rastreador, franquia: p.valor_franquia }))
+        cidade_circulacao: form.cidadeCirc,
+        estado_circulacao: form.estadoCirc,
+        regional_precos: regionalCot,
+        todos_planos: planosFiltrados.length > 0
+          ? planosFiltrados.map((p: any) => ({ nome: p.plano_normalizado || p.plano, valor_mensal: p.cota, adesao: p.adesao, rastreador: p.rastreador, franquia: p.valor_franquia, valor_fipe: valorFipe }))
           : [{ nome: planoSelecionado, valor_mensal: valorFipe * 0.015 }],
         desconto_aplicado: 0,
       } as any)

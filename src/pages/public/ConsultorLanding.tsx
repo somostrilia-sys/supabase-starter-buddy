@@ -159,13 +159,22 @@ export default function ConsultorLanding() {
         Caminhao: "Caminhoes e Micro-Onibus",
         "Van/Utilitario": "Carros e Utilitarios Pequenos",
       };
-      const { data: precos } = await supabase
-        .from("tabela_precos" as any)
+      // Buscar regional pela cidade/estado
+      const { data: regMatch } = await supabase.from("uf_regional_precos" as any)
+        .select("regional_precos").eq("uf", estado).ilike("cidade", cidade || "___NONE___").limit(1).maybeSingle();
+      const { data: regDefault } = !regMatch ? await supabase.from("uf_regional_precos" as any)
+        .select("regional_precos").eq("uf", estado).is("cidade", null).limit(1).maybeSingle() : { data: null };
+      const regionalPrecos = (regMatch as any)?.regional_precos || (regDefault as any)?.regional_precos || "";
+
+      let precosQ = supabase.from("tabela_precos" as any)
         .select("*")
         .lte("valor_menor", vFipe)
         .gte("valor_maior", vFipe)
         .eq("tipo_veiculo", tipoMap[tipoVeiculo] || "Carros e Utilitarios Pequenos")
         .order("plano_normalizado");
+      if (regionalPrecos) precosQ = precosQ.eq("regional_normalizado", regionalPrecos);
+
+      const { data: precos } = await precosQ;
 
       const planos = (precos || []).map((p: any) => ({
         nome: p.plano_normalizado || p.plano,
@@ -180,6 +189,9 @@ export default function ConsultorLanding() {
         negociacao_id: (neg as any).id,
         todos_planos: planos.length > 0 ? planos : [{ nome: "Consultar", valor_mensal: 0 }],
         desconto_aplicado: 0,
+        cidade_circulacao: cidade,
+        estado_circulacao: estado,
+        regional_precos: regionalPrecos,
       } as any).select().single();
 
       if (cot) {

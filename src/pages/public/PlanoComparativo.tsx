@@ -62,7 +62,7 @@ export default function PlanoComparativo() {
       if (nomesPlanos.length > 0) {
         const { data: cobData } = await supabase.from("coberturas_plano" as any)
           .select("*").in("plano", nomesPlanos);
-        if (cobData) {
+        if (cobData && (cobData as any[]).length > 0) {
           const cobMap: Record<string, { coberturas: string[]; assistencias: string[] }> = {};
           (cobData as any[]).forEach(c => {
             if (!cobMap[c.plano]) cobMap[c.plano] = { coberturas: [], assistencias: [] };
@@ -77,6 +77,33 @@ export default function PlanoComparativo() {
           });
         }
       }
+
+      // Fallback: se nenhum plano tem coberturas, aplicar defaults baseado no nome
+      const defaultCob: Record<string, { coberturas: string[]; assistencias: string[] }> = {
+        "Básico": {
+          coberturas: ["Roubo", "Furto"],
+          assistencias: ["Assistência 24H", "Auxílio combustível", "Recarga de bateria", "Hospedagem", "Retorno ao domicílio", "Chaveiro", "Reboque", "Troca de pneus"],
+        },
+        "Completo": {
+          coberturas: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Vidros Completos", "Danos a Terceiros", "Carro Reserva"],
+          assistencias: ["Assistência 24H", "Auxílio combustível", "Recarga de bateria", "Hospedagem", "Retorno ao domicílio", "Chaveiro", "Reboque", "Troca de pneus"],
+        },
+        "Objetivo": {
+          coberturas: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Vidros Completos", "Danos a Terceiros", "Danos da Natureza", "Carro Reserva"],
+          assistencias: ["Assistência 24H", "Auxílio combustível", "Recarga de bateria", "Hospedagem", "Retorno ao domicílio", "Chaveiro", "Reboque", "Troca de pneus"],
+        },
+        "Premium": {
+          coberturas: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Vidros Completos", "Danos a Terceiros", "Danos da Natureza", "Carro Reserva"],
+          assistencias: ["Assistência 24H", "Auxílio combustível", "Recarga de bateria", "Hospedagem", "Retorno ao domicílio", "Chaveiro", "Reboque", "Troca de pneus"],
+        },
+      };
+      todosPlanos.forEach(p => {
+        if (!p.coberturas || p.coberturas.length === 0) {
+          const def = defaultCob[p.nome] || defaultCob["Completo"];
+          p.coberturas = def.coberturas;
+          p.assistencias = def.assistencias;
+        }
+      });
 
       setPlanos(todosPlanos);
 
