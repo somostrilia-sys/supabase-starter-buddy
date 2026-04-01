@@ -624,9 +624,21 @@ export default function CotacaoTab({ deal }: Props) {
           </Card>
         )}
 
+        {fipeFetched && precosReais.length === 0 && (
+          <Card className="rounded-none border-2 border-destructive/30 bg-destructive/5">
+            <CardContent className="p-6 text-center space-y-2">
+              <Search className="h-8 w-8 text-destructive mx-auto" />
+              <p className="text-sm font-semibold text-destructive">Nenhum plano encontrado para este veículo</p>
+              <p className="text-xs text-muted-foreground">Não há precificação cadastrada na tabela de preços para a faixa FIPE deste veículo na regional selecionada.</p>
+              <p className="text-xs text-muted-foreground">Verifique a tabela de preços em <strong>Minha Empresa → Tabelas de Preços</strong> ou consulte o gestor.</p>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid grid-cols-3 gap-3">
           {planosConfig.map(p => {
-            const mensal = (p as any).valorReal > 0 ? (p as any).valorReal : Math.round(valorFipe * p.percentual);
+            const mensal = (p as any).valorReal > 0 ? (p as any).valorReal : (fipeFetched && precosReais.length === 0 ? 0 : Math.round(valorFipe * p.percentual));
+            if (fipeFetched && precosReais.length === 0) return null;
             const selected = planoSelecionado === p.nome;
             return (
               <Card
