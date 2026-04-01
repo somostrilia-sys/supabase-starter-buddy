@@ -12,7 +12,7 @@ import { gerarLaudoVistoria } from "@/lib/gerarLaudoVistoria";
 import { usePermission } from "@/hooks/usePermission";
 import {
   ClipboardCheck, Copy, Link2, MessageSquare, CheckCircle, XCircle,
-  Clock, AlertCircle, Camera, Globe, RotateCcw, Download, Eye,
+  Clock, AlertCircle, Camera, Globe, RotateCcw, Download, Eye, Mail,
 } from "lucide-react";
 
 type VistoriaStatus = "pendente" | "em_aprovacao" | "aprovada" | "reprovada";
@@ -178,7 +178,18 @@ export default function VistoriaTab({ deal }: Props) {
     setCodigo(token);
     setVistoriaId((novaVistoria as any).id);
     setCodigoGerado(true);
-    toast.success("Vistoria criada! Token: " + token);
+
+    // Copiar link automaticamente
+    const link = `${window.location.origin}/vistoria/${token}`;
+    navigator.clipboard.writeText(link);
+    toast.success("Vistoria criada! Link copiado para a área de transferência.", { duration: 5000 });
+
+    // Abrir opção de envio via WhatsApp
+    const tel = (deal.telefone || "").replace(/\D/g, "");
+    if (tel) {
+      const msg = encodeURIComponent(`Olá ${deal.lead_nome}! Segue o link para envio das fotos da vistoria do seu veículo ${deal.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização, e envie todas as 14 fotos solicitadas.`);
+      window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
+    }
   };
 
   const handleCopiar = () => {
@@ -254,8 +265,23 @@ export default function VistoriaTab({ deal }: Props) {
               </Button>
             ) : (
               <>
-                <Button size="sm" variant="outline" className="rounded-none" onClick={() => toast.success("Código reenviado via WhatsApp!")}>
-                  <MessageSquare className="h-3.5 w-3.5 mr-1" />Reenviar WhatsApp
+                <Button size="sm" variant="outline" className="rounded-none" onClick={() => {
+                  const tel = (deal.telefone || "").replace(/\D/g, "");
+                  const link = `${window.location.origin}/vistoria/${codigo}`;
+                  const msg = encodeURIComponent(`Olá ${deal.lead_nome}! Segue o link da vistoria do veículo ${deal.veiculo_placa}:\n\n${link}\n\nAbra no celular e envie as fotos.`);
+                  window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
+                  toast.success("WhatsApp aberto com o link da vistoria!");
+                }}>
+                  <MessageSquare className="h-3.5 w-3.5 mr-1" />Enviar WhatsApp
+                </Button>
+                <Button size="sm" variant="outline" className="rounded-none" onClick={() => {
+                  const link = `${window.location.origin}/vistoria/${codigo}`;
+                  const subject = encodeURIComponent(`Vistoria Veicular - ${deal.veiculo_placa}`);
+                  const body = encodeURIComponent(`Olá ${deal.lead_nome},\n\nSegue o link para envio das fotos da vistoria do seu veículo ${deal.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização.\n\nObjetivo Auto Benefícios`);
+                  window.open(`mailto:${deal.email}?subject=${subject}&body=${body}`);
+                  toast.success("E-mail aberto com o link da vistoria!");
+                }}>
+                  <Mail className="h-3.5 w-3.5 mr-1" />Enviar E-mail
                 </Button>
                 <Button size="sm" variant="outline" className="rounded-none" onClick={() => {
                   const link = `${window.location.origin}/vistoria/${codigo}`;
