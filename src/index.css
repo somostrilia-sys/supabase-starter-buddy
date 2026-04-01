@@ -304,3 +304,45 @@
   .p-6 { padding: 1rem; }
   main.flex-1.overflow-auto { padding: 0; }
 }
+
+/* Pipeline - Inputs sombreados e tipografia profissional */
+.kanban-card, [class*="DialogContent"] {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+[class*="DialogContent"] input,
+[class*="DialogContent"] select,
+[class*="DialogContent"] textarea,
+[class*="DialogContent"] [role="combobox"] {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-color: hsl(220 13% 82%);
+  font-family: 'Inter', sans-serif;
+  font-weight: 450;
+  letter-spacing: -0.01em;
+}
+
+[class*="DialogContent"] input:focus,
+[class*="DialogContent"] textarea:focus {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 2px hsl(214 70% 32% / 0.15);
+}
+
+[class*="DialogContent"] label {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: hsl(222 47% 20%);
+}
+
+[class*="DialogContent"] legend {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Pipeline cards */
+.kanban-card {
+  letter-spacing: -0.01em;
+}
+
+.kanban-card .text-sm {
+  font-weight: 500;
+}
