@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Car, FileText, CheckCircle, CalendarCheck, Users, AlertTriangle, Loader2, BarChart3 } from "lucide-react";
+import { Car, FileText, CheckCircle, CalendarCheck, Users, AlertTriangle, Loader2, BarChart3, DollarSign, XCircle, Ban, Clock, ShieldAlert, TrendingDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, AreaChart, Area } from "recharts";
 
 // recebimentoDiarioData is now fetched from Supabase inside the component
@@ -69,25 +69,28 @@ export default function DashboardTab() {
   // ── Real KPIs ──
   const mesAtual = new Date().toISOString().slice(0, 7);
 
-  const { data: totalAtivos = 0, isLoading: loadingAtivos } = useQuery({
-    queryKey: ["kpi_associados_ativos"],
+  // ── Contagem de associados por status ──
+  const { data: statusAssociados = { ativo: 0, inadimplente: 0, inativo: 0, inativo_pendencia: 0, cancelado: 0, negado: 0, suspenso: 0, pendente: 0, total: 0 }, isLoading: loadingStatus } = useQuery({
+    queryKey: ["kpi_associados_status"],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from("associados").select("id", { count: "exact", head: true }).eq("status", "ativo");
-      if (error) throw error;
-      return count ?? 0;
+      const statuses = ["ativo", "inadimplente", "inativo", "inativo_pendencia", "cancelado", "negado", "suspenso", "pendente", "pendente_revistoria"];
+      const result: Record<string, number> = { total: 0 };
+      for (const s of statuses) {
+        const { count } = await supabase.from("associados").select("id", { count: "exact", head: true }).eq("status", s);
+        result[s] = count ?? 0;
+        result.total += result[s];
+      }
+      return result;
     },
   });
 
-  const { data: totalInadimpl = 0, isLoading: loadingInadimpl } = useQuery({
-    queryKey: ["kpi_inadimpl_count"],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("associados").select("id", { count: "exact", head: true }).in("status", ["inativo", "inativo_pendencia"]);
-      if (error) throw error;
-      return count ?? 0;
-    },
-  });
+  const totalAtivos = statusAssociados.ativo;
+  const totalInadimpl = statusAssociados.inadimplente;
+  const totalInativos = statusAssociados.inativo;
+  const totalInativoPend = statusAssociados.inativo_pendencia;
+  const totalCancelados = statusAssociados.cancelado;
+  const loadingAtivos = loadingStatus;
+  const loadingInadimpl = loadingStatus;
 
   const { data: receitaMes = 0, isLoading: loadingReceita } = useQuery({
     queryKey: ["kpi_receita_mes", mesAtual],
@@ -106,7 +109,8 @@ export default function DashboardTab() {
     queryKey: ["kpi_sinistros_pendentes"],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from("eventos").select("id", { count: "exact", head: true }).in("status", ["aberto", "em_andamento"]);
+        .from("eventos").select("id", { count: "exact", head: true })
+        .in("status", ["aberto", "em analise", "em reparação", "aguardando orçamento", "documentação pendente", "aprovado", "aguardando cota", "regulagem", "sindicância", "carro reserva", "roubo/furto 45 dias"]);
       if (error) throw error;
       return count ?? 0;
     },
@@ -129,6 +133,29 @@ export default function DashboardTab() {
         .from("revistoria_pendencias").select("id", { count: "exact", head: true }).eq("status", "pendente");
       if (error) throw error;
       return count ?? 0;
+    },
+  });
+
+  // ── Total a receber (boletos abertos + vencidos) ──
+  const { data: totalAReceber = 0 } = useQuery({
+    queryKey: ["kpi_a_receber"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("boletos").select("valor").in("status", ["aberto", "vencido"]);
+      if (error) throw error;
+      return (data || []).reduce((s: number, b: { valor: number }) => s + (b.valor ?? 0), 0);
+    },
+  });
+
+  // ── Taxa de inadimplência (boletos vencidos / total abertos+vencidos) ──
+  const { data: taxaInadimplencia = 0 } = useQuery({
+    queryKey: ["kpi_taxa_inadimplencia"],
+    queryFn: async () => {
+      const { count: vencidos } = await (supabase as any)
+        .from("boletos").select("id", { count: "exact", head: true }).eq("status", "vencido");
+      const { count: total } = await (supabase as any)
+        .from("boletos").select("id", { count: "exact", head: true }).in("status", ["aberto", "vencido"]);
+      return total > 0 ? Math.round(((vencidos ?? 0) / total) * 100) : 0;
     },
   });
 
@@ -237,10 +264,13 @@ export default function DashboardTab() {
   });
 
   const fechamentoData = [
-    { name: "Ativos", value: totalAtivos, color: "hsl(var(--primary))" },
-    { name: "Inativos", value: totalInadimpl, color: "hsl(var(--muted-foreground))" },
-  ];
-  const totalFechamento = totalAtivos + totalInadimpl;
+    { name: "Ativos", value: totalAtivos, color: "#22c55e" },
+    { name: "Inadimplentes", value: totalInadimpl, color: "#ef4444" },
+    { name: "Inativos", value: totalInativos, color: "#6b7280" },
+    { name: "Inativo c/ Pend.", value: totalInativoPend, color: "#f59e0b" },
+    { name: "Cancelados", value: totalCancelados, color: "#374151" },
+  ].filter(d => d.value > 0);
+  const totalFechamento = statusAssociados.total;
   const pctParticipantes = totalFechamento > 0 ? ((totalAtivos / totalFechamento) * 100).toFixed(1) : "0.0";
 
   function KpiCard({ title, value, icon: Icon, loading, format = "number" }: {
@@ -336,14 +366,25 @@ export default function DashboardTab() {
         </DialogContent>
       </Dialog>
 
-      {/* ═══ CADASTRO & VEÍCULOS ═══ */}
-      <SectionDivider title="Cadastro & Veículos" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        <KpiCard title="Associados Ativos" value={totalAtivos} icon={Users} loading={loadingAtivos} />
-        <KpiCard title="Inadimplentes / Inativos" value={totalInadimpl} icon={AlertTriangle} loading={loadingInadimpl} />
-        <KpiCard title="Vistorias Pendentes" value={vistoriasPend} icon={CalendarCheck} loading={loadingVistoria} />
+      {/* ═══ ASSOCIADOS ═══ */}
+      <SectionDivider title="Associados" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
+        <KpiCard title="Ativos" value={totalAtivos} icon={Users} loading={loadingStatus} />
+        <KpiCard title="Inadimplentes" value={totalInadimpl} icon={TrendingDown} loading={loadingStatus} />
+        <KpiCard title="Inativos" value={totalInativos} icon={XCircle} loading={loadingStatus} />
+        <KpiCard title="Inativo c/ Pendência" value={totalInativoPend} icon={ShieldAlert} loading={loadingStatus} />
+        <KpiCard title="Cancelados" value={totalCancelados} icon={Ban} loading={loadingStatus} />
+        <KpiCard title="Negados / Pendentes" value={(statusAssociados.negado || 0) + (statusAssociados.pendente || 0)} icon={Clock} loading={loadingStatus} />
+        <KpiCard title="Total Geral" value={statusAssociados.total} icon={Users} loading={loadingStatus} />
+      </div>
+
+      {/* ═══ VEÍCULOS & EVENTOS ═══ */}
+      <SectionDivider title="Veículos & Eventos" />
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         <KpiCard title="Veículos Cadastrados" value={totalVeiculos} icon={Car} />
-        <KpiCard title="Sinistros em Aberto" value={sinistrosPend} icon={BarChart3} loading={loadingSinistros} />
+        <KpiCard title="Sinistros em Aberto" value={sinistrosPend} icon={AlertTriangle} loading={loadingSinistros} />
+        <KpiCard title="Vistorias Pendentes" value={vistoriasPend} icon={CalendarCheck} loading={loadingVistoria} />
+        <KpiCard title="Taxa Inadimplência" value={taxaInadimplencia} icon={BarChart3} />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <Card className="shadow-none">
@@ -383,15 +424,13 @@ export default function DashboardTab() {
                 <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 12 }} />
               </RechartsPie>
             </ResponsiveContainer>
-            <div className="flex gap-4 mt-1">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-primary" />
-                <span className="text-xs text-muted-foreground">Ativos ({totalAtivos.toLocaleString("pt-BR")})</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Inativos ({totalInadimpl})</span>
-              </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 justify-center">
+              {fechamentoData.map(d => (
+                <div key={d.name} className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
+                  <span className="text-[10px] text-muted-foreground">{d.name} ({d.value.toLocaleString("pt-BR")})</span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -399,8 +438,9 @@ export default function DashboardTab() {
 
       {/* ═══ FINANCEIRO ═══ */}
       <SectionDivider title="Financeiro" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         <KpiCard title="Receita do Mês" value={receitaMes} icon={CheckCircle} loading={loadingReceita} format="currency" />
+        <KpiCard title="A Receber (Aberto + Vencido)" value={totalAReceber} icon={DollarSign} format="currency" />
         <KpiCard title="Boletos Gerados no Mês" value={boletosMes.gerados} icon={FileText} />
         <KpiCard title="Boletos Recebidos no Mês" value={boletosMes.recebidos} icon={CalendarCheck} />
       </div>
