@@ -50,7 +50,7 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
 
   const handleCnhExtraida = useCallback(async (dados: Record<string, any>) => {
     setDadosCnh(dados);
-    // Salvar no banco
+    // CNH → preenche APENAS dados do ASSOCIADO
     const update: any = {};
     if (dados.nome) update.lead_nome = dados.nome;
     if (dados.cpf) update.cpf_cnpj = dados.cpf;
@@ -59,8 +59,6 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
     if (dados.numero_registro) update.cnh = dados.numero_registro;
     if (dados.categoria) update.cnh_categoria = dados.categoria;
     if (dados.validade) update.cnh_validade = dados.validade;
-    if (dados.uf) update.estado_circulacao = dados.uf;
-    if (dados.local_emissao) update.cidade_circulacao = dados.local_emissao.split(",")[0]?.trim();
     if (Object.keys(update).length > 0) {
       await supabase.from("negociacoes").update(update as any).eq("id", deal.id);
     }
@@ -68,7 +66,7 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
   }, [deal.id, onUpdate]);
 
   const handleCrlvExtraida = useCallback(async (dados: Record<string, any>) => {
-    // Salvar no banco
+    // CRLV → preenche APENAS dados do VEÍCULO
     const update: any = {};
     if (dados.placa) update.veiculo_placa = dados.placa;
     if (dados.marca_modelo) update.veiculo_modelo = dados.marca_modelo;
@@ -80,8 +78,6 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
     if (dados.combustivel) update.combustivel = dados.combustivel;
     if (dados.municipio) update.cidade_circulacao = dados.municipio;
     if (dados.uf) update.estado_circulacao = dados.uf;
-    if (dados.nome_proprietario) update.lead_nome = dados.nome_proprietario;
-    if (dados.cpf_cnpj_proprietario) update.cpf_cnpj = dados.cpf_cnpj_proprietario;
     if (Object.keys(update).length > 0) {
       await supabase.from("negociacoes").update(update as any).eq("id", deal.id);
     }

@@ -214,7 +214,7 @@ export default function Pipeline() {
   const { data: leadsData } = useQuery({
     queryKey: ["leads", busca, leadScope],
     queryFn: async () => {
-      let query = supabase.from("leads").select("*").order("created_at", { ascending: false });
+      let query = supabase.from("negociacoes").select("*").order("created_at", { ascending: false });
       if (busca.placa) query = query.eq("placa", busca.placa.toUpperCase().replace(/\s/g, '') as any);
       if (busca.nome && busca.nome.length >= 3) query = query.ilike("nome", `%${busca.nome}%` as any);
       if (busca.codigo) query = query.eq("codigo_negociacao", busca.codigo as any);
@@ -229,10 +229,10 @@ export default function Pipeline() {
   const updateLeadStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       if (id.startsWith("p")) return;
-      const { error } = await supabase.from("leads").update({ status }).eq("id", id);
+      const { error } = await supabase.from("negociacoes").update({ stage: status } as any).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["leads"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["negociacoes"] }),
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -259,24 +259,10 @@ export default function Pipeline() {
         visualizacoes_proposta: 0,
         status_icons: { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false },
       });
-      if (negError) {
-        // Fallback: criar na tabela leads (antiga)
-        const { error } = await supabase.from("leads").insert({
-          nome: data.lead_nome,
-          telefone: data.telefone,
-          email: data.email || null,
-          cpf: data.cpf_cnpj || null,
-          veiculo_interesse: data.modelo || null,
-          plano_interesse: data.plano || null,
-          consultor_nome: data.consultor || null,
-          observacoes: data.observacoes || null,
-          status: "novo_lead",
-        });
-        if (error) throw error;
-      }
+      if (negError) throw negError;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["negociacoes"] });
       setNewDealOpen(false);
       toast.success("Negociação criada com sucesso!");
       setForm({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", anoModelo: "", anoFab: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
@@ -889,7 +875,7 @@ export default function Pipeline() {
 
       {/* Deal detail modal */}
       {detailDeal && (
-        <DealDetailModal deal={detailDeal} open={!!detailDeal} onOpenChange={o => { if (!o) setDetailDeal(null); }} onUpdate={() => { queryClient.invalidateQueries({ queryKey: ["leads"] }); reloadNegociacoes(); }} />
+        <DealDetailModal deal={detailDeal} open={!!detailDeal} onOpenChange={o => { if (!o) setDetailDeal(null); }} onUpdate={() => { queryClient.invalidateQueries({ queryKey: ["negociacoes"] }); reloadNegociacoes(); }} />
       )}
 
       {/* Concretizar Venda Modal */}

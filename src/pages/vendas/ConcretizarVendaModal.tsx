@@ -217,13 +217,12 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
         dados_novos: { associado_id: assoc.id, veiculo_id: veic.id, numero },
       } as any);
 
-      // Atualizar negociação e lead
+      // Atualizar negociação
       if (leadId && !leadId.startsWith("p")) {
-        await supabase.from("leads").update({ status: "concluido" }).eq("id", leadId);
-        // Atualizar negociacoes também
         await supabase.from("negociacoes").update({
           stage: "concluido",
           contrato_id: contrato.id,
+          venda_concluida_em: new Date().toISOString(),
         } as any).eq("id", leadId);
         // Registrar transição
         await supabase.from("pipeline_transicoes").insert({
