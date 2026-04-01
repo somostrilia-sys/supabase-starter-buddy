@@ -66,18 +66,8 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Hero with gradient */}
-      <div className="hidden lg:flex lg:w-[58%] relative gradient-hero overflow-hidden">
-        {/* Animated orbs */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="orb orb-1" />
-          <div className="orb orb-2" />
-          <div className="orb orb-3" />
-          {/* Grid pattern overlay */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{
-            backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-            backgroundSize: '60px 60px'
-          }} />
-        </div>
+      <div className="hidden lg:flex lg:w-[58%] relative overflow-hidden" style={{ backgroundImage: "url('/login-bg.png')", backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }}>
+
 
         <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
           {/* Top - Logo */}
