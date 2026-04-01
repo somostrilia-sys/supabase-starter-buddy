@@ -77,6 +77,23 @@ export default function Pipeline() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
 
+  // Masks
+  function maskCpfCnpj(v: string) {
+    const d = v.replace(/\D/g, "");
+    if (d.length <= 11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, (_, a, b, c, e) => e ? `${a}.${b}.${c}-${e}` : c ? `${a}.${b}.${c}` : b ? `${a}.${b}` : a);
+    return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, (_, a, b, c, e, f) => f ? `${a}.${b}.${c}/${e}-${f}` : e ? `${a}.${b}.${c}/${e}` : c ? `${a}.${b}.${c}` : b ? `${a}.${b}` : a);
+  }
+  function maskTelefone(v: string) {
+    const d = v.replace(/\D/g, "");
+    if (d.length <= 10) return d.replace(/(\d{2})(\d{4})(\d{0,4})/, (_, a, b, c) => c ? `(${a}) ${b}-${c}` : b ? `(${a}) ${b}` : a ? `(${a}` : "");
+    return d.replace(/(\d{2})(\d{5})(\d{0,4})/, (_, a, b, c) => c ? `(${a}) ${b}-${c}` : b ? `(${a}) ${b}` : a ? `(${a}` : "");
+  }
+  function maskPlaca(v: string) {
+    const clean = v.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (clean.length <= 3) return clean;
+    return clean.slice(0, 3) + "-" + clean.slice(3, 7);
+  }
+
   // New deal form
   const [form, setForm] = useState({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", anoModelo: "", anoFab: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
   const [formTouched, setFormTouched] = useState({ lead_nome: false, telefone: false });
@@ -88,7 +105,21 @@ export default function Pipeline() {
   // Hook de negociações (Supabase real)
   const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao } = useNegociacoes();
 
-  // Dados reais de cooperativas, regionais, consultores do banco
+  // Dados reais de cooperativas com regional vinculada
+  const { data: cooperativasDb } = useQuery({
+    queryKey: ["cooperativas_com_regional"],
+    queryFn: async () => {
+      const { data } = await supabase.from("cooperativas" as any).select("id, nome, regional_id, regionais(id, nome)").eq("ativa", true).order("nome");
+      return (data || []) as any[];
+    },
+  });
+  const { data: regionaisDb } = useQuery({
+    queryKey: ["regionais_db"],
+    queryFn: async () => {
+      const { data } = await supabase.from("regionais").select("id, nome").order("nome");
+      return (data || []) as any[];
+    },
+  });
   const { data: usuariosReais } = useQuery({
     queryKey: ["usuarios_reais"],
     queryFn: async () => {
@@ -97,14 +128,19 @@ export default function Pipeline() {
     },
   });
   const consultoresReais = [...new Set((usuariosReais || []).map((u: any) => u.nome).filter(Boolean))];
-  const cooperativasReais = [...new Set((usuariosReais || []).map((u: any) => u.cooperativa).filter(Boolean))];
-  const regionaisReais = [...new Set((usuariosReais || []).map((u: any) => u.regional).filter(Boolean))];
-  const gerentesReais = [...new Set((usuariosReais || []).map((u: any) => u.gerente).filter(Boolean))];
 
-  // Usar reais se disponíveis, senão fallback mock
+  const cooperativasLista = cooperativasDb && cooperativasDb.length > 0 ? cooperativasDb.map((c: any) => c.nome) : cooperativas;
+  const regionaisLista = regionaisDb && regionaisDb.length > 0 ? regionaisDb.map((r: any) => r.nome) : regionais;
   const consultoresLista = consultoresReais.length > 0 ? consultoresReais : consultores;
-  const cooperativasLista = cooperativasReais.length > 0 ? cooperativasReais : cooperativas;
-  const regionaisLista = regionaisReais.length > 0 ? regionaisReais : regionais;
+
+  // Ao selecionar cooperativa → preencher regional automaticamente
+  function handleCooperativaChange(coopNome: string) {
+    setForm(f => {
+      const coop = (cooperativasDb || []).find((c: any) => c.nome === coopNome);
+      const regionalNome = coop?.regionais?.nome || f.regional;
+      return { ...f, cooperativa: coopNome, regional: regionalNome };
+    });
+  }
 
   // Supabase leads query with busca + RBAC scope
   const { data: leadsData } = useQuery({
@@ -620,14 +656,15 @@ export default function Pipeline() {
               {formNomeInvalid && <p className="text-xs text-destructive">Nome é obrigatório</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={e => setForm({ ...form, cpf_cnpj: e.target.value })} /></div>
+              <div className="space-y-1.5"><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={e => setForm({ ...form, cpf_cnpj: maskCpfCnpj(e.target.value) })} placeholder="000.000.000-00" maxLength={18} /></div>
               <div className="space-y-1.5">
                 <Label>Telefone/WhatsApp *</Label>
                 <Input
                   value={form.telefone}
-                  onChange={e => setForm({ ...form, telefone: e.target.value })}
+                  onChange={e => setForm({ ...form, telefone: maskTelefone(e.target.value) })}
                   onBlur={() => setFormTouched(t => ({ ...t, telefone: true }))}
                   placeholder="(00) 00000-0000"
+                  maxLength={15}
                   className={formTelInvalid ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
                 {formTelInvalid && <p className="text-xs text-destructive">Telefone é obrigatório</p>}
@@ -635,8 +672,8 @@ export default function Pipeline() {
             </div>
             <div className="space-y-1.5"><Label>E-mail</Label><Input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label>Placa do Veículo</Label><Input value={form.placa} onChange={async e => {
-                const v = e.target.value.toUpperCase();
+              <div className="space-y-1.5"><Label>Placa do Veículo</Label><Input value={form.placa} maxLength={8} onChange={async e => {
+                const v = maskPlaca(e.target.value);
                 setForm(f => ({ ...f, placa: v }));
                 const clean = v.replace(/[^A-Z0-9]/g, "");
                 if (clean.length >= 7) {
@@ -663,16 +700,14 @@ export default function Pipeline() {
                 </Select>
               </div>
               <div className="space-y-1.5"><Label>Cooperativa</Label>
-                <Select value={form.cooperativa} onValueChange={v => setForm({ ...form, cooperativa: v })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <Select value={form.cooperativa} onValueChange={handleCooperativaChange}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>{cooperativasLista.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label>Regional</Label>
-                <Select value={form.regional} onValueChange={v => setForm({ ...form, regional: v })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{regionaisLista.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-                </Select>
+              <div className="space-y-1.5"><Label>Regional (preenchida pela cooperativa)</Label>
+                <Input value={form.regional} readOnly className="bg-muted cursor-not-allowed" placeholder="Selecione a cooperativa" />
               </div>
               <div className="space-y-1.5"><Label>Consultor Responsável</Label>
                 <Select value={form.consultor} onValueChange={v => setForm({ ...form, consultor: v })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
