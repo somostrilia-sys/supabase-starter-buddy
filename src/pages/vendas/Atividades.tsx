@@ -51,18 +51,7 @@ const statusColors: Record<string, string> = {
 const day = 86400000;
 const now = Date.now();
 
-const mockAtividades: Atividade[] = [
-  { id: "at1", tipo: "Ligação", descricao: "Ligar para apresentar planos de proteção veicular Premium", lead_vinculado: "João Pereira", responsavel: "Ana Silva", data: new Date(now - 2 * day).toISOString().split("T")[0], hora: "09:00", status: "Atrasada" },
-  { id: "at2", tipo: "WhatsApp", descricao: "Enviar proposta atualizada com valores de adesão e mensalidade", lead_vinculado: "Maria Santos", responsavel: "Carlos Souza", data: new Date(now - 1 * day).toISOString().split("T")[0], hora: "10:30", status: "Atrasada" },
-  { id: "at3", tipo: "Email", descricao: "Encaminhar documentação para análise do contrato", lead_vinculado: "Carlos Oliveira", responsavel: "Maria Lima", data: new Date(now).toISOString().split("T")[0], hora: "08:00", status: "Pendente" },
-  { id: "at4", tipo: "Reunião", descricao: "Reunião presencial para fechamento de contrato frota", lead_vinculado: "Ana Costa", responsavel: "Ana Silva", data: new Date(now).toISOString().split("T")[0], hora: "14:00", status: "Pendente" },
-  { id: "at5", tipo: "Visita", descricao: "Visita para vistoria do veículo no local do cliente", lead_vinculado: "Roberto Lima", responsavel: "Carlos Souza", data: new Date(now).toISOString().split("T")[0], hora: "16:00", status: "Pendente" },
-  { id: "at6", tipo: "Ligação", descricao: "Follow-up sobre cotação enviada na semana passada", lead_vinculado: "Fernanda Alves", responsavel: "Maria Lima", data: new Date(now + 1 * day).toISOString().split("T")[0], hora: "09:30", status: "Pendente" },
-  { id: "at7", tipo: "WhatsApp", descricao: "Enviar boleto de adesão e confirmar pagamento", lead_vinculado: "Pedro Souza", responsavel: "Ana Silva", data: new Date(now - 3 * day).toISOString().split("T")[0], hora: "11:00", status: "Concluída" },
-  { id: "at8", tipo: "Email", descricao: "Solicitar documentos pessoais para cadastro no sistema", lead_vinculado: "Juliana Mendes", responsavel: "Carlos Souza", data: new Date(now - 4 * day).toISOString().split("T")[0], hora: "15:00", status: "Concluída" },
-  { id: "at9", tipo: "Reunião", descricao: "Apresentação comercial para empresa com frota de 15 veículos", lead_vinculado: null, responsavel: "Maria Lima", data: new Date(now - 2 * day).toISOString().split("T")[0], hora: "10:00", status: "Concluída" },
-  { id: "at10", tipo: "Visita", descricao: "Retirar documentação assinada na sede da cooperativa", lead_vinculado: "Camila Rodrigues", responsavel: "Ana Silva", data: new Date(now + 2 * day).toISOString().split("T")[0], hora: "13:00", status: "Pendente" },
-];
+const mockAtividades: Atividade[] = [];
 
 // ── Mock AI Advisor Data ──
 const mockNextAction = {
@@ -87,20 +76,9 @@ const mockAnalise = {
   oportunidades: "R$ 1.429,50",
 };
 
-const mockAlertas = [
-  { id: "al1", tipo: "risco", texto: "Roberto Lima — inadimplente, em negociação há 5 dias sem resposta", icon: AlertCircle },
-  { id: "al2", tipo: "expirada", texto: "Cotação de Carlos Oliveira expira em 2 dias — nenhuma visualização", icon: Eye },
-  { id: "al3", tipo: "followup", texto: "Follow-up atrasado: Fernanda Alves aguarda retorno desde segunda", icon: Clock },
-  { id: "al4", tipo: "quente", texto: "Ana Costa visualizou proposta 3x — oportunidade quente para fechamento", icon: Flame },
-];
+const mockAlertas: any[] = [];
 
-const mockAgenda = [
-  { hora: "08:00", tarefa: "Enviar documentação para Carlos Oliveira", canal: "Email", prioridade: "alta" as const },
-  { hora: "09:00", tarefa: "Ligar para João Pereira — reativar negociação", canal: "Ligação", prioridade: "urgente" as const },
-  { hora: "10:30", tarefa: "WhatsApp para Maria Santos — reenviar cotação", canal: "WhatsApp", prioridade: "alta" as const },
-  { hora: "14:00", tarefa: "Reunião presencial com Ana Costa — fechamento", canal: "Presencial", prioridade: "media" as const },
-  { hora: "16:00", tarefa: "Visita para vistoria — Roberto Lima", canal: "Presencial", prioridade: "media" as const },
-];
+const mockAgenda: any[] = [];
 
 const prioridadeColors: Record<string, string> = {
   urgente: "bg-destructive/15 text-destructive border-red-300",
