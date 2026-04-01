@@ -63,8 +63,8 @@ export default function Auth() {
       <div style={{
         position: 'absolute',
         top: '43%',
-        left: '2%',
-        width: '52%',
+        left: '1%',
+        width: '42%',
         display: 'flex',
         justifyContent: 'center',
       }}>
