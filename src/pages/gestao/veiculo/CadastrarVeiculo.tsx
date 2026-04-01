@@ -224,7 +224,7 @@ const mockPreenchido = {
 };
 
 const initialNovoAssociado = {
-  nome: "", cpf: "", rg: "", data_nascimento: "", cep: "", endereco: "", cidade: "", estado: "", telefone: "", email: "",
+  nome: "", cpf: "", data_nascimento: "", cep: "", endereco: "", cidade: "", estado: "", telefone: "", email: "",
 };
 
 export default function CadastrarVeiculo() {
@@ -332,12 +332,11 @@ export default function CadastrarVeiculo() {
       const { data, error } = await supabase.from("associados").insert({
         nome: novoForm.nome.trim(),
         cpf: novoForm.cpf.replace(/\D/g, ""),
-        rg: novoForm.rg || null,
         data_nascimento: novoForm.data_nascimento || null,
-        cep: novoForm.cep || null,
-        endereco: novoForm.endereco || null,
-        cidade: novoForm.cidade || null,
-        estado: novoForm.estado || null,
+        endereco_cep: novoForm.cep || null,
+        endereco_logradouro: novoForm.endereco || null,
+        endereco_cidade: novoForm.cidade || null,
+        endereco_uf: novoForm.estado || null,
         telefone: novoForm.telefone || null,
         email: novoForm.email || null,
       }).select("id, nome, cpf, telefone, email, status").single();
@@ -403,7 +402,8 @@ export default function CadastrarVeiculo() {
     setSavingVeiculo(true);
     try {
       const valorFipeNum = form.valorFipe ? parseFloat(form.valorFipe.replace(/\./g, "").replace(",", ".")) : null;
-      const anoNum = form.anoFab ? parseInt(form.anoFab) : null;
+      const anoFabNum = form.anoFab ? parseInt(form.anoFab) : null;
+      const anoModNum = form.anoMod ? parseInt(form.anoMod) : null;
 
       // Validate GIA principal product if products are available
       if (produtosPrincipais.length > 0) {
@@ -418,7 +418,8 @@ export default function CadastrarVeiculo() {
         renavam: form.renavam || null,
         marca: form.montadora,
         modelo: form.modelo,
-        ano: anoNum,
+        ano_fabricacao: anoFabNum,
+        ano_modelo: anoModNum,
         cor: form.cor || null,
         valor_fipe: valorFipeNum,
         categoria_uso: form.categoria_uso || null,
@@ -610,10 +611,6 @@ export default function CadastrarVeiculo() {
             <div>
               <Label className="text-xs">CPF *</Label>
               <Input value={novoForm.cpf} onChange={e => setNovoForm(p => ({ ...p, cpf: maskCpf(e.target.value) }))} placeholder="000.000.000-00" />
-            </div>
-            <div>
-              <Label className="text-xs">RG</Label>
-              <Input value={novoForm.rg} onChange={e => setNovoForm(p => ({ ...p, rg: e.target.value }))} />
             </div>
             <div>
               <Label className="text-xs">Data Nascimento</Label>

@@ -5,7 +5,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ArrowLeft, Plus, Pencil, Trash2, Settings2 } from "lucide-react";
@@ -16,13 +15,13 @@ interface MemberStatus {
   id: string;
   codigo: number;
   descricao: string;
-  modulo: string;
   participa_fechamento: boolean;
   participa_rateio: boolean;
   ativo: boolean;
+  cor?: string;
 }
 
-const emptyForm = { descricao: "", modulo: "Associado", participa_fechamento: false, participa_rateio: false, ativo: true };
+const emptyForm = { descricao: "", participa_fechamento: false, participa_rateio: false, ativo: true };
 
 export default function SituacoesAssociado({ onBack }: { onBack: () => void }) {
   const [rows, setRows] = useState<MemberStatus[]>([]);
@@ -47,13 +46,13 @@ export default function SituacoesAssociado({ onBack }: { onBack: () => void }) {
   const openNew = () => { setEditId(null); setForm(emptyForm); setOpen(true); };
   const openEdit = (r: MemberStatus) => {
     setEditId(r.id);
-    setForm({ descricao: r.descricao, modulo: r.modulo, participa_fechamento: r.participa_fechamento, participa_rateio: r.participa_rateio, ativo: r.ativo });
+    setForm({ descricao: r.descricao, participa_fechamento: r.participa_fechamento, participa_rateio: r.participa_rateio, ativo: r.ativo });
     setOpen(true);
   };
 
   const handleSave = async () => {
     if (!form.descricao.trim()) { toast.error("Descrição é obrigatória"); return; }
-    const payload = { descricao: form.descricao.trim(), modulo: form.modulo, participa_fechamento: form.participa_fechamento, participa_rateio: form.participa_rateio, ativo: form.ativo, updated_at: new Date().toISOString() };
+    const payload = { descricao: form.descricao.trim(), participa_fechamento: form.participa_fechamento, participa_rateio: form.participa_rateio, ativo: form.ativo };
 
     if (editId) {
       const { error } = await supabase.from("member_statuses" as any).update(payload).eq("id", editId);
@@ -97,21 +96,20 @@ export default function SituacoesAssociado({ onBack }: { onBack: () => void }) {
         <Table>
           <TableHeader>
             <TableRow className="bg-[#1A3A5C]">
-              {["Código", "Descrição", "Módulo", "Participa Fechamento", "Participa Rateio", "Situação", "Ações"].map(h => (
+              {["Código", "Descrição", "Participa Fechamento", "Participa Rateio", "Situação", "Ações"].map(h => (
                 <TableHead key={h} className="text-primary-foreground/90 font-semibold text-xs uppercase">{h}</TableHead>
               ))}
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Carregando…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Carregando…</TableCell></TableRow>
             ) : rows.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhuma situação cadastrada</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhuma situação cadastrada</TableCell></TableRow>
             ) : rows.map((r, i) => (
               <TableRow key={r.id} className={i % 2 === 1 ? "bg-muted/30" : ""}>
                 <TableCell className="font-mono text-xs">{r.codigo}</TableCell>
                 <TableCell className="font-medium">{r.descricao}</TableCell>
-                <TableCell>{r.modulo}</TableCell>
                 <TableCell>
                   <Badge variant={r.participa_fechamento ? "default" : "secondary"} className="text-[11px]">
                     {r.participa_fechamento ? "Sim" : "Não"}
@@ -146,17 +144,6 @@ export default function SituacoesAssociado({ onBack }: { onBack: () => void }) {
             <div>
               <Label>Descrição *</Label>
               <Input value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Ex: Ativo, Pendente…" />
-            </div>
-            <div>
-              <Label>Módulo</Label>
-              <Select value={form.modulo} onValueChange={v => setForm(f => ({ ...f, modulo: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Associado">Associado</SelectItem>
-                  <SelectItem value="Veículo">Veículo</SelectItem>
-                  <SelectItem value="Ambos">Ambos</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <div className="flex items-center justify-between">
               <Label>Participa Fechamento</Label>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,13 +23,27 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
   const [progress, setProgress] = useState(0);
   const [previewData, setPreviewData] = useState<PreviewRow[]>([]);
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [regionaisList, setRegionaisList] = useState<{ id: string; nome: string }[]>([]);
+  const [cooperativasList, setCooperativasList] = useState<{ id: string; nome: string }[]>([]);
+
+  useEffect(() => {
+    async function loadLists() {
+      const [regRes, coopRes] = await Promise.all([
+        (supabase as any).from("regionais").select("id, nome").order("nome"),
+        (supabase as any).from("cooperativas").select("id, nome").order("nome"),
+      ]);
+      if (regRes.data) setRegionaisList(regRes.data);
+      if (coopRes.data) setCooperativasList(coopRes.data);
+    }
+    loadLists();
+  }, []);
 
   const fetchPreview = async () => {
     setLoadingPreview(true);
     try {
       let query = (supabase as any).from("associados").select("cpf, nome, veiculos(placa)").eq("status", "ativo");
-      if (regional !== "todas") query = query.eq("regional", regional);
-      if (cooperativa !== "todas") query = query.eq("cooperativa", cooperativa);
+      if (regional !== "todas") query = query.eq("regional_id", regional);
+      if (cooperativa !== "todas") query = query.eq("cooperativa_id", cooperativa);
       const { data, error } = await query.limit(50);
       if (error) throw error;
 
@@ -112,9 +126,7 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todas">Todas</SelectItem>
-                    <SelectItem value="sudeste">Sudeste</SelectItem>
-                    <SelectItem value="sul">Sul</SelectItem>
-                    <SelectItem value="nordeste">Nordeste</SelectItem>
+                    {regionaisList.map(r => <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -124,8 +136,7 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todas">Todas</SelectItem>
-                    <SelectItem value="central-sp">Central SP</SelectItem>
-                    <SelectItem value="litoral-rj">Litoral RJ</SelectItem>
+                    {cooperativasList.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -208,7 +219,7 @@ export default function AlteracoesLote({ onBack }: { onBack: () => void }) {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="font-medium">Regional:</span>
-                  <span>{regional === "todas" ? "Todas" : regional}</span>
+                  <span>{regional === "todas" ? "Todas" : (regionaisList.find(r => r.id === regional)?.nome || regional)}</span>
                 </div>
               </div>
               <Table>

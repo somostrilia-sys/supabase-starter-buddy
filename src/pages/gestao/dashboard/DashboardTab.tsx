@@ -42,7 +42,7 @@ type InadimplenteRow = {
     associados?: {
       id: string;
       nome: string;
-      revistoria_status?: string;
+      status?: string;
     } | null;
   } | null;
 };
@@ -55,14 +55,14 @@ function diasAtraso(vencimento: string) {
 export default function DashboardTab() {
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Inadimplência +5 dias — associados SÓ saem quando revistoria_status = "realizada"
+  // Inadimplência +5 dias — associados com mensalidades em aberto há mais de 5 dias
   const { data: inadimplentes = [], isLoading: loadingInad } = useQuery({
     queryKey: ["inadimplentes"],
     queryFn: async () => {
       const corte = subDays(new Date(), 5).toISOString().split("T")[0];
       const { data, error } = await (supabase as any)
         .from("mensalidades")
-        .select("*, contratos(associado_id, associados(id, nome, revistoria_status))")
+        .select("*, contratos(associado_id, associados(id, nome, status))")
         .eq("status", "em_aberto")
         .lt("vencimento", corte);
       if (error) throw error;
@@ -70,17 +70,16 @@ export default function DashboardTab() {
     },
   });
 
-  // Group by associado — só mostra quem NÃO tem revistoria_status = "realizada"
+  // Group by associado — mostra todos os inadimplentes com +5 dias
   const porAssociado = Object.values(
-    inadimplentes.reduce<Record<string, { nome: string; associado_id: string; boletos: InadimplenteRow[]; revistoria_status: string }>>((acc, m) => {
+    inadimplentes.reduce<Record<string, { nome: string; associado_id: string; boletos: InadimplenteRow[] }>>((acc, m) => {
       const assId = m.contratos?.associado_id ?? "unknown";
       const assNome = m.contratos?.associados?.nome ?? "—";
-      const revStatus = m.contratos?.associados?.revistoria_status ?? "pendente";
-      if (!acc[assId]) acc[assId] = { nome: assNome, associado_id: assId, boletos: [], revistoria_status: revStatus };
+      if (!acc[assId]) acc[assId] = { nome: assNome, associado_id: assId, boletos: [] };
       acc[assId].boletos.push(m);
       return acc;
     }, {})
-  ).filter(a => a.revistoria_status !== "realizada");
+  );
 
   // ── Real KPIs ──
   const mesAtual = new Date().toISOString().slice(0, 7);
@@ -122,7 +121,7 @@ export default function DashboardTab() {
     queryKey: ["kpi_sinistros_pendentes"],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from("sinistros").select("id", { count: "exact", head: true }).in("status", ["aberto", "em_analise"]);
+        .from("eventos").select("id", { count: "exact", head: true }).in("status", ["aberto", "em_andamento"]);
       if (error) throw error;
       return count ?? 0;
     },
@@ -142,7 +141,7 @@ export default function DashboardTab() {
     queryKey: ["kpi_vistorias_pendentes"],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from("vistorias").select("id", { count: "exact", head: true }).eq("status", "pendente");
+        .from("revistoria_pendencias").select("id", { count: "exact", head: true }).eq("status", "pendente");
       if (error) throw error;
       return count ?? 0;
     },
@@ -280,7 +279,7 @@ export default function DashboardTab() {
             </DialogTitle>
           </DialogHeader>
           <p className="text-xs text-muted-foreground mb-3">
-            Associados saem desta lista somente quando <strong>revistoria_status = "realizada"</strong>.
+            Associados com mensalidades em aberto há mais de 5 dias.
           </p>
           {loadingInad ? (
             <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
@@ -293,7 +292,6 @@ export default function DashboardTab() {
                   <TableHead>Nome</TableHead>
                   <TableHead className="text-center">Boletos Abertos</TableHead>
                   <TableHead className="text-center">Dias Atraso (máx)</TableHead>
-                  <TableHead>Status Revistoria</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -308,11 +306,6 @@ export default function DashboardTab() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center text-sm font-mono">{maxDias} dias</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={a.revistoria_status === "realizada" ? "bg-success/10 text-success border-success/20" : "bg-warning/10 text-warning border-warning/25"}>
-                          {a.revistoria_status === "realizada" ? "✅ Realizada" : "⏳ Pendente"}
-                        </Badge>
-                      </TableCell>
                     </TableRow>
                   );
                 })}

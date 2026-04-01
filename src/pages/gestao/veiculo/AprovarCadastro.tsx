@@ -69,7 +69,7 @@ export default function AprovarCadastro() {
     try {
       let query = (supabase as any)
         .from("veiculos")
-        .select("*, associados(nome, cpf, status, regional, cooperativa)")
+        .select("*, associados(nome, cpf, status, regionais(nome), cooperativas(nome))")
         .eq("status", "pendente")
         .order("created_at", { ascending: false });
 
@@ -89,7 +89,7 @@ export default function AprovarCadastro() {
         id: v.id ?? idx + 1,
         nome: v.associados?.nome || "—",
         placa: v.placa || "—",
-        regional: v.associados?.regional || v.regional || "—",
+        regional: v.associados?.regionais?.nome || "—",
         dataCadastro: fmtDate(v.created_at),
         dataContrato: fmtDate(v.data_contrato || v.created_at),
         diaVenc: v.dia_vencimento || 10,
@@ -97,7 +97,7 @@ export default function AprovarCadastro() {
         cota: v.cota || "—",
         sitVeiculo: v.status ? v.status.charAt(0).toUpperCase() + v.status.slice(1) : "Pendente",
         sitAssociado: v.associados?.status ? v.associados.status.charAt(0).toUpperCase() + v.associados.status.slice(1) : "—",
-        cooperativa: v.associados?.cooperativa || v.cooperativa || "—",
+        cooperativa: v.associados?.cooperativas?.nome || "—",
         tipoAdesao: v.tipo_adesao || "Normal",
         opApp: v.op_app ? "Sim" : "Não",
         validacao: v.validacao || "Pendente",

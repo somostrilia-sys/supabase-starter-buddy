@@ -64,24 +64,28 @@ export default function PlanosProtecao({ onBack }: { onBack: () => void }) {
         .select("*, grupo_produto_itens(produto_id, produtos_gia(nome, tipo, valor_base))")
         .eq("ativo", true);
       if (error) throw error;
-      return (data || []).map((g: any) => ({
-        id: g.id,
-        nome: g.nome || "Sem nome",
-        descricao: g.descricao || "",
-        descricaoAdmin: g.descricao_admin || "",
-        valorBase: g.valor_base ?? 0,
-        ativo: g.ativo ?? true,
-        coberturas: (g.grupo_produto_itens || []).map((item: any) => ({
+      return (data || []).map((g: any) => {
+        const coberturas = (g.grupo_produto_itens || []).map((item: any) => ({
           id: item.produto_id,
           nome: item.produtos_gia?.nome || "—",
           grupo: item.produtos_gia?.tipo || "Proteção",
           valorBase: item.produtos_gia?.valor_base ?? 0,
-        })),
-        regionais: g.regionais || [],
-        categorias: g.categorias || [],
-        regrasEspeciais: g.regras_especiais || "",
-        icone: g.icone || "🛡️",
-      })) as PlanoProtecao[];
+        }));
+        const valorBase = coberturas.reduce((sum: number, c: any) => sum + (c.valorBase ?? 0), 0);
+        return {
+          id: g.id,
+          nome: g.nome || "Sem nome",
+          descricao: g.descricao || "",
+          descricaoAdmin: g.descricao || "",
+          valorBase,
+          ativo: g.ativo ?? true,
+          coberturas,
+          regionais: [] as string[],
+          categorias: [] as CategoriaVeiculo[],
+          regrasEspeciais: "",
+          icone: "🛡️",
+        };
+      }) as PlanoProtecao[];
     },
   });
 

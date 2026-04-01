@@ -19,17 +19,17 @@ interface FaixaCota {
   id: string;
   fipeMin: number;
   fipeMax: number;
-  cotaValor: number;
+  fator: number;
   taxaAdmin: number;
-  produtosVinculados: string;
+  descricao: string;
 }
 
 
 const fmtBRL = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
 
 function generateCSV(cotas: FaixaCota[]): string {
-  const header = "fipe_min,fipe_max,cota_valor,taxa_admin,produtos_vinculados";
-  const rows = cotas.map(c => `${c.fipeMin},${c.fipeMax},${c.cotaValor},${c.taxaAdmin},"${c.produtosVinculados}"`);
+  const header = "fipe_min,fipe_max,fator,taxa_admin,descricao";
+  const rows = cotas.map(c => `${c.fipeMin},${c.fipeMax},${c.fator},${c.taxaAdmin},"${c.descricao}"`);
   return [header, ...rows].join("\n");
 }
 
@@ -48,11 +48,11 @@ function parseCSV(text: string): { data: FaixaCota[]; errors: string[] } {
     }
     const fipeMin = parseFloat(parts[0]);
     const fipeMax = parseFloat(parts[1]);
-    const cotaValor = parseFloat(parts[2]);
+    const fator = parseFloat(parts[2]);
     const taxaAdmin = parseFloat(parts[3]);
-    const produtosVinculados = parts[4].replace(/"/g, "").trim();
+    const descricao = parts[4].replace(/"/g, "").trim();
 
-    if (isNaN(fipeMin) || isNaN(fipeMax) || isNaN(cotaValor) || isNaN(taxaAdmin)) {
+    if (isNaN(fipeMin) || isNaN(fipeMax) || isNaN(fator) || isNaN(taxaAdmin)) {
       errors.push(`Linha ${i + 1}: valores numéricos inválidos`);
       continue;
     }
@@ -60,7 +60,7 @@ function parseCSV(text: string): { data: FaixaCota[]; errors: string[] } {
       errors.push(`Linha ${i + 1}: fipe_min (${fipeMin}) deve ser menor que fipe_max (${fipeMax})`);
       continue;
     }
-    data.push({ id: `imp-${i}`, fipeMin, fipeMax, cotaValor, taxaAdmin, produtosVinculados });
+    data.push({ id: `imp-${i}`, fipeMin, fipeMax, fator, taxaAdmin, descricao });
   }
 
   // Check overlaps
@@ -87,9 +87,9 @@ export default function TabelaCotas({ onBack }: { onBack: () => void }) {
         id: String(f.id),
         fipeMin: f.fipe_inicial ?? 0,
         fipeMax: f.fipe_final ?? 0,
-        cotaValor: f.cota_valor ?? f.valor_cota ?? 0,
-        taxaAdmin: f.taxa_admin ?? 0,
-        produtosVinculados: f.produtos_vinculados || f.descricao || "",
+        fator: f.fator ?? 0,
+        taxaAdmin: f.taxa_adm ?? 0,
+        descricao: f.descricao || "",
       })) as FaixaCota[];
     },
   });
@@ -164,7 +164,7 @@ export default function TabelaCotas({ onBack }: { onBack: () => void }) {
   const updateCota = (id: string, field: keyof FaixaCota, value: string) => {
     setCotas(prev => prev.map(c => {
       if (c.id !== id) return c;
-      if (field === "produtosVinculados") return { ...c, [field]: value };
+      if (field === "descricao") return { ...c, [field]: value };
       const num = parseFloat(value);
       return { ...c, [field]: isNaN(num) ? 0 : num };
     }));
@@ -176,7 +176,7 @@ export default function TabelaCotas({ onBack }: { onBack: () => void }) {
     const newId = `new-${Date.now()}`;
     setCotas(prev => [...prev, {
       id: newId, fipeMin: newMin, fipeMax: newMin + 50000,
-      cotaValor: 0, taxaAdmin: 0, produtosVinculados: "",
+      fator: 0, taxaAdmin: 0, descricao: "",
     }]);
     setEditingId(newId);
   };
@@ -264,9 +264,9 @@ export default function TabelaCotas({ onBack }: { onBack: () => void }) {
                 <TableRow className="bg-muted/30">
                   <TableHead className="text-xs">FIPE Mínimo</TableHead>
                   <TableHead className="text-xs">FIPE Máximo</TableHead>
-                  <TableHead className="text-xs">Valor Cota</TableHead>
+                  <TableHead className="text-xs">Fator</TableHead>
                   <TableHead className="text-xs">Taxa Admin</TableHead>
-                  <TableHead className="text-xs">Produtos Vinculados</TableHead>
+                  <TableHead className="text-xs">Descrição</TableHead>
                   <TableHead className="text-xs w-20"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -291,9 +291,9 @@ export default function TabelaCotas({ onBack }: { onBack: () => void }) {
                       </TableCell>
                       <TableCell>
                         {isEditing ? (
-                          <Input type="number" step="0.01" value={c.cotaValor} onChange={e => updateCota(c.id, "cotaValor", e.target.value)} className="h-8 text-xs w-24" />
+                          <Input type="number" step="0.0001" value={c.fator} onChange={e => updateCota(c.id, "fator", e.target.value)} className="h-8 text-xs w-24" />
                         ) : (
-                          <span className="text-sm font-semibold">{fmtBRL(c.cotaValor)}</span>
+                          <span className="text-sm font-semibold">{c.fator.toFixed(4)}</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -305,13 +305,9 @@ export default function TabelaCotas({ onBack }: { onBack: () => void }) {
                       </TableCell>
                       <TableCell>
                         {isEditing ? (
-                          <Input value={c.produtosVinculados} onChange={e => updateCota(c.id, "produtosVinculados", e.target.value)} className="h-8 text-xs" />
+                          <Input value={c.descricao} onChange={e => updateCota(c.id, "descricao", e.target.value)} className="h-8 text-xs" />
                         ) : (
-                          <div className="flex flex-wrap gap-1">
-                            {c.produtosVinculados.split(",").map((p, i) => (
-                              <Badge key={i} variant="outline" className="text-[10px]">{p.trim()}</Badge>
-                            ))}
-                          </div>
+                          <span className="text-sm">{c.descricao || "—"}</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -342,7 +338,7 @@ export default function TabelaCotas({ onBack }: { onBack: () => void }) {
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
             <div className="text-xs text-muted-foreground space-y-1">
-              <p><strong>Formato do CSV:</strong> fipe_min, fipe_max, cota_valor, taxa_admin, produtos_vinculados</p>
+              <p><strong>Formato do CSV:</strong> fipe_min, fipe_max, fator, taxa_admin, descricao</p>
               <p><strong>Regra:</strong> As faixas FIPE não podem ter sobreposição (ex: 0-30000, 30001-50000).</p>
               <p><strong>Integração:</strong> Ao salvar, os dados serão enviados para o backend e aplicados automaticamente na composição de mensalidades.</p>
             </div>

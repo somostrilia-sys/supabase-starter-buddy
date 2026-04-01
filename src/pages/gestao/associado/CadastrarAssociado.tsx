@@ -299,25 +299,44 @@ export default function CadastrarAssociado() {
       };
       const dbStatus = dbStatusMap[form.situacao] || "pendente";
 
-      const obsLines = [form.observacoes];
-      if (needsMotivo && form.motivoInativacao) {
-        obsLines.push(`Motivo da inativação: ${form.motivoInativacao}`);
+      // Lookup regional_id by name
+      let regionalId: string | null = null;
+      if (form.regional) {
+        const { data: regData } = await supabase
+          .from("regionais" as any)
+          .select("id")
+          .eq("nome", form.regional)
+          .maybeSingle();
+        if (regData) regionalId = (regData as any).id;
+      }
+
+      // Lookup cooperativa_id by name
+      let cooperativaId: string | null = null;
+      if (form.cooperativa) {
+        const { data: coopData } = await supabase
+          .from("cooperativas" as any)
+          .select("id")
+          .eq("nome", form.cooperativa)
+          .maybeSingle();
+        if (coopData) cooperativaId = (coopData as any).id;
       }
 
       const { error } = await supabase.from("associados").insert({
         nome: form.nome.trim(),
         cpf: cpfLimpo,
-        rg: form.rg || null,
         data_nascimento: form.dataNasc || null,
-        cep: form.cep?.replace(/\D/g, "") || null,
-        endereco: [form.logradouro, form.numero, form.complemento, form.bairro].filter(Boolean).join(", ") || null,
-        cidade: form.cidade || null,
-        estado: form.estado || null,
+        endereco_cep: form.cep?.replace(/\D/g, "") || null,
+        endereco_logradouro: form.logradouro || null,
+        endereco_numero: form.numero || null,
+        endereco_complemento: form.complemento || null,
+        endereco_bairro: form.bairro || null,
+        endereco_cidade: form.cidade || null,
+        endereco_uf: form.estado || null,
         telefone: form.celular || form.telResidencial || null,
         email: form.email || null,
-        observacoes: obsLines.filter(Boolean).join("\n") || null,
         status: dbStatus as any,
-        data_adesao: form.dataContrato || new Date().toISOString().split("T")[0],
+        regional_id: regionalId,
+        cooperativa_id: cooperativaId,
       });
 
       if (error) throw error;

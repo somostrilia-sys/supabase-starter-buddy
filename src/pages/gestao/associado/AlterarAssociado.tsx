@@ -36,7 +36,7 @@ interface Associado {
   nomeConjuge: string; nomePai: string; nomeMae: string;
   regional: string; cooperativa: string; consultorResp: string;
   banco: string; agencia: string; contaCorrente: string; diaVencimento: string;
-  observacoes: string; status: string; plano: string; dataAdesao: string; revistoria_status?: string;
+  observacoes: string; status: string; plano: string; dataAdesao: string;
   veiculos: { placa: string; modelo: string; marca: string; ano: number; cor: string; situacao: string; plano: string }[];
   lancamentos: { data: string; tipo: string; valor: number; status: string; vencimento: string }[];
   documentos: { nome: string; tipo: string; dataUpload: string }[];
@@ -426,7 +426,6 @@ export default function AlterarAssociado() {
   const [page, setPage] = useState(1);
   const [ocModal, setOcModal] = useState(false);
   const [newOc, setNewOc] = useState({ tipo: "", veiculo: "", data: "", descricao: "", valor: "" });
-  const [savingRevistoria, setSavingRevistoria] = useState(false);
 
   const setF = (k: string, v: string) => setFilters(p => ({ ...p, [k]: v }));
 
@@ -435,7 +434,7 @@ export default function AlterarAssociado() {
     try {
       let query = supabase
         .from("associados")
-        .select("*, planos(*), veiculos(*), mensalidades(*)")
+        .select("*, veiculos(*), contratos(*, planos(*))")
         .order("nome")
         .limit(50);
 
@@ -477,13 +476,13 @@ export default function AlterarAssociado() {
           email: a.email || "",
           emailAux: "",
           contato: "",
-          cep: a.cep || "",
-          logradouro: a.endereco || "",
+          cep: a.endereco_cep || "",
+          logradouro: a.endereco_logradouro || "",
           numero: "",
           complemento: "",
           bairro: "",
-          cidade: a.cidade || "",
-          estado: a.estado || "",
+          cidade: a.endereco_cidade || "",
+          estado: a.endereco_uf || "",
           nomeConjuge: "",
           nomePai: "",
           nomeMae: "",
@@ -494,10 +493,9 @@ export default function AlterarAssociado() {
           agencia: "",
           contaCorrente: "",
           diaVencimento: "10",
-          observacoes: a.observacoes || "",
-          revistoria_status: a.revistoria_status || "pendente",
+          observacoes: "",
           status: a.status === "ativo" ? "Ativo" : a.status === "suspenso" ? "Suspenso" : a.status === "cancelado" ? "Cancelado" : (a.status === "inativo" || a.status === "inativo_pendencia") ? "Inadimplente" : "Ativo",
-          plano: a.planos?.nome || "",
+          plano: a.contratos?.[0]?.planos?.nome || "",
           dataAdesao: a.data_adesao || "",
           veiculos: (a.veiculos || []).map((v: any) => ({
             placa: v.placa,
@@ -506,15 +504,9 @@ export default function AlterarAssociado() {
             ano: v.ano || 0,
             cor: v.cor || "",
             situacao: "Ativo",
-            plano: a.planos?.nome || "",
+            plano: a.contratos?.[0]?.planos?.nome || "",
           })),
-          lancamentos: (a.mensalidades || []).map((m: any) => ({
-            data: m.created_at?.split("T")[0] || m.data_vencimento,
-            tipo: "Mensalidade",
-            valor: m.valor,
-            status: m.status === "pago" ? "Pago" : m.status === "atrasado" ? "Atrasado" : "Pendente",
-            vencimento: m.data_vencimento,
-          })),
+          lancamentos: [],
           documentos: [],
           historico: [],
           ocorrencias: [],
@@ -565,7 +557,6 @@ export default function AlterarAssociado() {
       regional: a.regional, cooperativa: a.cooperativa, consultorResp: a.consultorResp,
       banco: a.banco, agencia: a.agencia, contaCorrente: a.contaCorrente,
       diaVencimento: a.diaVencimento, observacoes: a.observacoes, status: a.status, plano: a.plano,
-      revistoria_status: a.revistoria_status || "pendente",
     });
   };
 
@@ -588,11 +579,10 @@ export default function AlterarAssociado() {
             nome: editForm.nome,
             telefone: editForm.celular || null,
             email: editForm.email || null,
-            endereco: editForm.logradouro || null,
-            cidade: editForm.cidade || null,
-            estado: editForm.estado || null,
-            cep: editForm.cep || null,
-            observacoes: editForm.observacoes || null,
+            endereco_logradouro: editForm.logradouro || null,
+            endereco_cidade: editForm.cidade || null,
+            endereco_uf: editForm.estado || null,
+            endereco_cep: editForm.cep || null,
             status: (statusDbMap[editForm.status] || "ativo") as any,
           })
           .eq("id", selected.id);
@@ -606,38 +596,6 @@ export default function AlterarAssociado() {
     }
   };
 
-  const handleRevistoria = async (novoStatus: "realizada" | "pendente") => {
-    if (!selected) return;
-    const isRealId = selected.id.includes("-") && selected.id.length > 10;
-    if (!isRealId) {
-      toast.error("Operação disponível apenas para associados reais (banco de dados).");
-      return;
-    }
-    setSavingRevistoria(true);
-    try {
-      const valorAntigo = editForm.revistoria_status || "pendente";
-      const { error } = await supabase
-        .from("associados")
-        .update({ revistoria_status: novoStatus } as any)
-        .eq("id", selected.id);
-      if (error) throw error;
-      setE("revistoria_status", novoStatus);
-      await registrarAuditoria(supabase, {
-        entidade: "associados",
-        entidade_id: selected.id,
-        associado_id: selected.id,
-        campo_alterado: "revistoria_status",
-        valor_antigo: valorAntigo,
-        valor_novo: novoStatus,
-        origem_modulo: "gestao_associado",
-      });
-      toast.success(novoStatus === "realizada" ? "Revistoria marcada como realizada!" : "Revistoria marcada como pendente!");
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao atualizar revistoria");
-    } finally {
-      setSavingRevistoria(false);
-    }
-  };
 
   const paged = results.slice((page - 1) * perPage, page * perPage);
   const totalPages = Math.ceil(results.length / perPage);
@@ -951,33 +909,6 @@ export default function AlterarAssociado() {
                 <div>
                   <Label className="text-xs">Observações</Label>
                   <Textarea value={editForm.observacoes||""} onChange={e => setE("observacoes", e.target.value)} rows={3} />
-                </div>
-                <div>
-                  <Label className="text-xs mb-2 block">Status de Revistoria</Label>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-sm font-medium px-3 py-1 rounded-full border ${editForm.revistoria_status === "realizada" ? "bg-success/10 text-success border-success/30" : "bg-warning/10 text-warning border-warning/30"}`}>
-                      {editForm.revistoria_status === "realizada" ? "✅ Realizada" : "⏳ Pendente"}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={savingRevistoria || editForm.revistoria_status === "realizada"}
-                      onClick={() => handleRevistoria("realizada")}
-                      className="gap-1.5 text-success border-success/30 hover:bg-emerald-50"
-                    >
-                      {savingRevistoria ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-                      ✅ Marcar Revistoria Feita
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={savingRevistoria || editForm.revistoria_status === "pendente"}
-                      onClick={() => handleRevistoria("pendente")}
-                      className="gap-1.5 text-warning border-warning/30 hover:bg-warning/8"
-                    >
-                      ⏳ Marcar Pendente
-                    </Button>
-                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>

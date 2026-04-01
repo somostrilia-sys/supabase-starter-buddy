@@ -23,15 +23,15 @@ export default function Conferencia({ onBack }: { onBack: () => void }) {
     async function fetchData() {
       setLoading(true);
       const [partRes, naoPartRes] = await Promise.all([
-        supabase.from("associados").select("*").eq("status", "ativo").limit(50),
-        supabase.from("associados").select("*").in("status", ["inativo", "inadimplente"]).limit(50),
+        supabase.from("associados").select("*, cooperativas(nome)").eq("status", "ativo").limit(50),
+        supabase.from("associados").select("*, cooperativas(nome)").in("status", ["inativo", "inadimplente"]).limit(50),
       ]);
       if (partRes.data) setParticipantes(partRes.data);
       if (naoPartRes.data) setNaoParticipantes(naoPartRes.data);
 
       // Extract unique cooperativas from both lists
       const allAssociados = [...(partRes.data || []), ...(naoPartRes.data || [])];
-      const uniqueCoops = [...new Set(allAssociados.map(a => a.cooperativa).filter(Boolean))];
+      const uniqueCoops = [...new Set(allAssociados.map(a => a.cooperativas?.nome).filter(Boolean))];
       setCooperativas(uniqueCoops);
 
       setLoading(false);
@@ -40,7 +40,7 @@ export default function Conferencia({ onBack }: { onBack: () => void }) {
   }, []);
 
   const filteredP = participantes.filter(p => {
-    if (filtroCooperativa !== "todas" && p.cooperativa !== filtroCooperativa) return false;
+    if (filtroCooperativa !== "todas" && p.cooperativas?.nome !== filtroCooperativa) return false;
     if (busca && !p.nome?.toLowerCase().includes(busca.toLowerCase())) return false;
     return true;
   });
@@ -112,7 +112,7 @@ export default function Conferencia({ onBack }: { onBack: () => void }) {
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">{p.nome}</TableCell>
                       <TableCell className="font-mono text-xs">{p.cpf}</TableCell>
-                      <TableCell>{p.cooperativa}</TableCell>
+                      <TableCell>{p.cooperativas?.nome || "—"}</TableCell>
                       <TableCell className="text-right">R$ {Number(p.valor || 0).toFixed(2)}</TableCell>
                       <TableCell><Badge variant={p.status === "pago" ? "default" : "secondary"}>{p.status}</Badge></TableCell>
                       <TableCell>
@@ -142,7 +142,7 @@ export default function Conferencia({ onBack }: { onBack: () => void }) {
                     <TableRow key={n.id}>
                       <TableCell className="font-medium">{n.nome}</TableCell>
                       <TableCell className="font-mono text-xs">{n.cpf}</TableCell>
-                      <TableCell>{n.cooperativa}</TableCell>
+                      <TableCell>{n.cooperativas?.nome || "—"}</TableCell>
                       <TableCell><Badge variant="destructive">{n.status}</Badge></TableCell>
                     </TableRow>
                   ))}
