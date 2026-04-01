@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { registrarAuditoria } from "@/lib/auditoria";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,12 +82,25 @@ export default function AlterarAssociado() {
   const [regionaisOpts, setRegionaisOpts] = useState<string[]>([]);
   const [cooperativasOpts, setCooperativasOpts] = useState<string[]>([]);
 
+  const [regionaisMap, setRegionaisMap] = useState<Record<string, string>>({});
+  const [cooperativasMap, setCooperativasMap] = useState<Record<string, { nome: string; regional_id: string }>>({});
+
   useEffect(() => {
-    supabase.from("regionais").select("nome").eq("ativo", true).order("nome").then(({ data }) => {
-      if (data) setRegionaisOpts(data.map((r: any) => r.nome));
+    supabase.from("regionais").select("id, nome").eq("ativo", true).order("nome").then(({ data }) => {
+      if (data) {
+        setRegionaisOpts(data.map((r: any) => r.nome));
+        const map: Record<string, string> = {};
+        data.forEach((r: any) => { map[r.id] = r.nome; });
+        setRegionaisMap(map);
+      }
     });
-    supabase.from("cooperativas").select("nome").eq("ativo", true).order("nome").then(({ data }) => {
-      if (data) setCooperativasOpts(data.map((c: any) => c.nome));
+    supabase.from("cooperativas").select("id, nome, regional_id").eq("ativo", true).order("nome").then(({ data }) => {
+      if (data) {
+        setCooperativasOpts(data.map((c: any) => c.nome));
+        const map: Record<string, { nome: string; regional_id: string }> = {};
+        data.forEach((c: any) => { map[c.id] = { nome: c.nome, regional_id: c.regional_id }; });
+        setCooperativasMap(map);
+      }
     });
   }, []);
   const [ocModal, setOcModal] = useState(false);
@@ -100,7 +113,7 @@ export default function AlterarAssociado() {
     try {
       let query = supabase
         .from("associados")
-        .select("*, veiculos(*), contratos(*, planos(*))")
+        .select("*, veiculos(*), contratos(*, planos(*)), regionais(id, nome), cooperativas(id, nome)")
         .order("nome")
         .limit(50);
 
@@ -115,6 +128,17 @@ export default function AlterarAssociado() {
         query = query.eq("status", "cancelado" as any);
       } else if (filters.situacao !== "Todos") {
         query = query.eq("status", filters.situacao.toLowerCase() as any);
+      }
+
+      // Filtrar por regional (busca id pelo nome selecionado)
+      if (filters.regional !== "Todos") {
+        const regId = Object.entries(regionaisMap).find(([, nome]) => nome === filters.regional)?.[0];
+        if (regId) query = query.eq("regional_id", regId as any);
+      }
+      // Filtrar por cooperativa
+      if (filters.cooperativa !== "Todos") {
+        const coopId = Object.entries(cooperativasMap).find(([, c]) => c.nome === filters.cooperativa)?.[0];
+        if (coopId) query = query.eq("cooperativa_id", coopId as any);
       }
 
       const { data: supabaseData, error } = await query;
@@ -152,8 +176,8 @@ export default function AlterarAssociado() {
           nomeConjuge: "",
           nomePai: "",
           nomeMae: "",
-          regional: "",
-          cooperativa: "",
+          regional: a.regionais?.nome || (a.regional_id ? regionaisMap[a.regional_id] : "") || "",
+          cooperativa: a.cooperativas?.nome || (a.cooperativa_id ? cooperativasMap[a.cooperativa_id]?.nome : "") || "",
           consultorResp: "",
           banco: "",
           agencia: "",
@@ -270,25 +294,25 @@ export default function AlterarAssociado() {
         <Card className="mb-6">
           <CardContent className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
-              <div><Label className="text-xs">CPF/CNPJ</Label><Input value={filters.cpf} onChange={e => setF("cpf", e.target.value)} placeholder="000.000.000-00" /></div>
-              <div><Label className="text-xs">Nome</Label><Input value={filters.nome} onChange={e => setF("nome", e.target.value)} placeholder="Nome do associado" /></div>
-              <div><Label className="text-xs">Placa</Label><Input value={filters.placa} onChange={e => setF("placa", e.target.value)} placeholder="ABC-1234" /></div>
+              <div><Label className="text-xs">CPF/CNPJ</Label><Input value={filters.cpf} onChange={e => setF("cpf", e.target.value)} placeholder="Ex: 000.000.000-00 ou 00.000.000/0001-00" /></div>
+              <div><Label className="text-xs">Nome Completo do Associado</Label><Input value={filters.nome} onChange={e => setF("nome", e.target.value)} placeholder="Ex: João da Silva" /></div>
+              <div><Label className="text-xs">Placa do Veículo</Label><Input value={filters.placa} onChange={e => setF("placa", e.target.value)} placeholder="Ex: ABC1D23 ou ABC-1234" /></div>
               <div>
-                <Label className="text-xs">Situação</Label>
+                <Label className="text-xs">Status do Cadastro</Label>
                 <Select value={filters.situacao} onValueChange={v => setF("situacao", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{["Todos","Ativo","Inadimplente","Cancelado","Suspenso"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
-                <Label className="text-xs">Regional</Label>
+                <Label className="text-xs">Regional Responsável</Label>
                 <Select value={filters.regional} onValueChange={v => setF("regional", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{["Todos",...regionaisOpts].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
-                <Label className="text-xs">Cooperativa</Label>
+                <Label className="text-xs">Cooperativa Vinculada</Label>
                 <Select value={filters.cooperativa} onValueChange={v => setF("cooperativa", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{["Todos",...cooperativasOpts].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
@@ -406,8 +430,8 @@ export default function AlterarAssociado() {
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
-                  <div className="lg:col-span-2"><Label className="text-xs">Nome</Label><Input value={editForm.nome||""} onChange={e => setE("nome", e.target.value)} /></div>
-                  <div><Label className="text-xs">CPF/CNPJ</Label><Input value={editForm.cpf||""} disabled className="bg-muted/50" /></div>
+                  <div className="lg:col-span-2"><Label className="text-xs">Nome Completo do Associado</Label><Input value={editForm.nome||""} onChange={e => setE("nome", e.target.value)} placeholder="Nome completo" /></div>
+                  <div><Label className="text-xs">CPF/CNPJ</Label><Input value={editForm.cpf||""} disabled className="bg-muted/50" placeholder="000.000.000-00" /></div>
                   <div><Label className="text-xs">RG</Label><Input value={editForm.rg||""} onChange={e => setE("rg", e.target.value)} /></div>
                   <div><Label className="text-xs">Data Nascimento</Label><Input type="date" value={editForm.dataNasc||""} onChange={e => setE("dataNasc", e.target.value)} /></div>
                   <div><Label className="text-xs">Sexo</Label>
@@ -424,7 +448,7 @@ export default function AlterarAssociado() {
                       <SelectContent>{["A","B","C","D","E","AB","AC","AD","AE"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <div><Label className="text-xs">Status</Label>
+                  <div><Label className="text-xs">Status do Cadastro</Label>
                     <Select value={editForm.status} onValueChange={v => setE("status", v)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>{["Ativo","Inativo","Suspenso","Cancelado"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
@@ -446,13 +470,13 @@ export default function AlterarAssociado() {
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
-                  <div><Label className="text-xs">CEP</Label><Input value={editForm.cep||""} onChange={e => setE("cep", e.target.value)} /></div>
-                  <div className="lg:col-span-2"><Label className="text-xs">Logradouro</Label><Input value={editForm.logradouro||""} onChange={e => setE("logradouro", e.target.value)} /></div>
-                  <div><Label className="text-xs">Nº</Label><Input value={editForm.numero||""} onChange={e => setE("numero", e.target.value)} /></div>
-                  <div><Label className="text-xs">Complemento</Label><Input value={editForm.complemento||""} onChange={e => setE("complemento", e.target.value)} /></div>
-                  <div><Label className="text-xs">Bairro</Label><Input value={editForm.bairro||""} onChange={e => setE("bairro", e.target.value)} /></div>
-                  <div><Label className="text-xs">Cidade</Label><Input value={editForm.cidade||""} onChange={e => setE("cidade", e.target.value)} /></div>
-                  <div><Label className="text-xs">Estado</Label>
+                  <div><Label className="text-xs">CEP</Label><Input value={editForm.cep||""} onChange={e => setE("cep", e.target.value)} placeholder="00000-000" /></div>
+                  <div className="lg:col-span-2"><Label className="text-xs">Logradouro</Label><Input value={editForm.logradouro||""} onChange={e => setE("logradouro", e.target.value)} placeholder="Rua, Avenida, etc." /></div>
+                  <div><Label className="text-xs">Nº</Label><Input value={editForm.numero||""} onChange={e => setE("numero", e.target.value)} placeholder="Nº" /></div>
+                  <div><Label className="text-xs">Complemento</Label><Input value={editForm.complemento||""} onChange={e => setE("complemento", e.target.value)} placeholder="Apto, Bloco, etc." /></div>
+                  <div><Label className="text-xs">Bairro</Label><Input value={editForm.bairro||""} onChange={e => setE("bairro", e.target.value)} placeholder="Bairro" /></div>
+                  <div><Label className="text-xs">Cidade</Label><Input value={editForm.cidade||""} onChange={e => setE("cidade", e.target.value)} placeholder="Cidade" /></div>
+                  <div><Label className="text-xs">UF</Label>
                     <Select value={editForm.estado} onValueChange={v => setE("estado", v)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>{ufs.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
@@ -483,9 +507,9 @@ export default function AlterarAssociado() {
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-                  <div><Label className="text-xs">Celular</Label><Input value={editForm.celular||""} onChange={e => setE("celular", e.target.value)} /></div>
-                  <div><Label className="text-xs">Tel. Residencial</Label><Input value={editForm.telResidencial||""} onChange={e => setE("telResidencial", e.target.value)} /></div>
-                  <div><Label className="text-xs">Tel. Comercial</Label><Input value={editForm.telComercial||""} onChange={e => setE("telComercial", e.target.value)} /></div>
+                  <div><Label className="text-xs">Telefone Principal</Label><Input value={editForm.celular||""} onChange={e => setE("celular", e.target.value)} placeholder="(00) 00000-0000" /></div>
+                  <div><Label className="text-xs">Tel. Residencial</Label><Input value={editForm.telResidencial||""} onChange={e => setE("telResidencial", e.target.value)} placeholder="(00) 0000-0000" /></div>
+                  <div><Label className="text-xs">Tel. Comercial</Label><Input value={editForm.telComercial||""} onChange={e => setE("telComercial", e.target.value)} placeholder="(00) 0000-0000" /></div>
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -496,9 +520,9 @@ export default function AlterarAssociado() {
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-                  <div><Label className="text-xs">Email</Label><Input value={editForm.email||""} onChange={e => setE("email", e.target.value)} /></div>
-                  <div><Label className="text-xs">Email Aux</Label><Input value={editForm.emailAux||""} onChange={e => setE("emailAux", e.target.value)} /></div>
-                  <div><Label className="text-xs">Contato</Label><Input value={editForm.contato||""} onChange={e => setE("contato", e.target.value)} /></div>
+                  <div><Label className="text-xs">E-mail do Associado</Label><Input value={editForm.email||""} onChange={e => setE("email", e.target.value)} placeholder="email@exemplo.com" /></div>
+                  <div><Label className="text-xs">E-mail Secundário</Label><Input value={editForm.emailAux||""} onChange={e => setE("emailAux", e.target.value)} placeholder="email@exemplo.com" /></div>
+                  <div><Label className="text-xs">Contato de Referência</Label><Input value={editForm.contato||""} onChange={e => setE("contato", e.target.value)} placeholder="Nome e telefone" /></div>
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -528,9 +552,19 @@ export default function AlterarAssociado() {
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-                  <div><Label className="text-xs">Regional</Label><Input value={editForm.regional||""} onChange={e => setE("regional", e.target.value)} /></div>
-                  <div><Label className="text-xs">Cooperativa</Label><Input value={editForm.cooperativa||""} onChange={e => setE("cooperativa", e.target.value)} /></div>
-                  <div><Label className="text-xs">Consultor Responsável</Label><Input value={editForm.consultorResp||""} onChange={e => setE("consultorResp", e.target.value)} /></div>
+                  <div><Label className="text-xs">Regional Responsável</Label>
+                    <Select value={editForm.regional || ""} onValueChange={v => setE("regional", v)}>
+                      <SelectTrigger><SelectValue placeholder="Selecione a regional" /></SelectTrigger>
+                      <SelectContent>{regionaisOpts.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label className="text-xs">Cooperativa Vinculada</Label>
+                    <Select value={editForm.cooperativa || ""} onValueChange={v => setE("cooperativa", v)}>
+                      <SelectTrigger><SelectValue placeholder="Selecione a cooperativa" /></SelectTrigger>
+                      <SelectContent>{cooperativasOpts.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label className="text-xs">Consultor Responsável</Label><Input value={editForm.consultorResp||""} onChange={e => setE("consultorResp", e.target.value)} placeholder="Nome do consultor" /></div>
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -541,10 +575,10 @@ export default function AlterarAssociado() {
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-                  <div><Label className="text-xs">Banco</Label><Input value={editForm.banco||""} onChange={e => setE("banco", e.target.value)} /></div>
-                  <div><Label className="text-xs">Agência</Label><Input value={editForm.agencia||""} onChange={e => setE("agencia", e.target.value)} /></div>
-                  <div><Label className="text-xs">Conta Corrente</Label><Input value={editForm.contaCorrente||""} onChange={e => setE("contaCorrente", e.target.value)} /></div>
-                  <div><Label className="text-xs">Dia Vencimento</Label>
+                  <div><Label className="text-xs">Banco</Label><Input value={editForm.banco||""} onChange={e => setE("banco", e.target.value)} placeholder="Ex: Bradesco, Itaú" /></div>
+                  <div><Label className="text-xs">Agência</Label><Input value={editForm.agencia||""} onChange={e => setE("agencia", e.target.value)} placeholder="0000" /></div>
+                  <div><Label className="text-xs">Conta Corrente</Label><Input value={editForm.contaCorrente||""} onChange={e => setE("contaCorrente", e.target.value)} placeholder="00000-0" /></div>
+                  <div><Label className="text-xs">Dia de Vencimento</Label>
                     <Select value={editForm.diaVencimento} onValueChange={v => setE("diaVencimento", v)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>{Array.from({length:31},(_,i)=>i+1).map(d => <SelectItem key={d} value={String(d)}>Dia {d}</SelectItem>)}</SelectContent>

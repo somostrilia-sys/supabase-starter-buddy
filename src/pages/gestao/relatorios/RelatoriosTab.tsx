@@ -196,6 +196,22 @@ const allColumns = [
   { key: "regional", label: "Regional" }, { key: "dataCadastro", label: "Data Cadastro" }, { key: "situacao", label: "Situação" },
 ];
 
+// Map associado_status enum values to filter display labels
+const statusEnumToLabel: Record<string, string> = {
+  ativo: "ATIVO",
+  "ativo_migrado": "ATIVO - (MIGRADO)",
+  inativo: "INATIVO",
+  inativo_pendencia: "INATIVO - COM PENDÊNCIA",
+  inativo_retirada: "INATIVO - RETIRADA RASTREADOR",
+  suspenso: "INATIVO",
+  cancelado: "INATIVO",
+  pendente: "PENDENTE",
+  pendente_revistoria: "PENDENTE DE REVISTORIA",
+  inadimplente: "INADIMPLENTE",
+  "inadimplente_migrado": "INADIMPLENTE - (MIGRADO)",
+  negado: "NEGADO",
+};
+
 const PAGE_SIZE = 10;
 
 export default function RelatoriosTab() {
@@ -210,27 +226,29 @@ export default function RelatoriosTab() {
   const [pageVeic, setPageVeic] = useState(1);
   const [pageBol, setPageBol] = useState(1);
 
-  // Fetch regionais from Supabase
-  const { data: regionaisData } = useQuery({
-    queryKey: ["regionais-lista"],
+  // Fetch regionais from Supabase (id + nome for filter lookups)
+  const { data: regionaisFullData } = useQuery({
+    queryKey: ["regionais-lista-full"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("regionais").select("nome");
+      const { data, error } = await (supabase as any).from("regionais").select("id, nome").order("nome");
       if (error) throw error;
-      return (data || []).map((r: any) => r.nome as string);
+      return (data || []) as { id: string; nome: string }[];
     },
   });
-  const regionaisLista = regionaisData?.length ? regionaisData : regionaisListaFallback;
+  const regionaisFullList = regionaisFullData || [];
+  const regionaisLista = regionaisFullList.length ? regionaisFullList.map(r => r.nome) : regionaisListaFallback;
 
-  // Fetch cooperativas from Supabase
-  const { data: cooperativasData } = useQuery({
-    queryKey: ["cooperativas-lista"],
+  // Fetch cooperativas from Supabase (id + nome for filter lookups)
+  const { data: cooperativasFullData } = useQuery({
+    queryKey: ["cooperativas-lista-full"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("cooperativas").select("nome");
+      const { data, error } = await (supabase as any).from("cooperativas").select("id, nome").order("nome");
       if (error) throw error;
-      return (data || []).map((c: any) => c.nome as string);
+      return (data || []) as { id: string; nome: string }[];
     },
   });
-  const cooperativasLista = cooperativasData?.length ? cooperativasData : cooperativasListaFallback;
+  const cooperativasFullList = cooperativasFullData || [];
+  const cooperativasLista = cooperativasFullList.length ? cooperativasFullList.map(c => c.nome) : cooperativasListaFallback;
 
   // Fetch associados from Supabase
   const { data: associadosData } = useQuery({
@@ -298,12 +316,18 @@ export default function RelatoriosTab() {
   const [selCota, setSelCota] = useState<Set<string>>(new Set(cotasVeiculo));
   const [selCategoria, setSelCategoria] = useState<Set<string>>(new Set(categoriasVeiculo));
 
-  // Auto-select all regionais when they load from Supabase
+  // Auto-select all regionais/cooperativas when they load from Supabase
   useEffect(() => {
     if (regionaisLista.length > 0) {
       setSelRegional(new Set(regionaisLista));
     }
   }, [regionaisLista]);
+
+  useEffect(() => {
+    if (cooperativasLista.length > 0) {
+      setSelCooperativa(new Set(cooperativasLista));
+    }
+  }, [cooperativasLista]);
 
   // Boleto advanced filters
   const [bolFiltroData, setBolFiltroData] = useState("vencimento");
@@ -324,11 +348,48 @@ export default function RelatoriosTab() {
     setFn(prev => { const next = new Set(prev); if (next.has(item)) next.delete(item); else next.add(item); return next; });
   };
 
+  // Build lookup maps: regional_id -> nome, cooperativa_id -> nome
+  const regionalIdToName: Record<string, string> = {};
+  regionaisFullList.forEach(r => { regionalIdToName[r.id] = r.nome; });
+  const cooperativaIdToName: Record<string, string> = {};
+  cooperativasFullList.forEach(c => { cooperativaIdToName[c.id] = c.nome; });
+
+  // Reverse lookups: selected names -> sets of IDs
+  const selectedRegionalIds = new Set(
+    regionaisFullList.filter(r => selRegional.has(r.nome)).map(r => r.id)
+  );
+  const selectedCooperativaIds = new Set(
+    cooperativasFullList.filter(c => selCooperativa.has(c.nome)).map(c => c.id)
+  );
+
   const filteredAssoc = realAssociados.filter((a: any) => {
     const nome = (a.nome || "").toLowerCase();
     const cpf = a.cpf || "";
     const placa = a.placa || "";
     if (busca && !nome.includes(busca.toLowerCase()) && !cpf.includes(busca) && !placa.includes(busca.toUpperCase())) return false;
+
+    // Filter by regional (skip if row has no regional_id or no regionais selected means show none)
+    if (selRegional.size < regionaisLista.length) {
+      if (a.regional_id) {
+        if (!selectedRegionalIds.has(a.regional_id)) return false;
+      }
+      // If no regional_id on the row, keep it (data not yet populated)
+    }
+
+    // Filter by cooperativa
+    if (selCooperativa.size < cooperativasLista.length) {
+      if (a.cooperativa_id) {
+        if (!selectedCooperativaIds.has(a.cooperativa_id)) return false;
+      }
+    }
+
+    // Filter by situação do associado (maps a.status enum to display labels)
+    if (selSitAssociado.size < situacoesAssociado.length) {
+      const displayLabel = statusEnumToLabel[a.status as string];
+      if (displayLabel && !selSitAssociado.has(displayLabel)) return false;
+      // If status is unknown/unmapped, keep the row
+    }
+
     return true;
   });
 
@@ -343,6 +404,47 @@ export default function RelatoriosTab() {
     const dateField = bolFiltroData === "pagamento" ? b.data_pagamento : b.vencimento;
     if (bolDataDe && dateField && dateField < bolDataDe) return false;
     if (bolDataAte && dateField && dateField > bolDataAte) return false;
+    return true;
+  });
+
+  // Filter veiculos by selected filters (situation, type, cota, categoria, regional, cooperativa)
+  const filteredVeiculos = realVeiculos.filter((v: any) => {
+    // Text search
+    if (buscaVeic) {
+      const q = buscaVeic.toLowerCase();
+      const placa = (v.placa || "").toLowerCase();
+      const modelo = (v.modelo || "").toLowerCase();
+      const marca = (v.marca || "").toLowerCase();
+      if (!placa.includes(q) && !modelo.includes(q) && !marca.includes(q)) return false;
+    }
+    // Situation filter: match v.status against selSitVeiculo (if field exists)
+    if (v.status && selSitVeiculo.size < situacoesVeiculo.length) {
+      const vStatusUpper = (v.status || "").toUpperCase();
+      if (!selSitVeiculo.has(vStatusUpper)) return false;
+    }
+    // Type filter
+    if (v.tipo && selTipoVeiculo.size < tiposVeiculo.length) {
+      const vTipoUpper = (v.tipo || "").toUpperCase();
+      if (!selTipoVeiculo.has(vTipoUpper)) return false;
+    }
+    // Cota filter
+    if (v.cota && selCota.size < cotasVeiculo.length) {
+      if (!selCota.has(v.cota)) return false;
+    }
+    // Categoria filter
+    if (v.categoria && selCategoria.size < categoriasVeiculo.length) {
+      const vCatUpper = (v.categoria || "").toUpperCase();
+      if (!selCategoria.has(vCatUpper)) return false;
+    }
+    // Regional filter via associado lookup (v may have associado_id -> look up associado -> regional_id)
+    // For now, if v has regional_id directly, use it
+    if (v.regional_id && selRegional.size < regionaisLista.length) {
+      if (!selectedRegionalIds.has(v.regional_id)) return false;
+    }
+    // Cooperativa filter
+    if (v.cooperativa_id && selCooperativa.size < cooperativasLista.length) {
+      if (!selectedCooperativaIds.has(v.cooperativa_id)) return false;
+    }
     return true;
   });
 
@@ -523,16 +625,16 @@ export default function RelatoriosTab() {
             <Table>
               <TableHeader><TableRow><TableHead className="font-bold text-xs uppercase">Placa</TableHead><TableHead className="font-bold text-xs uppercase">Modelo</TableHead><TableHead className="font-bold text-xs uppercase">Marca</TableHead><TableHead className="font-bold text-xs uppercase">Ano Fab.</TableHead><TableHead className="font-bold text-xs uppercase">Cor</TableHead><TableHead className="font-bold text-xs uppercase">Chassi</TableHead><TableHead className="font-bold text-xs uppercase">Status</TableHead></TableRow></TableHeader>
               <TableBody>
-                {realVeiculos.map((v: any) => (
-                  <TableRow key={v.id}><TableCell className="font-mono">{v.placa}</TableCell><TableCell>{v.modelo}</TableCell><TableCell>{v.marca}</TableCell><TableCell>{v.ano_fabricacao}</TableCell><TableCell>{v.cor}</TableCell><TableCell className="font-mono text-xs">{v.chassi}</TableCell><TableCell><Badge variant="outline">{v.status || "—"}</Badge></TableCell></TableRow>
+                {filteredVeiculos.map((v: any) => (
+                  <TableRow key={v.id}><TableCell className="font-mono">{v.placa}</TableCell><TableCell>{v.modelo}</TableCell><TableCell>{v.marca}</TableCell><TableCell>{v.ano_fabricacao || v.ano}</TableCell><TableCell>{v.cor}</TableCell><TableCell className="font-mono text-xs">{v.chassi}</TableCell><TableCell><Badge variant="outline">{v.status || "—"}</Badge></TableCell></TableRow>
                 ))}
-                {realVeiculos.length === 0 && (
+                {filteredVeiculos.length === 0 && (
                   <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Nenhum veículo encontrado</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
             <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-t">
-              <span className="text-xs text-muted-foreground">{totalVeiculosCount} veículos - Página {veicPageDb} de {totalPagesVeicDb || 1}</span>
+              <span className="text-xs text-muted-foreground">{filteredVeiculos.length} de {totalVeiculosCount} veículos - Página {veicPageDb} de {totalPagesVeicDb || 1}</span>
               <div className="flex gap-1">
                 <Button variant="outline" size="sm" disabled={veicPageDb <= 1} onClick={() => setVeicPageDb(p => p - 1)} className="h-7 px-2"><ChevronLeft className="h-3.5 w-3.5" /></Button>
                 <Button variant="outline" size="sm" disabled={veicPageDb >= totalPagesVeicDb} onClick={() => setVeicPageDb(p => p + 1)} className="h-7 px-2"><ChevronRight className="h-3.5 w-3.5" /></Button>
@@ -615,8 +717,11 @@ export default function RelatoriosTab() {
           <ReportActionBar
             busca={buscaBol}
             setBusca={setBuscaBol}
-            onGenerate={() => { setPageBol(1); toast.success("Relatório gerado com " + filteredBoletos.length + " resultado(s)"); }}
-            onExport={() => exportCsv(filteredBoletos as unknown as Record<string, unknown>[], "boletos")}
+            onGenerate={() => { setPageBol(1); fetchBoletos(); toast.success("Relatório gerado"); }}
+            onExportCSV={handleExportBolCSV}
+            onExportExcel={handleExportBolExcel}
+            onExportPDF={handleExportBolPDF}
+            onPrint={handlePrintBol}
             placeholder="Buscar por associado, CPF ou nº boleto..."
           />
 
@@ -724,7 +829,10 @@ export default function RelatoriosTab() {
                 busca=""
                 setBusca={() => {}}
                 onGenerate={() => toast.success("Relatório gerado")}
-                onExport={() => toast.success("Relatório exportado")}
+                onExportCSV={() => toast.success("CSV exportado")}
+                onExportExcel={() => toast.success("Excel exportado")}
+                onExportPDF={() => toast.success("PDF gerado")}
+                onPrint={() => { window.print(); toast.success("Enviado para impressão"); }}
                 placeholder="Buscar..."
               />
 

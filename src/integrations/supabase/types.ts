@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           cep: string | null
           cidade: string | null
+          cooperativa_id: string | null
           cpf: string
           created_at: string
           data_adesao: string
@@ -29,6 +30,7 @@ export type Database = {
           nome: string
           observacoes: string | null
           plano_id: string | null
+          regional_id: string | null
           rg: string | null
           status: Database["public"]["Enums"]["associado_status"]
           telefone: string | null
@@ -37,6 +39,7 @@ export type Database = {
         Insert: {
           cep?: string | null
           cidade?: string | null
+          cooperativa_id?: string | null
           cpf: string
           created_at?: string
           data_adesao?: string
@@ -48,6 +51,7 @@ export type Database = {
           nome: string
           observacoes?: string | null
           plano_id?: string | null
+          regional_id?: string | null
           rg?: string | null
           status?: Database["public"]["Enums"]["associado_status"]
           telefone?: string | null
@@ -56,6 +60,7 @@ export type Database = {
         Update: {
           cep?: string | null
           cidade?: string | null
+          cooperativa_id?: string | null
           cpf?: string
           created_at?: string
           data_adesao?: string
@@ -67,6 +72,7 @@ export type Database = {
           nome?: string
           observacoes?: string | null
           plano_id?: string | null
+          regional_id?: string | null
           rg?: string | null
           status?: Database["public"]["Enums"]["associado_status"]
           telefone?: string | null
@@ -78,6 +84,20 @@ export type Database = {
             columns: ["plano_id"]
             isOneToOne: false
             referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "associados_regional_id_fkey"
+            columns: ["regional_id"]
+            isOneToOne: false
+            referencedRelation: "regionais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "associados_cooperativa_id_fkey"
+            columns: ["cooperativa_id"]
+            isOneToOne: false
+            referencedRelation: "cooperativas"
             referencedColumns: ["id"]
           },
         ]

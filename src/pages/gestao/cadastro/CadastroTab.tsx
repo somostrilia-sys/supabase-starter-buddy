@@ -10,15 +10,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
-  Package, DollarSign, Car, AlertTriangle, Building2, ClipboardCheck,
+  Package, DollarSign, Car, AlertTriangle, Building2, ClipboardCheck, MapPin,
   Plus, Edit, Trash2, Search, Download, Save, ChevronRight,
   ArrowRightLeft, FileText, Shield,
 } from "lucide-react";
+import CadastrarRegional from "./CadastrarRegional";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 // ── Types ──
-type Group = "produtos" | "financeiros" | "veiculo" | "evento" | "cooperativa" | "vistoria";
+type Group = "produtos" | "financeiros" | "veiculo" | "evento" | "cooperativa" | "regional" | "vistoria";
 
 const groups = [
   { id: "produtos" as Group, label: "Grupo de Produtos", icon: Package },
@@ -26,6 +27,7 @@ const groups = [
   { id: "veiculo" as Group, label: "Opcionais de Veículo", icon: Car },
   { id: "evento" as Group, label: "Opcionais de Evento", icon: AlertTriangle },
   { id: "cooperativa" as Group, label: "Cooperativa", icon: Building2 },
+  { id: "regional" as Group, label: "Regional", icon: MapPin },
   { id: "vistoria" as Group, label: "Vistoria", icon: ClipboardCheck },
 ];
 
@@ -212,6 +214,7 @@ export default function CadastroTab() {
           {activeGroup === "veiculo" && <OpcionaisVeiculoSection subView={subView} setSubView={setSubView} />}
           {activeGroup === "evento" && <OpcionaisEvento subView={subView} setSubView={setSubView} />}
           {activeGroup === "cooperativa" && <CooperativaSection subView={subView} setSubView={setSubView} />}
+          {activeGroup === "regional" && <CadastrarRegional />}
           {activeGroup === "vistoria" && <VistoriaConfig subView={subView} setSubView={setSubView} />}
         </div>
       </div>

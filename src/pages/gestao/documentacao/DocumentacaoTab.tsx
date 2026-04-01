@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import {
   FileText, Search, Printer, Eye, Plus, Edit, Save,
-  Loader2, Upload, Download, History, CheckCircle2, AlertCircle,
+  Loader2, Upload, Download, History, CheckCircle2, AlertCircle, Code2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -87,13 +87,14 @@ const tiposTermoFiltro = ["Todos", "Cancelamento", "Retirada de Rastreador", "Re
 // ── Component ──────────────────────────────────────────────
 
 export default function DocumentacaoTab() {
-  const [subTab, setSubTab] = useState<"emitir" | "alterar" | "criar" | "relatorio">("emitir");
+  const [subTab, setSubTab] = useState<"emitir" | "alterar" | "criar" | "relatorio" | "api">("emitir");
 
   const tabs = [
     { id: "emitir" as const, label: "Emitir Termo", icon: FileText },
     { id: "alterar" as const, label: "Alterar Termo", icon: Edit },
     { id: "criar" as const, label: "Criar Termo", icon: Plus },
     { id: "relatorio" as const, label: "Relatório de Termos", icon: Download },
+    { id: "api" as const, label: "API / Edge Functions", icon: Code2 },
   ];
 
   return (
@@ -125,6 +126,7 @@ export default function DocumentacaoTab() {
       {subTab === "alterar" && <AlterarTermoTab />}
       {subTab === "criar" && <CriarTermoTab />}
       {subTab === "relatorio" && <RelatorioTermosTab />}
+      {subTab === "api" && <ApiEdgeFunctionsTab />}
     </div>
   );
 }
@@ -632,6 +634,94 @@ function RelatorioTermosTab() {
         </Table>
       </div>
       <p className="text-xs text-muted-foreground">{filtered.length} termo(s) encontrado(s)</p>
+    </div>
+  );
+}
+
+// ── 5) API / Edge Functions ─────────────────────────────────
+
+const edgeFunctions = [
+  { nome: "sga-sync", metodo: "POST", path: "/functions/v1/sga-sync", descricao: "Sincronização SGA", grupo: "SGA" },
+  { nome: "sga-boletos", metodo: "POST", path: "/functions/v1/sga-boletos", descricao: "Sincronizar boletos SGA", grupo: "SGA" },
+  { nome: "sincronizar-sga", metodo: "POST", path: "/functions/v1/sincronizar-sga", descricao: "Sync completo SGA", grupo: "SGA" },
+  { nome: "gerar-relatorio", metodo: "POST", path: "/functions/v1/gerar-relatorio", descricao: "Gerar relatórios", grupo: "Relatórios" },
+  { nome: "enviar-notificacao", metodo: "POST", path: "/functions/v1/enviar-notificacao", descricao: "Enviar notificações", grupo: "Comunicação" },
+];
+
+const gruposUnicos = Array.from(new Set(edgeFunctions.map(f => f.grupo)));
+
+function ApiEdgeFunctionsTab() {
+  const [filtroGrupo, setFiltroGrupo] = useState("Todos");
+
+  const filtered = filtroGrupo === "Todos"
+    ? edgeFunctions
+    : edgeFunctions.filter(f => f.grupo === filtroGrupo);
+
+  return (
+    <div className="space-y-5">
+      <Card className="border-border shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base text-primary">Edge Functions — Supabase</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Documentação das edge functions disponíveis no projeto GIA Objetivo.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-3 items-end flex-wrap">
+            <div>
+              <Label className="text-xs">Filtrar por grupo</Label>
+              <Select value={filtroGrupo} onValueChange={setFiltroGrupo}>
+                <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Todos">Todos</SelectItem>
+                  {gruposUnicos.map(g => (
+                    <SelectItem key={g} value={g}>{g}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="border rounded-lg border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted">
+                  <TableHead className="text-xs">Nome</TableHead>
+                  <TableHead className="text-xs">Método</TableHead>
+                  <TableHead className="text-xs">Path</TableHead>
+                  <TableHead className="text-xs">Descrição</TableHead>
+                  <TableHead className="text-xs">Grupo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map(f => (
+                  <TableRow key={f.nome}>
+                    <TableCell className="text-sm font-mono font-medium">{f.nome}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8 text-xs font-mono">
+                        {f.metodo}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm font-mono text-muted-foreground">{f.path}</TableCell>
+                    <TableCell className="text-sm">{f.descricao}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">{f.grupo}</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filtered.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      Nenhuma function encontrada
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <p className="text-xs text-muted-foreground">{filtered.length} function(s) listada(s)</p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

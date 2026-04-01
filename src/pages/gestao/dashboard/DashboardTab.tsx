@@ -10,17 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Car, FileText, CheckCircle, CalendarCheck, Users, AlertTriangle, Loader2, BarChart3 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, AreaChart, Area } from "recharts";
 
-const recebimentoDiarioData = [
-  { hora: "08h", valor: 1200 },
-  { hora: "09h", valor: 3400 },
-  { hora: "10h", valor: 2800 },
-  { hora: "11h", valor: 5100 },
-  { hora: "12h", valor: 1900 },
-  { hora: "13h", valor: 4200 },
-  { hora: "14h", valor: 6300 },
-  { hora: "15h", valor: 3700 },
-  { hora: "16h", valor: 2100 },
-];
+// recebimentoDiarioData is now fetched from Supabase inside the component
 
 function SectionDivider({ title }: { title: string }) {
   return (
@@ -164,6 +154,33 @@ export default function DashboardTab() {
         .gte("data_pagamento", mesInicio).lt("data_pagamento", proximoMes);
       if (errRecebidos) throw errRecebidos;
       return { gerados: gerados ?? 0, recebidos: recebidos ?? 0 };
+    },
+  });
+
+  // ── Recebimentos de hoje agrupados por hora ──
+  const hojeStr = new Date().toISOString().split("T")[0];
+
+  const { data: recebimentoDiarioData = [] } = useQuery({
+    queryKey: ["chart_recebimentos_hoje", hojeStr],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("boletos")
+        .select("valor, data_pagamento")
+        .eq("status", "baixado")
+        .gte("data_pagamento", hojeStr + "T00:00:00")
+        .lt("data_pagamento", hojeStr + "T23:59:59");
+      if (error) throw error;
+      const rows = (data || []) as { valor: number; data_pagamento: string }[];
+      const porHora: Record<number, number> = {};
+      rows.forEach(r => {
+        const h = new Date(r.data_pagamento).getHours();
+        porHora[h] = (porHora[h] || 0) + (r.valor ?? 0);
+      });
+      // Return hours 7-18 (business hours)
+      return Array.from({ length: 12 }, (_, i) => i + 7).map(h => ({
+        hora: `${String(h).padStart(2, "0")}h`,
+        valor: porHora[h] || 0,
+      }));
     },
   });
 
