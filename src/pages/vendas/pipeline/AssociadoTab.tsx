@@ -52,25 +52,25 @@ export default function AssociadoTab({ deal }: Props) {
   const [form, setForm] = useState({
     nome: deal.lead_nome || "",
     cpf: deal.cpf_cnpj || "",
-    rg: "12.345.678-9",
-    orgaoExpedidor: "SSP",
-    dataExpedicao: "2008-06-10",
-    cnh: "04512345678",
-    categoriaCNH: "B",
-    dataPrimeiraHab: "2010-03-20",
-    validadeHab: "2030-03-20",
-    dataNascimento: "1990-05-15",
-    sexo: "M",
+    rg: "",
+    orgaoExpedidor: "",
+    dataExpedicao: "",
+    cnh: "",
+    categoriaCNH: "",
+    dataPrimeiraHab: "",
+    validadeHab: "",
+    dataNascimento: "",
+    sexo: "",
     telefone: deal.telefone || "",
     telefone2: "",
     email: deal.email || "",
-    cep: "01310-100",
-    rua: "Av. Paulista",
-    numero: "1000",
-    complemento: "Sala 301",
-    bairro: "Bela Vista",
-    estado: "SP",
-    cidade: "São Paulo",
+    cep: "",
+    rua: "",
+    numero: "",
+    complemento: "",
+    bairro: "",
+    estado: "",
+    cidade: "",
   });
 
   const set = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
@@ -78,15 +78,23 @@ export default function AssociadoTab({ deal }: Props) {
   const cidades = cidadesPorUF[form.estado] || [];
 
   const handleCEPBlur = () => {
-    // Simula auto-fill de CEP
-    if (form.cep.replace(/\D/g, "").length === 8) {
-      setForm(prev => ({
-        ...prev,
-        rua: "Av. Paulista",
-        bairro: "Bela Vista",
-        estado: "SP",
-        cidade: "São Paulo",
-      }));
+    // Auto-fill CEP via ViaCEP
+    const cepClean = form.cep.replace(/\D/g, "");
+    if (cepClean.length === 8) {
+      fetch(`https://viacep.com.br/ws/${cepClean}/json/`)
+        .then(r => r.json())
+        .then(data => {
+          if (!data.erro) {
+            setForm(prev => ({
+              ...prev,
+              rua: data.logradouro || prev.rua,
+              bairro: data.bairro || prev.bairro,
+              estado: data.uf || prev.estado,
+              cidade: data.localidade || prev.cidade,
+            }));
+          }
+        })
+        .catch(() => {});
     }
   };
 
