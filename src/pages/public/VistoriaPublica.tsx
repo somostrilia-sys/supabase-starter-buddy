@@ -27,7 +27,6 @@ const CATEGORIAS = [
   { id: "interior_painel", label: "Interior / Painel", img: imgInterior },
   { id: "banco_dianteiro", label: "Banco Dianteiro", img: imgBancoDiant },
   { id: "banco_traseiro", label: "Banco Traseiro", img: imgBancoTras },
-  { id: "teto", label: "Teto", img: imgTeto },
   { id: "motor_capo", label: "Motor / Capô", img: imgMotor },
   { id: "porta_malas", label: "Porta-malas", img: imgPortaMalas },
   { id: "rodas_pneus", label: "Rodas e Pneus", img: imgRodas },
