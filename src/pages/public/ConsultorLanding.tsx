@@ -47,6 +47,7 @@ interface ConsultorData {
   nome: string;
   foto_capa_url: string | null;
   fotos_trabalho: string[] | null;
+  fotos_fundo: string[] | null;
   bio: string | null;
   whatsapp: string | null;
   instagram: string | null;
@@ -103,7 +104,7 @@ export default function ConsultorLanding() {
     if (!slug) return;
     supabase
       .from("usuarios" as any)
-      .select("nome, foto_capa_url, fotos_trabalho, bio, whatsapp, instagram, cooperativa, email")
+      .select("nome, foto_capa_url, fotos_trabalho, fotos_fundo, bio, whatsapp, instagram, cooperativa, email")
       .eq("slug", slug)
       .maybeSingle()
       .then(({ data }) => {
@@ -239,6 +240,16 @@ export default function ConsultorLanding() {
   const initials = getInitials(consultor.nome);
   const hasGallery = consultor.fotos_trabalho && consultor.fotos_trabalho.length > 0;
   const whatsappClean = consultor.whatsapp ? consultor.whatsapp.replace(/\D/g, "") : null;
+  const heroFotos = (consultor.fotos_fundo || []).filter(Boolean);
+  const hasSlideshow = heroFotos.length > 1;
+  const [heroIdx, setHeroIdx] = useState(0);
+
+  // Auto-slideshow
+  useEffect(() => {
+    if (!hasSlideshow) return;
+    const timer = setInterval(() => setHeroIdx(prev => (prev + 1) % heroFotos.length), 5000);
+    return () => clearInterval(timer);
+  }, [hasSlideshow, heroFotos.length]);
 
   return (
     <div
@@ -259,17 +270,39 @@ export default function ConsultorLanding() {
         </div>
       </header>
 
-      {/* Hero */}
+      {/* Hero with slideshow */}
       <div className="relative w-full max-w-lg mx-auto">
-        {consultor.foto_capa_url ? (
-          <div className="relative h-[300px] w-full overflow-hidden">
-            <img
-              src={consultor.foto_capa_url}
-              alt={consultor.nome}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#002b5e] via-transparent to-transparent" />
-            <div className="absolute bottom-4 left-4 right-4">
+        {heroFotos.length > 0 || consultor.foto_capa_url ? (
+          <div className="relative h-[340px] w-full overflow-hidden">
+            {/* Slideshow images */}
+            {heroFotos.length > 0 ? heroFotos.map((url, i) => (
+              <img
+                key={i}
+                src={url}
+                alt={`${consultor.nome} ${i + 1}`}
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${i === heroIdx ? "opacity-100" : "opacity-0"}`}
+              />
+            )) : (
+              <img
+                src={consultor.foto_capa_url!}
+                alt={consultor.nome}
+                className="w-full h-full object-cover"
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#002b5e] via-[#002b5e]/30 to-transparent" />
+            {/* Dots indicator */}
+            {hasSlideshow && (
+              <div className="absolute bottom-16 left-0 right-0 flex justify-center gap-2 z-10">
+                {heroFotos.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setHeroIdx(i)}
+                    className={`w-2 h-2 rounded-full transition-all ${i === heroIdx ? "bg-white w-5" : "bg-white/40"}`}
+                  />
+                ))}
+              </div>
+            )}
+            <div className="absolute bottom-4 left-4 right-4 z-10">
               <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
                 {consultor.nome}
               </h1>
@@ -282,7 +315,7 @@ export default function ConsultorLanding() {
             </div>
           </div>
         ) : (
-          <div className="relative h-[300px] w-full bg-gradient-to-br from-[#003572] to-[#002b5e] flex flex-col items-center justify-center gap-4">
+          <div className="relative h-[340px] w-full bg-gradient-to-br from-[#003572] to-[#002b5e] flex flex-col items-center justify-center gap-4">
             <div className="w-24 h-24 rounded-full bg-[#7ed6f1]/20 border-2 border-[#7ed6f1]/40 flex items-center justify-center">
               <span className="text-4xl font-bold text-[#7ed6f1]">{initials}</span>
             </div>

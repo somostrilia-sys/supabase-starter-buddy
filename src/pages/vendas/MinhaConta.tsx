@@ -110,6 +110,9 @@ export default function MinhaConta() {
   const [slug, setSlug] = useState("");
   const [fotoCapa, setFotoCapa] = useState<string | null>(null);
   const [fotosTrabalho, setFotosTrabalho] = useState<string[]>([]);
+  const [fotosFundo, setFotosFundo] = useState<string[]>([]);
+  const [uploadingFundo, setUploadingFundo] = useState(false);
+  const fundoInputRef = useRef<HTMLInputElement>(null);
   const [bio, setBio] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [instagramHandle, setInstagramHandle] = useState("");
@@ -137,7 +140,7 @@ export default function MinhaConta() {
   useEffect(() => {
     if (!profile?.id) return;
     supabase.from("usuarios" as any)
-      .select("slug, foto_capa_url, fotos_trabalho, bio, whatsapp, instagram, nome")
+      .select("slug, foto_capa_url, fotos_trabalho, fotos_fundo, bio, whatsapp, instagram, nome")
       .eq("id", profile.id)
       .maybeSingle()
       .then(({ data }: any) => {
@@ -145,6 +148,7 @@ export default function MinhaConta() {
           setSlug(data.slug || slugify(data.nome || profile.full_name || ""));
           setFotoCapa(data.foto_capa_url || null);
           setFotosTrabalho(data.fotos_trabalho || []);
+          setFotosFundo(data.fotos_fundo || []);
           setBio(data.bio || "");
           setWhatsapp(data.whatsapp || "");
           setInstagramHandle(data.instagram || "");
@@ -209,6 +213,36 @@ export default function MinhaConta() {
     setFotosTrabalho(newUrls);
     await supabase.from("usuarios" as any).update({ fotos_trabalho: newUrls } as any).eq("id", profile.id);
     toast({ title: "Foto removida." });
+  }
+
+  async function handleFundoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || !profile?.id) return;
+    const remaining = 4 - fotosFundo.length;
+    if (files.length > remaining) {
+      toast({ title: `Máximo 4 fotos de fundo. Você pode adicionar mais ${remaining}.`, variant: "destructive" });
+      return;
+    }
+    setUploadingFundo(true);
+    const newUrls = [...fotosFundo];
+    for (let i = 0; i < files.length; i++) {
+      const idx = fotosFundo.length + i;
+      const url = await uploadFile(files[i], `${profile.id}/fundo_${idx}.jpg`);
+      if (url) newUrls.push(url);
+    }
+    setFotosFundo(newUrls);
+    await supabase.from("usuarios" as any).update({ fotos_fundo: newUrls } as any).eq("id", profile.id);
+    toast({ title: "Fotos de fundo atualizadas!" });
+    setUploadingFundo(false);
+    if (fundoInputRef.current) fundoInputRef.current.value = "";
+  }
+
+  async function handleRemoveFundo(index: number) {
+    if (!profile?.id) return;
+    const newUrls = fotosFundo.filter((_, i) => i !== index);
+    setFotosFundo(newUrls);
+    await supabase.from("usuarios" as any).update({ fotos_fundo: newUrls } as any).eq("id", profile.id);
+    toast({ title: "Foto de fundo removida." });
   }
 
   async function handleSaveProfile() {
@@ -381,6 +415,44 @@ export default function MinhaConta() {
               )}
             </div>
             <input ref={fotosInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFotosUpload} />
+          </div>
+
+          {/* Fotos de Fundo (Slideshow Landing Page) */}
+          <div className="space-y-2">
+            <Label className="text-xs font-medium flex items-center gap-1">
+              <ImagePlus className="h-3 w-3" /> Fotos de Fundo da Landing Page (até 4)
+            </Label>
+            <p className="text-[10px] text-muted-foreground">Essas fotos aparecem como slideshow no topo da sua página. Recomendamos imagens de alta qualidade em paisagem.</p>
+            <div className="grid grid-cols-4 gap-2">
+              {fotosFundo.map((url, i) => (
+                <div key={i} className="relative aspect-video rounded-lg overflow-hidden border group">
+                  <img src={url} alt={`Fundo ${i + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => handleRemoveFundo(i)}
+                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                  <span className="absolute bottom-1 left-1 bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded">{i + 1}/4</span>
+                </div>
+              ))}
+              {fotosFundo.length < 4 && (
+                <div
+                  className="aspect-video rounded-lg border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-colors"
+                  onClick={() => fundoInputRef.current?.click()}
+                >
+                  {uploadingFundo ? (
+                    <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+                  ) : (
+                    <>
+                      <ImagePlus className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-[9px] text-muted-foreground mt-1">Adicionar</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+            <input ref={fundoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFundoUpload} />
           </div>
 
           <Separator />
