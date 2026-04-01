@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,23 @@ const mockCooperativas = [
 ];
 
 export default function RegionaisCooperativasTab() {
+  const [regionaisReais, setRegionaisReais] = useState<any[]>([]);
+  const [cooperativasReais, setCooperativasReais] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.from("regionais").select("*").order("nome").then(({ data }) => setRegionaisReais(data || []));
+    supabase.from("cooperativas" as any).select("*, regionais(nome)").order("nome").then(({ data }) => setCooperativasReais(data || []));
+  }, []);
+
+  // Usar reais se disponíveis
+  const regionais = regionaisReais.length > 0 ? regionaisReais.map(r => ({
+    id: r.id, nome: r.nome, codigoSga: "", cooperativas: cooperativasReais.filter((c: any) => c.regional_id === r.id).length
+  })) : mockRegionais;
+
+  const cooperativas = cooperativasReais.length > 0 ? cooperativasReais.map((c: any) => ({
+    id: c.id, nome: c.nome, cnpj: "", codigoSga: "", regional: c.regionais?.nome || ""
+  })) : mockCooperativas;
+
   const [showRegionalModal, setShowRegionalModal] = useState(false);
   const [showCoopModal, setShowCoopModal] = useState(false);
   const [nomeRegional, setNomeRegional] = useState("");

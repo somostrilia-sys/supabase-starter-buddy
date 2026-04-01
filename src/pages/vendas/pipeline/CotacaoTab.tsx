@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { PipelineDeal } from "./mockData";
 import { supabase, callEdge } from "@/integrations/supabase/client";
 import { gerarPdfCotacao } from "@/lib/gerarPdfCotacao";
-import { MessageSquare, Mail, Link2, CreditCard, CheckCircle, Shield, ShieldCheck, ShieldPlus, Search, Loader2 } from "lucide-react";
+import { MessageSquare, Mail, Link2, CreditCard, CheckCircle, Shield, ShieldCheck, ShieldPlus, Search, Loader2, Car } from "lucide-react";
 
 /* ─── FIPE mock data ─── */
 const marcas = ["Chevrolet", "Hyundai", "Honda", "Toyota", "Volkswagen", "Fiat", "Jeep", "Nissan", "Renault", "Ford"];
@@ -533,6 +533,28 @@ export default function CotacaoTab({ deal }: Props) {
           <Label className={lbl}>Observações Internas (somente equipe)</Label>
           <Textarea className="rounded-none" rows={2} value={form.obsInterna} onChange={e => set("obsInterna", e.target.value)} />
         </div>
+      </fieldset>
+
+      {/* FROTA - Adicionar veículo */}
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">FROTA</legend>
+        <p className="text-xs text-muted-foreground">Adicione mais veículos para cotação em frota.</p>
+        <Button size="sm" variant="outline" className="rounded-none" onClick={async () => {
+          await supabase.from("negociacao_veiculos" as any).insert({
+            negociacao_id: deal.id,
+            placa: form.placa,
+            marca: marca,
+            modelo: modeloAtual?.modelo || deal.veiculo_modelo,
+            ano: parseInt(form.anoFab) || null,
+            valor_fipe: valorFipe,
+            cor: form.cor,
+            combustivel: form.combustivel,
+            chassi: form.chassi,
+          } as any);
+          toast.success("Veículo adicionado à frota!");
+        }}>
+          <Car className="h-3.5 w-3.5 mr-1" />Adicionar Veículo à Frota
+        </Button>
       </fieldset>
 
       {/* SEÇÃO 2 - PLANOS E ENVIO */}
