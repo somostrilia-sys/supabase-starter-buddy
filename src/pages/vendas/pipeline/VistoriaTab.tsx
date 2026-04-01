@@ -15,6 +15,7 @@ import {
   ClipboardCheck, Copy, MessageSquare, CheckCircle, XCircle,
   Clock, AlertCircle, Camera, Globe, RotateCcw, Download, Eye, Mail,
 } from "lucide-react";
+import ExcecaoButton from "@/components/ExcecaoButton";
 
 type VistoriaStatus = "pendente" | "em_aprovacao" | "aprovada" | "reprovada";
 
@@ -341,9 +342,12 @@ export default function VistoriaTab({ deal }: Props) {
                   </Button>
                 )}
                 {status === "reprovada" && !isAdmin && (
-                  <Badge variant="outline" className="rounded-none text-xs text-destructive border-red-300">
-                    <AlertCircle className="h-3 w-3 mr-1" />Reprovada pela IA — solicite exceção ao diretor
-                  </Badge>
+                  <ExcecaoButton
+                    negociacaoId={deal.id}
+                    tipoDefault="vistoria_rejeitada"
+                    label="Peça a um Diretor"
+                    onSuccess={() => toast.success("Exceção solicitada!")}
+                  />
                 )}
                 <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={async () => {
                   await gerarLaudoVistoria({

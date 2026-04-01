@@ -1,5 +1,5 @@
 import { maskCpfCnpj, maskTelefone, maskPlaca } from "@/lib/masks";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -345,6 +345,50 @@ export default function Pipeline() {
   const dealsToShow: PipelineDeal[] = negociacoesAsDeal.length > 0
     ? negociacoesAsDeal
     : leadsAsDeal;
+
+  // --- Cash sound: detectar novos deals em "concluido" ---
+  const prevDealsRef = useRef<PipelineDeal[]>([]);
+  const cashAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Inicializar audio uma vez
+  useEffect(() => {
+    cashAudioRef.current = new Audio("/sounds/cash.mp3");
+    cashAudioRef.current.volume = 0.7;
+  }, []);
+
+  // Detectar novos deals que entraram em "concluido"
+  useEffect(() => {
+    if (dealsToShow.length === 0) return;
+    const prevIds = new Set(
+      prevDealsRef.current
+        .filter(d => d.stage === "concluido")
+        .map(d => d.id)
+    );
+    const newConcluidos = dealsToShow.filter(
+      d => d.stage === "concluido" && !prevIds.has(d.id)
+    );
+
+    // Só dispara se já havia dados anteriores (evita tocar no primeiro load)
+    if (prevDealsRef.current.length > 0 && newConcluidos.length > 0) {
+      // Tocar som de caixa registradora
+      if (cashAudioRef.current) {
+        cashAudioRef.current.currentTime = 0;
+        cashAudioRef.current.play().catch(() => {});
+      }
+
+      // Chamar edge function para concluir venda em deals que ainda não foram concluídos
+      for (const deal of newConcluidos) {
+        callEdge("gia-concluir-venda", { negociacao_id: deal.id }).then(res => {
+          if (res?.sucesso) {
+            toast.success(`Venda concluída: ${deal.lead_nome}`);
+          }
+        }).catch(() => {});
+      }
+    }
+
+    prevDealsRef.current = dealsToShow;
+  }, [dealsToShow]);
+  // --- Fim cash sound ---
 
   const activeFilterCount = [fConsultor !== "all", fGerente !== "all", fCoop !== "all", fRegional !== "all", fEtapa !== "all", !!fDateStart, !!fDateEnd].filter(Boolean).length;
 

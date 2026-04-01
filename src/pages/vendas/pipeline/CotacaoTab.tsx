@@ -12,7 +12,8 @@ import { toast } from "sonner";
 import { PipelineDeal } from "./mockData";
 import { supabase, callEdge } from "@/integrations/supabase/client";
 import { gerarPdfCotacao } from "@/lib/gerarPdfCotacao";
-import { MessageSquare, Mail, Link2, CreditCard, CheckCircle, Shield, ShieldCheck, ShieldPlus, Search, Loader2, Car } from "lucide-react";
+import { MessageSquare, Mail, Link2, CreditCard, CheckCircle, Shield, ShieldCheck, ShieldPlus, Search, Loader2, Car, AlertTriangle, BrainCircuit } from "lucide-react";
+import ExcecaoButton from "@/components/ExcecaoButton";
 
 /* ─── FIPE mock data ─── */
 const marcas = ["Chevrolet", "Hyundai", "Honda", "Toyota", "Volkswagen", "Fiat", "Jeep", "Nissan", "Renault", "Ford"];
@@ -170,6 +171,14 @@ export default function CotacaoTab({ deal }: Props) {
   const [fipeFetched, setFipeFetched] = useState(false);
   const [descontoMensal, setDescontoMensal] = useState("");
   const [descontoAdesao, setDescontoAdesao] = useState("");
+  const [descontoIaLoading, setDescontoIaLoading] = useState(false);
+  const [descontoIaResult, setDescontoIaResult] = useState<{
+    aprovado: boolean;
+    desconto_maximo: number;
+    justificativa: string;
+    necessita_diretor: boolean;
+  } | null>(null);
+  const [propostaConcorrenteUrl, setPropostaConcorrenteUrl] = useState("");
 
   // Cidades dinâmicas do banco
   const [cidades, setCidades] = useState<string[]>([]);
@@ -802,17 +811,116 @@ export default function CotacaoTab({ deal }: Props) {
         </div>
 
         {/* Campos de desconto para a cotação */}
-        <div className="grid grid-cols-2 gap-4 pt-2 p-3 border rounded bg-muted/20">
-          <div className="space-y-1">
-            <Label className="text-xs font-semibold">Desconto Mensalidade (valor final)</Label>
-            <Input className="rounded-none border border-gray-300" type="number" placeholder="Deixe vazio = sem desconto" value={descontoMensal} onChange={e => setDescontoMensal(e.target.value)} />
-            <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
+        <div className="space-y-3 pt-2 p-3 border rounded bg-muted/20">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Desconto Mensalidade (valor final)</Label>
+              <Input className="rounded-none border border-gray-300" type="number" placeholder="Deixe vazio = sem desconto" value={descontoMensal} onChange={e => { setDescontoMensal(e.target.value); setDescontoIaResult(null); }} />
+              <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Desconto Adesão (valor final)</Label>
+              <Input className="rounded-none border border-gray-300" type="number" placeholder="Deixe vazio = sem desconto" value={descontoAdesao} onChange={e => { setDescontoAdesao(e.target.value); setDescontoIaResult(null); }} />
+              <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
+            </div>
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs font-semibold">Desconto Adesão (valor final)</Label>
-            <Input className="rounded-none border border-gray-300" type="number" placeholder="Deixe vazio = sem desconto" value={descontoAdesao} onChange={e => setDescontoAdesao(e.target.value)} />
-            <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
-          </div>
+
+          {/* IA Desconto — análise automática para descontos > 5% */}
+          {(() => {
+            const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
+            const mensalOriginal = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
+            const adesaoOriginal = precoPlano ? Number(precoPlano.adesao) : 400;
+            const descMensalPct = descontoMensal && mensalOriginal > 0 ? ((mensalOriginal - Number(descontoMensal)) / mensalOriginal) * 100 : 0;
+            const descAdesaoPct = descontoAdesao && adesaoOriginal > 0 ? ((adesaoOriginal - Number(descontoAdesao)) / adesaoOriginal) * 100 : 0;
+            const maiorDesconto = Math.max(descMensalPct, descAdesaoPct);
+            const precisaIA = maiorDesconto > 5;
+
+            if (!precisaIA) return null;
+
+            return (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 p-2 rounded border border-warning/40 bg-warning/8">
+                  <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
+                  <p className="text-xs text-warning font-medium">
+                    Desconto de {maiorDesconto.toFixed(1)}% detectado (acima de 5%). Análise da IA obrigatória.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">URL proposta concorrente (opcional)</Label>
+                  <Input className="rounded-none border border-gray-300" type="url" placeholder="https://..." value={propostaConcorrenteUrl} onChange={e => setPropostaConcorrenteUrl(e.target.value)} />
+                </div>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-none border-[#1A3A5C] text-[#1A3A5C]"
+                  disabled={descontoIaLoading}
+                  onClick={async () => {
+                    setDescontoIaLoading(true);
+                    setDescontoIaResult(null);
+                    try {
+                      const res = await callEdge("gia-desconto-ia", {
+                        negociacao_id: deal.id,
+                        desconto_solicitado: maiorDesconto,
+                        proposta_concorrente_url: propostaConcorrenteUrl || undefined,
+                      });
+                      if (res && typeof res.aprovado !== "undefined") {
+                        setDescontoIaResult({
+                          aprovado: res.aprovado,
+                          desconto_maximo: res.desconto_maximo || 0,
+                          justificativa: res.justificativa || "",
+                          necessita_diretor: res.necessita_diretor || false,
+                        });
+                      } else {
+                        toast.error("Resposta inesperada da IA de desconto");
+                      }
+                    } catch (err: any) {
+                      toast.error("Erro ao consultar IA de desconto: " + (err?.message || ""));
+                    } finally {
+                      setDescontoIaLoading(false);
+                    }
+                  }}
+                >
+                  {descontoIaLoading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <BrainCircuit className="h-3.5 w-3.5 mr-1" />}
+                  {descontoIaLoading ? "Analisando..." : "Analisar Desconto com IA"}
+                </Button>
+
+                {descontoIaResult && (
+                  <Card className={`rounded-none border-2 ${descontoIaResult.aprovado ? "border-success bg-success/5" : "border-destructive bg-destructive/5"}`}>
+                    <CardContent className="p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        {descontoIaResult.aprovado ? (
+                          <CheckCircle className="h-5 w-5 text-success" />
+                        ) : (
+                          <AlertTriangle className="h-5 w-5 text-destructive" />
+                        )}
+                        <span className={`text-sm font-bold ${descontoIaResult.aprovado ? "text-success" : "text-destructive"}`}>
+                          {descontoIaResult.aprovado ? "Desconto Aprovado pela IA" : "Desconto Rejeitado pela IA"}
+                        </span>
+                      </div>
+                      {descontoIaResult.desconto_maximo > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Desconto máximo permitido: <strong>{descontoIaResult.desconto_maximo.toFixed(1)}%</strong>
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">{descontoIaResult.justificativa}</p>
+                      {descontoIaResult.necessita_diretor && !descontoIaResult.aprovado && (
+                        <div className="pt-1">
+                          <ExcecaoButton
+                            negociacaoId={deal.id}
+                            tipoDefault="desconto_extra"
+                            descontoSolicitado={maiorDesconto}
+                            label={`Solicitar Exceção ao Diretor (${maiorDesconto.toFixed(1)}%)`}
+                          />
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         <div className="flex flex-wrap gap-2 pt-2">

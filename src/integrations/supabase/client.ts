@@ -32,9 +32,11 @@ export async function callEdge(functionName: string, body: Record<string, unknow
   return resp.json();
 }
 
-export async function callEdgePublic(functionName: string, options?: { method?: string; body?: Record<string, unknown> }) {
-  const { method = 'POST', body } = options ?? {};
-  const resp = await fetch(`${EDGE_URL}/${functionName}`, {
+export async function callEdgePublic(functionName: string, options?: { method?: string; body?: Record<string, unknown>; params?: Record<string, string> }) {
+  const { method = 'POST', body, params } = options ?? {};
+  const url = new URL(`${EDGE_URL}/${functionName}`);
+  if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const resp = await fetch(url.toString(), {
     method,
     headers: { 'Content-Type': 'application/json', apikey: SUPABASE_PUBLISHABLE_KEY },
     ...(body ? { body: JSON.stringify(body) } : {}),
