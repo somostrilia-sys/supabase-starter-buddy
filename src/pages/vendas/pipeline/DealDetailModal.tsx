@@ -18,7 +18,7 @@ import AssinaturaTab from "./AssinaturaTab";
 import FinanceiroNegociacaoTab from "./FinanceiroNegociacaoTab";
 import TagsInline from "@/components/TagsInline";
 import DocumentoUpload from "@/components/DocumentoUpload";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, callEdge } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   FileText, User, Car, ClipboardCheck, Send, Activity, PenTool, Wallet,
@@ -127,32 +127,9 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
               <AssociadoTab deal={deal} />
             </TabsContent>
 
-            {/* TAB 3 - Veículo + planos + envio */}
+            {/* TAB 3 - Veículo (dados reais da placa) */}
             <TabsContent value="veiculo" className="mt-0 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5"><Label className="">Placa</Label>
-                  <div className="flex gap-2"><Input className="rounded-none" defaultValue={deal.veiculo_placa} /><Button size="sm" variant="outline" className="rounded-none">Buscar</Button></div>
-                </div>
-                <div className="space-y-1.5"><Label className="">Tipo Veículo</Label>
-                  <Select defaultValue="auto"><SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="auto">Automóvel</SelectItem><SelectItem value="moto">Motocicleta</SelectItem><SelectItem value="caminhao">Caminhão</SelectItem></SelectContent>
-                  </Select>
-                </div>
-                {[
-                  ["Ano Fab.", "2022"], ["Ano Modelo", "2023"], ["Marca", "Honda"],
-                  ["Modelo", deal.veiculo_modelo.split(" ")[1] || deal.veiculo_modelo],
-                  ["Versão", "EXL 2.0"], ["Cor", "Prata"], ["Combustível", "Flex"],
-                  ["Cód. FIPE", "015267-0"], ["Valor FIPE", "R$ 85.000,00"], ["Valor Protegido", "R$ 85.000,00"],
-                ].map(([label, val]) => (
-                  <div key={label} className="space-y-1.5">
-                    <Label className="">{label}</Label>
-                    <Input className="rounded-none" defaultValue={val} />
-                  </div>
-                ))}
-                <div className="space-y-1.5"><Label className="">Chassi</Label>
-                  <div className="flex gap-2"><Input className="rounded-none" defaultValue="9BWZZZ377VT004251" /><Badge variant="outline" className="rounded-none">Nacional</Badge></div>
-                </div>
-              </div>
+              <VeiculoTabInline deal={deal} />
               <div className="border-t-2 border-[#747474] pt-4 space-y-3">
                 <h4 className="text-sm font-semibold">Envio para Sistemas</h4>
                 <div className="flex gap-2">
@@ -349,5 +326,60 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
         </Tabs>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function VeiculoTabInline({ deal }: { deal: PipelineDeal }) {
+  const [veiculo, setVeiculo] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    const placa = (deal.veiculo_placa || "").replace(/[^A-Z0-9]/gi, "");
+    if (placa.length >= 7) {
+      setLoading(true);
+      callEdge("gia-buscar-placa", { acao: "placa", placa }).then(res => {
+        if (res.sucesso && res.resultado) setVeiculo(res.resultado);
+        setLoading(false);
+      }).catch(() => setLoading(false));
+    }
+  }, [deal.veiculo_placa]);
+
+  const v = veiculo || {};
+  const campos = [
+    ["Marca", v.marca || ""],
+    ["Modelo", v.modelo || deal.veiculo_modelo || ""],
+    ["Ano Fabricação", v.anoFabricacao || ""],
+    ["Ano Modelo", v.anoModelo || ""],
+    ["Cor", v.cor || ""],
+    ["Combustível", v.combustivel || ""],
+    ["Chassi", v.chassi || ""],
+    ["RENAVAM", v.renavam || ""],
+    ["Cód. FIPE", v.codFipe || ""],
+    ["Valor FIPE", v.valorFipe ? `R$ ${Number(v.valorFipe).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : ""],
+    ["Situação", v.situacao || ""],
+    ["Município", v.municipio || ""],
+    ["UF", v.uf || ""],
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label>Placa</Label>
+          <Input className="rounded-none" value={deal.veiculo_placa || ""} readOnly />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Tipo Veículo</Label>
+          <Input className="rounded-none" value={v.submodelo ? "Automóvel" : "—"} readOnly />
+        </div>
+        {loading && <p className="text-xs text-muted-foreground col-span-2">Buscando dados do veículo...</p>}
+        {campos.map(([label, val]) => (
+          <div key={label} className="space-y-1.5">
+            <Label>{label}</Label>
+            <Input className="rounded-none" value={val} readOnly />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

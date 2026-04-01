@@ -201,22 +201,24 @@ export default function CotacaoTab({ deal }: Props) {
 
   // Buscar preços reais por valor FIPE + regional
   const carregarPrecos = async (vFipe: number) => {
-    const regional = deal.regional || "";
-    const { data } = await supabase.from("tabela_precos" as any)
+    // Buscar todas as faixas que cobrem esse valor FIPE
+    const { data: todos } = await supabase.from("tabela_precos" as any)
       .select("*")
       .lte("valor_menor", vFipe)
       .gte("valor_maior", vFipe)
-      .eq("regional", regional)
       .order("plano");
-    setPrecosReais(data || []);
-    if (!data || data.length === 0) {
-      // Tentar sem regional
-      const { data: d2 } = await supabase.from("tabela_precos" as any)
-        .select("*")
-        .lte("valor_menor", vFipe)
-        .gte("valor_maior", vFipe)
-        .order("plano");
-      setPrecosReais(d2 || []);
+
+    if (todos && todos.length > 0) {
+      // Tentar filtrar pela regional do deal
+      const reg = (deal.regional || "").toUpperCase();
+      const filtered = todos.filter((t: any) => {
+        const tr = (t.regional || "").toUpperCase();
+        return reg.includes(tr) || tr.includes(reg) ||
+          reg.replace("REGIONAL ", "").includes(tr) || tr.includes(reg.replace("REGIONAL ", ""));
+      });
+      setPrecosReais(filtered.length > 0 ? filtered : todos);
+    } else {
+      setPrecosReais([]);
     }
   };
 
