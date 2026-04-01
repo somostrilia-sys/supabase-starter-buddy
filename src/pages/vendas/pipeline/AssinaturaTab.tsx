@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { PipelineDeal } from "./mockData";
 import { supabase, callEdge } from "@/integrations/supabase/client";
+import { gerarContratoPdf } from "@/lib/gerarContratoPdf";
 import {
   PenTool, Mail, MessageSquare, FileText, CheckCircle, Clock,
   Eye, Send, AlertTriangle, Copy, ExternalLink, RotateCcw,
@@ -71,19 +72,58 @@ export default function AssinaturaTab({ deal }: Props) {
   const StIcon = st.icon;
   const doc = mockDocumentos.find(d => d.id === docSelecionado)!;
 
+  const [linkAssinatura, setLinkAssinatura] = useState<string | null>(null);
+  const [gerando, setGerando] = useState(false);
+
   const handleEnviar = async (canal: "email" | "whatsapp" | "ambos") => {
-    const result = await callEdge("gia-gerar-contrato", {
-      negociacao_id: deal.id,
-      canal,
+    setGerando(true);
+    // Gerar PDF do contrato
+    const pdfBlob = gerarContratoPdf({
+      empresa: { nome: "Objetivo Auto Benefícios", cnpj: "58.506.161/0001-31" },
+      associado: { nome: deal.lead_nome, cpf: deal.cpf_cnpj || "", rg: "", cnh: "", sexo: "", nascimento: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "", cep: "", email: deal.email || "", celular: deal.telefone || "" },
+      veiculo: { placa: deal.veiculo_placa, modelo: deal.veiculo_modelo, marca: "", anoFab: "", anoModelo: "", cor: "", combustivel: "", chassi: "", renavam: "", codFipe: "", valorFipe: deal.valor_plano || 0, valorProtegido: deal.valor_plano || 0, diaVencimento: "10", veiculoTrabalho: "Não" },
+      plano: { nome: deal.plano || "Completo", valorMensal: deal.valor_plano || 0, adesao: 400, participacao: "5% FIPE" },
+      coberturas: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total"],
+      assistencias: ["Assistência 24H", "Reboque", "Chaveiro", "Hospedagem"],
+      consultor: { nome: deal.consultor || "", celular: "", email: "" },
     });
-    setEnviado(true);
-    setStatus("enviado");
-    const msg = canal === "ambos" ? "e-mail e WhatsApp" : canal === "email" ? "e-mail" : "WhatsApp";
-    if (result.sucesso === false) {
-      toast.error(result.error || "Erro ao gerar contrato");
-    } else {
-      toast.success(`Contrato enviado para assinatura via ${msg}!`);
-    }
+
+    // Converter blob pra base64
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64 = (reader.result as string).split(",")[1];
+      const result = await callEdge("gia-gerar-contrato", { negociacao_id: deal.id, canal, pdf_base64: base64 });
+      setGerando(false);
+      setEnviado(true);
+      setStatus("enviado");
+      if (result.sucesso === false) {
+        toast.error(result.error || "Erro ao gerar contrato");
+      } else {
+        if (result.link_assinatura) setLinkAssinatura(result.link_assinatura);
+        const msg = canal === "ambos" ? "e-mail e WhatsApp" : canal === "email" ? "e-mail" : "WhatsApp";
+        toast.success(`Contrato enviado para assinatura via ${msg}!`);
+      }
+    };
+    reader.readAsDataURL(pdfBlob);
+  };
+
+  const handleBaixarContrato = () => {
+    const blob = gerarContratoPdf({
+      empresa: { nome: "Objetivo Auto Benefícios", cnpj: "58.506.161/0001-31" },
+      associado: { nome: deal.lead_nome, cpf: deal.cpf_cnpj || "", rg: "", cnh: "", sexo: "", nascimento: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "", cep: "", email: deal.email || "", celular: deal.telefone || "" },
+      veiculo: { placa: deal.veiculo_placa, modelo: deal.veiculo_modelo, marca: "", anoFab: "", anoModelo: "", cor: "", combustivel: "", chassi: "", renavam: "", codFipe: "", valorFipe: deal.valor_plano || 0, valorProtegido: deal.valor_plano || 0, diaVencimento: "10", veiculoTrabalho: "Não" },
+      plano: { nome: deal.plano || "Completo", valorMensal: deal.valor_plano || 0, adesao: 400, participacao: "5% FIPE" },
+      coberturas: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total"],
+      assistencias: ["Assistência 24H", "Reboque", "Chaveiro", "Hospedagem"],
+      consultor: { nome: deal.consultor || "", celular: "", email: "" },
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Contrato-${deal.lead_nome.replace(/\s/g, "_")}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Contrato baixado!");
   };
 
   const handleSimularAssinatura = async () => {
@@ -197,16 +237,33 @@ export default function AssinaturaTab({ deal }: Props) {
       <fieldset className="space-y-3">
         <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">ENVIAR PARA ASSINATURA</legend>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" className="rounded-none" onClick={() => handleEnviar("email")}>
-            <Mail className="h-3.5 w-3.5 mr-1" />Enviar por E-mail
+          <Button size="sm" variant="outline" className="rounded-none" onClick={handleBaixarContrato}>
+            <FileText className="h-3.5 w-3.5 mr-1" />Baixar Contrato PDF
           </Button>
-          <Button size="sm" className="rounded-none bg-success hover:bg-success/90 text-white" onClick={() => handleEnviar("whatsapp")}>
-            <MessageSquare className="h-3.5 w-3.5 mr-1" />Enviar por WhatsApp
+          <Button size="sm" variant="outline" className="rounded-none" onClick={() => handleEnviar("email")} disabled={gerando}>
+            <Mail className="h-3.5 w-3.5 mr-1" />{gerando ? "Gerando..." : "Enviar por E-mail"}
           </Button>
-          <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white" onClick={() => handleEnviar("ambos")}>
-            <Send className="h-3.5 w-3.5 mr-1" />Enviar E-mail + WhatsApp
+          <Button size="sm" className="rounded-none bg-success hover:bg-success/90 text-white" onClick={() => handleEnviar("whatsapp")} disabled={gerando}>
+            <MessageSquare className="h-3.5 w-3.5 mr-1" />{gerando ? "Gerando..." : "Enviar por WhatsApp"}
+          </Button>
+          <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white" onClick={() => handleEnviar("ambos")} disabled={gerando}>
+            <Send className="h-3.5 w-3.5 mr-1" />{gerando ? "Gerando..." : "Enviar E-mail + WhatsApp"}
           </Button>
         </div>
+        {linkAssinatura && (
+          <div className="bg-primary/5 border border-blue-200 rounded p-3 mt-2">
+            <p className="text-xs font-semibold text-[#1A3A5C]">Link de Assinatura Digital (Autentique):</p>
+            <code className="text-[10px] text-primary break-all">{linkAssinatura}</code>
+            <div className="flex gap-2 mt-1">
+              <Button size="sm" variant="ghost" className="text-xs h-6 rounded-none" onClick={() => { navigator.clipboard.writeText(linkAssinatura); toast.success("Link copiado!"); }}>
+                <Copy className="h-3 w-3 mr-1" />Copiar
+              </Button>
+              <Button size="sm" variant="ghost" className="text-xs h-6 rounded-none" onClick={() => window.open(linkAssinatura, "_blank")}>
+                <ExternalLink className="h-3 w-3 mr-1" />Abrir
+              </Button>
+            </div>
+          </div>
+        )}
         {status !== "assinado" && enviado && (
           <div className="flex gap-2 pt-1">
             <Button size="sm" variant="outline" className="rounded-none" onClick={() => { setStatus("enviado"); toast.info("Lembrete reenviado!"); }}>
