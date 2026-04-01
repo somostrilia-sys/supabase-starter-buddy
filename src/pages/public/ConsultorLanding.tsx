@@ -163,10 +163,10 @@ export default function ConsultorLanding() {
 
       const vFipe = veiculo?.valorFipe || 0;
       const tipoMap: Record<string, string> = {
-        Carro: "Carros e Utilitarios Pequenos",
+        Carro: "Carros e Utilitários Pequenos",
         Moto: "Motos",
-        Caminhao: "Caminhoes e Micro-Onibus",
-        "Van/Utilitario": "Carros e Utilitarios Pequenos",
+        Caminhao: "Caminhões e Micro-Ônibus",
+        "Van/Utilitario": "Carros e Utilitários Pequenos",
       };
       // Buscar regional pela cidade/estado
       const { data: regMatch } = await supabase.from("uf_regional_precos" as any)
