@@ -91,7 +91,8 @@ export default function VistoriaTab({ deal }: Props) {
     : [];
 
   const [codigoGerado, setCodigoGerado] = useState(!!vistoriaReal);
-  const [codigo] = useState(vistoriaReal?.token_publico || "");
+  const [codigo, setCodigo] = useState(vistoriaReal?.token_publico || "");
+  const [vistoriaId, setVistoriaId] = useState(vistoriaReal?.id || "");
   const [status, setStatus] = useState<VistoriaStatus>(vistoriaReal?.status || "pendente");
   const [prazo, setPrazo] = useState("7");
   const [selectedFotos, setSelectedFotos] = useState<string[]>([
@@ -101,19 +102,83 @@ export default function VistoriaTab({ deal }: Props) {
   ]);
   const [categoriaVistoria] = useState<string>("automovel");
 
-  const handleAprovar = () => {
+  const handleAprovar = async () => {
+    if (vistoriaId) {
+      await supabase.from("vistorias" as any).update({ status: "aprovada" } as any).eq("id", vistoriaId);
+      await supabase.from("pipeline_transicoes").insert({
+        negociacao_id: deal.id, stage_anterior: deal.stage, stage_novo: deal.stage,
+        motivo: "Vistoria aprovada", automatica: false,
+      } as any);
+    }
     setStatus("aprovada");
     toast.success("Vistoria aprovada!");
   };
 
-  const handleReprovar = () => { setStatus("reprovada"); toast.error("Vistoria reprovada."); };
+  const handleReprovar = async () => {
+    if (vistoriaId) {
+      await supabase.from("vistorias" as any).update({ status: "reprovada" } as any).eq("id", vistoriaId);
+      await supabase.from("pipeline_transicoes").insert({
+        negociacao_id: deal.id, stage_anterior: deal.stage, stage_novo: deal.stage,
+        motivo: "Vistoria reprovada", automatica: false,
+      } as any);
+    }
+    setStatus("reprovada");
+    toast.error("Vistoria reprovada.");
+  };
 
   const st = statusConfig[status];
   const StIcon = st.icon;
 
-  const handleSolicitar = () => {
+  const handleSolicitar = async () => {
+    // Gerar token único
+    const token = `VST-${Date.now().toString(36).toUpperCase()}`;
+
+    // Criar registro real na tabela vistorias
+    const { data: novaVistoria, error } = await supabase
+      .from("vistorias" as any)
+      .insert({
+        negociacao_id: deal.id,
+        token_publico: token,
+        status: "pendente",
+        tentativa: 1,
+        placa: deal.veiculo_placa,
+        modelo: deal.veiculo_modelo,
+        fotos_solicitadas: selectedFotos,
+      } as any)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Erro ao criar vistoria:", error);
+      toast.error("Erro ao criar vistoria: " + error.message);
+      return;
+    }
+
+    // Registrar transição no pipeline
+    await supabase.from("pipeline_transicoes").insert({
+      negociacao_id: deal.id,
+      stage_anterior: deal.stage,
+      stage_novo: deal.stage,
+      motivo: `Vistoria solicitada — código ${token}`,
+      automatica: false,
+    } as any);
+
+    // Auto-transição para aguardando_vistoria se aplicável
+    if (deal.stage === "em_negociacao") {
+      await supabase.from("negociacoes").update({ stage: "aguardando_vistoria" } as any).eq("id", deal.id);
+      await supabase.from("pipeline_transicoes").insert({
+        negociacao_id: deal.id,
+        stage_anterior: "em_negociacao",
+        stage_novo: "aguardando_vistoria",
+        motivo: "Vistoria solicitada automaticamente",
+        automatica: true,
+      } as any);
+    }
+
+    setCodigo(token);
+    setVistoriaId((novaVistoria as any).id);
     setCodigoGerado(true);
-    toast.success("Código de vistoria gerado e enviado ao cliente!");
+    toast.success("Vistoria criada! Token: " + token);
   };
 
   const handleCopiar = () => {
@@ -258,21 +323,23 @@ export default function VistoriaTab({ deal }: Props) {
       </Card>
 
       {/* Fluxo Web info */}
-      <Card className="rounded-none bg-primary/50 border-blue-200">
-        <CardContent className="p-4 flex items-start gap-3">
-          <Globe className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-blue-900">Fluxo Web Alternativo</p>
-            <p className="text-xs text-primary mt-0.5">O cliente pode acessar o link abaixo, tirar fotos pelo navegador e submeter diretamente — sem necessidade de instalar o aplicativo.</p>
-            <div className="flex items-center gap-2 mt-2">
-              <code className="text-[11px] bg-white border px-2 py-1 font-mono text-primary">https://vistoria.objetiva.app/v/{codigo}</code>
-              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(`https://vistoria.objetiva.app/v/${codigo}`); toast.success("Link copiado!"); }}>
-                <Copy className="h-3 w-3" />
-              </Button>
+      {codigoGerado && codigo && (
+        <Card className="rounded-none bg-primary/50 border-blue-200">
+          <CardContent className="p-4 flex items-start gap-3">
+            <Globe className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-blue-900">Link Público da Vistoria</p>
+              <p className="text-xs text-primary mt-0.5">O cliente acessa este link no celular, tira as fotos pelo navegador com GPS e timestamp obrigatórios.</p>
+              <div className="flex items-center gap-2 mt-2">
+                <code className="text-[11px] bg-white border px-2 py-1 font-mono text-primary">{window.location.origin}/vistoria/{codigo}</code>
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/vistoria/${codigo}`); toast.success("Link copiado!"); }}>
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Timeline de eventos */}
       <fieldset className="space-y-3">
