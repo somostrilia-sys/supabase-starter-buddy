@@ -87,7 +87,7 @@ export default function Pipeline() {
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
 
   // Hook de negociações (Supabase real)
-  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao } = useNegociacoes();
+  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes } = useNegociacoes();
 
   // Dados reais de cooperativas com regional vinculada
   const { data: cooperativasDb } = useQuery({
@@ -721,7 +721,7 @@ export default function Pipeline() {
 
       {/* Deal detail modal */}
       {detailDeal && (
-        <DealDetailModal deal={detailDeal} open={!!detailDeal} onOpenChange={o => { if (!o) setDetailDeal(null); }} onUpdate={() => { queryClient.invalidateQueries({ queryKey: ["leads"] }); }} />
+        <DealDetailModal deal={detailDeal} open={!!detailDeal} onOpenChange={o => { if (!o) setDetailDeal(null); }} onUpdate={() => { queryClient.invalidateQueries({ queryKey: ["leads"] }); reloadNegociacoes(); }} />
       )}
 
       {/* Concretizar Venda Modal */}
