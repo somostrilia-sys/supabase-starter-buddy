@@ -31,6 +31,7 @@ interface Veiculo {
   regional: string; cooperativa: string; tipoAdesao: string;
   dataCadastro: string; dataContrato: string; diaVenc: number;
   sitVeiculo: string; sitAssociado: string;
+  associado_id?: string;
   condutores: { nome: string; cpf: string; cnh: string; dataNasc: string; situacao: string }[];
   lancamentos: { nTitulo: string; nBanco: string; tipo: string; banco: string; dtEmissao: string; dataVenc: string; dataPgto: string; valor: number; valorPago: number; parcela: string; nControle: string; status: string }[];
   agregados: { tipo: string; placa: string; cota: string; marcaModelo: string; valor: number; data: string; situacao: string }[];
@@ -47,10 +48,6 @@ const calcIdade = (dn: string) => {
   if (h.getMonth() < n.getMonth() || (h.getMonth() === n.getMonth() && h.getDate() < n.getDate())) a--;
   return a;
 };
-
-const mockVeiculos: Veiculo[] = [];
-
-// sitBadge replaced by StatusBadge component
 
 const finBadge = (s: string) => {
   const m: Record<string,string> = { "Pago": "bg-success/10 text-success border-success/20", "Pendente": "bg-warning/10 text-warning border-warning/25", "Atrasado": "bg-destructive/8 text-destructive border-red-200" };
@@ -87,12 +84,13 @@ export default function ConsultarVeiculo() {
     const { data } = await query;
     const mapped: Veiculo[] = (data ?? []).map((v: any) => ({
       id: v.id, nome: v.associados?.nome ?? "—", placa: v.placa ?? "", chassi: v.chassi ?? "",
-      idExterno: v.codigo_sga ?? "", modelo: v.modelo ?? "", marca: v.marca ?? "",
-      anoFab: v.ano_fabricacao ?? 0, anoMod: v.ano_modelo ?? 0, cor: v.cor ?? "",
-      valorFipe: v.valor_fipe ?? 0, cota: "", combustivel: v.combustivel ?? "", km: 0,
+      idExterno: v.renavam ?? "", modelo: v.modelo ?? "", marca: v.marca ?? "",
+      anoFab: v.ano ?? 0, anoMod: v.ano ?? 0, cor: v.cor ?? "",
+      valorFipe: v.valor_fipe ?? 0, cota: "", combustivel: "", km: 0,
       regional: "", cooperativa: "", tipoAdesao: "",
       dataCadastro: v.created_at?.split("T")[0] ?? "", dataContrato: "", diaVenc: 0,
       sitVeiculo: v.status ?? "Ativo", sitAssociado: v.associados?.status ?? "",
+      associado_id: v.associado_id,
       condutores: [], lancamentos: [], agregados: [], vistorias: [],
       documentos: [], observacoes: [], fornecedores: [], contratos: [],
     }));
@@ -106,6 +104,37 @@ export default function ConsultarVeiculo() {
   };
 
   const limpar = () => { setFilters({ placa:"",chassi:"",idExterno:"",proprietario:"",idVeiculo:"",sitVeiculo:"Todos",sitAssociado:"Todos",cooperativa:"Todos" }); setResults([]); setSearched(false); };
+
+  const selectVehicle = async (v: Veiculo) => {
+    setSelected(v);
+    // Load related data in parallel
+    const [mensRes, sinistrosRes, docsRes] = await Promise.all([
+      v.associado_id
+        ? supabase.from("mensalidades").select("*").eq("associado_id", v.associado_id).order("data_vencimento", { ascending: false })
+        : Promise.resolve({ data: [] }),
+      supabase.from("sinistros").select("*").eq("veiculo_id", v.id),
+      supabase.from("vehicle_documents").select("*").eq("vehicle_id", v.id),
+    ]);
+    const lancamentos = (mensRes.data ?? []).map((m: any) => ({
+      nTitulo: m.id?.slice(0, 8) ?? "", nBanco: "", tipo: "Mensalidade",
+      banco: "", dtEmissao: m.created_at?.split("T")[0] ?? "",
+      dataVenc: m.data_vencimento ?? "", dataPgto: m.data_pagamento ?? "",
+      valor: m.valor ?? 0, valorPago: m.data_pagamento ? m.valor : 0,
+      parcela: m.referencia ?? "-", nControle: "",
+      status: m.status === "pago" ? "Pago" : m.status === "atrasado" ? "Atrasado" : "Pendente",
+    }));
+    const fornecedores = (sinistrosRes.data ?? []).map((s: any) => ({
+      protocolo: s.id?.slice(0, 8) ?? "", fornecedor: "",
+      produto: s.tipo ?? "", servico: s.tipo ?? "",
+      motivo: s.descricao ?? "", situacao: s.status ?? "",
+      dataAbertura: s.data_ocorrencia ?? "", dataFechamento: "",
+    }));
+    const documentos = (docsRes.data ?? []).map((d: any) => ({
+      nome: d.nome_arquivo ?? "", tipo: d.tipo ?? "",
+      data: d.created_at ? new Date(d.created_at).toLocaleDateString("pt-BR") : "",
+    }));
+    setSelected(prev => prev ? { ...prev, lancamentos, fornecedores, documentos } : prev);
+  };
 
   const paged = results.slice((page-1)*perPage, page*perPage);
   const totalPages = Math.ceil(results.length / perPage);
@@ -180,7 +209,7 @@ export default function ConsultarVeiculo() {
                             <TableCell><StatusBadge status={v.sitAssociado} /></TableCell>
                             <TableCell className="text-xs">{v.cooperativa}</TableCell>
                             <TableCell className="text-xs">{v.tipoAdesao}</TableCell>
-                            <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelected(v)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
+                            <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => selectVehicle(v)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

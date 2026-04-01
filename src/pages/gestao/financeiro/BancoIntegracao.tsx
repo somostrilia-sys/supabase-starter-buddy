@@ -145,7 +145,9 @@ export default function BancoIntegracao({ onBack }: { onBack: () => void }) {
               <TableRow><TableHead>Data</TableHead><TableHead>Descrição</TableHead><TableHead>Tipo</TableHead><TableHead className="text-right">Valor</TableHead></TableRow>
             </TableHeader>
             <TableBody>
-              {extratoMock.map((e, i) => (
+              {extratoMock.length === 0 ? (
+                <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-8">Conecte sua conta bancária para ver o extrato</TableCell></TableRow>
+              ) : extratoMock.map((e, i) => (
                 <TableRow key={i}>
                   <TableCell>{new Date(e.data).toLocaleDateString("pt-BR")}</TableCell>
                   <TableCell>{e.descricao}</TableCell>

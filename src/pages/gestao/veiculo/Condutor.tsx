@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,26 +74,10 @@ const SelectWithAdd = ({ label, value, onValueChange, options, placeholder }: {
   );
 };
 
-const mockCondutores = [
-  { id: 1, nome: "Carlos Alberto Silva", cpf: "111.222.333-44", rg: "12.345.678-9", cnh: "04512345678", categCnh: "AB", dataNasc: "1985-03-15", celular: "(11) 99876-5432", cidade: "São Paulo", estado: "SP", situacao: "Ativo", classificacao: "Principal", placa: "ABC-1D23", associado: "Carlos Alberto Silva" },
-  { id: 2, nome: "Maria Aparecida Santos", cpf: "222.333.444-55", rg: "23.456.789-0", cnh: "05623456789", categCnh: "B", dataNasc: "1990-07-22", celular: "(11) 98765-4321", cidade: "Campinas", estado: "SP", situacao: "Ativo", classificacao: "Principal", placa: "DEF-4G56", associado: "José Roberto Oliveira" },
-  { id: 3, nome: "José Roberto Oliveira", cpf: "333.444.555-66", rg: "34.567.890-1", cnh: "06734567890", categCnh: "C", dataNasc: "1978-11-10", celular: "(21) 97654-3210", cidade: "Rio de Janeiro", estado: "RJ", situacao: "Ativo", classificacao: "Agregado", placa: "GHI-7J89", associado: "Ana Paula Ferreira" },
-  { id: 4, nome: "Ana Paula Ferreira", cpf: "444.555.666-77", rg: "45.678.901-2", cnh: "07845678901", categCnh: "B", dataNasc: "1995-01-30", celular: "(31) 96543-2109", cidade: "Belo Horizonte", estado: "MG", situacao: "Inativo", classificacao: "Eventual", placa: "JKL-2M34", associado: "Francisco das Chagas Lima" },
-  { id: 5, nome: "Francisco das Chagas Lima", cpf: "555.666.777-88", rg: "56.789.012-3", cnh: "08956789012", categCnh: "D", dataNasc: "1972-06-18", celular: "(41) 95432-1098", cidade: "Curitiba", estado: "PR", situacao: "Ativo", classificacao: "Principal", placa: "MNO-5P67", associado: "Carlos Alberto Silva" },
-  { id: 6, nome: "Francisca Helena Costa", cpf: "666.777.888-99", rg: "67.890.123-4", cnh: "09067890123", categCnh: "AB", dataNasc: "1988-09-05", celular: "(62) 94321-0987", cidade: "Goiânia", estado: "GO", situacao: "Ativo", classificacao: "Principal", placa: "QRS-8T90", associado: "Francisca Helena Costa" },
-  { id: 7, nome: "Antônio Carlos Pereira", cpf: "777.888.999-00", rg: "78.901.234-5", cnh: "01178901234", categCnh: "E", dataNasc: "1965-12-25", celular: "(61) 93210-9876", cidade: "Brasília", estado: "DF", situacao: "Ativo", classificacao: "Agregado", placa: "UVW-1X23", associado: "Maria Aparecida Santos" },
-  { id: 8, nome: "Adriana Souza Rodrigues", cpf: "888.999.000-11", rg: "89.012.345-6", cnh: "01289012345", categCnh: "B", dataNasc: "1992-04-12", celular: "(19) 92109-8765", cidade: "Ribeirão Preto", estado: "SP", situacao: "Inativo", classificacao: "Eventual", placa: "YZA-4B56", associado: "Antônio Carlos Pereira" },
-];
+type CondutorRow = { id: string | number; nome: string; cpf: string; rg: string; cnh: string; categCnh: string; dataNasc: string; celular: string; cidade: string; estado: string; situacao: string; classificacao: string; placa: string; associado: string };
+type VinculoRow = { id: string | number; condutor: string; associado: string; placa: string; data: string };
 
-const mockVinculos = [
-  { id: 1, condutor: "Carlos Alberto Silva", associado: "Carlos Alberto Silva", placa: "ABC-1D23", data: "10/01/2025" },
-  { id: 2, condutor: "Maria Aparecida Santos", associado: "José Roberto Oliveira", placa: "DEF-4G56", data: "15/02/2025" },
-  { id: 3, condutor: "José Roberto Oliveira", associado: "Ana Paula Ferreira", placa: "GHI-7J89", data: "20/03/2024" },
-  { id: 4, condutor: "Francisco das Chagas Lima", associado: "Carlos Alberto Silva", placa: "MNO-5P67", data: "05/06/2024" },
-  { id: 5, condutor: "Antônio Carlos Pereira", associado: "Maria Aparecida Santos", placa: "UVW-1X23", data: "12/09/2024" },
-];
-
-const mockClassificacoes = [
+const defaultClassificacoes = [
   { id: 1, descricao: "Principal", situacao: "Ativo", padrao: true },
   { id: 2, descricao: "Agregado", situacao: "Ativo", padrao: false },
   { id: 3, descricao: "Eventual", situacao: "Ativo", padrao: false },
@@ -226,13 +211,25 @@ function TabCadastrar() {
 
 // ===================== TAB 2: CONSULTAR =====================
 function TabConsultar() {
-  const [results, setResults] = useState<typeof mockCondutores>([]);
-  const [editing, setEditing] = useState<typeof mockCondutores[0] | null>(null);
+  const [results, setResults] = useState<CondutorRow[]>([]);
+  const [editing, setEditing] = useState<CondutorRow | null>(null);
   const [selectedCols, setSelectedCols] = useState<string[]>(["Condutor", "CPF", "CNH", "Cidade", "Tel. Celular", "Placa", "Situação", "Classificação Condutor"]);
   const [page, setPage] = useState(1);
   const perPage = 10;
 
-  const pesquisar = () => { setResults(mockCondutores); setPage(1); toast.success(`${mockCondutores.length} condutores encontrados`); };
+  const pesquisar = async () => {
+    const { data } = await supabase.from("associados").select("*, veiculos(placa)").order("nome").limit(50);
+    const mapped: CondutorRow[] = (data ?? []).map((a: any) => ({
+      id: a.id, nome: a.nome ?? "", cpf: a.cpf ?? "", rg: a.rg ?? "",
+      cnh: "", categCnh: "", dataNasc: a.data_nascimento ?? "",
+      celular: a.telefone ?? "", cidade: a.cidade ?? "", estado: a.estado ?? "",
+      situacao: a.status === "ativo" ? "Ativo" : "Inativo",
+      classificacao: "Principal", placa: a.veiculos?.[0]?.placa ?? "",
+      associado: a.nome ?? "",
+    }));
+    setResults(mapped); setPage(1);
+    toast.success(`${mapped.length} condutores encontrados`);
+  };
 
   if (editing) {
     return (
@@ -373,6 +370,18 @@ function TabVincular() {
   const [condutor, setCondutor] = useState("");
   const [associado, setAssociado] = useState("");
   const [placa, setPlaca] = useState("");
+  const [vinculos, setVinculos] = useState<VinculoRow[]>([]);
+
+  useEffect(() => {
+    supabase.from("associados").select("nome, cpf, veiculos(placa)").eq("status", "ativo").order("nome").limit(30)
+      .then(({ data }) => {
+        const mapped: VinculoRow[] = (data ?? []).filter((a: any) => a.veiculos?.length).map((a: any, i: number) => ({
+          id: a.cpf || i, condutor: a.nome, associado: a.nome,
+          placa: a.veiculos?.[0]?.placa ?? "", data: "",
+        }));
+        setVinculos(mapped);
+      });
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -395,12 +404,14 @@ function TabVincular() {
               <TableRow><TableHead>Condutor</TableHead><TableHead>Associado</TableHead><TableHead>Placa</TableHead><TableHead>Data</TableHead><TableHead className="w-10"></TableHead></TableRow>
             </TableHeader>
             <TableBody>
-              {mockVinculos.map(v => (
-                <TableRow key={v.id}>
+              {vinculos.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-6">Dados do associado vinculado ao veículo</TableCell></TableRow>
+              ) : vinculos.map(v => (
+                <TableRow key={String(v.id)}>
                   <TableCell className="text-sm">{v.condutor}</TableCell>
                   <TableCell className="text-sm">{v.associado}</TableCell>
                   <TableCell className="text-sm font-mono">{v.placa}</TableCell>
-                  <TableCell className="text-sm">{v.data}</TableCell>
+                  <TableCell className="text-sm">{v.data || "—"}</TableCell>
                   <TableCell><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button></TableCell>
                 </TableRow>
               ))}
@@ -414,7 +425,7 @@ function TabVincular() {
 
 // ===================== TAB 4: CLASSIFICAÇÃO =====================
 function TabClassificacao() {
-  const [items, setItems] = useState(mockClassificacoes);
+  const [items, setItems] = useState(defaultClassificacoes);
   const [newDesc, setNewDesc] = useState("");
   const [newSit, setNewSit] = useState("Ativo");
   const [newPadrao, setNewPadrao] = useState(false);

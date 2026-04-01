@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { User, Plus, Search, Trash2, Edit, Save, Eraser } from "lucide-react";
+import { User, Plus, Search, Trash2, Edit, Save, Eraser, Loader2 } from "lucide-react";
 
 const ufs = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
 
@@ -45,15 +46,33 @@ const emptyForm = {
   cep: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "",
 };
 
-const mockProprietarios = [
-  { id: 1, situacao: "Ativo", nome: "Carlos Alberto Silva", cpf: "111.222.333-44", rg: "12.345.678-9", dataExpRg: "2015-03-10", orgaoExp: "SSP/SP", dataNasc: "1985-03-15", sexo: "Masculino", profissao: "Engenheiro", estadoCivil: "Casado", telefone: "(11) 3456-7890", telComercial: "(11) 2345-6789", celular: "(11) 99876-5432", email: "carlos@email.com", cep: "01001-000", logradouro: "Praça da Sé", numero: "100", complemento: "Sala 5", bairro: "Sé", cidade: "São Paulo", estado: "SP" },
-  { id: 2, situacao: "Ativo", nome: "Maria Aparecida Santos", cpf: "222.333.444-55", rg: "23.456.789-0", dataExpRg: "2018-07-20", orgaoExp: "SSP/SP", dataNasc: "1990-07-22", sexo: "Feminino", profissao: "Advogada", estadoCivil: "Solteiro", telefone: "(19) 3456-7890", telComercial: "", celular: "(19) 98765-4321", email: "maria@email.com", cep: "13010-001", logradouro: "Rua Barão de Jaguara", numero: "450", complemento: "", bairro: "Centro", cidade: "Campinas", estado: "SP" },
-  { id: 3, situacao: "Ativo", nome: "José Roberto Oliveira", cpf: "333.444.555-66", rg: "34.567.890-1", dataExpRg: "2012-11-05", orgaoExp: "DETRAN/RJ", dataNasc: "1978-11-10", sexo: "Masculino", profissao: "Motorista", estadoCivil: "Casado", telefone: "(21) 3456-7890", telComercial: "(21) 2345-6789", celular: "(21) 97654-3210", email: "jose@email.com", cep: "20040-020", logradouro: "Av. Rio Branco", numero: "156", complemento: "Andar 8", bairro: "Centro", cidade: "Rio de Janeiro", estado: "RJ" },
-  { id: 4, situacao: "Inativo", nome: "Ana Paula Ferreira", cpf: "444.555.666-77", rg: "45.678.901-2", dataExpRg: "2020-01-15", orgaoExp: "SSP/MG", dataNasc: "1995-01-30", sexo: "Feminino", profissao: "Professora", estadoCivil: "União Estável", telefone: "(31) 3456-7890", telComercial: "", celular: "(31) 96543-2109", email: "ana@email.com", cep: "30130-000", logradouro: "Av. Afonso Pena", numero: "1500", complemento: "", bairro: "Centro", cidade: "Belo Horizonte", estado: "MG" },
-  { id: 5, situacao: "Ativo", nome: "Francisco das Chagas Lima", cpf: "555.666.777-88", rg: "56.789.012-3", dataExpRg: "2016-06-10", orgaoExp: "SSP/PR", dataNasc: "1972-06-18", sexo: "Masculino", profissao: "Comerciante", estadoCivil: "Divorciado", telefone: "(41) 3456-7890", telComercial: "(41) 2345-6789", celular: "(41) 95432-1098", email: "francisco@email.com", cep: "80010-000", logradouro: "Rua XV de Novembro", numero: "700", complemento: "Loja 3", bairro: "Centro", cidade: "Curitiba", estado: "PR" },
-];
+interface ProprietarioRow {
+  id: string | number; situacao: string; nome: string; cpf: string; rg: string; dataExpRg: string; orgaoExp: string;
+  dataNasc: string; sexo: string; profissao: string; estadoCivil: string;
+  telefone: string; telComercial: string; celular: string; email: string;
+  cep: string; logradouro: string; numero: string; complemento: string; bairro: string; cidade: string; estado: string;
+}
 
 export default function Proprietario() {
+  const [proprietarios, setProprietarios] = useState<ProprietarioRow[]>([]);
+  const [loadingList, setLoadingList] = useState(false);
+
+  const carregarProprietarios = async () => {
+    setLoadingList(true);
+    const { data } = await supabase.from("associados").select("*").order("nome").limit(50);
+    const mapped: ProprietarioRow[] = (data ?? []).map((a: any) => ({
+      id: a.id, situacao: a.status === "ativo" ? "Ativo" : "Inativo",
+      nome: a.nome ?? "", cpf: a.cpf ?? "", rg: a.rg ?? "", dataExpRg: "", orgaoExp: "",
+      dataNasc: a.data_nascimento ?? "", sexo: "", profissao: "", estadoCivil: "",
+      telefone: a.telefone ?? "", telComercial: "", celular: a.telefone ?? "",
+      email: a.email ?? "", cep: a.cep ?? "", logradouro: a.endereco ?? "",
+      numero: "", complemento: "", bairro: "", cidade: a.cidade ?? "", estado: a.estado ?? "",
+    }));
+    setProprietarios(mapped);
+    setLoadingList(false);
+  };
+
+  useEffect(() => { carregarProprietarios(); }, []);
   const [form, setForm] = useState(emptyForm);
   const [editing, setEditing] = useState<number | null>(null);
   const [showList, setShowList] = useState(false);
@@ -73,7 +92,7 @@ export default function Proprietario() {
     setEditing(null);
   };
 
-  const editarItem = (p: typeof mockProprietarios[0]) => {
+  const editarItem = (p: typeof proprietarios[0]) => {
     setForm({ ...p });
     setEditing(p.id);
     setShowList(false);
@@ -96,7 +115,7 @@ export default function Proprietario() {
                 <TableRow><TableHead>Nome</TableHead><TableHead>CPF</TableHead><TableHead>Cidade</TableHead><TableHead>Celular</TableHead><TableHead>Situação</TableHead><TableHead className="w-20">Ações</TableHead></TableRow>
               </TableHeader>
               <TableBody>
-                {mockProprietarios.map(p => (
+                {proprietarios.map(p => (
                   <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => editarItem(p)}>
                     <TableCell className="text-sm font-medium">{p.nome}</TableCell>
                     <TableCell className="text-sm">{p.cpf}</TableCell>
