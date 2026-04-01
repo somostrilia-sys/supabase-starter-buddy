@@ -170,13 +170,11 @@ const situacaoColor: Record<string, string> = {
   cancelado: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
 };
 
-const statusBoleto = ["pago_dia", "pago_atraso", "pendente", "vencido", "cancelado"];
-const statusBoletoLabels: Record<string, string> = { pago_dia: "Pago em dia", pago_atraso: "Pago em atraso", pendente: "Pendente", vencido: "Vencido", cancelado: "Cancelado" };
-const unidadesBoleto = ["Matriz São Paulo", "Filial RJ", "Filial MG", "Filial PR"];
-const consultoresBoleto = ["Ana Oliveira", "Pedro Santos", "Lucas Ferreira"];
+const statusBoleto = ["baixado", "aberto", "baixado_pendencia", "cancelado"];
+const statusBoletoLabels: Record<string, string> = { baixado: "Baixado", aberto: "Aberto", baixado_pendencia: "Baixado c/ Pendência", cancelado: "Cancelado" };
 const tiposCobranca = ["Mensalidade", "Taxa administrativa", "Multa"];
-const bancosBoleto = ["Banco do Brasil", "Itaú", "Bradesco", "Caixa", "Santander"];
-const formasPagamento = ["Boleto", "PIX", "Cartão"];
+const bancosBoleto: string[] = [];
+const formasPagamento: string[] = [];
 
 const outrosRelatorios = [
   { id: "usuarios", label: "Usuários", icon: UserCog, desc: "Listagem de usuários do sistema com perfis e acessos" },
@@ -264,16 +262,29 @@ export default function RelatoriosTab() {
   const totalVeiculosCount = veiculosResult?.total || 0;
   const totalPagesVeicDb = Math.ceil(totalVeiculosCount / VEIC_PAGE_SIZE);
 
-  // Fetch boletos from Supabase
-  const { data: boletosData } = useQuery({
-    queryKey: ["boletos-relatorio"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("boletos").select("*").limit(1000);
-      if (error) throw error;
-      return data || [];
-    },
-  });
-  const realBoletos: any[] = boletosData || [];
+  // Fetch boletos from Supabase with server-side filters
+  const [boletosLoading, setBoletosLoading] = useState(false);
+  const [realBoletos, setRealBoletos] = useState<any[]>([]);
+  const [totalBoletosCount, setTotalBoletosCount] = useState(0);
+
+  const fetchBoletos = async () => {
+    setBoletosLoading(true);
+    let query = supabase.from("boletos").select("*", { count: "exact" });
+    if (bolStatus !== "todos") query = query.eq("status", bolStatus);
+    if (bolDataDe) query = query.gte(bolFiltroData === "pagamento" ? "data_pagamento" : "vencimento", bolDataDe);
+    if (bolDataAte) query = query.lte(bolFiltroData === "pagamento" ? "data_pagamento" : "vencimento", bolDataAte);
+    if (bolValorMin) query = query.gte("valor", parseFloat(bolValorMin));
+    if (bolValorMax) query = query.lte("valor", parseFloat(bolValorMax));
+    query = query.order("vencimento", { ascending: false }).range((pageBol - 1) * PAGE_SIZE, pageBol * PAGE_SIZE - 1);
+    const { data, error, count } = await query;
+    if (!error) {
+      setRealBoletos(data || []);
+      setTotalBoletosCount(count || 0);
+    }
+    setBoletosLoading(false);
+  };
+
+  useEffect(() => { fetchBoletos(); }, []);
 
   // Derived simple lists for "Demais" tab filters
   const cooperativasSimples = cooperativasLista.slice(0, 10);
@@ -559,11 +570,11 @@ export default function RelatoriosTab() {
               {/* Row 2: Entity filters */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div><Label className="text-xs font-semibold">Associado / Cliente</Label><Input placeholder="Nome ou CPF..." value={buscaBol} onChange={e => setBuscaBol(e.target.value)} /></div>
-                <div><Label className="text-xs font-semibold">Unidade (Filial)</Label>
-                  <Select value={bolUnidade} onValueChange={setBolUnidade}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{unidadesBoleto.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent></Select>
+                <div><Label className="text-xs font-semibold">Cooperativa</Label>
+                  <Select value={bolUnidade} onValueChange={setBolUnidade}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todas">Todas</SelectItem>{cooperativasLista.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent></Select>
                 </div>
-                <div><Label className="text-xs font-semibold">Consultor Responsável</Label>
-                  <Select value={bolConsultor} onValueChange={setBolConsultor}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{consultoresBoleto.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+                <div><Label className="text-xs font-semibold">Regional</Label>
+                  <Select value={bolConsultor} onValueChange={setBolConsultor}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{regionaisLista.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
                 </div>
                 <div><Label className="text-xs font-semibold">Número do Boleto</Label><Input placeholder="BOL-..." value={bolNumero} onChange={e => setBolNumero(e.target.value)} /></div>
               </div>
@@ -584,14 +595,18 @@ export default function RelatoriosTab() {
               {/* Row 4 */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div><Label className="text-xs font-semibold">Contrato Vinculado</Label><Input placeholder="CTR-..." value={bolContrato} onChange={e => setBolContrato(e.target.value)} /></div>
-                <div className="flex items-end">
+                <div className="flex items-end gap-2">
+                  <Button size="sm" className="gap-1.5" onClick={() => { setPageBol(1); fetchBoletos(); }}>
+                    {boletosLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    Buscar
+                  </Button>
                   <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
                     setBolFiltroData("vencimento"); setBolDataDe(""); setBolDataAte(""); setBolStatus("todos");
                     setBolUnidade("todas"); setBolConsultor("todos"); setBolValorMin(""); setBolValorMax("");
                     setBolNumero(""); setBolTipoCobranca("todos"); setBolBanco("todos"); setBolFormaPgto("todos");
                     setBolContrato(""); setBuscaBol(""); setPageBol(1);
                     toast.info("Filtros limpos");
-                  }}>Limpar Filtros</Button>
+                  }}>Limpar</Button>
                 </div>
               </div>
             </div>
