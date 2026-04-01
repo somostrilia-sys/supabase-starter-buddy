@@ -363,8 +363,9 @@ export default function CotacaoTab({ deal }: Props) {
       .single();
 
     if (cotacao) {
+      const cotId = (cotacao as any).id;
       await supabase.from("negociacoes").update({
-        cotacao_id: (cotacao as any).id,
+        cotacao_id: cotId,
         updated_at: new Date().toISOString(),
       } as any).eq("id", deal.id);
 
@@ -379,6 +380,25 @@ export default function CotacaoTab({ deal }: Props) {
           automatica: true,
         } as any);
       }
+
+      const linkPlanos = `${window.location.origin}/planos/${cotId}`;
+
+      if (tipo === "Link") {
+        navigator.clipboard.writeText(linkPlanos);
+        toast.success("Link copiado! Cole e envie ao cliente.", { duration: 5000 });
+        return;
+      }
+
+      if (tipo === "WhatsApp") {
+        const tel = (deal.telefone || "").replace(/\D/g, "");
+        const msg = encodeURIComponent(`Olá ${deal.lead_nome}! Segue sua cotação de proteção veicular:\n${linkPlanos}`);
+        window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
+        toast.success("WhatsApp aberto com o link da cotação!");
+        return;
+      }
+    } else {
+      toast.error("Erro ao criar cotação");
+      return;
     }
     toast.success(`Cotação enviada via ${tipo}!`);
   };
