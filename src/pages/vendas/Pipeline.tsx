@@ -158,6 +158,31 @@ export default function Pipeline() {
     });
   }
 
+  // Ao selecionar consultor → buscar cooperativa dele e preencher
+  function handleConsultorChange(consultorNome: string) {
+    const usuario = (usuariosReais || []).find((u: any) => u.nome === consultorNome);
+    if (usuario) {
+      const coops = (usuario.cooperativa || "").split(",").map((c: string) => c.trim()).filter(Boolean);
+      if (coops.length === 1) {
+        // Uma cooperativa → preenche direto + regional
+        const coopMatch = (cooperativasDb || []).find((c: any) =>
+          c.nome.toLowerCase().includes(coops[0].toLowerCase()) || coops[0].toLowerCase().includes(c.nome.toLowerCase())
+        );
+        setForm(f => ({
+          ...f,
+          consultor: consultorNome,
+          cooperativa: coopMatch?.nome || coops[0],
+          regional: coopMatch?.regionais?.nome || f.regional,
+        }));
+      } else {
+        // Múltiplas → só preenche consultor, cooperativa fica pra escolher
+        setForm(f => ({ ...f, consultor: consultorNome }));
+      }
+    } else {
+      setForm(f => ({ ...f, consultor: consultorNome }));
+    }
+  }
+
   // Supabase leads query with busca + RBAC scope
   const { data: leadsData } = useQuery({
     queryKey: ["leads", busca, leadScope],
@@ -725,7 +750,7 @@ export default function Pipeline() {
                 <Input value={form.regional} readOnly className="bg-muted cursor-not-allowed" placeholder="Selecione a cooperativa" />
               </div>
               <div className="space-y-1.5"><Label>Consultor Responsável</Label>
-                <Select value={form.consultor} onValueChange={v => setForm({ ...form, consultor: v })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <Select value={form.consultor} onValueChange={handleConsultorChange}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>{consultoresLista.filter(Boolean).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
