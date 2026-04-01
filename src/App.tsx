@@ -60,6 +60,7 @@ import MinhaConta from "./pages/vendas/MinhaConta";
 import ConfigComissoes from "./pages/vendas/ConfigComissoes";
 import LandingPagePublica from "./pages/public/LandingPagePublica";
 import VistoriaPublica from "./pages/public/VistoriaPublica";
+import CotacaoPublica from "./pages/public/CotacaoPublica";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/lp/:slug" element={<LandingPagePublica />} />
             <Route path="/vistoria/:token" element={<VistoriaPublica />} />
+            <Route path="/cotacao/:id" element={<CotacaoPublica />} />
             <Route path="/" element={<D><Dashboard /></D>} />
 
             {/* Gestão - New */}
