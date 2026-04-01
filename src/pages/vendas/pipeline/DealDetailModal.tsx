@@ -354,8 +354,17 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
 
 function VeiculoTabInline({ deal }: { deal: PipelineDeal }) {
   const [veiculo, setVeiculo] = React.useState<any>(null);
+  const [negData, setNegData] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(false);
 
+  // Carregar dados salvos da negociação (OCR + manual)
+  React.useEffect(() => {
+    if (!deal.id || deal.id.startsWith("p")) return;
+    supabase.from("negociacoes" as any).select("*").eq("id", deal.id).single()
+      .then(({ data }) => { if (data) setNegData(data); });
+  }, [deal.id]);
+
+  // Buscar dados da API pela placa
   React.useEffect(() => {
     const placa = (deal.veiculo_placa || "").replace(/[^A-Z0-9]/gi, "");
     if (placa.length >= 7) {
@@ -367,21 +376,23 @@ function VeiculoTabInline({ deal }: { deal: PipelineDeal }) {
     }
   }, [deal.veiculo_placa]);
 
+  const n = negData || {};
   const v = veiculo || {};
+  // Prioridade: dados salvos (OCR) > dados da API > vazio
   const campos = [
-    ["Marca", v.marca || ""],
-    ["Modelo", v.modelo || deal.veiculo_modelo || ""],
-    ["Ano Fabricação", v.anoFabricacao || ""],
-    ["Ano Modelo", v.anoModelo || ""],
-    ["Cor", v.cor || ""],
-    ["Combustível", v.combustivel || ""],
-    ["Chassi", v.chassi || ""],
-    ["RENAVAM", v.renavam || ""],
+    ["Marca", n.veiculo_modelo?.split("/")[0]?.split(" ")[0] || v.marca || ""],
+    ["Modelo", n.veiculo_modelo || v.modelo || deal.veiculo_modelo || ""],
+    ["Ano Fabricação", n.ano_fabricacao || v.anoFabricacao || ""],
+    ["Ano Modelo", n.ano_modelo || v.anoModelo || ""],
+    ["Cor", n.cor || v.cor || ""],
+    ["Combustível", n.combustivel || v.combustivel || ""],
+    ["Chassi", n.chassi || v.chassi || ""],
+    ["RENAVAM", n.renavam || v.renavam || ""],
     ["Cód. FIPE", v.codFipe || ""],
     ["Valor FIPE", v.valorFipe ? `R$ ${Number(v.valorFipe).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : ""],
     ["Situação", v.situacao || ""],
-    ["Município", v.municipio || ""],
-    ["UF", v.uf || ""],
+    ["Município", n.cidade_circulacao || v.municipio || ""],
+    ["UF", n.estado_circulacao || v.uf || ""],
   ];
 
   return (

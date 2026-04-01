@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { PipelineDeal } from "./mockData";
 
 const UFS = [
@@ -72,6 +73,30 @@ export default function AssociadoTab({ deal }: Props) {
     estado: "",
     cidade: "",
   });
+
+  // Carregar dados reais da negociação (incluindo OCR)
+  useEffect(() => {
+    if (!deal.id || deal.id.startsWith("p")) return;
+    supabase.from("negociacoes" as any).select("*").eq("id", deal.id).single()
+      .then(({ data }) => {
+        if (!data) return;
+        const n = data as any;
+        setForm(prev => ({
+          ...prev,
+          nome: n.lead_nome || prev.nome,
+          cpf: n.cpf_cnpj || prev.cpf,
+          rg: n.rg || prev.rg,
+          cnh: n.cnh || prev.cnh,
+          categoriaCNH: n.cnh_categoria || prev.categoriaCNH,
+          validadeHab: n.cnh_validade || prev.validadeHab,
+          dataNascimento: n.data_nascimento || prev.dataNascimento,
+          telefone: n.telefone || prev.telefone,
+          email: n.email || prev.email,
+          estado: n.estado_circulacao || prev.estado,
+          cidade: n.cidade_circulacao || prev.cidade,
+        }));
+      });
+  }, [deal.id]);
 
   const set = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
