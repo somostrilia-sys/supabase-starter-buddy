@@ -205,22 +205,36 @@ export default function CotacaoTab({ deal }: Props) {
     }
   };
 
-  // Buscar preços reais por valor FIPE + regional
-  const carregarPrecos = async (vFipe: number) => {
-    // Buscar todas as faixas que cobrem esse valor FIPE
-    const { data: todos } = await supabase.from("tabela_precos" as any)
+  // Buscar preços reais por valor FIPE + regional + tipo veículo
+  const carregarPrecos = async (vFipe: number, tipoVeiculo?: string) => {
+    // Mapear tipo do form para tipo_veiculo na tabela_precos
+    const tipoMap: Record<string, string> = {
+      "Automóvel": "Carros e Utilitários Pequenos",
+      "Motocicleta": "Motos",
+      "Caminhão": "Caminhões e Micro-Ônibus",
+      "Van/Utilitário": "Carros e Utilitários Pequenos",
+      "Ônibus": "Caminhões e Micro-Ônibus",
+    };
+    const tipoDb = tipoMap[tipoVeiculo || form.tipoVeiculo] || "Carros e Utilitários Pequenos";
+
+    // Buscar faixas que cobrem este valor FIPE + tipo veículo
+    let query = supabase.from("tabela_precos" as any)
       .select("*")
       .lte("valor_menor", vFipe)
       .gte("valor_maior", vFipe)
-      .order("plano");
+      .eq("tipo_veiculo", tipoDb)
+      .order("plano_normalizado");
+
+    const { data: todos } = await query;
 
     if (todos && todos.length > 0) {
-      // Tentar filtrar pela regional do deal
-      const reg = (deal.regional || "").toUpperCase();
+      // Filtrar pela regional normalizada do deal
+      const reg = (deal.regional || "").toUpperCase().trim();
       const filtered = todos.filter((t: any) => {
-        const tr = (t.regional || "").toUpperCase();
-        return reg.includes(tr) || tr.includes(reg) ||
-          reg.replace("REGIONAL ", "").includes(tr) || tr.includes(reg.replace("REGIONAL ", ""));
+        const rn = (t.regional_normalizado || "").toUpperCase().trim();
+        return rn === reg || reg.includes(rn) || rn.includes(reg) ||
+          reg.replace("REGIONAL ", "").includes(rn.replace("REGIONAL ", "")) ||
+          rn.replace("REGIONAL ", "").includes(reg.replace("REGIONAL ", ""));
       });
       setPrecosReais(filtered.length > 0 ? filtered : todos);
     } else {
@@ -277,13 +291,14 @@ export default function CotacaoTab({ deal }: Props) {
   const modeloAtual = modelos[modeloIdx] || modelos[0];
 
   // planosConfig: usa preços reais se tiver, senão fallback mock
+  // Agrupa por plano_normalizado para evitar duplicatas
   const planosConfig = precosReais.length > 0
-    ? [...new Set(precosReais.map((p: any) => p.plano))].map(plano => {
-        const p = precosReais.find((pr: any) => pr.plano === plano);
+    ? [...new Set(precosReais.map((p: any) => p.plano_normalizado || p.plano))].map(planoNorm => {
+        const p = precosReais.find((pr: any) => (pr.plano_normalizado || pr.plano) === planoNorm);
         return {
-          nome: plano,
-          icon: plano.includes("Premium") ? ShieldPlus : plano.includes("Completo") ? ShieldCheck : Shield,
-          cor: plano.includes("Premium") ? "border-warning/25 bg-warning/8" : plano.includes("Completo") ? "border-success/20 bg-emerald-50" : "border-blue-200 bg-primary/6",
+          nome: planoNorm,
+          icon: planoNorm.includes("Premium") ? ShieldPlus : planoNorm.includes("Completo") ? ShieldCheck : planoNorm.includes("Objetivo") ? ShieldCheck : Shield,
+          cor: planoNorm.includes("Premium") ? "border-warning/25 bg-warning/8" : planoNorm.includes("Completo") ? "border-success/20 bg-emerald-50" : planoNorm.includes("Objetivo") ? "border-blue-300 bg-blue-50" : "border-blue-200 bg-primary/6",
           percentual: 0,
           coberturas: [] as string[],
           valorReal: Number(p?.cota || 0),
@@ -292,8 +307,9 @@ export default function CotacaoTab({ deal }: Props) {
         };
       })
     : planosConfigDefault.map(p => ({ ...p, valorReal: 0, adesao: 400, rastreador: "Não" }));
-  const valorFipe = modeloAtual?.valorFipe || 0;
-  const codFipe = modeloAtual?.codFipe || "";
+  // Usar valor FIPE real da API se disponível, senão do mock
+  const valorFipe = valorFipeReal > 0 ? valorFipeReal : (modeloAtual?.valorFipe || 0);
+  const codFipe = codFipeReal || (modeloAtual?.codFipe || "");
 
   const cidades = cidadesPorUF[form.estadoCirc] || [];
 
