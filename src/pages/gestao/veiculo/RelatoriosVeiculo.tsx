@@ -9,8 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, Filter, Clock, Car, Wallet } from "lucide-react";
-import { mockVeiculos } from "./mockVeiculos";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 function exportCsv(headers: string[], rows: string[][], filename: string) {
   const csv = [headers.join(","), ...rows.map(r => r.map(c => `"${c}"`).join(","))].join("\n");
@@ -37,36 +37,40 @@ export default function RelatoriosVeiculo() {
     });
   }, []);
 
-  // Flat alteration list
-  const alteracoes = mockVeiculos.flatMap(v =>
-    v.alteracoes.map(alt => ({
-      placa: v.placa, modelo: `${v.marca} ${v.modelo}`, associado: v.associadoNome,
-      cooperativa: v.cooperativa, regional: v.regional,
-      ...alt,
-    }))
-  ).sort((a, b) => b.data.localeCompare(a.data));
+  const [veiculosData, setVeiculosData] = useState<any[]>([]);
+  const [boletosData, setBoletosData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredAlt = alteracoes.filter(a => {
-    if (cooperativa !== "todos" && a.cooperativa !== cooperativa) return false;
-    if (dataInicio && a.data < dataInicio) return false;
-    if (dataFim && a.data > dataFim + " 23:59") return false;
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: veics } = await supabase.from("veiculos")
+        .select("id, placa, marca, modelo, ano_modelo, cor, valor_fipe, status, categoria_uso, associado_id, associados(nome)")
+        .order("created_at", { ascending: false }).limit(200);
+      setVeiculosData(veics || []);
+
+      const { data: bols } = await supabase.from("boletos")
+        .select("id, associado_nome, nosso_numero, valor, vencimento, status, data_pagamento")
+        .order("vencimento", { ascending: false }).limit(200);
+      setBoletosData(bols || []);
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const alteracoes: any[] = [];
+  const filteredAlt = alteracoes;
+
+  const filteredVeic = veiculosData.filter((v: any) => {
+    if (tipo !== "todos" && v.categoria_uso !== tipo) return false;
     return true;
   });
 
-  const filteredVeic = mockVeiculos.filter(v => {
-    if (cooperativa !== "todos" && v.cooperativa !== cooperativa) return false;
-    if (tipo !== "todos" && v.tipo !== tipo) return false;
-    if (categoria !== "todos" && v.categoria !== categoria) return false;
-    return true;
-  });
-
-  // Boletos mock
-  const boletos = mockVeiculos.slice(0, 15).map((v, i) => ({
-    placa: v.placa, modelo: `${v.marca} ${v.modelo}`, associado: v.associadoNome,
-    cooperativa: v.cooperativa,
-    valorMensal: [89.90, 139.90, 189.90, 249.90][i % 4],
-    statusBoleto: i % 5 === 0 ? "Atrasado" : i % 3 === 0 ? "Pendente" : "Pago",
-    vencimento: `2025-${String((i % 12) + 1).padStart(2, "0")}-10`,
+  const boletos = boletosData.map((b: any) => ({
+    placa: "", modelo: "", associado: b.associado_nome || "—",
+    cooperativa: "",
+    valorMensal: b.valor || 0,
+    statusBoleto: b.status === "baixado" ? "Pago" : b.status === "aberto" ? "Pendente" : "Atrasado",
+    vencimento: b.vencimento || "",
   }));
 
   return (
