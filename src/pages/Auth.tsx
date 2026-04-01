@@ -5,16 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Shield, LogIn, UserPlus, BarChart3, Users, Car, FileText, Zap, Lock, Globe } from "lucide-react";
+import { Shield, LogIn, UserPlus, Lock, Globe } from "lucide-react";
 import { useBrand } from "@/hooks/useBrand";
-
-const features = [
-  { icon: Users, title: "Gestão de Associados", desc: "Cadastro completo com planos e mensalidades integradas" },
-  { icon: Car, title: "Controle de Veículos", desc: "Frota, vistorias e sinistros em uma única plataforma" },
-  { icon: BarChart3, title: "Pipeline de Vendas", desc: "CRM completo com Kanban, metas e comissões" },
-  { icon: FileText, title: "Financeiro Inteligente", desc: "Fluxo de caixa, boletos e conciliação automática" },
-  { icon: Zap, title: "Suporte 24 horas", desc: "Atendimento especializado disponível a qualquer momento" },
-];
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -49,81 +41,45 @@ export default function Auth() {
   };
 
   return (
-    /* UMA TELA — imagem fullscreen, overlays por cima */
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      backgroundImage: "url('/login-bg.png')",
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
-    }}>
+    <div style={{ minHeight: '100vh', display: 'flex' }}>
 
-      {/* CARDS — overlay no terço inferior esquerdo da imagem */}
+      {/* PAINEL ESQUERDO — imagem do designer ocupa 58% */}
       <div style={{
-        position: 'absolute',
-        top: '43%',
-        left: '1%',
-        width: '42%',
-        display: 'flex',
-        justifyContent: 'center',
-      }}>
-        <div style={{ width: '100%', maxWidth: '360px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            {features.slice(0, 4).map((f) => (
-              <div key={f.title} style={{
-                borderRadius: '10px', padding: '10px 12px',
-                backgroundColor: 'rgba(5,15,35,0.80)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                backdropFilter: 'blur(6px)',
-              }}>
-                <div style={{ width: '26px', height: '26px', borderRadius: '7px', backgroundColor: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px' }}>
-                  <f.icon style={{ width: '13px', height: '13px', color: 'white' }} />
-                </div>
-                <div style={{ fontWeight: 600, fontSize: '11px', color: 'white', marginBottom: '3px', lineHeight: 1.3 }}>{f.title}</div>
-                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>{f.desc}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ marginTop: '8px', width: '47%' }}>
-            <div style={{
-              borderRadius: '10px', padding: '10px 12px',
-              backgroundColor: 'rgba(5,15,35,0.80)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              backdropFilter: 'blur(6px)',
-            }}>
-              <div style={{ width: '26px', height: '26px', borderRadius: '7px', backgroundColor: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px' }}>
-                <Zap style={{ width: '13px', height: '13px', color: 'white' }} />
-              </div>
-              <div style={{ fontWeight: 600, fontSize: '11px', color: 'white', marginBottom: '3px', lineHeight: 1.3 }}>Suporte 24 horas</div>
-              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>Atendimento especializado disponível a qualquer momento</div>
-            </div>
-          </div>
-        </div>
-      </div>
+        width: '58%',
+        flexShrink: 0,
+        backgroundImage: "url('/login-bg.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        minHeight: '100vh',
+      }} />
 
-      {/* FORMULÁRIO — overlay no lado direito, centralizado verticalmente */}
+      {/* PAINEL DIREITO — fundo branco/cinza, formulário centralizado */}
       <div style={{
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        width: '43%',
-        height: '100%',
+        flex: 1,
+        minHeight: '100vh',
+        backgroundColor: '#f0f0f1',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '24px',
+        padding: '32px 24px',
       }}>
+        {/* Logo */}
+        {brand.logoUrl && (
+          <img src={brand.logoUrl} alt={brand.name} style={{ height: '52px', objectFit: 'contain', marginBottom: '24px' }} />
+        )}
+
+        {/* Card formulário */}
         <div style={{
           width: '100%',
           maxWidth: '320px',
           borderRadius: '16px',
           padding: '28px 24px',
-          backgroundColor: 'rgba(255,255,255,0.95)',
-          backdropFilter: 'blur(12px)',
-          boxShadow: '0 8px 40px rgba(0,0,0,0.15)',
+          backgroundColor: 'white',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
         }}>
-          <div style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: '18px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1a1a2e', margin: 0 }}>
               {isLogin ? "Bem-vindo de volta" : "Criar sua conta"}
             </h2>
