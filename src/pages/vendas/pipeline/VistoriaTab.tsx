@@ -11,8 +11,8 @@ import { supabase, callEdge } from "@/integrations/supabase/client";
 import { gerarLaudoVistoria } from "@/lib/gerarLaudoVistoria";
 import { usePermission } from "@/hooks/usePermission";
 import {
-  ClipboardCheck, Copy, Link2, MessageSquare, CheckCircle, XCircle,
-  Clock, AlertCircle, Camera, Globe, RotateCcw, Download, Eye, Mail,
+  ClipboardCheck, Copy, MessageSquare, CheckCircle, XCircle,
+  Clock, AlertCircle, Camera, RotateCcw, Download, Eye, Mail,
 } from "lucide-react";
 
 type VistoriaStatus = "pendente" | "em_aprovacao" | "aprovada" | "reprovada";
@@ -283,33 +283,37 @@ export default function VistoriaTab({ deal }: Props) {
                 <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => {
                   const tel = (deal.telefone || "").replace(/\D/g, "");
                   const link = `${window.location.origin}/vistoria/${codigo}`;
-                  const msg = encodeURIComponent(`Olá ${deal.lead_nome}! Segue o link da vistoria do veículo ${deal.veiculo_placa}:\n\n${link}\n\nAbra no celular e envie as fotos.`);
+                  const msg = encodeURIComponent(`Olá ${deal.lead_nome}! Segue o link para envio das fotos da vistoria do veículo ${deal.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização, e envie as fotos.`);
                   window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
-                  toast.success("WhatsApp aberto com o link da vistoria!");
+                  toast.success("WhatsApp aberto!");
                 }}>
                   <MessageSquare className="h-3.5 w-3.5 mr-1" />Enviar WhatsApp
                 </Button>
-                <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => {
+                <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white" onClick={() => {
                   const link = `${window.location.origin}/vistoria/${codigo}`;
-                  const subject = encodeURIComponent(`Vistoria Veicular - ${deal.veiculo_placa}`);
-                  const body = encodeURIComponent(`Olá ${deal.lead_nome},\n\nSegue o link para envio das fotos da vistoria do seu veículo ${deal.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização.\n\nObjetivo Auto Benefícios`);
-                  window.open(`mailto:${deal.email}?subject=${subject}&body=${body}`);
-                  toast.success("E-mail aberto com o link da vistoria!");
+                  const msgTexto = `Olá ${deal.lead_nome}! Segue o link para envio das fotos da vistoria do veículo ${deal.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização.\n\nObjetivo Auto Benefícios`;
+                  callEdge("gia-enviar-notificacao", {
+                    tipo: "ambos",
+                    telefone: deal.telefone,
+                    email: deal.email,
+                    nome: deal.lead_nome,
+                    assunto: `Vistoria Veicular - ${deal.veiculo_placa}`,
+                    mensagem: msgTexto,
+                  }).then(res => {
+                    if (res.sms?.sucesso) toast.success("SMS enviado!");
+                    if (res.email?.sucesso) toast.success("E-mail enviado!");
+                    if (!res.sms?.sucesso && !res.email?.sucesso) toast.error("Falha no envio. Use WhatsApp ou copie o link.");
+                  }).catch(() => toast.error("Erro no envio."));
+                  toast.info("Enviando SMS + E-mail...");
                 }}>
-                  <Mail className="h-3.5 w-3.5 mr-1" />Enviar E-mail
+                  <Mail className="h-3.5 w-3.5 mr-1" />Enviar SMS + E-mail
                 </Button>
                 <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => {
                   const link = `${window.location.origin}/vistoria/${codigo}`;
                   navigator.clipboard.writeText(link);
-                  toast.success("Link web copiado!");
+                  toast.success("Link copiado!");
                 }}>
-                  <Globe className="h-3.5 w-3.5 mr-1" />Copiar Link Web
-                </Button>
-                <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => window.open(`${window.location.origin}/vistoria/${codigo}`, "_blank")}>
-                  <Eye className="h-3.5 w-3.5 mr-1" />Visualizar Vistoria
-                </Button>
-                <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => toast.info("Solicitado reenvio de fotos ao cliente.")}>
-                  <RotateCcw className="h-3.5 w-3.5 mr-1" />Solicitar Reenvio
+                  <Copy className="h-3.5 w-3.5 mr-1" />Copiar Link
                 </Button>
                 {status === "reprovada" && isAdmin && (
                   <Button size="sm" className="rounded-none bg-blue-600 hover:bg-blue-700 text-white" onClick={handleAprovar}>
