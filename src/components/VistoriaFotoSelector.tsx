@@ -14,9 +14,9 @@ import imgTeto from "@/assets/vistoria/teto.jpg";
 import imgMotor from "@/assets/vistoria/motor-capo.jpg";
 import imgPortaMalas from "@/assets/vistoria/porta-malas.jpg";
 import imgRodas from "@/assets/vistoria/rodas-pneus.jpg";
-import imgChave from "@/assets/vistoria/chave.svg";
-import imgChassi from "@/assets/vistoria/chassi.svg";
-import imgQuilometragem from "@/assets/vistoria/quilometragem.svg";
+import imgChave from "@/assets/vistoria/chave.jpg";
+import imgChassi from "@/assets/vistoria/chassi.jpg";
+import imgQuilometragem from "@/assets/vistoria/quilometragem.jpg";
 
 export interface VistoriaParte {
   id: string;
