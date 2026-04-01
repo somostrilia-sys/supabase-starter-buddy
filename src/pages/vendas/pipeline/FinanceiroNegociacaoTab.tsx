@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,6 +52,12 @@ interface Props { deal: PipelineDeal; }
 
 export default function FinanceiroNegociacaoTab({ deal }: Props) {
   const [formaPgto, setFormaPgto] = useState("pix");
+  const [configEmpresa, setConfigEmpresa] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.from("config_empresa" as any).select("*").limit(1).maybeSingle()
+      .then(({ data }) => setConfigEmpresa(data));
+  }, []);
 
   const valorPlano = 189.90;
   const taxaAdesao = 799.00;
@@ -104,6 +111,59 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
           <span className="text-sm text-muted-foreground">Status geral:</span>
           <Badge className={`rounded-none border ${statusBadge.pendente.cls}`}>{statusBadge.pendente.label}</Badge>
         </div>
+
+        {/* PIX da empresa */}
+        {formaPgto === "pix" && (
+          <Card className="rounded-none border-2 border-[#1A3A5C]/20 bg-[#1A3A5C]/3">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <QrCode className="h-5 w-5 text-[#1A3A5C]" />
+                <span className="text-sm font-bold text-[#1A3A5C]">Pagamento via PIX</span>
+              </div>
+
+              {configEmpresa?.pix_qrcode_url && (
+                <div className="flex justify-center py-2">
+                  <img src={configEmpresa.pix_qrcode_url} alt="QR Code PIX" className="w-48 h-48 border" />
+                </div>
+              )}
+
+              {!configEmpresa?.pix_qrcode_url && (
+                <div className="flex justify-center py-4">
+                  <div className="w-48 h-48 border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
+                    <span className="text-xs text-muted-foreground text-center px-4">QR Code não configurado.<br/>Configure em Minha Empresa.</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <div>
+                  <span className="text-[10px] text-muted-foreground uppercase">Chave PIX ({configEmpresa?.pix_tipo || "CNPJ"})</span>
+                  <div className="flex items-center gap-2">
+                    <code className="text-sm font-mono bg-muted px-3 py-1.5 flex-1 select-all">{configEmpresa?.pix_chave || configEmpresa?.cnpj || "58.506.161/0001-31"}</code>
+                    <Button size="sm" variant="outline" className="rounded-none text-xs" onClick={() => {
+                      navigator.clipboard.writeText(configEmpresa?.pix_chave || configEmpresa?.cnpj || "58.506.161/0001-31");
+                      toast.success("Chave PIX copiada!");
+                    }}>Copiar</Button>
+                  </div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-muted-foreground uppercase">Favorecido</span>
+                  <p className="text-sm font-medium">{configEmpresa?.pix_nome || configEmpresa?.nome || "Objetivo Auto Benefícios"}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <Button size="sm" variant="outline" className="rounded-none text-xs flex-1" onClick={() => {
+                  const texto = `PIX para ${configEmpresa?.pix_nome || "Objetivo Auto Benefícios"}\nChave: ${configEmpresa?.pix_chave || configEmpresa?.cnpj || "58.506.161/0001-31"}\nTipo: ${configEmpresa?.pix_tipo || "CNPJ"}`;
+                  navigator.clipboard.writeText(texto);
+                  toast.success("Dados PIX copiados para enviar ao cliente!");
+                }}>
+                  <Link2 className="h-3 w-3 mr-1" />Copiar dados p/ cliente
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </fieldset>
 
       {/* Split de Pagamento */}
