@@ -250,14 +250,18 @@ export default function AssinaturaTab({ deal }: Props) {
           <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={handleBaixarContrato}>
             <FileText className="h-3.5 w-3.5 mr-1" />Baixar Contrato PDF
           </Button>
-          <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => handleEnviar("email")} disabled={gerando}>
-            <Mail className="h-3.5 w-3.5 mr-1" />{gerando ? "Gerando..." : "Enviar por E-mail"}
-          </Button>
-          <Button size="sm" className="rounded-none bg-success hover:bg-success/90 text-white" onClick={() => handleEnviar("whatsapp")} disabled={gerando}>
-            <MessageSquare className="h-3.5 w-3.5 mr-1" />{gerando ? "Gerando..." : "Enviar por WhatsApp"}
-          </Button>
           <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white" onClick={() => handleEnviar("ambos")} disabled={gerando}>
-            <Send className="h-3.5 w-3.5 mr-1" />{gerando ? "Gerando..." : "Enviar E-mail + WhatsApp"}
+            <Send className="h-3.5 w-3.5 mr-1" />{gerando ? "Gerando..." : "Enviar SMS + E-mail"}
+          </Button>
+          <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => {
+            if (linkAssinatura) {
+              navigator.clipboard.writeText(linkAssinatura);
+              toast.success("Link de assinatura copiado!");
+            } else {
+              toast.info("Envie o contrato primeiro para gerar o link.");
+            }
+          }}>
+            <Copy className="h-3.5 w-3.5 mr-1" />Copiar Link
           </Button>
         </div>
         {linkAssinatura && (
