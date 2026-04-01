@@ -30,6 +30,8 @@ export interface PipelineDeal {
   enviado_sga: boolean;
   visualizacoes_proposta: number;
   status_icons: DealStatus;
+  cidade_circulacao: string;
+  estado_circulacao: string;
   created_at: string;
   updated_at: string;
 }

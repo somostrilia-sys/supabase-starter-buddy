@@ -205,7 +205,7 @@ export default function AssinaturaTab({ deal }: Props) {
           <div className="space-y-1">
             <Label className={lbl}>Documento</Label>
             <Select value={docSelecionado} onValueChange={setDocSelecionado}>
-              <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {mockDocumentos.map(d => (
                   <SelectItem key={d.id} value={d.id}>
@@ -220,7 +220,7 @@ export default function AssinaturaTab({ deal }: Props) {
           <div className="space-y-1">
             <Label className={lbl}>Tipo</Label>
             <div className="flex items-center h-10">
-              <Badge variant="outline" className="rounded-none">{doc.tipo}</Badge>
+              <Badge variant="outline" className="rounded-none border border-gray-300">{doc.tipo}</Badge>
               <span className="text-xs text-muted-foreground ml-2">Gerado em {doc.geradoEm}</span>
             </div>
           </div>
@@ -236,7 +236,7 @@ export default function AssinaturaTab({ deal }: Props) {
                 <p className="text-xs text-muted-foreground">PDF • 2 páginas • 145 KB</p>
               </div>
             </div>
-            <Button size="sm" variant="outline" className="rounded-none" onClick={() => toast.info("Abrindo pré-visualização...")}>
+            <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => toast.info("Abrindo pré-visualização...")}>
               <ExternalLink className="h-3.5 w-3.5 mr-1" />Visualizar
             </Button>
           </CardContent>
@@ -247,10 +247,10 @@ export default function AssinaturaTab({ deal }: Props) {
       <fieldset className="space-y-3">
         <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">ENVIAR PARA ASSINATURA</legend>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" className="rounded-none" onClick={handleBaixarContrato}>
+          <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={handleBaixarContrato}>
             <FileText className="h-3.5 w-3.5 mr-1" />Baixar Contrato PDF
           </Button>
-          <Button size="sm" variant="outline" className="rounded-none" onClick={() => handleEnviar("email")} disabled={gerando}>
+          <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => handleEnviar("email")} disabled={gerando}>
             <Mail className="h-3.5 w-3.5 mr-1" />{gerando ? "Gerando..." : "Enviar por E-mail"}
           </Button>
           <Button size="sm" className="rounded-none bg-success hover:bg-success/90 text-white" onClick={() => handleEnviar("whatsapp")} disabled={gerando}>
@@ -276,7 +276,7 @@ export default function AssinaturaTab({ deal }: Props) {
         )}
         {status !== "assinado" && enviado && (
           <div className="flex gap-2 pt-1">
-            <Button size="sm" variant="outline" className="rounded-none" onClick={() => { setStatus("enviado"); toast.info("Lembrete reenviado!"); }}>
+            <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => { setStatus("enviado"); toast.info("Lembrete reenviado!"); }}>
               <RotateCcw className="h-3.5 w-3.5 mr-1" />Reenviar Lembrete
             </Button>
             <Button size="sm" variant="ghost" className="rounded-none text-xs text-success border border-green-200" onClick={handleSimularAssinatura}>

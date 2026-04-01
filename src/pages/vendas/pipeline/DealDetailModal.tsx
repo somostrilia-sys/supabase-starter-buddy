@@ -366,17 +366,17 @@ function VeiculoTabInline({ deal }: { deal: PipelineDeal }) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label>Placa</Label>
-          <Input className="rounded-none" value={deal.veiculo_placa || ""} readOnly />
+          <Input className="rounded-none border border-gray-300" value={deal.veiculo_placa || ""} readOnly />
         </div>
         <div className="space-y-1.5">
           <Label>Tipo Veículo</Label>
-          <Input className="rounded-none" value={v.submodelo ? "Automóvel" : "—"} readOnly />
+          <Input className="rounded-none border border-gray-300" value={v.submodelo ? "Automóvel" : "—"} readOnly />
         </div>
         {loading && <p className="text-xs text-muted-foreground col-span-2">Buscando dados do veículo...</p>}
         {campos.map(([label, val]) => (
           <div key={label} className="space-y-1.5">
             <Label>{label}</Label>
-            <Input className="rounded-none" value={val} readOnly />
+            <Input className="rounded-none border border-gray-300" value={val} readOnly />
           </div>
         ))}
       </div>

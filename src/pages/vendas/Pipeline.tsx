@@ -307,6 +307,8 @@ export default function Pipeline() {
     enviado_sga: n.enviado_sga || false,
     visualizacoes_proposta: n.visualizacoes_proposta || 0,
     status_icons: (n.status_icons as any) || { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false },
+    cidade_circulacao: n.cidade_circulacao || "",
+    estado_circulacao: n.estado_circulacao || "",
     created_at: n.created_at,
     updated_at: n.updated_at,
   }));
@@ -333,6 +335,8 @@ export default function Pipeline() {
     enviado_sga: false,
     visualizacoes_proposta: 0,
     status_icons: { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false },
+    cidade_circulacao: "",
+    estado_circulacao: "",
     created_at: l.created_at,
     updated_at: l.updated_at,
   }));

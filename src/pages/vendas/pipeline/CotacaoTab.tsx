@@ -153,8 +153,8 @@ export default function CotacaoTab({ deal }: Props) {
     combustivel: "",
     quilometragem: "",
     numMotor: "",
-    estadoCirc: "",
-    cidadeCirc: "",
+    estadoCirc: deal.estado_circulacao || "",
+    cidadeCirc: deal.cidade_circulacao || "",
     diaVencimento: (() => { const d = new Date().getDate(); if (d >= 26 || d <= 5) return "1"; if (d >= 6 && d <= 15) return "10"; return "20"; })(),
     veiculoTrabalho: false,
     taxi: false,
@@ -550,7 +550,7 @@ export default function CotacaoTab({ deal }: Props) {
           <div className="space-y-1">
             <Label className={lbl}>Tipo do Veículo</Label>
             <Select value={form.tipoVeiculo} onValueChange={v => set("tipoVeiculo", v)}>
-              <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
               <SelectContent>{tiposVeiculo.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
             </Select>
           </div>
@@ -572,26 +572,26 @@ export default function CotacaoTab({ deal }: Props) {
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Renavam</Label>
-            <Input className="rounded-none" value={form.renavam} onChange={e => set("renavam", e.target.value.replace(/\D/g, "").slice(0, 11))} />
+            <Input className="rounded-none border border-gray-300" value={form.renavam} onChange={e => set("renavam", e.target.value.replace(/\D/g, "").slice(0, 11))} />
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Marca (FIPE)</Label>
             <Select value={marca} onValueChange={v => { setMarca(v); setModeloIdx(0); }}>
-              <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
               <SelectContent>{marcas.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Modelo (FIPE)</Label>
             <Select value={String(modeloIdx)} onValueChange={v => setModeloIdx(Number(v))}>
-              <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
               <SelectContent>{modelos.map((m, i) => <SelectItem key={i} value={String(i)}>{m.modelo}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Ano Fabricação</Label>
             <Select value={form.anoFab} onValueChange={v => set("anoFab", v)}>
-              <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
               <SelectContent>{anosDisp.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
             </Select>
           </div>
@@ -606,27 +606,27 @@ export default function CotacaoTab({ deal }: Props) {
           <div className="space-y-1">
             <Label className={lbl}>Cor</Label>
             <Select value={form.cor} onValueChange={v => set("cor", v)}>
-              <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
               <SelectContent>{cores.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Câmbio</Label>
             <Select value={form.cambio} onValueChange={v => set("cambio", v)}>
-              <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
               <SelectContent>{cambios.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Combustível</Label>
             <Select value={form.combustivel} onValueChange={v => set("combustivel", v)}>
-              <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
               <SelectContent>{combustiveis.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Quilometragem</Label>
-            <Input className="rounded-none" type="number" value={form.quilometragem} onChange={e => set("quilometragem", e.target.value)} />
+            <Input className="rounded-none border border-gray-300" type="number" value={form.quilometragem} onChange={e => set("quilometragem", e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Nº do Motor</Label>
@@ -635,21 +635,21 @@ export default function CotacaoTab({ deal }: Props) {
           <div className="space-y-1">
             <Label className={lbl}>Estado Circulação</Label>
             <Select value={form.estadoCirc} onValueChange={v => { set("estadoCirc", v); set("cidadeCirc", ""); if (valorFipe > 0) setTimeout(() => carregarPrecos(valorFipe), 100); }}>
-              <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
               <SelectContent>{UFS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Cidade Circulação</Label>
             <Select value={form.cidadeCirc} onValueChange={v => { set("cidadeCirc", v); if (valorFipe > 0) setTimeout(() => carregarPrecos(valorFipe), 100); }}>
-              <SelectTrigger className="rounded-none"><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>{cidades.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Dia Vencimento</Label>
             <Select value={form.diaVencimento} onValueChange={v => set("diaVencimento", v)}>
-              <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="1">Dia 1 (fechamento entre 26 e 05)</SelectItem>
                 <SelectItem value="10">Dia 10 (fechamento entre 06 e 15)</SelectItem>
@@ -686,16 +686,16 @@ export default function CotacaoTab({ deal }: Props) {
         <div className="grid grid-cols-2 gap-4 pt-2">
           <div className="space-y-1">
             <Label className={lbl}>Implemento / Agregado (opcional)</Label>
-            <Input className="rounded-none" value={form.implemento} onChange={e => set("implemento", e.target.value)} placeholder="Ex: Baú, Guincho..." />
+            <Input className="rounded-none border border-gray-300" value={form.implemento} onChange={e => set("implemento", e.target.value)} placeholder="Ex: Baú, Guincho..." />
           </div>
         </div>
         <div className="space-y-1 pt-1">
           <Label className={lbl}>Observações no Termo (cliente vê)</Label>
-          <Textarea className="rounded-none" rows={2} value={form.obsContrato} onChange={e => set("obsContrato", e.target.value)} />
+          <Textarea className="rounded-none border border-gray-300" rows={2} value={form.obsContrato} onChange={e => set("obsContrato", e.target.value)} />
         </div>
         <div className="space-y-1">
           <Label className={lbl}>Observações Internas (somente equipe)</Label>
-          <Textarea className="rounded-none" rows={2} value={form.obsInterna} onChange={e => set("obsInterna", e.target.value)} />
+          <Textarea className="rounded-none border border-gray-300" rows={2} value={form.obsInterna} onChange={e => set("obsInterna", e.target.value)} />
         </div>
       </fieldset>
 
@@ -703,7 +703,7 @@ export default function CotacaoTab({ deal }: Props) {
       <fieldset className="space-y-2">
         <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">FROTA</legend>
         <p className="text-xs text-muted-foreground">Adicione mais veículos para cotação em frota.</p>
-        <Button size="sm" variant="outline" className="rounded-none" onClick={async () => {
+        <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={async () => {
           await supabase.from("negociacao_veiculos" as any).insert({
             negociacao_id: deal.id,
             placa: form.placa,
@@ -805,21 +805,21 @@ export default function CotacaoTab({ deal }: Props) {
         <div className="grid grid-cols-2 gap-4 pt-2 p-3 border rounded bg-muted/20">
           <div className="space-y-1">
             <Label className="text-xs font-semibold">Desconto Mensalidade (valor final)</Label>
-            <Input className="rounded-none" type="number" placeholder="Deixe vazio = sem desconto" value={descontoMensal} onChange={e => setDescontoMensal(e.target.value)} />
+            <Input className="rounded-none border border-gray-300" type="number" placeholder="Deixe vazio = sem desconto" value={descontoMensal} onChange={e => setDescontoMensal(e.target.value)} />
             <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
           </div>
           <div className="space-y-1">
             <Label className="text-xs font-semibold">Desconto Adesão (valor final)</Label>
-            <Input className="rounded-none" type="number" placeholder="Deixe vazio = sem desconto" value={descontoAdesao} onChange={e => setDescontoAdesao(e.target.value)} />
+            <Input className="rounded-none border border-gray-300" type="number" placeholder="Deixe vazio = sem desconto" value={descontoAdesao} onChange={e => setDescontoAdesao(e.target.value)} />
             <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-2 pt-2">
-          <Button size="sm" variant="outline" className="rounded-none" onClick={() => handleEnviar("PDF")}>
+          <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => handleEnviar("PDF")}>
             <Mail className="h-3.5 w-3.5 mr-1" />Enviar PDF
           </Button>
-          <Button size="sm" variant="outline" className="rounded-none" onClick={() => handleEnviar("Link")}>
+          <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => handleEnviar("Link")}>
             <Link2 className="h-3.5 w-3.5 mr-1" />Enviar Link
           </Button>
           <Button size="sm" className="rounded-none bg-success hover:bg-success/90 text-white" onClick={() => handleEnviar("WhatsApp")}>

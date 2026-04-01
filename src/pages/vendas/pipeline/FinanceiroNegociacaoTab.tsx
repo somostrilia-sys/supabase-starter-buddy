@@ -263,13 +263,13 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
         <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white" onClick={() => toast.success("Boleto gerado com sucesso!")}>
           <Receipt className="h-3.5 w-3.5 mr-1" />Gerar Boleto Adesão
         </Button>
-        <Button size="sm" variant="outline" className="rounded-none" onClick={() => toast.success("Link de pagamento gerado!")}>
+        <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => toast.success("Link de pagamento gerado!")}>
           <Link2 className="h-3.5 w-3.5 mr-1" />Gerar Link de Pagamento
         </Button>
-        <Button size="sm" variant="outline" className="rounded-none" onClick={() => toast.success("Recibo gerado!")}>
+        <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => toast.success("Recibo gerado!")}>
           <Download className="h-3.5 w-3.5 mr-1" />Gerar Recibo
         </Button>
-        <Button size="sm" variant="outline" className="rounded-none" onClick={() => toast.info("Registrando pagamento manual...")}>
+        <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => toast.info("Registrando pagamento manual...")}>
           <Plus className="h-3.5 w-3.5 mr-1" />Registrar Pagamento Manual
         </Button>
       </div>

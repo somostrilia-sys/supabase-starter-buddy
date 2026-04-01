@@ -280,7 +280,7 @@ export default function VistoriaTab({ deal }: Props) {
               </Button>
             ) : (
               <>
-                <Button size="sm" variant="outline" className="rounded-none" onClick={() => {
+                <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => {
                   const tel = (deal.telefone || "").replace(/\D/g, "");
                   const link = `${window.location.origin}/vistoria/${codigo}`;
                   const msg = encodeURIComponent(`Olá ${deal.lead_nome}! Segue o link da vistoria do veículo ${deal.veiculo_placa}:\n\n${link}\n\nAbra no celular e envie as fotos.`);
@@ -289,7 +289,7 @@ export default function VistoriaTab({ deal }: Props) {
                 }}>
                   <MessageSquare className="h-3.5 w-3.5 mr-1" />Enviar WhatsApp
                 </Button>
-                <Button size="sm" variant="outline" className="rounded-none" onClick={() => {
+                <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => {
                   const link = `${window.location.origin}/vistoria/${codigo}`;
                   const subject = encodeURIComponent(`Vistoria Veicular - ${deal.veiculo_placa}`);
                   const body = encodeURIComponent(`Olá ${deal.lead_nome},\n\nSegue o link para envio das fotos da vistoria do seu veículo ${deal.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização.\n\nObjetivo Auto Benefícios`);
@@ -298,17 +298,17 @@ export default function VistoriaTab({ deal }: Props) {
                 }}>
                   <Mail className="h-3.5 w-3.5 mr-1" />Enviar E-mail
                 </Button>
-                <Button size="sm" variant="outline" className="rounded-none" onClick={() => {
+                <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => {
                   const link = `${window.location.origin}/vistoria/${codigo}`;
                   navigator.clipboard.writeText(link);
                   toast.success("Link web copiado!");
                 }}>
                   <Globe className="h-3.5 w-3.5 mr-1" />Copiar Link Web
                 </Button>
-                <Button size="sm" variant="outline" className="rounded-none" onClick={() => window.open(`${window.location.origin}/vistoria/${codigo}`, "_blank")}>
+                <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => window.open(`${window.location.origin}/vistoria/${codigo}`, "_blank")}>
                   <Eye className="h-3.5 w-3.5 mr-1" />Visualizar Vistoria
                 </Button>
-                <Button size="sm" variant="outline" className="rounded-none" onClick={() => toast.info("Solicitado reenvio de fotos ao cliente.")}>
+                <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => toast.info("Solicitado reenvio de fotos ao cliente.")}>
                   <RotateCcw className="h-3.5 w-3.5 mr-1" />Solicitar Reenvio
                 </Button>
                 {status === "reprovada" && isAdmin && (
@@ -321,7 +321,7 @@ export default function VistoriaTab({ deal }: Props) {
                     <AlertCircle className="h-3 w-3 mr-1" />Reprovada pela IA — solicite exceção ao diretor
                   </Badge>
                 )}
-                <Button size="sm" variant="outline" className="rounded-none" onClick={async () => {
+                <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={async () => {
                   await gerarLaudoVistoria({
                     dataImpressao: new Date().toLocaleString("pt-BR"),
                     contratante: "OBJETIVO AUTO BENEFÍCIOS",

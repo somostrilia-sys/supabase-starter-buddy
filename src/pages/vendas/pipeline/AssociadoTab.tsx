@@ -117,46 +117,46 @@ export default function AssociadoTab({ deal }: Props) {
         <div className="grid grid-cols-3 gap-x-4 gap-y-3">
           <div className="col-span-2 space-y-1">
             <Label className={lbl}>Nome{reqMark}</Label>
-            <Input className="rounded-none" value={form.nome} onChange={e => set("nome", e.target.value)} />
+            <Input className="rounded-none border border-gray-300" value={form.nome} onChange={e => set("nome", e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label className={lbl}>CPF</Label>
-            <Input className="rounded-none" value={form.cpf} onChange={e => set("cpf", maskCPF(e.target.value))} placeholder="000.000.000-00" />
+            <Input className="rounded-none border border-gray-300" value={form.cpf} onChange={e => set("cpf", maskCPF(e.target.value))} placeholder="000.000.000-00" />
           </div>
           <div className="space-y-1">
             <Label className={lbl}>RG</Label>
-            <Input className="rounded-none" value={form.rg} onChange={e => set("rg", e.target.value)} />
+            <Input className="rounded-none border border-gray-300" value={form.rg} onChange={e => set("rg", e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Órgão Expedidor</Label>
-            <Input className="rounded-none" value={form.orgaoExpedidor} onChange={e => set("orgaoExpedidor", e.target.value)} />
+            <Input className="rounded-none border border-gray-300" value={form.orgaoExpedidor} onChange={e => set("orgaoExpedidor", e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Data Expedição</Label>
-            <Input className="rounded-none" type="date" value={form.dataExpedicao} onChange={e => set("dataExpedicao", e.target.value)} />
+            <Input className="rounded-none border border-gray-300" type="date" value={form.dataExpedicao} onChange={e => set("dataExpedicao", e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label className={lbl}>CNH</Label>
-            <Input className="rounded-none" value={form.cnh} onChange={e => set("cnh", e.target.value)} />
+            <Input className="rounded-none border border-gray-300" value={form.cnh} onChange={e => set("cnh", e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Categoria CNH</Label>
             <Select value={form.categoriaCNH} onValueChange={v => set("categoriaCNH", v)}>
-              <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
               <SelectContent>{CATEGORIAS_CNH.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Data 1ª Habilitação</Label>
-            <Input className="rounded-none" type="date" value={form.dataPrimeiraHab} onChange={e => set("dataPrimeiraHab", e.target.value)} />
+            <Input className="rounded-none border border-gray-300" type="date" value={form.dataPrimeiraHab} onChange={e => set("dataPrimeiraHab", e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Validade Habilitação</Label>
-            <Input className="rounded-none" type="date" value={form.validadeHab} onChange={e => set("validadeHab", e.target.value)} />
+            <Input className="rounded-none border border-gray-300" type="date" value={form.validadeHab} onChange={e => set("validadeHab", e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Data Nascimento</Label>
-            <Input className="rounded-none" type="date" value={form.dataNascimento} onChange={e => set("dataNascimento", e.target.value)} />
+            <Input className="rounded-none border border-gray-300" type="date" value={form.dataNascimento} onChange={e => set("dataNascimento", e.target.value)} />
           </div>
           <div className="col-span-2 space-y-1">
             <Label className={lbl}>Sexo</Label>
@@ -183,15 +183,15 @@ export default function AssociadoTab({ deal }: Props) {
         <div className="grid grid-cols-3 gap-x-4 gap-y-3">
           <div className="space-y-1">
             <Label className={lbl}>WhatsApp Principal{reqMark}</Label>
-            <Input className="rounded-none" value={form.telefone} onChange={e => set("telefone", maskPhone(e.target.value))} placeholder="(00) 00000-0000" />
+            <Input className="rounded-none border border-gray-300" value={form.telefone} onChange={e => set("telefone", maskPhone(e.target.value))} placeholder="(00) 00000-0000" />
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Telefone 2</Label>
-            <Input className="rounded-none" value={form.telefone2} onChange={e => set("telefone2", maskPhone(e.target.value))} placeholder="(00) 00000-0000" />
+            <Input className="rounded-none border border-gray-300" value={form.telefone2} onChange={e => set("telefone2", maskPhone(e.target.value))} placeholder="(00) 00000-0000" />
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Email</Label>
-            <Input className="rounded-none" type="email" value={form.email} onChange={e => set("email", e.target.value)} />
+            <Input className="rounded-none border border-gray-300" type="email" value={form.email} onChange={e => set("email", e.target.value)} />
           </div>
         </div>
       </fieldset>
@@ -202,35 +202,35 @@ export default function AssociadoTab({ deal }: Props) {
         <div className="grid grid-cols-3 gap-x-4 gap-y-3">
           <div className="space-y-1">
             <Label className={lbl}>CEP</Label>
-            <Input className="rounded-none" value={form.cep} onChange={e => set("cep", maskCEP(e.target.value))} onBlur={handleCEPBlur} placeholder="00000-000" />
+            <Input className="rounded-none border border-gray-300" value={form.cep} onChange={e => set("cep", maskCEP(e.target.value))} onBlur={handleCEPBlur} placeholder="00000-000" />
           </div>
           <div className="col-span-2 space-y-1">
             <Label className={lbl}>Rua</Label>
-            <Input className="rounded-none" value={form.rua} onChange={e => set("rua", e.target.value)} />
+            <Input className="rounded-none border border-gray-300" value={form.rua} onChange={e => set("rua", e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Número</Label>
-            <Input className="rounded-none" value={form.numero} onChange={e => set("numero", e.target.value)} />
+            <Input className="rounded-none border border-gray-300" value={form.numero} onChange={e => set("numero", e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Complemento</Label>
-            <Input className="rounded-none" value={form.complemento} onChange={e => set("complemento", e.target.value)} />
+            <Input className="rounded-none border border-gray-300" value={form.complemento} onChange={e => set("complemento", e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Bairro</Label>
-            <Input className="rounded-none" value={form.bairro} onChange={e => set("bairro", e.target.value)} />
+            <Input className="rounded-none border border-gray-300" value={form.bairro} onChange={e => set("bairro", e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Estado</Label>
             <Select value={form.estado} onValueChange={v => { set("estado", v); set("cidade", ""); }}>
-              <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
               <SelectContent>{UFS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Cidade</Label>
             <Select value={form.cidade} onValueChange={v => set("cidade", v)}>
-              <SelectTrigger className="rounded-none"><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>{cidades.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select>
           </div>
