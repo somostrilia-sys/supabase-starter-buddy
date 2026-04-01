@@ -36,14 +36,14 @@ export default function RegionaisCooperativasTab() {
     supabase.from("cooperativas" as any).select("*, regionais(nome)").order("nome").then(({ data }) => setCooperativasReais(data || []));
   }, []);
 
-  // Usar reais se disponíveis
-  const regionais = regionaisReais.length > 0 ? regionaisReais.map(r => ({
+  // Sempre usar dados reais do banco
+  const regionais = regionaisReais.map(r => ({
     id: r.id, nome: r.nome, codigoSga: "", cooperativas: cooperativasReais.filter((c: any) => c.regional_id === r.id).length
-  })) : mockRegionais;
+  }));
 
-  const cooperativas = cooperativasReais.length > 0 ? cooperativasReais.map((c: any) => ({
+  const cooperativas = cooperativasReais.map((c: any) => ({
     id: c.id, nome: c.nome, cnpj: "", codigoSga: "", regional: c.regionais?.nome || ""
-  })) : mockCooperativas;
+  }));
 
   const [showRegionalModal, setShowRegionalModal] = useState(false);
   const [showCoopModal, setShowCoopModal] = useState(false);
