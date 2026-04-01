@@ -67,11 +67,14 @@ export default function Auth() {
     <div className="min-h-screen flex">
       {/* Left side - Imagem GIA */}
       <div className="hidden lg:flex lg:w-[58%] relative overflow-hidden" style={{ minHeight: '100vh' }}>
-        <img
-          src="/login-bg.png"
-          alt=""
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
-        />
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundColor: '#0a1628',
+          backgroundImage: "url('/login-bg.png')",
+          backgroundSize: 'contain',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+        }} />
       </div>
 
             {/* Right side - Login form */}
