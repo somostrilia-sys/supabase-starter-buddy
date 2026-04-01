@@ -249,7 +249,7 @@ export default function Pipeline() {
         plano: data.plano || undefined,
         cooperativa: data.cooperativa || undefined,
         regional: data.regional || undefined,
-        consultor: data.consultor || undefined,
+        consultor: data.consultor || usuarioLogado?.nome || undefined,
         observacoes: data.observacoes || undefined,
         cidade_circulacao: data.cidadeCirc || undefined,
         estado_circulacao: data.estadoCirc || undefined,
@@ -807,9 +807,7 @@ export default function Pipeline() {
                 </Select>
               </div>
               <div className="space-y-1.5"><Label>Consultor Responsável</Label>
-                <Select value={form.consultor} onValueChange={handleConsultorChange}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{consultoresDaCooperativa.filter(Boolean).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
+                <Input value={form.consultor || (usuarioLogado?.nome || "")} readOnly className="bg-muted cursor-not-allowed border border-gray-300" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
