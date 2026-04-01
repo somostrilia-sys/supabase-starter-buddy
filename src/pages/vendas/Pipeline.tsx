@@ -97,7 +97,7 @@ export default function Pipeline() {
   const [perPage, setPerPage] = useState(10);
 
   // New deal form
-  const [form, setForm] = useState({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", anoModelo: "", anoFab: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
+  const [form, setForm] = useState({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", anoModelo: "", anoFab: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "", cidadeCirc: "", estadoCirc: "" });
   const [formTouched, setFormTouched] = useState({ lead_nome: false, telefone: false });
 
   // Drag state
@@ -244,6 +244,8 @@ export default function Pipeline() {
         regional: data.regional || undefined,
         consultor: data.consultor || undefined,
         observacoes: data.observacoes || undefined,
+        cidade_circulacao: data.cidadeCirc || undefined,
+        estado_circulacao: data.estadoCirc || undefined,
         stage: "novo_lead",
         origem: "Manual",
         enviado_sga: false,
@@ -421,7 +423,7 @@ export default function Pipeline() {
 
   const formNomeInvalid = formTouched.lead_nome && !form.lead_nome.trim();
   const formTelInvalid = formTouched.telefone && !form.telefone.trim();
-  const canCreateDeal = form.lead_nome.trim().length > 0 && form.telefone.trim().length > 0;
+  const canCreateDeal = form.lead_nome.trim().length > 0 && form.telefone.trim().length > 0 && form.estadoCirc.length > 0 && form.cidadeCirc.trim().length > 0;
 
   function handleNewDeal() {
     setFormTouched({ lead_nome: true, telefone: true });
@@ -770,25 +772,33 @@ export default function Pipeline() {
               <div className="space-y-1.5"><Label>Ano Fabricação *</Label><Input value={form.anoFab} onChange={e => setForm({ ...form, anoFab: e.target.value })} placeholder="2023" required /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label>Plano</Label>
-                <Select value={form.plano} onValueChange={v => setForm({ ...form, plano: v })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{(planosPermitidos.length > 0 ? planosPermitidos : planosLista).filter(Boolean).map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+              <div className="space-y-1.5"><Label>Estado Circulação *</Label>
+                <Select value={form.estadoCirc} onValueChange={v => setForm({ ...form, estadoCirc: v, cidadeCirc: "" })}>
+                  <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
+                  <SelectContent>
+                    {["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-1.5"><Label>Cidade Circulação *</Label>
+                <Input value={form.cidadeCirc} onChange={e => setForm({ ...form, cidadeCirc: e.target.value })} placeholder="Cidade do veículo" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Cooperativa</Label>
                 <Select value={form.cooperativa} onValueChange={handleCooperativaChange}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>{cooperativasLista.filter(Boolean).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5"><Label>Consultor Responsável</Label>
+                <Select value={form.consultor} onValueChange={handleConsultorChange}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>{consultoresDaCooperativa.filter(Boolean).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Regional (preenchida pela cooperativa)</Label>
                 <Input value={form.regional} readOnly className="bg-muted cursor-not-allowed" placeholder="Selecione a cooperativa" />
-              </div>
-              <div className="space-y-1.5"><Label>Consultor Responsável</Label>
-                <Select value={form.consultor} onValueChange={handleConsultorChange}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{consultoresDaCooperativa.filter(Boolean).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
               </div>
             </div>
             <div className="space-y-1.5"><Label>Observações</Label><Textarea value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} rows={3} /></div>
