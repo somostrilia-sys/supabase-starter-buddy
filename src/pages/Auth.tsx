@@ -67,18 +67,20 @@ export default function Auth() {
     <div className="min-h-screen flex">
       {/* Left side - imagem GIA fullscreen */}
       <div
-        className="hidden lg:flex lg:w-[58%] relative"
+        className="hidden lg:block"
         style={{
+          width: '58%',
+          flexShrink: 0,
           backgroundImage: "url('/login-bg.png')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           minHeight: '100vh',
         }}
-      />
+      ></div>
 
       {/* Right side - Login form */}
-      <div className="flex-1 flex items-center justify-center bg-background p-6 sm:p-10 relative overflow-hidden">
+      <div className="flex items-center justify-center bg-background p-6 sm:p-10 relative overflow-hidden" style={{ width: "42%", minHeight: "100vh" }}>
         {/* Subtle orbs on right side too */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none lg:hidden">
           <div className="orb orb-1" />
