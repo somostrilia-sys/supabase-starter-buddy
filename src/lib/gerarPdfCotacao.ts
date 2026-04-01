@@ -1,7 +1,9 @@
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import pagina1Img from "@/assets/cotacao/pagina1.jpg";
 import pagina2Img from "@/assets/cotacao/pagina2.jpg";
 import pagina4Img from "@/assets/cotacao/pagina4.jpg";
+import logoImg from "@/assets/cotacao/logo-objetivo.png";
 
 interface DadosCotacao {
   numeroCotacao: string;
@@ -37,51 +39,59 @@ async function loadImage(src: string): Promise<string> {
   });
 }
 
+function fmtBRL(v: number) {
+  return `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+}
+
 export async function gerarPdfCotacao(dados: DadosCotacao) {
   const doc = new jsPDF("p", "mm", "a4");
-  const w = doc.internal.pageSize.getWidth(); // 210
-  const h = doc.internal.pageSize.getHeight(); // 297
+  const w = doc.internal.pageSize.getWidth();
+  const h = doc.internal.pageSize.getHeight();
   const m = 14;
+  const tableW = w - 2 * m;
+  const azul: [number, number, number] = [26, 58, 92];
+  const cinzaClaro: [number, number, number] = [230, 233, 237];
+  const cinzaLinha: [number, number, number] = [200, 200, 200];
 
-  // === PÁGINA 1: CAPA (imagem completa) ===
+  // Load logo
+  const logoData = await loadImage(logoImg);
+
+  // === PÁGINA 1: CAPA (imagem) ===
   const img1 = await loadImage(pagina1Img);
   if (img1) doc.addImage(img1, "JPEG", 0, 0, w, h);
 
-  // === PÁGINA 2: DEPOIMENTOS (imagem completa) ===
+  // === PÁGINA 2: DEPOIMENTOS (imagem) ===
   doc.addPage();
   const img2 = await loadImage(pagina2Img);
   if (img2) doc.addImage(img2, "JPEG", 0, 0, w, h);
 
-  // === PÁGINA 3: COTAÇÃO (dinâmica — layout exato da referência) ===
+  // === PÁGINA 3: COTAÇÃO (dinâmica com autoTable) ===
   doc.addPage();
 
-  // Logo top-left (texto simulando logo)
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bolditalic");
-  doc.setTextColor(26, 58, 92);
-  doc.text("OBJETIVO", m, 18);
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "normal");
-  doc.text("AUTO BENEFÍCIOS", m, 23);
+  // Logo top-left
+  if (logoData) {
+    doc.addImage(logoData, "PNG", m, 6, 35, 23);
+  }
 
   // Cotação top-right
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(14);
-  doc.text(`COTAÇÃO: ${dados.numeroCotacao}`, w - m, 16, { align: "right" });
+  doc.text(`COTAÇÃO: ${dados.numeroCotacao}`, w - m, 14, { align: "right" });
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.setTextColor(80, 80, 80);
-  doc.text(`Data: ${dados.data}`, w - m, 22, { align: "right" });
-  doc.text(`Validade: ${dados.validade} dias`, w - m, 27, { align: "right" });
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Data: ${dados.data}`, w - m, 20, { align: "right" });
+  doc.text(`Validade: ${dados.validade} dias`, w - m, 25, { align: "right" });
 
-  // Separador
-  let y = 35;
-  doc.setDrawColor(200, 200, 200);
+  // Linha separadora
+  let y = 33;
+  doc.setDrawColor(...cinzaLinha);
+  doc.setLineWidth(0.3);
   doc.line(m, y, w - m, y);
-  y += 6;
+  y += 7;
 
-  // Saudação
+  // Saudação e dados do veículo
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
@@ -89,234 +99,183 @@ export async function gerarPdfCotacao(dados: DadosCotacao) {
   doc.setFont("helvetica", "bold");
   doc.text(dados.cliente.nome, m + doc.getTextWidth("Olá "), y);
 
-  y += 5;
+  y += 6;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.text("Esta é uma cotação para o seu veículo:", m, y);
 
   y += 5;
   doc.setFont("helvetica", "bold");
-  doc.text(dados.cliente.veiculo, m, y);
+  doc.setFontSize(9.5);
+  doc.text(` ${dados.cliente.veiculo}`, m, y);
 
   y += 5;
   doc.setFont("helvetica", "normal");
-  doc.text(`Placa: `, m, y);
+  doc.setFontSize(9);
+  doc.text("Placa: ", m, y);
   doc.setFont("helvetica", "bold");
   doc.text(dados.cliente.placa, m + doc.getTextWidth("Placa: "), y);
 
   y += 5;
   doc.setFont("helvetica", "normal");
-  doc.text(`Cód. Fipe: `, m, y);
+  doc.text("Cód. Fipe:  ", m, y);
   doc.setFont("helvetica", "bold");
-  doc.text(dados.cliente.codFipe, m + doc.getTextWidth("Cód. Fipe: "), y);
+  doc.text(dados.cliente.codFipe, m + doc.getTextWidth("Cód. Fipe:  "), y);
 
   y += 6;
   doc.setFont("helvetica", "normal");
-  doc.text("Valor protegido: ", m, y);
+  doc.text("Valor protegido:   ", m, y);
   doc.setFont("helvetica", "bold");
-  doc.text(`R$ ${dados.cliente.valorFipe.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, m + doc.getTextWidth("Valor protegido: "), y);
+  doc.text(fmtBRL(dados.cliente.valorFipe), m + doc.getTextWidth("Valor protegido:   "), y);
 
   y += 5;
   doc.setFont("helvetica", "normal");
-  doc.text(`Cidade e estado de circulação: `, m, y);
+  doc.text("Cidade e estado de circulação:   ", m, y);
   doc.setFont("helvetica", "bold");
-  doc.text(`${dados.cliente.cidade}/${dados.cliente.estado}`, m + doc.getTextWidth("Cidade e estado de circulação: "), y);
+  doc.text(`${dados.cliente.cidade}/${dados.cliente.estado}`, m + doc.getTextWidth("Cidade e estado de circulação:   "), y);
 
-  // === PLANO header ===
+  // === PLANO header (autoTable) ===
   y += 8;
-  doc.setFillColor(26, 58, 92);
-  doc.rect(m, y, w - 2 * m, 7, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.text(`PLANO ${dados.plano.nome.toUpperCase()}`, m + 3, y + 5);
 
-  // Coberturas sub-header
-  y += 9;
   const coberturas = dados.coberturas.filter(c => c.tipo === "cobertura");
   const assistencias = dados.coberturas.filter(c => c.tipo === "assistencia");
-  const tableX = m;
-  const tableW = w - 2 * m;
 
-  if (coberturas.length > 0 || true) {
-    // Sub-header "Coberturas"
-    doc.setFillColor(230, 233, 237);
-    doc.rect(tableX, y, tableW, 6, "F");
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.text("Coberturas", tableX + 3, y + 4.5);
-    y += 6;
+  const cobItems = coberturas.length > 0
+    ? coberturas.map(c => c.nome)
+    : ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Vidros Completos (60%)", "Danos a terceiros (R$ 150.000)", "Danos da natureza", "Carro Reserva 15 dias"];
 
-    // Cobertura items
-    doc.setFont("helvetica", "normal");
-    const cobItems = coberturas.length > 0
-      ? coberturas.map(c => c.nome)
-      : ["Roubo", "Furto"];
-    cobItems.forEach(item => {
-      doc.setDrawColor(220, 220, 220);
-      doc.line(tableX, y, tableX + tableW, y);
-      doc.text(item, tableX + 3, y + 4);
-      y += 6;
-    });
-  }
-
-  // Sub-header "Assistências"
-  doc.setFillColor(230, 233, 237);
-  doc.rect(tableX, y, tableW, 6, "F");
-  doc.setTextColor(0, 0, 0);
-  doc.setFont("helvetica", "bold");
-  doc.text("Assistências", tableX + 3, y + 4.5);
-  y += 6;
-
-  doc.setFont("helvetica", "normal");
   const assItems = assistencias.length > 0
-    ? assistencias
+    ? assistencias.map(c => ({ nome: c.nome, detalhe: c.detalhe || "" }))
     : [
-      { nome: "Assistência 24H", detalhe: "200km" },
-      { nome: "Auxílio combustível" },
-      { nome: "Recarga de bateria" },
-      { nome: "Hospedagem" },
-      { nome: "Retorno ao domicílio" },
-      { nome: "Chaveiro" },
-      { nome: "Reboque" },
-      { nome: "Troca de pneus" },
+      { nome: "Assistência 24H", detalhe: "1000km" },
+      { nome: "Auxílio combustível", detalhe: "" },
+      { nome: "Recarga de bateria", detalhe: "" },
+      { nome: "Hospedagem", detalhe: "" },
+      { nome: "Retorno ao domicílio", detalhe: "" },
+      { nome: "Chaveiro", detalhe: "" },
+      { nome: "Reboque", detalhe: "" },
+      { nome: "Troca de pneus", detalhe: "" },
     ];
 
-  assItems.forEach((item: any) => {
-    doc.setDrawColor(220, 220, 220);
-    doc.line(tableX, y, tableX + tableW, y);
-    const nome = typeof item === "string" ? item : item.nome;
-    const detalhe = typeof item === "string" ? "" : (item.detalhe || "");
-    doc.text(nome, tableX + 3, y + 4);
-    if (detalhe) {
-      doc.text(detalhe, tableX + tableW - 3, y + 4, { align: "right" });
-    }
-    y += 6;
+  // Build table body
+  const tableBody: any[][] = [];
+
+  // Coberturas sub-header
+  tableBody.push([{ content: "Coberturas", colSpan: 2, styles: { fillColor: cinzaClaro, fontStyle: "bold" as const, fontSize: 8.5 } }]);
+  cobItems.forEach(item => {
+    tableBody.push([{ content: item, colSpan: 2 }]);
   });
 
-  // Border bottom
-  doc.setDrawColor(220, 220, 220);
-  doc.line(tableX, y, tableX + tableW, y);
+  // Assistências sub-header
+  tableBody.push([{ content: "Assistências", colSpan: 2, styles: { fillColor: cinzaClaro, fontStyle: "bold" as const, fontSize: 8.5 } }]);
+  assItems.forEach(item => {
+    tableBody.push([item.nome, { content: item.detalhe, styles: { halign: "right" as const } }]);
+  });
 
-  // === COTAÇÃO DO VEÍCULO header ===
-  y += 3;
-  doc.setFillColor(26, 58, 92);
-  doc.rect(tableX, y, tableW, 7, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.text("COTAÇÃO DO VEÍCULO", tableX + 3, y + 5);
-  y += 9;
+  autoTable(doc, {
+    startY: y,
+    head: [[{ content: `PLANO ${dados.plano.nome.toUpperCase()}`, colSpan: 2, styles: { fillColor: azul, textColor: [255, 255, 255], fontStyle: "bold" as const, fontSize: 9.5 } }]],
+    body: tableBody,
+    theme: "grid",
+    margin: { left: m, right: m },
+    styles: { fontSize: 8.5, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 }, lineColor: cinzaLinha, lineWidth: 0.2, textColor: [30, 30, 30] },
+    headStyles: { fillColor: azul },
+    tableLineColor: cinzaLinha,
+    tableLineWidth: 0.2,
+  });
 
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(9);
+  // === COTAÇÃO DO VEÍCULO ===
+  y = (doc as any).lastAutoTable.finalY + 4;
 
-  // Mensalidade
-  doc.setDrawColor(220, 220, 220);
-  doc.line(tableX, y - 1, tableX + tableW, y - 1);
-  doc.setFont("helvetica", "normal");
-  doc.text("Mensalidade:", tableX + 3, y + 3);
-  if (dados.plano.mensalOriginal && dados.plano.mensalOriginal > dados.plano.mensal) {
-    // Preço riscado + desconto
-    const origText = `R$ ${dados.plano.mensalOriginal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-    const descText = `R$ ${dados.plano.mensal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-    const rightX = tableX + tableW - 3;
-    const descW = doc.getTextWidth(descText);
-    const origW = doc.getTextWidth(origText);
-    // Desconto em preto bold
-    doc.setFont("helvetica", "bold");
-    doc.text(descText, rightX, y + 3, { align: "right" });
-    // Original riscado em cinza
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(150, 150, 150);
-    const origX = rightX - descW - 4;
-    doc.text(origText, origX, y + 3, { align: "right" });
-    // Linha de risco
-    doc.setDrawColor(150, 150, 150);
-    doc.setLineWidth(0.4);
-    doc.line(origX - origW, y + 1.5, origX, y + 1.5);
-    doc.setLineWidth(0.2);
-    doc.setTextColor(0, 0, 0);
-  } else {
-    doc.text(`R$ ${dados.plano.mensal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, tableX + tableW - 3, y + 3, { align: "right" });
+  // Mensalidade with strikethrough
+  const mensalText = dados.plano.mensalOriginal && dados.plano.mensalOriginal > dados.plano.mensal
+    ? `~~${fmtBRL(dados.plano.mensalOriginal)}~~ ${fmtBRL(dados.plano.mensal)}`
+    : fmtBRL(dados.plano.mensal);
+
+  const adesaoText = dados.plano.adesaoOriginal && dados.plano.adesaoOriginal > dados.plano.adesao
+    ? `~~${fmtBRL(dados.plano.adesaoOriginal)}~~ ${fmtBRL(dados.plano.adesao)}`
+    : fmtBRL(dados.plano.adesao);
+
+  // We'll draw mensalidade/adesao manually after the table for strikethrough support
+  autoTable(doc, {
+    startY: y,
+    head: [[{ content: "COTAÇÃO DO VEÍCULO", colSpan: 2, styles: { fillColor: azul, textColor: [255, 255, 255], fontStyle: "bold" as const, fontSize: 9.5 } }]],
+    body: [
+      ["Mensalidade:", { content: "", styles: { halign: "right" as const } }],
+      ["Adesão:", { content: "", styles: { halign: "right" as const } }],
+      ["Rastreador obrigatório:", { content: dados.plano.rastreador || "Não", styles: { halign: "right" as const } }],
+    ],
+    theme: "grid",
+    margin: { left: m, right: m },
+    styles: { fontSize: 8.5, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 }, lineColor: cinzaLinha, lineWidth: 0.2, textColor: [30, 30, 30] },
+    columnStyles: { 0: { cellWidth: tableW * 0.55 } },
+  });
+
+  // Draw prices with strikethrough overlay
+  const cotTable = (doc as any).lastAutoTable;
+  const rowsMensalidade = cotTable.body[0];
+  const rowsAdesao = cotTable.body[1];
+
+  // Helper to draw price with optional strikethrough
+  function drawPrice(rowCells: any, original: number | undefined, final: number) {
+    const cell = rowCells.cells[1];
+    const cellX = cell.x;
+    const cellY = cell.y;
+    const cellW = cell.width;
+    const cellH = cell.height;
+    const textY = cellY + cellH / 2 + 1;
+    const rightX = cellX + cellW - 3;
+
+    doc.setFontSize(8.5);
+    if (original && original > final) {
+      // Strikethrough original
+      const origStr = fmtBRL(original);
+      const finalStr = fmtBRL(final);
+      const finalW = doc.getTextWidth(finalStr);
+      const origW = doc.getTextWidth(origStr);
+
+      // Final price (bold, right-aligned)
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 0, 0);
+      doc.text(finalStr, rightX, textY, { align: "right" });
+
+      // Original price (strikethrough, gray)
+      const origX = rightX - finalW - 4;
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(150, 150, 150);
+      doc.text(origStr, origX, textY, { align: "right" });
+      doc.setDrawColor(150, 150, 150);
+      doc.setLineWidth(0.3);
+      doc.line(origX - origW, textY - 1.2, origX, textY - 1.2);
+    } else {
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 0, 0);
+      doc.text(fmtBRL(final), rightX, textY, { align: "right" });
+    }
   }
-  y += 7;
 
-  // Adesão
-  doc.setDrawColor(220, 220, 220);
-  doc.line(tableX, y - 1, tableX + tableW, y - 1);
-  doc.setFont("helvetica", "normal");
-  doc.text("Adesão:", tableX + 3, y + 3);
-  if (dados.plano.adesaoOriginal && dados.plano.adesaoOriginal > dados.plano.adesao) {
-    const origText = `R$ ${dados.plano.adesaoOriginal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-    const descText = `R$ ${dados.plano.adesao.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-    const rightX = tableX + tableW - 3;
-    const descW = doc.getTextWidth(descText);
-    const origW = doc.getTextWidth(origText);
-    doc.setFont("helvetica", "bold");
-    doc.text(descText, rightX, y + 3, { align: "right" });
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(150, 150, 150);
-    const origX = rightX - descW - 4;
-    doc.text(origText, origX, y + 3, { align: "right" });
-    doc.setDrawColor(150, 150, 150);
-    doc.setLineWidth(0.4);
-    doc.line(origX - origW, y + 1.5, origX, y + 1.5);
-    doc.setLineWidth(0.2);
-    doc.setTextColor(0, 0, 0);
-  } else {
-    doc.text(`R$ ${dados.plano.adesao.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, tableX + tableW - 3, y + 3, { align: "right" });
-  }
-  y += 7;
+  drawPrice(rowsMensalidade, dados.plano.mensalOriginal, dados.plano.mensal);
+  drawPrice(rowsAdesao, dados.plano.adesaoOriginal, dados.plano.adesao);
 
-  // Rastreador
-  doc.setDrawColor(220, 220, 220);
-  doc.line(tableX, y - 1, tableX + tableW, y - 1);
-  doc.text("Rastreador obrigatório:", tableX + 3, y + 3);
-  doc.text(dados.plano.rastreador || "", tableX + tableW - 3, y + 3, { align: "right" });
-  y += 7;
-  doc.line(tableX, y - 1, tableX + tableW, y - 1);
+  // === CONSULTOR ===
+  y = cotTable.finalY + 4;
 
-  // === CONSULTOR header ===
-  y += 3;
-  doc.setFillColor(26, 58, 92);
-  doc.rect(tableX, y, tableW, 7, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.text("CONSULTOR", tableX + 3, y + 5);
-  y += 9;
+  autoTable(doc, {
+    startY: y,
+    head: [[{ content: "CONSULTOR", colSpan: 2, styles: { fillColor: azul, textColor: [255, 255, 255], fontStyle: "bold" as const, fontSize: 9.5 } }]],
+    body: [
+      [
+        { content: `Nome: ${dados.consultor.nome}`, styles: { fontStyle: "bold" as const } },
+        { content: `Telefone: ${dados.consultor.telefone}`, styles: { fontStyle: "bold" as const } },
+      ],
+      [{ content: `Email: ${dados.consultor.email}`, colSpan: 2, styles: { fontStyle: "bold" as const } }],
+    ],
+    theme: "grid",
+    margin: { left: m, right: m },
+    styles: { fontSize: 8, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 }, lineColor: cinzaLinha, lineWidth: 0.2, textColor: [30, 30, 30] },
+  });
 
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-
-  // Nome + Telefone
-  doc.setDrawColor(220, 220, 220);
-  doc.line(tableX, y - 1, tableX + tableW, y - 1);
-  doc.setFont("helvetica", "bold");
-  doc.text("Nome: ", tableX + 3, y + 3);
-  doc.setFont("helvetica", "normal");
-  doc.text(dados.consultor.nome, tableX + 3 + doc.getTextWidth("Nome: "), y + 3);
-
-  doc.setFont("helvetica", "bold");
-  doc.text("Telefone: ", tableX + tableW / 2, y + 3);
-  doc.setFont("helvetica", "normal");
-  doc.text(dados.consultor.telefone, tableX + tableW / 2 + doc.getTextWidth("Telefone: "), y + 3);
-  y += 7;
-
-  // Email
-  doc.setDrawColor(220, 220, 220);
-  doc.line(tableX, y - 1, tableX + tableW, y - 1);
-  doc.setFont("helvetica", "bold");
-  doc.text("Email: ", tableX + 3, y + 3);
-  doc.setFont("helvetica", "normal");
-  doc.text(dados.consultor.email, tableX + 3 + doc.getTextWidth("Email: "), y + 3);
-  y += 6;
-  doc.line(tableX, y, tableX + tableW, y);
-
-  // === PÁGINA 4: APP (imagem completa) ===
+  // === PÁGINA 4: APP (imagem) ===
   doc.addPage();
   const img4 = await loadImage(pagina4Img);
   if (img4) doc.addImage(img4, "JPEG", 0, 0, w, h);
