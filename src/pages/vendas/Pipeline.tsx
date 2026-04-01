@@ -23,7 +23,7 @@ import {
 } from "./pipeline/mockData";
 import DealDetailModal from "./pipeline/DealDetailModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, callEdge } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePermission, useLeadScope } from "@/hooks/usePermission";
 import ConcretizarVendaModal from "./ConcretizarVendaModal";
@@ -635,8 +635,22 @@ export default function Pipeline() {
             </div>
             <div className="space-y-1.5"><Label>E-mail</Label><Input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label>Placa do Veículo</Label><Input value={form.placa} onChange={e => setForm({ ...form, placa: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>Modelo do Veículo</Label><Input value={form.modelo} onChange={e => setForm({ ...form, modelo: e.target.value })} /></div>
+              <div className="space-y-1.5"><Label>Placa do Veículo</Label><Input value={form.placa} onChange={async e => {
+                const v = e.target.value.toUpperCase();
+                setForm(f => ({ ...f, placa: v }));
+                const clean = v.replace(/[^A-Z0-9]/g, "");
+                if (clean.length >= 7) {
+                  try {
+                    const res = await callEdge("gia-buscar-placa", { acao: "placa", placa: clean });
+                    if (res.sucesso && res.resultado) {
+                      const r = res.resultado;
+                      setForm(f => ({ ...f, modelo: `${r.marca} ${r.modelo} ${r.anoModelo}` }));
+                      toast.success(`${r.marca} ${r.modelo} ${r.anoModelo} — R$ ${(r.valorFipe || 0).toLocaleString("pt-BR")}`);
+                    }
+                  } catch {}
+                }
+              }} placeholder="ABC1D23" /></div>
+              <div className="space-y-1.5"><Label>Modelo do Veículo</Label><Input value={form.modelo} onChange={e => setForm({ ...form, modelo: e.target.value })} placeholder="Preenchido automaticamente pela placa" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Plano</Label>
