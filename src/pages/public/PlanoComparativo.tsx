@@ -277,7 +277,7 @@ export default function PlanoComparativo() {
                           <td key={i} className="text-center px-3 py-2 border-t border-gray-100">
                             {has
                               ? <CheckCircle className="w-5 h-5 text-[#2ecc71] mx-auto" />
-                              : <XCircle className="w-5 h-5 text-gray-300 mx-auto" />}
+                              : <XCircle className="w-5 h-5 text-red-400 mx-auto" />}
                           </td>
                         );
                       })}
@@ -299,7 +299,7 @@ export default function PlanoComparativo() {
                           <td key={i} className="text-center px-3 py-2 border-t border-gray-100">
                             {has
                               ? <CheckCircle className="w-5 h-5 text-[#2ecc71] mx-auto" />
-                              : <XCircle className="w-5 h-5 text-gray-300 mx-auto" />}
+                              : <XCircle className="w-5 h-5 text-red-400 mx-auto" />}
                           </td>
                         );
                       })}

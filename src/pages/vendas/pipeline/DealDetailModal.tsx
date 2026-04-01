@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PipelineDeal, planos } from "./mockData";
+import { usePermission } from "@/hooks/usePermission";
+import { useAuth } from "@/hooks/useAuth";
 import AssociadoTab from "./AssociadoTab";
 import CotacaoTab from "./CotacaoTab";
 import VistoriaTab from "./VistoriaTab";
@@ -40,6 +42,11 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
   const [historicoReal, setHistoricoReal] = useState<any[]>([]);
   const [showArquivar, setShowArquivar] = useState(false);
   const [motivoArquivar, setMotivoArquivar] = useState("");
+  const [showTransferir, setShowTransferir] = useState(false);
+  const [consultorDestino, setConsultorDestino] = useState("");
+  const [consultoresTransf, setConsultoresTransf] = useState<string[]>([]);
+  const { isAdmin } = usePermission();
+  const { profile } = useAuth();
 
   async function handleArquivar() {
     if (!motivoArquivar) { toast("Selecione um motivo"); return; }
@@ -59,6 +66,42 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
     supabase.from("pipeline_transicoes" as any).select("*").eq("negociacao_id", deal.id)
       .order("created_at", { ascending: false }).then(({ data }) => setHistoricoReal(data || []));
   }, [deal.id]);
+
+  // Carregar consultores para transferência
+  React.useEffect(() => {
+    if (!showTransferir) return;
+    const funcao = (profile as any)?.funcao || "";
+    const isGestor = funcao.toLowerCase().includes("gestor") || funcao.toLowerCase().includes("administrador") || funcao.toLowerCase().includes("diretor") || isAdmin;
+    const coopUsuario = (profile as any)?.cooperativa || "";
+
+    supabase.from("usuarios").select("nome, cooperativa").eq("status", "ativo").order("nome")
+      .then(({ data }) => {
+        let lista = (data || []).map((u: any) => u.nome).filter(Boolean);
+        // Se não é admin/diretor, filtrar pela mesma cooperativa
+        if (!isAdmin && !funcao.toLowerCase().includes("diretor")) {
+          const minhasCoops = coopUsuario.split(",").map((c: string) => c.trim().toLowerCase());
+          lista = (data || []).filter((u: any) => {
+            const uCoops = (u.cooperativa || "").split(",").map((c: string) => c.trim().toLowerCase());
+            return uCoops.some((c: string) => minhasCoops.some((mc: string) => c.includes(mc) || mc.includes(c)));
+          }).map((u: any) => u.nome);
+        }
+        setConsultoresTransf(lista.filter((n: string) => n !== deal.consultor));
+      });
+  }, [showTransferir]);
+
+  async function handleTransferir() {
+    if (!consultorDestino) { toast.error("Selecione o consultor destino"); return; }
+    await supabase.from("negociacoes").update({ consultor: consultorDestino } as any).eq("id", deal.id);
+    await supabase.from("pipeline_transicoes").insert({
+      negociacao_id: deal.id, stage_anterior: deal.stage, stage_novo: deal.stage,
+      motivo: `Transferido de ${deal.consultor} para ${consultorDestino}`,
+      automatica: false,
+    } as any);
+    toast.success(`Negociação transferida para ${consultorDestino}`);
+    setShowTransferir(false);
+    setConsultorDestino("");
+    onUpdate?.();
+  }
 
   const tabs = [
     { v: "cotacao", l: "Cotação", i: FileText },
@@ -207,11 +250,27 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
                 <div className="w-8 h-8 rounded-full bg-[#1A3A5C] flex items-center justify-center text-white text-xs font-bold">
                   {(deal.consultor || "?")[0].toUpperCase()}
                 </div>
-                <div>
-                  <p className="text-sm font-semibold leading-tight">{deal.consultor || "Não atribuído"}</p>
-                  <p className="text-[10px] text-muted-foreground">{deal.cooperativa}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold leading-tight truncate">{deal.consultor || "Não atribuído"}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{deal.cooperativa}</p>
                 </div>
               </div>
+              {showTransferir ? (
+                <div className="space-y-2 mt-2 p-2 border rounded bg-muted/30">
+                  <Select value={consultorDestino} onValueChange={setConsultorDestino}>
+                    <SelectTrigger className="h-8 text-xs rounded-none"><SelectValue placeholder="Selecione consultor" /></SelectTrigger>
+                    <SelectContent>{consultoresTransf.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <div className="flex gap-1">
+                    <Button size="sm" className="rounded-none text-xs h-7 flex-1 bg-[#1A3A5C]" onClick={handleTransferir}>Transferir</Button>
+                    <Button size="sm" variant="ghost" className="rounded-none text-xs h-7" onClick={() => setShowTransferir(false)}>Cancelar</Button>
+                  </div>
+                </div>
+              ) : (
+                <Button size="sm" variant="ghost" className="rounded-none text-[10px] h-6 mt-1 text-muted-foreground hover:text-foreground w-full" onClick={() => setShowTransferir(true)}>
+                  Transferir negociação
+                </Button>
+              )}
             </div>
 
             {/* Afiliado */}
