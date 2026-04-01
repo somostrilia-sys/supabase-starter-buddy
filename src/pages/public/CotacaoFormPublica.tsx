@@ -154,7 +154,7 @@ export default function CotacaoFormPublica() {
 
   const canStep2 = nome.trim().length >= 3 && telefone.replace(/\D/g, "").length >= 10;
   const canStep3 = placa.replace("-", "").length >= 7;
-  const canSubmit = estado.length > 0;
+  const canSubmit = estado.length > 0 && cidade.trim().length > 0;
 
   if (concluido) {
     return (

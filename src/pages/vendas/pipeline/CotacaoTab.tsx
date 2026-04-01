@@ -370,6 +370,10 @@ export default function CotacaoTab({ deal }: Props) {
 
   const handleEnviar = async (tipo: string) => {
     if (tipo === "PDF") { handleBaixarPdf(); return; }
+    if (!form.estadoCirc || !form.cidadeCirc.trim()) {
+      toast.error("Preencha Estado e Cidade de Circulação antes de enviar a cotação.");
+      return;
+    }
     // Buscar regional pela cidade/estado de circulação
     const regionalCot = await buscarRegionalPrecos(form.estadoCirc || "", form.cidadeCirc || "");
 
