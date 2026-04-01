@@ -177,9 +177,12 @@ export default function AssociadoTab({ deal }: Props) {
       {/* DADOS DE CONTATO */}
       <fieldset className="space-y-3">
         <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">DADOS DE CONTATO</legend>
+        <div className="p-2.5 rounded bg-blue-50 border border-blue-200 mb-2">
+          <p className="text-xs text-blue-700"><strong>Atenção:</strong> O WhatsApp principal será utilizado para envio de boletos, contratos e notificações.</p>
+        </div>
         <div className="grid grid-cols-3 gap-x-4 gap-y-3">
           <div className="space-y-1">
-            <Label className={lbl}>Telefone Principal{reqMark}</Label>
+            <Label className={lbl}>WhatsApp Principal{reqMark}</Label>
             <Input className="rounded-none" value={form.telefone} onChange={e => set("telefone", maskPhone(e.target.value))} placeholder="(00) 00000-0000" />
           </div>
           <div className="space-y-1">
