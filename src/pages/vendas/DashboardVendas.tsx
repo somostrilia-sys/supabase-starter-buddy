@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -7,90 +7,135 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import {
   Users, FileText, Handshake, DollarSign, TrendingUp, Trophy, ArrowRightLeft,
 } from "lucide-react";
-import { DemoBanner } from "@/components/DemoBanner";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, CartesianGrid, Legend,
 } from "recharts";
 
-const cooperativas = ["Todas", "Central SP", "Central RJ", "Norte MG", "Oeste PR", "Sul RS"];
-const consultores = ["Todos", "Lucas Ferreira", "Ana Souza", "Marcos Lima", "Juliana Costa", "Pedro Santos", "Carla Oliveira"];
-
-const funilData = [
-  { etapa: "Leads", valor: 320 },
-  { etapa: "Qualificados", valor: 215 },
-  { etapa: "Proposta", valor: 142 },
-  { etapa: "Negociação", valor: 87 },
-  { etapa: "Fechado", valor: 52 },
-];
-
-const evolucaoMensal = [
-  { mes: "Jul", vendas: 28, faturamento: 42000 },
-  { mes: "Ago", vendas: 34, faturamento: 51000 },
-  { mes: "Set", vendas: 31, faturamento: 46500 },
-  { mes: "Out", vendas: 38, faturamento: 57000 },
-  { mes: "Nov", vendas: 42, faturamento: 63000 },
-  { mes: "Dez", vendas: 35, faturamento: 52500 },
-  { mes: "Jan", vendas: 40, faturamento: 60000 },
-  { mes: "Fev", vendas: 45, faturamento: 67500 },
-  { mes: "Mar", vendas: 39, faturamento: 58500 },
-  { mes: "Abr", vendas: 48, faturamento: 72000 },
-  { mes: "Mai", vendas: 52, faturamento: 78000 },
-  { mes: "Jun", vendas: 55, faturamento: 82500 },
-];
-
-const rankingConsultores = [
-  { nome: "Lucas Ferreira", contratos: 18, faturamento: 27000, meta: 25000, avatar: "LF" },
-  { nome: "Ana Souza", contratos: 15, faturamento: 22500, meta: 22000, avatar: "AS" },
-  { nome: "Marcos Lima", contratos: 12, faturamento: 18000, meta: 20000, avatar: "ML" },
-  { nome: "Juliana Costa", contratos: 10, faturamento: 15000, meta: 18000, avatar: "JC" },
-  { nome: "Pedro Santos", contratos: 8, faturamento: 12000, meta: 15000, avatar: "PS" },
-  { nome: "Carla Oliveira", contratos: 6, faturamento: 9000, meta: 15000, avatar: "CO" },
-];
-
-const distribuicaoCooperativa = [
-  { name: "Central SP", value: 38 },
-  { name: "Central RJ", value: 24 },
-  { name: "Norte MG", value: 18 },
-  { name: "Oeste PR", value: 12 },
-  { name: "Sul RS", value: 8 },
-];
-
-const PIE_COLORS = [
-  "hsl(var(--primary))",
-  "hsl(142, 50%, 40%)",
-  "hsl(38, 90%, 50%)",
-  "hsl(0, 65%, 50%)",
-  "hsl(262, 50%, 50%)",
-];
-
-const FUNNEL_COLORS = [
-  "hsl(var(--primary) / 0.7)",
-  "hsl(var(--primary) / 0.85)",
-  "hsl(var(--primary) / 0.9)",
-  "hsl(var(--primary) / 1)",
-  "hsl(142, 50%, 40%)",
-];
-
+const PIE_COLORS = ["hsl(212,50%,35%)", "hsl(142,50%,40%)", "hsl(38,90%,50%)", "hsl(0,65%,50%)", "hsl(262,50%,50%)", "hsl(180,50%,40%)", "hsl(320,50%,50%)"];
+const FUNNEL_COLORS = ["hsl(212,50%,50%)", "hsl(212,50%,60%)", "hsl(38,90%,50%)", "hsl(142,50%,50%)", "hsl(142,50%,35%)"];
 const formatCurrency = (v: number) => `R$ ${(v / 1000).toFixed(0)}k`;
+
+function getDateRange(periodo: string, dataInicio: string, dataFim: string) {
+  if (dataInicio && dataFim) return { start: dataInicio, end: dataFim };
+  const now = new Date();
+  const end = now.toISOString();
+  let start: Date;
+  switch (periodo) {
+    case "semana": start = new Date(now.getTime() - 7 * 86400000); break;
+    case "trimestre": start = new Date(now.getFullYear(), now.getMonth() - 3, 1); break;
+    case "ano": start = new Date(now.getFullYear(), 0, 1); break;
+    default: start = new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+  return { start: start.toISOString(), end };
+}
 
 export default function DashboardVendas() {
   const [periodo, setPeriodo] = useState("mes");
   const [consultor, setConsultor] = useState("Todos");
   const [cooperativa, setCooperativa] = useState("Todas");
+  const [dataInicio, setDataInicio] = useState("");
+  const [dataFim, setDataFim] = useState("");
 
-  const totalLeads = 320;
-  const propostas = 142;
-  const contratos = 52;
-  const faturamento = 82500;
-  const conversao = ((contratos / totalLeads) * 100).toFixed(1);
+  const range = getDateRange(periodo, dataInicio, dataFim);
+
+  // Cooperativas reais
+  const { data: coopsDb } = useQuery({
+    queryKey: ["dash_coops"],
+    queryFn: async () => {
+      const { data } = await supabase.from("cooperativas" as any).select("nome").eq("ativa", true).order("nome");
+      return ["Todas", ...(data || []).map((c: any) => c.nome)];
+    },
+  });
+
+  // Consultores reais
+  const { data: consultoresDb } = useQuery({
+    queryKey: ["dash_consultores"],
+    queryFn: async () => {
+      const { data } = await supabase.from("usuarios").select("nome").eq("status", "ativo").order("nome");
+      return ["Todos", ...(data || []).map((u: any) => u.nome)];
+    },
+  });
+
+  // Negociações com filtros
+  const { data: negsData } = useQuery({
+    queryKey: ["dash_negs", range.start, range.end, consultor, cooperativa],
+    queryFn: async () => {
+      let q = supabase.from("negociacoes" as any).select("*")
+        .gte("created_at", range.start).lte("created_at", range.end);
+      if (consultor !== "Todos") q = q.eq("consultor", consultor);
+      if (cooperativa !== "Todas") q = q.ilike("cooperativa", `%${cooperativa}%`);
+      const { data } = await q;
+      return (data || []) as any[];
+    },
+  });
+
+  const negs = negsData || [];
+  const totalLeads = negs.length;
+  const propostas = negs.filter(n => n.stage !== "novo_lead").length;
+  const contratos = negs.filter(n => n.stage === "concluido").length;
+  const faturamento = negs.reduce((s: number, n: any) => s + (Number(n.valor_plano) || 0), 0);
+  const conversao = totalLeads > 0 ? ((contratos / totalLeads) * 100).toFixed(1) : "0";
+  const comissoes = faturamento * 0.15;
+
+  // Funil
+  const funilData = [
+    { etapa: "Novo Lead", valor: negs.filter(n => n.stage === "novo_lead").length },
+    { etapa: "Em Contato", valor: negs.filter(n => n.stage === "em_contato").length },
+    { etapa: "Negociação", valor: negs.filter(n => n.stage === "em_negociacao").length },
+    { etapa: "Vistoria", valor: negs.filter(n => n.stage === "aguardando_vistoria").length },
+    { etapa: "Concluído", valor: contratos },
+  ];
+
+  // Evolução mensal (últimos 12 meses)
+  const evolucaoMensal = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - (11 - i));
+    const mes = d.toLocaleString("pt-BR", { month: "short" }).replace(".", "");
+    const mesNum = d.getMonth();
+    const anoNum = d.getFullYear();
+    const mesNegs = negsData?.filter((n: any) => {
+      const nd = new Date(n.created_at);
+      return nd.getMonth() === mesNum && nd.getFullYear() === anoNum;
+    }) || [];
+    return {
+      mes: mes.charAt(0).toUpperCase() + mes.slice(1),
+      vendas: mesNegs.filter((n: any) => n.stage === "concluido").length,
+      faturamento: mesNegs.reduce((s: number, n: any) => s + (Number(n.valor_plano) || 0), 0),
+    };
+  });
+
+  // Ranking consultores
+  const rankingMap: Record<string, { contratos: number; faturamento: number }> = {};
+  negs.forEach((n: any) => {
+    const c = n.consultor || "Sem consultor";
+    if (!rankingMap[c]) rankingMap[c] = { contratos: 0, faturamento: 0 };
+    if (n.stage === "concluido") rankingMap[c].contratos++;
+    rankingMap[c].faturamento += Number(n.valor_plano) || 0;
+  });
+  const ranking = Object.entries(rankingMap)
+    .map(([nome, d]) => ({ nome, ...d, avatar: nome.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() }))
+    .sort((a, b) => b.contratos - a.contratos || b.faturamento - a.faturamento)
+    .slice(0, 10);
+
+  // Distribuição por cooperativa
+  const coopMap: Record<string, number> = {};
+  negs.forEach((n: any) => {
+    const c = n.cooperativa || "Sem cooperativa";
+    coopMap[c] = (coopMap[c] || 0) + 1;
+  });
+  const distribuicao = Object.entries(coopMap)
+    .map(([name, value]) => ({ name: name.replace(/FILIAL |Filial /gi, ""), value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 7);
 
   return (
     <div className="p-6 space-y-6">
-      <DemoBanner />
       {/* Filtros */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div>
@@ -109,23 +154,23 @@ export default function DashboardVendas() {
           <Label className="text-xs font-semibold">Consultor</Label>
           <Select value={consultor} onValueChange={setConsultor}>
             <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-            <SelectContent>{consultores.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+            <SelectContent>{(consultoresDb || ["Todos"]).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div>
           <Label className="text-xs font-semibold">Cooperativa</Label>
           <Select value={cooperativa} onValueChange={setCooperativa}>
             <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-            <SelectContent>{cooperativas.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+            <SelectContent>{(coopsDb || ["Todas"]).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div>
           <Label className="text-xs font-semibold">Data Início</Label>
-          <Input type="date" className="w-full" />
+          <Input type="date" className="w-full" value={dataInicio} onChange={e => setDataInicio(e.target.value)} />
         </div>
         <div>
           <Label className="text-xs font-semibold">Data Fim</Label>
-          <Input type="date" className="w-full" />
+          <Input type="date" className="w-full" value={dataFim} onChange={e => setDataFim(e.target.value)} />
         </div>
       </div>
 
@@ -137,7 +182,7 @@ export default function DashboardVendas() {
           { label: "Contratos Fechados", value: contratos.toString(), icon: Handshake, color: "text-[hsl(142,50%,35%)]", bg: "bg-[hsl(142,50%,95%)]" },
           { label: "Faturamento Total", value: `R$ ${faturamento.toLocaleString("pt-BR")}`, icon: DollarSign, color: "text-foreground", bg: "bg-muted" },
           { label: "Taxa de Conversão", value: `${conversao}%`, icon: TrendingUp, color: "text-[hsl(142,50%,35%)]", bg: "bg-[hsl(142,50%,95%)]" },
-          { label: "Comissões do Mês", value: "R$ 7.950", icon: ArrowRightLeft, color: "text-[hsl(152,50%,35%)]", bg: "bg-[hsl(152,50%,95%)]" },
+          { label: "Comissões Estimadas", value: `R$ ${comissoes.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`, icon: ArrowRightLeft, color: "text-[hsl(152,50%,35%)]", bg: "bg-[hsl(152,50%,95%)]" },
         ].map(c => (
           <Card key={c.label}>
             <CardContent className="p-4">
@@ -176,7 +221,7 @@ export default function DashboardVendas() {
 
         <Card>
           <CardContent className="p-4">
-            <h3 className="font-semibold text-sm mb-3">Evolução Mensal de Vendas (12 meses)</h3>
+            <h3 className="font-semibold text-sm mb-3">Evolução Mensal (12 meses)</h3>
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={evolucaoMensal}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -185,8 +230,8 @@ export default function DashboardVendas() {
                 <YAxis yAxisId="right" orientation="right" tickFormatter={formatCurrency} tick={{ fontSize: 10 }} />
                 <Tooltip formatter={(v: number, name: string) => [name === "faturamento" ? `R$ ${v.toLocaleString("pt-BR")}` : v, name === "faturamento" ? "Faturamento" : "Vendas"]} />
                 <Legend />
-                <Line yAxisId="left" type="monotone" dataKey="vendas" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} name="Vendas" />
-                <Line yAxisId="right" type="monotone" dataKey="faturamento" stroke="hsl(142, 50%, 40%)" strokeWidth={2} dot={{ r: 3 }} name="Faturamento" />
+                <Line yAxisId="left" type="monotone" dataKey="vendas" stroke="hsl(212,50%,45%)" strokeWidth={2} dot={{ r: 3 }} name="Vendas" />
+                <Line yAxisId="right" type="monotone" dataKey="faturamento" stroke="hsl(142,50%,40%)" strokeWidth={2} dot={{ r: 3 }} name="Faturamento" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -202,22 +247,19 @@ export default function DashboardVendas() {
               <h3 className="font-semibold text-sm">Ranking de Consultores</h3>
             </div>
             <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs font-bold uppercase w-8">#</TableHead>
-                  <TableHead className="text-xs font-bold uppercase">Consultor</TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-center">Contratos</TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-right">Faturamento</TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-right">Meta</TableHead>
-                  <TableHead className="text-xs font-bold uppercase w-40">% Atingimento</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rankingConsultores.map((c, i) => {
-                  const pct = Math.min((c.faturamento / c.meta) * 100, 100);
-                  const pctColor = pct >= 100 ? "text-[hsl(142,50%,35%)]" : pct >= 70 ? "text-[hsl(38,90%,45%)]" : "text-[hsl(0,65%,50%)]";
-                  return (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs font-bold uppercase w-8">#</TableHead>
+                    <TableHead className="text-xs font-bold uppercase">Consultor</TableHead>
+                    <TableHead className="text-xs font-bold uppercase text-center">Contratos</TableHead>
+                    <TableHead className="text-xs font-bold uppercase text-right">Faturamento</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {ranking.length === 0 ? (
+                    <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">Nenhuma negociação no período</TableCell></TableRow>
+                  ) : ranking.map((c, i) => (
                     <TableRow key={c.nome}>
                       <TableCell className="font-bold text-muted-foreground">{i + 1}º</TableCell>
                       <TableCell>
@@ -226,23 +268,15 @@ export default function DashboardVendas() {
                             <AvatarFallback className="text-[10px] bg-primary/8 text-primary">{c.avatar}</AvatarFallback>
                           </Avatar>
                           <span className="font-medium text-sm">{c.nome}</span>
-                          {i === 0 && <Badge className="bg-[hsl(38,90%,50%)] text-white text-[9px] px-1.5 py-0">🏆</Badge>}
+                          {i === 0 && c.contratos > 0 && <Badge className="bg-[hsl(38,90%,50%)] text-white text-[9px] px-1.5 py-0">🏆</Badge>}
                         </div>
                       </TableCell>
                       <TableCell className="text-center font-semibold">{c.contratos}</TableCell>
                       <TableCell className="text-right">R$ {c.faturamento.toLocaleString("pt-BR")}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">R$ {c.meta.toLocaleString("pt-BR")}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Progress value={pct} className="h-2 flex-1" />
-                          <span className={`text-xs font-bold ${pctColor} w-10 text-right`}>{pct.toFixed(0)}%</span>
-                        </div>
-                      </TableCell>
                     </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
@@ -250,24 +284,28 @@ export default function DashboardVendas() {
         <Card>
           <CardContent className="p-4">
             <h3 className="font-semibold text-sm mb-3">Distribuição por Cooperativa</h3>
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={distribuicaoCooperativa}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={85}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}
-                  fontSize={10}
-                >
-                  {distribuicaoCooperativa.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
-                </Pie>
-                <Tooltip formatter={(v: number) => [`${v} contratos`, "Contratos"]} />
-              </PieChart>
-            </ResponsiveContainer>
+            {distribuicao.length > 0 ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={distribuicao}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={85}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
+                    fontSize={10}
+                  >
+                    {distribuicao.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => [`${v} negociações`, "Total"]} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[280px] text-muted-foreground text-sm">Sem dados no período</div>
+            )}
           </CardContent>
         </Card>
       </div>
