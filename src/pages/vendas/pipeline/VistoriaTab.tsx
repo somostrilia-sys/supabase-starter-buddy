@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import VistoriaFotoSelector from "@/components/VistoriaFotoSelector";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -96,6 +96,16 @@ export default function VistoriaTab({ deal }: Props) {
   const [codigo, setCodigo] = useState(vistoriaReal?.token_publico || "");
   const [vistoriaId, setVistoriaId] = useState(vistoriaReal?.id || "");
   const [status, setStatus] = useState<VistoriaStatus>(vistoriaReal?.status || "pendente");
+
+  // Sincronizar state quando vistoriaReal carrega do banco
+  React.useEffect(() => {
+    if (vistoriaReal) {
+      setCodigoGerado(true);
+      setCodigo(vistoriaReal.token_publico || "");
+      setVistoriaId(vistoriaReal.id || "");
+      setStatus(vistoriaReal.status || "pendente");
+    }
+  }, [vistoriaReal]);
   const [prazo, setPrazo] = useState("7");
   const [selectedFotos, setSelectedFotos] = useState<string[]>([
     "frente","traseira","lateral_esquerda","lateral_direita","interior_painel",
