@@ -319,45 +319,65 @@ export default function CotacaoTab({ deal }: Props) {
     return Array.from({ length: 15 }, (_, i) => String(cur - i));
   }, []);
 
-  // FIPE auto-lookup when plate is complete (7 chars: ABC-1D23)
+  // FIPE auto-lookup via wdapi2.com.br (real) ou mock fallback
   const consultarFipe = useCallback(async (placa: string) => {
-    const cleanPlaca = placa.replace("-", "");
-    if (cleanPlaca.length !== 7) return;
-
-    const veiculo = placaVeiculoMap[placa];
-    if (!veiculo) {
-      toast.error("Placa não encontrada na base FIPE. Selecione marca/modelo manualmente.");
-      return;
-    }
+    const cleanPlaca = placa.replace(/[^a-zA-Z0-9]/g, "");
+    if (cleanPlaca.length < 7) return;
 
     setFipeLoading(true);
     setFipeFetched(false);
 
-    // Usar mock se disponível, senão tentar edge function real
-    const veiculoMock = veiculo;
-    setMarca(veiculoMock.marca);
-    setModeloIdx(veiculoMock.modeloIdx);
-    setForm(prev => ({
-      ...prev,
-      anoFab: veiculoMock.ano,
-      cor: veiculoMock.cor,
-      combustivel: veiculoMock.combustivel,
-      chassi: veiculoMock.chassi,
-    }));
+    try {
+      // Buscar via API real (wdapi2)
+      const result = await callEdge("gia-buscar-placa", { acao: "placa", placa: cleanPlaca });
 
-    const modelo = modelosPorMarca[veiculoMock.marca]?.[veiculoMock.modeloIdx];
-    const vFipe = modelo?.valorFipe || 0;
+      if (result.sucesso && result.resultado) {
+        const r = result.resultado;
+        const marcaNome = r.marca || "";
+        const matchMarca = marcas.find(m => marcaNome.toUpperCase().includes(m.toUpperCase()));
+        if (matchMarca) setMarca(matchMarca);
 
-    // Carregar preços reais e verificar aceitação
-    if (vFipe > 0) {
-      await carregarPrecos(vFipe);
-      await verificarAceitacao(veiculoMock.marca, modelo?.modelo || "");
-      await carregarCoberturas(planoSelecionado);
+        setForm(prev => ({
+          ...prev,
+          anoFab: r.anoFabricacao || prev.anoFab,
+          cor: r.cor || prev.cor,
+          combustivel: r.combustivel || prev.combustivel,
+          chassi: r.chassi || prev.chassi,
+          renavam: r.renavam || prev.renavam || "",
+        }));
+
+        const vFipe = r.valorFipe || 0;
+
+        if (vFipe > 0) {
+          await carregarPrecos(vFipe);
+          await carregarCoberturas(planoSelecionado);
+        }
+        await verificarAceitacao(marcaNome, r.modelo || "");
+
+        setFipeLoading(false);
+        setFipeFetched(true);
+        toast.success(`${marcaNome} ${r.modelo} ${r.anoFabricacao}/${r.anoModelo} — ${formatCurrency(vFipe)}`);
+        return;
+      }
+    } catch { /* fallback to mock */ }
+
+    // Fallback: mock
+    const veiculo = placaVeiculoMap[placa];
+    if (!veiculo) {
+      setFipeLoading(false);
+      toast.error("Placa não encontrada. Selecione marca/modelo manualmente.");
+      return;
     }
+    setMarca(veiculo.marca);
+    setModeloIdx(veiculo.modeloIdx);
+    setForm(prev => ({ ...prev, anoFab: veiculo.ano, cor: veiculo.cor, combustivel: veiculo.combustivel, chassi: veiculo.chassi }));
+    const modelo = modelosPorMarca[veiculo.marca]?.[veiculo.modeloIdx];
+    const vFipe = modelo?.valorFipe || 0;
+    if (vFipe > 0) { await carregarPrecos(vFipe); await carregarCoberturas(planoSelecionado); }
 
     setFipeLoading(false);
     setFipeFetched(true);
-    toast.success(`FIPE: ${veiculoMock.marca} ${modelo?.modelo || ""} — ${formatCurrency(vFipe)}`);
+    toast.success(`FIPE: ${veiculo.marca} ${modelo?.modelo || ""} — ${formatCurrency(vFipe)}`);
   }, [planoSelecionado, deal.regional]);
 
   const handlePlacaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
