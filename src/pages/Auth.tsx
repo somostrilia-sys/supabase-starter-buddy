@@ -62,9 +62,9 @@ export default function Auth() {
       {/* CARDS — overlay no terço inferior esquerdo da imagem */}
       <div style={{
         position: 'absolute',
-        bottom: '7%',
-        left: '3%',
-        width: '50%',
+        top: '43%',
+        left: '2%',
+        width: '52%',
         display: 'flex',
         justifyContent: 'center',
       }}>
