@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from "react";
-import logoObjetiva from "@/assets/logo-objetiva.png";
+import logoGia from "@/assets/logo-gia.png";
 
 interface BrandConfig {
   name: string;
@@ -13,9 +13,9 @@ interface BrandConfig {
 }
 
 const defaultBrand: BrandConfig = {
-  name: "Objetivo Auto & Truck",
-  subtitle: "Proteção Veicular",
-  logoUrl: logoObjetiva,
+  name: "GIA",
+  subtitle: "Gestão Integrada de Associações",
+  logoUrl: logoGia,
   headerBg: "222 47% 11%",
   headerAccent: "217 90% 62%",
   tabBg: "220 20% 94%",
