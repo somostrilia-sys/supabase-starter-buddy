@@ -1,4 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { supabase, callEdge } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -87,6 +89,24 @@ const statusConfig: Record<ComissaoStatus, { label: string; cls: string }> = {
 const PAGE_SIZE = 10;
 
 export default function MinhaConta() {
+  const { profile } = useAuth();
+  const [comissoesReais, setComissoesReais] = useState<any[]>([]);
+  const [powerlinksData, setPowerlinksData] = useState<any[]>([]);
+  const [afiliadosData, setAfiliadosData] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    // Buscar comissões reais
+    supabase.from("comissoes_consultor" as any).select("*").eq("consultor_id", profile.id).order("created_at", { ascending: false })
+      .then(({ data }) => { if (data) setComissoesReais(data as any[]); });
+    // Buscar powerlinks
+    supabase.from("powerlinks" as any).select("*").eq("consultor_id", profile.id)
+      .then(({ data }) => { if (data) setPowerlinksData(data as any[]); });
+    // Buscar afiliados
+    supabase.from("afiliados" as any).select("*").eq("consultor_id", profile.id).eq("ativo", true)
+      .then(({ data }) => { if (data) setAfiliadosData(data as any[]); });
+  }, [profile?.id]);
+
   // Bank form state
   const [tipoConta, setTipoConta] = useState("");
   const [banco, setBanco] = useState("");
