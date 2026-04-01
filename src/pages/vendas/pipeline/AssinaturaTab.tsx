@@ -101,6 +101,18 @@ export default function AssinaturaTab({ deal }: Props) {
         if (result.link_assinatura) setLinkAssinatura(result.link_assinatura);
         const msg = canal === "ambos" ? "e-mail e WhatsApp" : canal === "email" ? "e-mail" : "WhatsApp";
         toast.success(`Contrato enviado para assinatura via ${msg}!`);
+
+        // Notificar associado via SMS + Email (ClickSend)
+        const linkAss = result.link_assinatura || "";
+        const msgNotif = `Olá ${deal.lead_nome}! Seu contrato de proteção veicular está pronto para assinatura.\n\n${linkAss ? `Assine aqui: ${linkAss}\n\n` : ""}Você receberá um código SMS para confirmar a assinatura.\n\nObjetivo Auto Benefícios`;
+        callEdge("gia-enviar-notificacao", {
+          tipo: "ambos",
+          telefone: deal.telefone,
+          email: deal.email,
+          nome: deal.lead_nome,
+          assunto: `Contrato para Assinatura - ${deal.veiculo_placa}`,
+          mensagem: msgNotif,
+        }).catch(() => {});
       }
     };
     reader.readAsDataURL(pdfBlob);

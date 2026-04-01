@@ -182,12 +182,27 @@ export default function VistoriaTab({ deal }: Props) {
     // Copiar link automaticamente
     const link = `${window.location.origin}/vistoria/${token}`;
     navigator.clipboard.writeText(link);
-    toast.success("Vistoria criada! Link copiado para a área de transferência.", { duration: 5000 });
+    toast.success("Vistoria criada! Link copiado. Enviando SMS e e-mail...", { duration: 5000 });
 
-    // Abrir opção de envio via WhatsApp
+    // Enviar SMS + Email via ClickSend
+    const msgTexto = `Olá ${deal.lead_nome}! Segue o link para envio das fotos da vistoria do seu veículo ${deal.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização, e envie todas as 14 fotos solicitadas.\n\nObjetivo Auto Benefícios`;
+    callEdge("gia-enviar-notificacao", {
+      tipo: "ambos",
+      telefone: deal.telefone,
+      email: deal.email,
+      nome: deal.lead_nome,
+      assunto: `Vistoria Veicular - ${deal.veiculo_placa}`,
+      mensagem: msgTexto,
+    }).then(res => {
+      if (res.sms?.sucesso) toast.success("SMS enviado ao associado!");
+      if (res.email?.sucesso) toast.success("E-mail enviado ao associado!");
+      if (!res.sms?.sucesso && !res.email?.sucesso) toast.info("Envio automático indisponível. Use os botões abaixo.");
+    }).catch(() => {});
+
+    // Abrir WhatsApp também
     const tel = (deal.telefone || "").replace(/\D/g, "");
     if (tel) {
-      const msg = encodeURIComponent(`Olá ${deal.lead_nome}! Segue o link para envio das fotos da vistoria do seu veículo ${deal.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização, e envie todas as 14 fotos solicitadas.`);
+      const msg = encodeURIComponent(msgTexto);
       window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
     }
   };

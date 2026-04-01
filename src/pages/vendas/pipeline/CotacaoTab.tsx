@@ -382,18 +382,32 @@ export default function CotacaoTab({ deal }: Props) {
       }
 
       const linkPlanos = `${window.location.origin}/planos/${cotId}`;
+      const msgCotacao = `Olá ${deal.lead_nome}! Segue sua cotação de proteção veicular para o veículo ${deal.veiculo_placa}:\n\n${linkPlanos}\n\nCompare os planos e escolha o melhor para você!\n\nObjetivo Auto Benefícios`;
+
+      // Enviar SMS + Email via ClickSend (sempre, independente do tipo)
+      callEdge("gia-enviar-notificacao", {
+        tipo: "ambos",
+        telefone: deal.telefone,
+        email: deal.email,
+        nome: deal.lead_nome,
+        assunto: `Sua Cotação de Proteção Veicular - ${deal.veiculo_placa}`,
+        mensagem: msgCotacao,
+      }).then(res => {
+        if (res.sms?.sucesso) toast.success("SMS enviado ao associado!");
+        if (res.email?.sucesso) toast.success("E-mail enviado ao associado!");
+      }).catch(() => {});
 
       if (tipo === "Link") {
         navigator.clipboard.writeText(linkPlanos);
-        toast.success("Link copiado! Cole e envie ao cliente.", { duration: 5000 });
+        toast.success("Link copiado! SMS e e-mail enviados ao cliente.", { duration: 5000 });
         return;
       }
 
       if (tipo === "WhatsApp") {
         const tel = (deal.telefone || "").replace(/\D/g, "");
-        const msg = encodeURIComponent(`Olá ${deal.lead_nome}! Segue sua cotação de proteção veicular:\n${linkPlanos}`);
+        const msg = encodeURIComponent(msgCotacao);
         window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
-        toast.success("WhatsApp aberto com o link da cotação!");
+        toast.success("WhatsApp aberto + SMS e e-mail enviados!");
         return;
       }
     } else {
