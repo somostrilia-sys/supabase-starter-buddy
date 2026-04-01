@@ -205,9 +205,30 @@ export default function CotacaoTab({ deal }: Props) {
     }
   };
 
-  // Buscar preços reais por valor FIPE + regional + tipo veículo
+  // Buscar regional de preços pela cidade/UF de circulação
+  const buscarRegionalPrecos = async (uf: string, cidade: string): Promise<string> => {
+    // Primeiro tenta match por cidade específica (ex: São Paulo → SP Capital)
+    if (cidade) {
+      const { data: cidadeMatch } = await supabase.from("uf_regional_precos" as any)
+        .select("regional_precos")
+        .eq("uf", uf)
+        .ilike("cidade", cidade)
+        .limit(1)
+        .maybeSingle();
+      if (cidadeMatch) return (cidadeMatch as any).regional_precos;
+    }
+    // Fallback: match por UF (cidade IS NULL = default do estado)
+    const { data: ufMatch } = await supabase.from("uf_regional_precos" as any)
+      .select("regional_precos")
+      .eq("uf", uf)
+      .is("cidade", null)
+      .limit(1)
+      .maybeSingle();
+    return ufMatch ? (ufMatch as any).regional_precos : "";
+  };
+
+  // Buscar preços reais por valor FIPE + tipo veículo + cidade/UF circulação
   const carregarPrecos = async (vFipe: number, tipoVeiculo?: string) => {
-    // Mapear tipo do form para tipo_veiculo na tabela_precos
     const tipoMap: Record<string, string> = {
       "Automóvel": "Carros e Utilitários Pequenos",
       "Motocicleta": "Motos",
@@ -218,25 +239,25 @@ export default function CotacaoTab({ deal }: Props) {
     const tipoDb = tipoMap[tipoVeiculo || form.tipoVeiculo] || "Carros e Utilitários Pequenos";
 
     // Buscar faixas que cobrem este valor FIPE + tipo veículo
-    let query = supabase.from("tabela_precos" as any)
+    const { data: todos } = await supabase.from("tabela_precos" as any)
       .select("*")
       .lte("valor_menor", vFipe)
       .gte("valor_maior", vFipe)
       .eq("tipo_veiculo", tipoDb)
       .order("plano_normalizado");
 
-    const { data: todos } = await query;
-
     if (todos && todos.length > 0) {
-      // Filtrar pela regional normalizada do deal
-      const reg = (deal.regional || "").toUpperCase().trim();
-      const filtered = todos.filter((t: any) => {
-        const rn = (t.regional_normalizado || "").toUpperCase().trim();
-        return rn === reg || reg.includes(rn) || rn.includes(reg) ||
-          reg.replace("REGIONAL ", "").includes(rn.replace("REGIONAL ", "")) ||
-          rn.replace("REGIONAL ", "").includes(reg.replace("REGIONAL ", ""));
-      });
-      setPrecosReais(filtered.length > 0 ? filtered : todos);
+      // Buscar regional pela cidade/UF de circulação do veículo
+      const regionalPrecos = await buscarRegionalPrecos(form.estadoCirc || "", form.cidadeCirc || "");
+
+      if (regionalPrecos) {
+        const filtered = todos.filter((t: any) =>
+          (t.regional_normalizado || "").toUpperCase() === regionalPrecos.toUpperCase()
+        );
+        setPrecosReais(filtered.length > 0 ? filtered : todos);
+      } else {
+        setPrecosReais(todos);
+      }
     } else {
       setPrecosReais([]);
     }
@@ -600,14 +621,14 @@ export default function CotacaoTab({ deal }: Props) {
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Estado Circulação</Label>
-            <Select value={form.estadoCirc} onValueChange={v => { set("estadoCirc", v); set("cidadeCirc", ""); }}>
+            <Select value={form.estadoCirc} onValueChange={v => { set("estadoCirc", v); set("cidadeCirc", ""); if (valorFipe > 0) setTimeout(() => carregarPrecos(valorFipe), 100); }}>
               <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
               <SelectContent>{UFS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Cidade Circulação</Label>
-            <Select value={form.cidadeCirc} onValueChange={v => set("cidadeCirc", v)}>
+            <Select value={form.cidadeCirc} onValueChange={v => { set("cidadeCirc", v); if (valorFipe > 0) setTimeout(() => carregarPrecos(valorFipe), 100); }}>
               <SelectTrigger className="rounded-none"><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>{cidades.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select>
