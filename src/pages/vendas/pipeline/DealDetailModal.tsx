@@ -6,10 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PipelineDeal, planos } from "./mockData";
 import AssociadoTab from "./AssociadoTab";
 import CotacaoTab from "./CotacaoTab";
@@ -21,9 +19,9 @@ import DocumentoUpload from "@/components/DocumentoUpload";
 import { supabase, callEdge } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  FileText, User, Car, ClipboardCheck, Send, Activity, PenTool, Wallet,
-  Mail, MessageSquare, Plus, Download, CheckCircle, XCircle,
-  Clock, Image, Archive,
+  FileText, User, Car, ClipboardCheck, Activity, PenTool, Wallet,
+  Mail, MessageSquare, Plus, Send,
+  Image, Archive,
 } from "lucide-react";
 
 interface Props {
@@ -70,7 +68,6 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
     { v: "vistoria", l: "Vistoria", i: ClipboardCheck },
     { v: "assinatura", l: "Assinatura", i: PenTool },
     { v: "financeiro", l: "Financeiro", i: Wallet },
-    { v: "sga", l: "Gestão", i: Send },
     { v: "atividades", l: "Atividades", i: Activity },
   ];
 
@@ -168,59 +165,7 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
               <FinanceiroNegociacaoTab deal={deal} />
             </TabsContent>
 
-            {/* TAB 7 - SGA */}
-            <TabsContent value="sga" className="mt-0 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5"><Label className="">Regional Gestão</Label>
-                  <Select defaultValue={deal.regional}><SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["SP Capital", "Interior SP", "RJ", "MG"].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5"><Label className="">Cooperativa Gestão</Label>
-                  <Select defaultValue={deal.cooperativa}><SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["Coop Norte", "Coop Sul", "Coop Leste"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5"><Label className="">Conta Bancária</Label>
-                  <Select><SelectTrigger className="rounded-none"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent><SelectItem value="bb">Banco do Brasil - CC 12345-6</SelectItem><SelectItem value="itau">Itaú - CC 78901-2</SelectItem></SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5"><Label className="">Vencimento Mensalidade</Label>
-                  <Select><SelectTrigger className="rounded-none"><SelectValue placeholder="Dia" /></SelectTrigger>
-                    <SelectContent>{[5,10,15,20,25].map(d => <SelectItem key={d} value={String(d)}>Dia {d}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5"><Label className="">Forma Pagamento</Label>
-                  <Select><SelectTrigger className="rounded-none"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent><SelectItem value="boleto">Boleto</SelectItem><SelectItem value="cartao">Cartão</SelectItem><SelectItem value="pix">PIX</SelectItem></SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <Button className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white"><Send className="h-3.5 w-3.5 mr-1" />Enviar para Gestão</Button>
-              <Table>
-                <TableHeader><TableRow>
-                  <TableHead className="text-xs">Campo</TableHead>
-                  <TableHead className="text-xs">Status</TableHead>
-                  <TableHead className="text-xs">Data/Hora</TableHead>
-                  <TableHead className="text-xs">Erro</TableHead>
-                  <TableHead className="text-xs">Ação</TableHead>
-                </TableRow></TableHeader>
-                <TableBody>
-                  {["Associado", "Veículo", "Financeiro"].map((campo) => (
-                    <TableRow key={campo}>
-                      <TableCell className="text-sm">{campo}</TableCell>
-                      <TableCell><Badge variant="outline" className="text-[10px] rounded-none">Pendente</Badge></TableCell>
-                      <TableCell className="text-xs text-muted-foreground">—</TableCell>
-                      <TableCell className="text-xs text-destructive">—</TableCell>
-                      <TableCell />
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TabsContent>
-
-            {/* TAB 6 - Atividades */}
+            {/* TAB - Atividades */}
             <TabsContent value="atividades" className="mt-0 space-y-4">
               <Button size="sm" className="rounded-none"><Plus className="h-3.5 w-3.5 mr-1" />Nova Atividade</Button>
               {historicoReal.length === 0 ? (

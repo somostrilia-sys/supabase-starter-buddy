@@ -390,7 +390,13 @@ export default function Pipeline() {
       const isNegociacao = negociacoes.some(n => n.id === draggedId);
       if (isNegociacao) {
         const { error } = await updateNegociacao(draggedId, { stage });
-        if (error) toast.error("Erro ao mover negociação");
+        if (error) { toast.error("Erro ao mover negociação"); }
+        else {
+          await supabase.from("pipeline_transicoes").insert({
+            negociacao_id: draggedId, stage_anterior: source.stage, stage_novo: stage,
+            motivo: "Movido manualmente no pipeline", automatica: false,
+          } as any);
+        }
       } else {
         await updateLeadStatus.mutateAsync({ id: draggedId, status: stage });
       }
@@ -403,6 +409,10 @@ export default function Pipeline() {
     if (isNegociacao) {
       const { error } = await updateNegociacao(deal.id, { stage: "liberado_cadastro" });
       if (error) { toast.error("Erro ao liberar cadastro"); return; }
+      await supabase.from("pipeline_transicoes").insert({
+        negociacao_id: deal.id, stage_anterior: deal.stage, stage_novo: "liberado_cadastro",
+        motivo: "Liberado para cadastro", automatica: false,
+      } as any);
     } else {
       await updateLeadStatus.mutateAsync({ id: deal.id, status: "liberado_cadastro" });
     }
