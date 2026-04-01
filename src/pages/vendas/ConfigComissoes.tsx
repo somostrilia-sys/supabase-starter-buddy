@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -14,64 +12,96 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import {
   Settings, Percent, DollarSign, Save, Pencil, Info,
-  Users, TrendingUp, Landmark, ArrowRightLeft,
+  Users, TrendingUp, Loader2,
 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
-interface ComissaoConsultor {
+interface ConsultorComissao {
   id: string;
   nome: string;
-  tipo: "percentual" | "fixo";
-  valor: number;
-  ativo: boolean;
-  totalPago: number;
-  ultimoPagamento: string;
+  comissao_pct: number | null;
+  status: string;
+  cooperativa: string | null;
+  funcao: string | null;
 }
-
-const mockComissoes: ComissaoConsultor[] = [
-  { id: "c1", nome: "Ana Silva", tipo: "percentual", valor: 15, ativo: true, totalPago: 2340.00, ultimoPagamento: "05/03/2026" },
-  { id: "c2", nome: "Carlos Souza", tipo: "percentual", valor: 12, ativo: true, totalPago: 1560.00, ultimoPagamento: "05/03/2026" },
-  { id: "c3", nome: "Maria Lima", tipo: "fixo", valor: 120, ativo: true, totalPago: 960.00, ultimoPagamento: "28/02/2026" },
-  { id: "c4", nome: "Lucas Ferreira", tipo: "percentual", valor: 10, ativo: false, totalPago: 450.00, ultimoPagamento: "15/01/2026" },
-  { id: "c5", nome: "Juliana Costa", tipo: "percentual", valor: 15, ativo: true, totalPago: 1890.00, ultimoPagamento: "05/03/2026" },
-  { id: "c6", nome: "Pedro Santos", tipo: "fixo", valor: 150, ativo: true, totalPago: 750.00, ultimoPagamento: "01/03/2026" },
-];
 
 function fmt(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+async function fetchConsultores(): Promise<ConsultorComissao[]> {
+  const { data, error } = await supabase
+    .from("usuarios")
+    .select("id, nome, comissao_pct, status, cooperativa, funcao")
+    .eq("status", "ativo")
+    .order("nome", { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []) as ConsultorComissao[];
+}
+
 export default function ConfigComissoes() {
-  const [comissoes, setComissoes] = useState(mockComissoes);
+  const queryClient = useQueryClient();
+  const { data: consultores = [], isLoading } = useQuery({
+    queryKey: ["consultores-comissoes"],
+    queryFn: fetchConsultores,
+  });
+
   const [editOpen, setEditOpen] = useState(false);
-  const [editing, setEditing] = useState<ComissaoConsultor | null>(null);
-  const [editTipo, setEditTipo] = useState<"percentual" | "fixo">("percentual");
+  const [editing, setEditing] = useState<ConsultorComissao | null>(null);
   const [editValor, setEditValor] = useState("");
-  const [comissaoPadrao, setComissaoPadrao] = useState("15");
-  const [tipoPadrao, setTipoPadrao] = useState<"percentual" | "fixo">("percentual");
+  const [saving, setSaving] = useState(false);
 
-  const totalComissoesMes = comissoes.filter(c => c.ativo).reduce((s, c) => s + c.totalPago, 0);
-  const consultoresAtivos = comissoes.filter(c => c.ativo).length;
+  // KPIs
+  const totalConsultores = consultores.length;
+  const comComissao = consultores.filter(c => c.comissao_pct != null && c.comissao_pct > 0);
+  const mediaComissao = comComissao.length > 0
+    ? comComissao.reduce((s, c) => s + (c.comissao_pct ?? 0), 0) / comComissao.length
+    : 0;
+  const maiorComissao = comComissao.length > 0
+    ? Math.max(...comComissao.map(c => c.comissao_pct ?? 0))
+    : 0;
+  const semComissao = consultores.filter(c => c.comissao_pct == null || c.comissao_pct === 0).length;
 
-  function openEdit(c: ComissaoConsultor) {
+  function openEdit(c: ConsultorComissao) {
     setEditing(c);
-    setEditTipo(c.tipo);
-    setEditValor(c.valor.toString());
+    setEditValor(c.comissao_pct != null ? c.comissao_pct.toString() : "");
     setEditOpen(true);
   }
 
-  function saveEdit() {
-    if (!editing || !editValor) return;
-    setComissoes(prev => prev.map(c =>
-      c.id === editing.id ? { ...c, tipo: editTipo, valor: parseFloat(editValor) } : c
-    ));
+  async function saveEdit() {
+    if (!editing) return;
+    const valor = editValor.trim() === "" ? null : parseFloat(editValor);
+    if (valor !== null && (isNaN(valor) || valor < 0 || valor > 100)) {
+      toast({ title: "Valor inválido", description: "Informe um percentual entre 0 e 100", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    const { error } = await supabase
+      .from("usuarios")
+      .update({ comissao_pct: valor } as any)
+      .eq("id", editing.id);
+
+    setSaving(false);
+
+    if (error) {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: `Comissão de ${editing.nome} atualizada para ${valor != null ? valor + "%" : "sem comissão"}` });
     setEditOpen(false);
-    toast({ title: `Comissão de ${editing.nome} atualizada` });
+    queryClient.invalidateQueries({ queryKey: ["consultores-comissoes"] });
   }
 
-  function toggleAtivo(id: string) {
-    setComissoes(prev => prev.map(c =>
-      c.id === id ? { ...c, ativo: !c.ativo } : c
-    ));
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
@@ -90,19 +120,6 @@ export default function ConfigComissoes() {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <Card className="border-t-2 border-t-emerald-500">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-success/10 dark:bg-emerald-900/40 flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-xl font-bold">{fmt(totalComissoesMes)}</p>
-                <p className="text-[10px] text-muted-foreground">Comissões do Mês</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
         <Card className="border-t-2 border-t-blue-500">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -110,7 +127,7 @@ export default function ConfigComissoes() {
                 <Users className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-xl font-bold">{consultoresAtivos}</p>
+                <p className="text-xl font-bold">{totalConsultores}</p>
                 <p className="text-[10px] text-muted-foreground">Consultores Ativos</p>
               </div>
             </div>
@@ -123,8 +140,21 @@ export default function ConfigComissoes() {
                 <Percent className="h-5 w-5 text-violet-600" />
               </div>
               <div>
-                <p className="text-xl font-bold">{comissaoPadrao}%</p>
-                <p className="text-[10px] text-muted-foreground">Comissão Padrão</p>
+                <p className="text-xl font-bold">{mediaComissao.toFixed(1)}%</p>
+                <p className="text-[10px] text-muted-foreground">Média Comissão</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-t-2 border-t-emerald-500">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-success/10 dark:bg-emerald-900/40 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xl font-bold">{maiorComissao}%</p>
+                <p className="text-[10px] text-muted-foreground">Maior Comissão</p>
               </div>
             </div>
           </CardContent>
@@ -133,56 +163,16 @@ export default function ConfigComissoes() {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-warning/10 dark:bg-amber-900/40 flex items-center justify-center">
-                <ArrowRightLeft className="h-5 w-5 text-warning" />
+                <Settings className="h-5 w-5 text-warning" />
               </div>
               <div>
-                <p className="text-xl font-bold">12</p>
-                <p className="text-[10px] text-muted-foreground">Splits Executados</p>
+                <p className="text-xl font-bold">{semComissao}</p>
+                <p className="text-[10px] text-muted-foreground">Sem Comissão Definida</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Comissão Padrão */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Settings className="h-4 w-4" />Comissão Padrão para Novos Consultores
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-end gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Tipo</Label>
-              <Select value={tipoPadrao} onValueChange={v => setTipoPadrao(v as "percentual" | "fixo")}>
-                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="percentual">Percentual (%)</SelectItem>
-                  <SelectItem value="fixo">Valor Fixo (R$)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Valor</Label>
-              <div className="relative">
-                <Input
-                  type="number"
-                  value={comissaoPadrao}
-                  onChange={e => setComissaoPadrao(e.target.value)}
-                  className="w-32 pr-8"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                  {tipoPadrao === "percentual" ? "%" : "R$"}
-                </span>
-              </div>
-            </div>
-            <Button size="sm" onClick={() => toast({ title: "Comissão padrão atualizada" })}>
-              <Save className="h-3.5 w-3.5 mr-1" />Salvar
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Tabela de Consultores */}
       <Card>
@@ -196,38 +186,42 @@ export default function ConfigComissoes() {
             <TableHeader>
               <TableRow>
                 <TableHead className="text-xs">Consultor</TableHead>
-                <TableHead className="text-xs">Tipo</TableHead>
-                <TableHead className="text-xs">Valor</TableHead>
-                <TableHead className="text-xs">Total Pago (Mês)</TableHead>
-                <TableHead className="text-xs">Último Pagamento</TableHead>
-                <TableHead className="text-xs">Status</TableHead>
+                <TableHead className="text-xs">Função</TableHead>
+                <TableHead className="text-xs">Unidade</TableHead>
+                <TableHead className="text-xs">Comissão (%)</TableHead>
                 <TableHead className="text-xs">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {comissoes.map(c => (
-                <TableRow key={c.id} className={cn(!c.ativo && "opacity-50")}>
-                  <TableCell className="font-medium text-sm">{c.nome}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-[10px]">
-                      {c.tipo === "percentual" ? <><Percent className="h-2.5 w-2.5 mr-0.5" />Percentual</> : <><DollarSign className="h-2.5 w-2.5 mr-0.5" />Fixo</>}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-semibold text-sm">
-                    {c.tipo === "percentual" ? `${c.valor}%` : fmt(c.valor)}
-                  </TableCell>
-                  <TableCell className="text-sm">{fmt(c.totalPago)}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{c.ultimoPagamento}</TableCell>
-                  <TableCell>
-                    <Switch checked={c.ativo} onCheckedChange={() => toggleAtivo(c.id)} />
-                  </TableCell>
-                  <TableCell>
-                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => openEdit(c)}>
-                      <Pencil className="h-3.5 w-3.5 mr-1" />Editar
-                    </Button>
+              {consultores.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    Nenhum consultor ativo encontrado
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                consultores.map(c => (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-medium text-sm">{c.nome}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{c.funcao || "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{c.cooperativa || "—"}</TableCell>
+                    <TableCell>
+                      {c.comissao_pct != null && c.comissao_pct > 0 ? (
+                        <Badge variant="outline" className="text-[10px]">
+                          <Percent className="h-2.5 w-2.5 mr-0.5" />{c.comissao_pct}%
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Não definida</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => openEdit(c)}>
+                        <Pencil className="h-3.5 w-3.5 mr-1" />Editar
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -241,27 +235,19 @@ export default function ConfigComissoes() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">Tipo de Comissão</Label>
-              <Select value={editTipo} onValueChange={v => setEditTipo(v as "percentual" | "fixo")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="percentual">Percentual (%)</SelectItem>
-                  <SelectItem value="fixo">Valor Fixo (R$)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Valor</Label>
+              <Label className="text-xs">Percentual de Comissão</Label>
               <div className="relative">
                 <Input
                   type="number"
+                  min={0}
+                  max={100}
+                  step={0.5}
                   value={editValor}
                   onChange={e => setEditValor(e.target.value)}
+                  placeholder="Ex: 15"
                   className="pr-8"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                  {editTipo === "percentual" ? "%" : "R$"}
-                </span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
               </div>
             </div>
             <Separator />
@@ -273,25 +259,22 @@ export default function ConfigComissoes() {
               <div className="flex justify-between text-xs mt-1">
                 <span>Comissão Consultor:</span>
                 <span className="font-bold text-success">
-                  {editTipo === "percentual"
-                    ? fmt(799 * (parseFloat(editValor || "0") / 100))
-                    : fmt(parseFloat(editValor || "0"))
-                  }
+                  {fmt(799 * (parseFloat(editValor || "0") / 100))}
                 </span>
               </div>
               <div className="flex justify-between text-xs">
                 <span>Líquido Associação:</span>
                 <span className="font-bold">
-                  {editTipo === "percentual"
-                    ? fmt(799 - 799 * (parseFloat(editValor || "0") / 100))
-                    : fmt(799 - parseFloat(editValor || "0"))
-                  }
+                  {fmt(799 - 799 * (parseFloat(editValor || "0") / 100))}
                 </span>
               </div>
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
-              <Button onClick={saveEdit}><Save className="h-3.5 w-3.5 mr-1" />Salvar</Button>
+              <Button onClick={saveEdit} disabled={saving}>
+                {saving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                Salvar
+              </Button>
             </div>
           </div>
         </DialogContent>
