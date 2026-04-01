@@ -48,9 +48,10 @@ export default function Auth() {
         width: '58%',
         flexShrink: 0,
         backgroundImage: "url('/login-bg.png')",
-        backgroundSize: 'cover',
+        backgroundSize: 'contain',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
+        backgroundColor: '#0d1b2e',
         minHeight: '100vh',
       }} />
 
