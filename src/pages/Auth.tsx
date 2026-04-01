@@ -64,12 +64,21 @@ export default function Auth() {
   ];
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundImage: "url('/login-bg.png')", backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }}>
-      {/* Left side - Hero with gradient */}
-      
+    <div className="min-h-screen flex">
+      {/* Left side - imagem GIA fullscreen */}
+      <div
+        className="hidden lg:flex lg:w-[58%] relative"
+        style={{
+          backgroundImage: "url('/login-bg.png')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          minHeight: '100vh',
+        }}
+      />
 
       {/* Right side - Login form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 relative overflow-hidden" style={{ backgroundColor: "transparent" }}>
+      <div className="flex-1 flex items-center justify-center bg-background p-6 sm:p-10 relative overflow-hidden">
         {/* Subtle orbs on right side too */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none lg:hidden">
           <div className="orb orb-1" />
