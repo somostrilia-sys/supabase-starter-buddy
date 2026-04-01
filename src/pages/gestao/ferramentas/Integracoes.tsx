@@ -12,21 +12,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Shield, MessageSquare, Phone, Send, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
-const mockDestinatarios = [
-  { id: "1", nome: "Carlos Silva", telefone: "(11) 99999-1234", cpf: "123.456.789-00", status: "ativo" },
-  { id: "2", nome: "Maria Santos", telefone: "(21) 98888-5678", cpf: "987.654.321-00", status: "ativo" },
-  { id: "3", nome: "João Oliveira", telefone: "(31) 97777-4321", cpf: "456.789.123-00", status: "ativo" },
-  { id: "4", nome: "Ana Costa", telefone: "(41) 96666-8765", cpf: "321.654.987-00", status: "ativo" },
-  { id: "5", nome: "Pedro Lima", telefone: "(62) 95555-2109", cpf: "654.321.789-00", status: "ativo" },
-];
+// No mock data - destinatarios should come from associados query when integrated
+const mockDestinatarios: { id: string; nome: string; telefone: string; cpf: string; status: string }[] = [];
 
-const mockLogs = [
-  { id: "1", data: "05/03/2026 14:32", tipo: "SMS", destinatario: "Carlos Silva", status: "Entregue", msg: "Boleto disponível" },
-  { id: "2", data: "05/03/2026 14:30", tipo: "WhatsApp", destinatario: "Maria Santos", status: "Entregue", msg: "Vistoria agendada" },
-  { id: "3", data: "04/03/2026 10:15", tipo: "SMS", destinatario: "João Oliveira", status: "Falhou", msg: "Boleto disponível" },
-  { id: "4", data: "04/03/2026 09:00", tipo: "WhatsApp", destinatario: "Ana Costa", status: "Entregue", msg: "Bem-vinda à associação" },
-  { id: "5", data: "03/03/2026 16:45", tipo: "SMS", destinatario: "Pedro Lima", status: "Entregue", msg: "Lembrete de pagamento" },
-];
+// No mock data - logs should come from a messaging/logs table when integrated
+const mockLogs: { id: string; data: string; tipo: string; destinatario: string; status: string; msg: string }[] = [];
 
 export default function Integracoes({ onBack }: { onBack: () => void }) {
   const [selecionados, setSelecionados] = useState<string[]>([]);
@@ -133,7 +123,9 @@ export default function Integracoes({ onBack }: { onBack: () => void }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockDestinatarios.map((d) => (
+                  {mockDestinatarios.length === 0 ? (
+                    <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-8">Nenhum destinatário disponível.</TableCell></TableRow>
+                  ) : mockDestinatarios.map((d) => (
                     <TableRow key={d.id}>
                       <TableCell><Checkbox checked={selecionados.includes(d.id)} onCheckedChange={() => toggleSelecionado(d.id)} /></TableCell>
                       <TableCell className="font-medium">{d.nome}</TableCell>
@@ -166,7 +158,9 @@ export default function Integracoes({ onBack }: { onBack: () => void }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockLogs.map((log) => (
+                  {mockLogs.length === 0 ? (
+                    <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">Nenhum registro de disparo encontrado.</TableCell></TableRow>
+                  ) : mockLogs.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="text-xs font-mono">{log.data}</TableCell>
                       <TableCell><Badge variant={log.tipo === "WhatsApp" ? "default" : "secondary"} className="text-xs">{log.tipo}</Badge></TableCell>

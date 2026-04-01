@@ -16,37 +16,16 @@ interface TipoVeiculo { id: string; nome: string; ativo: boolean; }
 interface CategoriaVeiculo { id: string; nome: string; ativo: boolean; }
 interface CotaVeiculo { id: string; nome: string; faixaMin: number; faixaMax: number; valor: number; ativo: boolean; }
 
-const mockTipos: TipoVeiculo[] = [
-  { id: "tv1", nome: "Automóvel Leve", ativo: true },
-  { id: "tv2", nome: "Motocicleta", ativo: true },
-  { id: "tv3", nome: "Utilitário", ativo: true },
-  { id: "tv4", nome: "Vans e Caminhões Pequeno Porte", ativo: true },
-  { id: "tv5", nome: "Extra Pesado", ativo: false },
-  { id: "tv6", nome: "Pick-up", ativo: true },
-];
-
-const mockCategorias: CategoriaVeiculo[] = [
-  { id: "cv1", nome: "Passeio", ativo: true },
-  { id: "cv2", nome: "Trabalho", ativo: true },
-  { id: "cv3", nome: "Frota", ativo: true },
-  { id: "cv4", nome: "Especial", ativo: false },
-  { id: "cv5", nome: "Locação", ativo: true },
-];
-
-const mockCotas: CotaVeiculo[] = [
-  { id: "cq1", nome: "Cota A", faixaMin: 0, faixaMax: 20000, valor: 89.90, ativo: true },
-  { id: "cq2", nome: "Cota B", faixaMin: 20001, faixaMax: 40000, valor: 119.90, ativo: true },
-  { id: "cq3", nome: "Cota C", faixaMin: 40001, faixaMax: 60000, valor: 149.90, ativo: true },
-  { id: "cq4", nome: "Cota D", faixaMin: 60001, faixaMax: 80000, valor: 189.90, ativo: true },
-  { id: "cq5", nome: "Cota E", faixaMin: 80001, faixaMax: 100000, valor: 229.90, ativo: true },
-  { id: "cq6", nome: "Cota F", faixaMin: 100001, faixaMax: 150000, valor: 289.90, ativo: true },
-  { id: "cq7", nome: "Cota G", faixaMin: 150001, faixaMax: 250000, valor: 389.90, ativo: false },
-];
+// opcionais_veiculos table: CRUD connected via Supabase
+// Tipos and Categorias are managed locally until tables are created
+const initialTipos: TipoVeiculo[] = [];
+const initialCategorias: CategoriaVeiculo[] = [];
+const initialCotas: CotaVeiculo[] = [];
 
 export default function OpcionaisVeiculo() {
-  const [tipos, setTipos] = useState(mockTipos);
-  const [categorias, setCategorias] = useState(mockCategorias);
-  const [cotas, setCotas] = useState(mockCotas);
+  const [tipos, setTipos] = useState(initialTipos);
+  const [categorias, setCategorias] = useState(initialCategorias);
+  const [cotas, setCotas] = useState(initialCotas);
 
   // Simple item modal
   const [itemModal, setItemModal] = useState<{ open: boolean; type: "tipo" | "categoria"; editId: string | null }>({ open: false, type: "tipo", editId: null });

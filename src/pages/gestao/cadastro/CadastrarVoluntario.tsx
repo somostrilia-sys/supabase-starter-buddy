@@ -22,16 +22,8 @@ interface Voluntario {
   dataCadastro: string;
 }
 
-const mockVoluntarios: Voluntario[] = [
-  { id: "v1", nome: "Carlos Alberto Silva", cpf: "111.222.333-44", email: "carlos@gia.com", telefone: "(11) 99876-5432", perfil: "Administrador", cooperativa: "Cooperativa São Paulo", status: "Ativo", dataCadastro: "2023-01-15" },
-  { id: "v2", nome: "Maria Helena Costa", cpf: "222.333.444-55", email: "maria@gia.com", telefone: "(21) 98765-4321", perfil: "Operador", cooperativa: "Cooperativa Rio", status: "Ativo", dataCadastro: "2023-03-20" },
-  { id: "v3", nome: "José Roberto Oliveira", cpf: "333.444.555-66", email: "jose@gia.com", telefone: "(31) 97654-3210", perfil: "Vendedor", cooperativa: "Cooperativa Minas", status: "Ativo", dataCadastro: "2023-05-10" },
-  { id: "v4", nome: "Ana Paula Ferreira", cpf: "444.555.666-77", email: "ana@gia.com", telefone: "(41) 96543-2109", perfil: "Financeiro", cooperativa: "Cooperativa Sul", status: "Ativo", dataCadastro: "2023-07-25" },
-  { id: "v5", nome: "João Ferreira Dias", cpf: "555.666.777-88", email: "joao@gia.com", telefone: "(11) 95432-1098", perfil: "Inspetor", cooperativa: "Cooperativa São Paulo", status: "Ativo", dataCadastro: "2023-09-01" },
-  { id: "v6", nome: "André Costa Santos", cpf: "666.777.888-99", email: "andre@gia.com", telefone: "(11) 94321-0987", perfil: "Inspetor", cooperativa: "Cooperativa São Paulo", status: "Ativo", dataCadastro: "2024-01-10" },
-  { id: "v7", nome: "Luciana Almeida", cpf: "777.888.999-00", email: "luciana@gia.com", telefone: "(21) 93210-9876", perfil: "Vendedor", cooperativa: "Cooperativa Rio", status: "Inativo", dataCadastro: "2024-02-15" },
-  { id: "v8", nome: "Roberto Dias Neto", cpf: "888.999.000-11", email: "roberto@gia.com", telefone: "(31) 92109-8765", perfil: "Operador", cooperativa: "Cooperativa Minas", status: "Ativo", dataCadastro: "2024-04-20" },
-];
+// No voluntarios table exists yet - local state only
+const initialVoluntarios: Voluntario[] = [];
 
 const perfis = ["Administrador", "Operador", "Vendedor", "Inspetor", "Financeiro"];
 const cooperativas = ["Cooperativa São Paulo", "Cooperativa Rio", "Cooperativa Minas", "Cooperativa Sul", "Cooperativa Centro-Oeste"];
@@ -47,7 +39,7 @@ const perfilColor: Record<string, string> = {
 const emptyForm: { nome: string; cpf: string; email: string; telefone: string; perfil: Voluntario["perfil"]; cooperativa: string } = { nome: "", cpf: "", email: "", telefone: "", perfil: "Operador", cooperativa: "" };
 
 export default function CadastrarVoluntario() {
-  const [voluntarios, setVoluntarios] = useState(mockVoluntarios);
+  const [voluntarios, setVoluntarios] = useState(initialVoluntarios);
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -72,13 +64,7 @@ export default function CadastrarVoluntario() {
 
   const handleSave = () => {
     if (!form.nome || !form.cpf || !form.email) { toast.error("Preencha os campos obrigatórios"); return; }
-    if (editId) {
-      setVoluntarios(p => p.map(v => v.id === editId ? { ...v, ...form } : v));
-      toast.success("Voluntário atualizado! Sincronizado com módulo de Vendas.");
-    } else {
-      setVoluntarios(p => [...p, { ...form, id: `v${Date.now()}`, status: "Ativo" as const, dataCadastro: new Date().toISOString().split("T")[0] }]);
-      toast.success("Voluntário cadastrado! Usuário criado automaticamente e sincronizado com Vendas.");
-    }
+    toast.info("Funcionalidade em desenvolvimento");
     setModalOpen(false);
   };
 

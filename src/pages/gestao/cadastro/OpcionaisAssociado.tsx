@@ -16,23 +16,13 @@ interface Opcional {
   ativo: boolean;
 }
 
-const mockOpcionais: Opcional[] = [
-  { id: "oa1", nome: "Seguro de Vida", categoria: "Seguros", ativo: true },
-  { id: "oa2", nome: "Assistência Funeral", categoria: "Seguros", ativo: true },
-  { id: "oa3", nome: "Seguro Acidentes Pessoais", categoria: "Seguros", ativo: false },
-  { id: "oa4", nome: "App de Benefícios", categoria: "Digital", ativo: true },
-  { id: "oa5", nome: "Telemedicina", categoria: "Saúde", ativo: true },
-  { id: "oa6", nome: "Desconto em Farmácias", categoria: "Saúde", ativo: true },
-  { id: "oa7", nome: "Clube de Vantagens", categoria: "Digital", ativo: false },
-  { id: "oa8", nome: "Cartão Combustível", categoria: "Benefícios", ativo: true },
-  { id: "oa9", nome: "Proteção Financeira", categoria: "Seguros", ativo: true },
-  { id: "oa10", nome: "Assistência Residencial", categoria: "Seguros", ativo: false },
-];
+// No specific table exists yet - local state only
+const initialOpcionais: Opcional[] = [];
 
 const categorias = ["Seguros", "Saúde", "Digital", "Benefícios"];
 
 export default function OpcionaisAssociado() {
-  const [opcionais, setOpcionais] = useState<Opcional[]>(mockOpcionais);
+  const [opcionais, setOpcionais] = useState<Opcional[]>(initialOpcionais);
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ nome: "", categoria: "Seguros" });
@@ -75,6 +65,13 @@ export default function OpcionaisAssociado() {
       </div>
 
       <div className="space-y-4">
+        {grouped.length === 0 && (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-sm text-muted-foreground">Nenhum opcional cadastrado. Clique em "Novo Opcional" para adicionar.</p>
+            </CardContent>
+          </Card>
+        )}
         {grouped.map(g => (
           <Card key={g.categoria}>
             <CardHeader className="pb-3">

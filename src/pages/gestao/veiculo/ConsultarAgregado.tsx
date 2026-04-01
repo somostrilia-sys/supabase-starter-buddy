@@ -48,83 +48,12 @@ const SelectWithAdd = ({ label, value, onValueChange, options, placeholder, requ
 
 const ufs = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
 
-const mockAgregados = [
-  {
-    id: "agr-1", placa: "DEF-4G56", chassi: "9BWZZZ377VT004251", renavam: "12345678901",
-    modelo: "Onix Plus 1.0 Turbo", montadora: "Chevrolet", anoFab: "2024", anoMod: "2025",
-    cor: "Prata", tipo: "Automóvel", categoria: "Passeio", cota: "Cota B", situacao: "Ativo",
-    valorAgregado: "85000", participacao: "10", valorAdesao: "350,00", valorRepasse: "150,00",
-    dataContrato: "2025-03-01", classificacao: "Agregado", idExterno: "AGR-2025-001",
-    associadoNome: "Carlos Alberto Silva", associadoCpf: "111.222.333-00", associadoMatricula: "assoc-1",
-    veiculoPrincipalPlaca: "ABC-1D23", veiculoPrincipalMarca: "Chevrolet", veiculoPrincipalModelo: "Tracker Premier 1.2T",
-    regional: "Regional Capital", cooperativa: "Cooperativa São Paulo", voluntario: "João Voluntário",
-    cobranca: "Boleto", cobrarRateio: true, cobrarTaxaAdm: false, vlrFixoBoleto: "25,00",
-    credito: "0,00", pontos: "0",
-    cep: "01001-000", logradouro: "Praça da Sé", numero: "100", complemento: "Sala 5",
-    bairro: "Sé", cidade: "São Paulo", estado: "SP",
-  },
-  {
-    id: "agr-2", placa: "GHI-7J89", chassi: "9BR53ZZZ1PT123456", renavam: "98765432101",
-    modelo: "HB20 1.6 Comfort", montadora: "Hyundai", anoFab: "2023", anoMod: "2024",
-    cor: "Branco", tipo: "Automóvel", categoria: "Passeio", cota: "Cota A", situacao: "Ativo",
-    valorAgregado: "72000", participacao: "15", valorAdesao: "300,00", valorRepasse: "120,00",
-    dataContrato: "2024-11-15", classificacao: "Agregado", idExterno: "AGR-2024-012",
-    associadoNome: "Maria Aparecida Santos", associadoCpf: "222.333.444-11", associadoMatricula: "assoc-2",
-    veiculoPrincipalPlaca: "JKL-2M34", veiculoPrincipalMarca: "Hyundai", veiculoPrincipalModelo: "Creta Ultimate 2.0",
-    regional: "Regional Interior", cooperativa: "Cooperativa São Paulo", voluntario: "Maria Voluntária",
-    cobranca: "Carnê", cobrarRateio: false, cobrarTaxaAdm: true, vlrFixoBoleto: "20,00",
-    credito: "50,00", pontos: "5",
-    cep: "13010-001", logradouro: "Rua Barão de Jaguara", numero: "450", complemento: "",
-    bairro: "Centro", cidade: "Campinas", estado: "SP",
-  },
-  {
-    id: "agr-3", placa: "MNO-5P67", chassi: "9BR53ZZZ1PT789012", renavam: "55566677701",
-    modelo: "Argo Drive 1.3", montadora: "Fiat", anoFab: "2022", anoMod: "2023",
-    cor: "Vermelho", tipo: "Automóvel", categoria: "Trabalho", cota: "Cota C", situacao: "Inativo",
-    valorAgregado: "65000", participacao: "12", valorAdesao: "280,00", valorRepasse: "100,00",
-    dataContrato: "2023-06-20", classificacao: "Substituto", idExterno: "AGR-2023-045",
-    associadoNome: "José Roberto Oliveira", associadoCpf: "333.444.555-22", associadoMatricula: "assoc-3",
-    veiculoPrincipalPlaca: "QRS-8T90", veiculoPrincipalMarca: "Fiat", veiculoPrincipalModelo: "Strada Freedom 1.3",
-    regional: "Regional Metropolitana", cooperativa: "Cooperativa Rio", voluntario: "Pedro Auxiliar",
-    cobranca: "Boleto", cobrarRateio: true, cobrarTaxaAdm: false, vlrFixoBoleto: "22,00",
-    credito: "0,00", pontos: "3",
-    cep: "20040-020", logradouro: "Av. Rio Branco", numero: "156", complemento: "Andar 8",
-    bairro: "Centro", cidade: "Rio de Janeiro", estado: "RJ",
-  },
-];
-
-const mockVistorias = [
-  { id: "v1", data: "2025-01-15", tipo: "Admissão", resultado: "Aprovada", inspetor: "João Ferreira", obs: "Veículo em ótimo estado." },
-  { id: "v2", data: "2025-06-10", tipo: "Periódica", resultado: "Aprovada", inspetor: "André Costa", obs: "Sem irregularidades." },
-  { id: "v3", data: "2024-08-22", tipo: "Transferência", resultado: "Pendente", inspetor: "Luciana Almeida", obs: "Aguardando documentação complementar." },
-];
-
-const mockObservacoes = [
-  { data: "2025-03-01 14:30", descricao: "Agregado cadastrado no sistema", usuario: "admin@gia.com" },
-  { data: "2025-03-05 09:15", descricao: "Documentação CRLV anexada", usuario: "operador@gia.com" },
-  { data: "2025-03-10 11:00", descricao: "Vistoria de adesão agendada", usuario: "vistoriador@gia.com" },
-  { data: "2025-03-15 16:45", descricao: "Vistoria realizada e aprovada", usuario: "vistoriador@gia.com" },
-  { data: "2025-03-20 08:30", descricao: "Primeira cobrança emitida", usuario: "financeiro@gia.com" },
-];
-
-const mockFinanceiro = [
-  { ref: "03/2025", venc: "15/03/2025", valor: "350,00", desconto: "0,00", juros: "0,00", total: "350,00", situacao: "Pago" },
-  { ref: "04/2025", venc: "15/04/2025", valor: "45,00", desconto: "0,00", juros: "0,00", total: "45,00", situacao: "Pago" },
-  { ref: "05/2025", venc: "15/05/2025", valor: "45,00", desconto: "5,00", juros: "0,00", total: "40,00", situacao: "Pago" },
-  { ref: "06/2025", venc: "15/06/2025", valor: "45,00", desconto: "0,00", juros: "0,00", total: "45,00", situacao: "Pendente" },
-  { ref: "07/2025", venc: "15/07/2025", valor: "45,00", desconto: "0,00", juros: "0,00", total: "45,00", situacao: "Pendente" },
-  { ref: "08/2025", venc: "15/08/2025", valor: "45,00", desconto: "0,00", juros: "2,50", total: "47,50", situacao: "Atrasado" },
-  { ref: "09/2025", venc: "15/09/2025", valor: "45,00", desconto: "0,00", juros: "0,00", total: "45,00", situacao: "Pendente" },
-  { ref: "10/2025", venc: "15/10/2025", valor: "45,00", desconto: "0,00", juros: "0,00", total: "45,00", situacao: "Pendente" },
-];
-
-const produtosRegional = [
-  { id: "1", nome: "Proteção Roubo/Furto", grupo: "Proteção" },
-  { id: "2", nome: "Proteção Colisão", grupo: "Proteção" },
-  { id: "3", nome: "Assistência 24h", grupo: "Assistência" },
-  { id: "4", nome: "Guincho 200km", grupo: "Assistência" },
-  { id: "5", nome: "Vidros", grupo: "Proteção" },
-];
+// No agregados table exists - empty arrays
+const mockAgregados: any[] = [];
+const mockVistorias: any[] = [];
+const mockObservacoes: { data: string; descricao: string; usuario: string }[] = [];
+const mockFinanceiro: any[] = [];
+const produtosRegional: any[] = [];
 
 // statusColor replaced by StatusBadge component
 
@@ -178,12 +107,7 @@ export default function ConsultarAgregado() {
               </div>
             </div>
             <div className="text-xs text-muted-foreground">
-              <p className="font-medium mb-1">Agregados disponíveis para teste:</p>
-              {mockAgregados.map(a => (
-                <button key={a.id} className="block hover:text-primary transition-colors" onClick={() => { setSearchPlaca(a.placa); }}>
-                  • {a.placa} — {a.modelo} ({a.associadoNome})
-                </button>
-              ))}
+              <p>Busque um veículo para ver agregados vinculados.</p>
             </div>
           </CardContent>
         </Card>

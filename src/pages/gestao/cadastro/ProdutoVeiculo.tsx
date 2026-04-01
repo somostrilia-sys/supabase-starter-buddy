@@ -41,16 +41,8 @@ interface Produto {
   ativo: boolean;
 }
 
-const mockProdutos: Produto[] = [
-  { id: "p1", tipo: "Assistência", descricao: "Assistência 24h Nacional", descricaoBoleto: "ASSIST 24H", exibirBoleto: true, formatoCobranca: "reais", valor: 29.90, custoInterno: 15.00, permiteDesconto: false, exibirApp: true, tipoVeiculoElegivel: "Todos", fornecedor: "Assistência Brasil", grupo: "Serviços", cooperativas: "Todas", ativo: true },
-  { id: "p2", tipo: "Carro Reserva", descricao: "Carro Reserva 7 dias", descricaoBoleto: "CARRO RESERVA", exibirBoleto: true, formatoCobranca: "reais", valor: 45.00, custoInterno: 30.00, permiteDesconto: true, exibirApp: true, tipoVeiculoElegivel: "Automóvel Leve", fornecedor: "Localiza", grupo: "Serviços", cooperativas: "Todas", ativo: true },
-  { id: "p3", tipo: "Rastreador", descricao: "Rastreador Veicular GPS", descricaoBoleto: "RASTREADOR", exibirBoleto: true, formatoCobranca: "reais", valor: 39.90, custoInterno: 20.00, permiteDesconto: false, exibirApp: true, tipoVeiculoElegivel: "Todos", fornecedor: "TrackGPS", grupo: "Segurança", cooperativas: "Todas", ativo: true },
-  { id: "p4", tipo: "Proteção a Terceiros", descricao: "Proteção a Terceiros até R$ 50.000", descricaoBoleto: "PROT TERCEIROS", exibirBoleto: true, formatoCobranca: "reais", valor: 19.90, custoInterno: 8.00, permiteDesconto: true, exibirApp: true, tipoVeiculoElegivel: "Todos", fornecedor: "-", grupo: "Coberturas", cooperativas: "Todas", ativo: true },
-  { id: "p5", tipo: "Vidros", descricao: "Cobertura de Vidros", descricaoBoleto: "VIDROS", exibirBoleto: true, formatoCobranca: "reais", valor: 15.00, custoInterno: 7.50, permiteDesconto: true, exibirApp: true, tipoVeiculoElegivel: "Automóvel Leve", fornecedor: "VidroFácil", grupo: "Coberturas", cooperativas: "Todas", ativo: true },
-  { id: "p6", tipo: "Taxa Administrativa", descricao: "Taxa Administrativa Mensal", descricaoBoleto: "TAXA ADM", exibirBoleto: true, formatoCobranca: "porcentagem", valor: 10, custoInterno: 0, permiteDesconto: false, exibirApp: false, tipoVeiculoElegivel: "Todos", fornecedor: "-", grupo: "Taxas", cooperativas: "Todas", ativo: true },
-  { id: "p7", tipo: "Rateio", descricao: "Rateio de Eventos", descricaoBoleto: "RATEIO", exibirBoleto: true, formatoCobranca: "reais", valor: 0, custoInterno: 0, permiteDesconto: false, exibirApp: true, tipoVeiculoElegivel: "Todos", fornecedor: "-", grupo: "Rateios", cooperativas: "Todas", ativo: true },
-  { id: "p8", tipo: "Desconto", descricao: "Desconto Fidelidade 12 meses", descricaoBoleto: "DESC FIDELID", exibirBoleto: true, formatoCobranca: "porcentagem", valor: 5, custoInterno: 0, permiteDesconto: false, exibirApp: false, tipoVeiculoElegivel: "Todos", fornecedor: "-", grupo: "Descontos", cooperativas: "Todas", ativo: false },
-];
+// produtos_gia table - empty until connected
+const initialProdutos: Produto[] = [];
 
 const emptyForm: Omit<Produto, "id"> = {
   tipo: "", descricao: "", descricaoBoleto: "", exibirBoleto: true,
@@ -60,7 +52,7 @@ const emptyForm: Omit<Produto, "id"> = {
 };
 
 export default function ProdutoVeiculo() {
-  const [produtos, setProdutos] = useState<Produto[]>(mockProdutos);
+  const [produtos, setProdutos] = useState<Produto[]>(initialProdutos);
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);

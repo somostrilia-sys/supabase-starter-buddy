@@ -8,29 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, Car, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 
-// Mock FIPE data
-const marcas = ["Chevrolet", "Fiat", "Ford", "Honda", "Hyundai", "Jeep", "Nissan", "Renault", "Toyota", "Volkswagen"];
-const modelosPorMarca: Record<string, string[]> = {
-  Chevrolet: ["Onix", "Onix Plus", "Tracker", "S10", "Spin", "Montana"],
-  Fiat: ["Argo", "Cronos", "Mobi", "Strada", "Toro", "Pulse"],
-  Ford: ["Ka", "EcoSport", "Ranger", "Territory", "Bronco Sport"],
-  Honda: ["Civic", "City", "HR-V", "CR-V", "Fit", "WR-V"],
-  Hyundai: ["HB20", "HB20S", "Creta", "Tucson", "Santa Fe"],
-  Jeep: ["Renegade", "Compass", "Commander", "Gladiator"],
-  Nissan: ["Kicks", "Versa", "Sentra", "Frontier"],
-  Renault: ["Kwid", "Sandero", "Logan", "Duster", "Captur", "Oroch"],
-  Toyota: ["Corolla", "Corolla Cross", "Yaris", "Hilux", "SW4", "RAV4"],
-  Volkswagen: ["Gol", "Polo", "Virtus", "T-Cross", "Taos", "Amarok", "Saveiro"],
-};
+// FIPE lookup requires external API integration (e.g., https://brasilapi.com.br/docs#tag/FIPE)
+// Marca/Modelo/Ano selects are empty until API is connected
+const marcas: string[] = [];
+const modelosPorMarca: Record<string, string[]> = {};
 const anos = ["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018"];
-
-const fipeResultMock: Record<string, { marca: string; modelo: string; ano: string; valor: number; codFipe: string }> = {
-  "004399-0": { marca: "Volkswagen", modelo: "T-Cross 200 TSI Comfortline", ano: "2024", valor: 119500, codFipe: "004399-0" },
-  "001004-9": { marca: "Chevrolet", modelo: "Onix Plus 1.0 Turbo LTZ", ano: "2024", valor: 89900, codFipe: "001004-9" },
-  "038003-2": { marca: "Toyota", modelo: "Corolla Cross XRE 2.0", ano: "2024", valor: 165000, codFipe: "038003-2" },
-  "021157-0": { marca: "Fiat", modelo: "Strada Freedom 1.3", ano: "2024", valor: 94500, codFipe: "021157-0" },
-  "015127-5": { marca: "Honda", modelo: "HR-V EXL", ano: "2024", valor: 158000, codFipe: "015127-5" },
-};
 
 interface FipeResult {
   marca: string;
@@ -58,15 +40,10 @@ export default function ConsultaFipe({ onSelect, compact = false }: ConsultaFipe
     if (!codigoFipe.trim()) return toast.error("Digite o código FIPE");
     setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 600));
-      const found = fipeResultMock[codigoFipe.trim()];
-      if (found) {
-        setResult(found);
-        toast.success("Veículo encontrado na tabela FIPE!");
-      } else {
-        toast.error("Código FIPE não encontrado");
-        setResult(null);
-      }
+      // TODO: Integrate with FIPE external API (e.g., BrasilAPI)
+      await new Promise(r => setTimeout(r, 300));
+      toast.info("Integração com API FIPE pendente de configuração");
+      setResult(null);
     } finally {
       setLoading(false);
     }
@@ -76,25 +53,10 @@ export default function ConsultaFipe({ onSelect, compact = false }: ConsultaFipe
     if (!marca || !modelo || !ano) return toast.error("Selecione marca, modelo e ano");
     setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 600));
-      // Mock: generate random-ish result
-      const baseValues: Record<string, number> = {
-        Chevrolet: 75000, Fiat: 70000, Ford: 85000, Honda: 95000,
-        Hyundai: 80000, Jeep: 110000, Nissan: 90000, Renault: 68000,
-        Toyota: 120000, Volkswagen: 95000,
-      };
-      const base = baseValues[marca] || 80000;
-      const anoMult = 1 - (2026 - parseInt(ano)) * 0.07;
-      const valor = Math.round(base * Math.max(anoMult, 0.5));
-      const res: FipeResult = {
-        marca,
-        modelo: `${modelo} - Versão Standard`,
-        ano,
-        valor,
-        codFipe: `${String(Math.floor(Math.random() * 999)).padStart(3, "0")}${String(Math.floor(Math.random() * 999)).padStart(3, "0")}-${Math.floor(Math.random() * 10)}`,
-      };
-      setResult(res);
-      toast.success("Veículo encontrado na tabela FIPE!");
+      // TODO: Integrate with FIPE external API (e.g., BrasilAPI)
+      await new Promise(r => setTimeout(r, 300));
+      toast.info("Integração com API FIPE pendente de configuração");
+      setResult(null);
     } finally {
       setLoading(false);
     }
