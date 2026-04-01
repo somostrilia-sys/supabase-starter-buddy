@@ -123,12 +123,29 @@ export default function AssociadoTab({ deal }: Props) {
     }
   };
 
-  const handleSalvar = () => {
+  const handleSalvar = async () => {
     if (!form.nome.trim() || !form.telefone.trim()) {
       toast.error("Nome e Telefone são obrigatórios.");
       return;
     }
-    toast.success("Dados do associado salvos com sucesso!");
+    const { error } = await supabase.from("negociacoes").update({
+      lead_nome: form.nome,
+      cpf_cnpj: form.cpf,
+      telefone: form.telefone,
+      email: form.email,
+      rg: form.rg,
+      cnh: form.cnh,
+      cnh_categoria: form.categoriaCNH,
+      cnh_validade: form.validadeHab,
+      data_nascimento: form.dataNascimento,
+      cidade_circulacao: form.cidade,
+      estado_circulacao: form.estado,
+    } as any).eq("id", deal.id);
+    if (error) {
+      toast.error("Erro ao salvar: " + error.message);
+    } else {
+      toast.success("Dados do associado salvos!");
+    }
   };
 
   const lbl = "text-sm font-semibold";
