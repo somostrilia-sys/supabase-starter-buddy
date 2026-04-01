@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,6 @@ import { CheckCircle, XCircle, Search, ChevronLeft, ChevronRight, Loader2 } from
 
 const situacoesVeiculo = ["Todos", "Ativo", "Inativo", "Negado", "Pendente", "Inadimplente", "Inativo-Com Pendência", "Pendente de Revistoria", "Inativo-Retirada Rastreador"];
 const situacoesAssociado = ["Todos", "Ativo", "Inativo", "Negado", "Pendente", "Inadimplente"];
-const cooperativasList = ["Todos", "Cooperativa São Paulo", "Cooperativa Rio", "Cooperativa Minas", "Cooperativa Sul", "Cooperativa Centro-Oeste", "Cooperativa Nordeste"];
 
 const statusColor = (s: string) => {
   switch (s) {
@@ -57,6 +56,13 @@ export default function AprovarCadastro() {
   const [page, setPage] = useState(1);
   const [results, setResults] = useState<RegistroRow[]>([]);
   const [loadingSearch, setLoadingSearch] = useState(false);
+  const [cooperativasList, setCooperativasList] = useState<string[]>(["Todos"]);
+
+  useEffect(() => {
+    supabase.from("cooperativas").select("nome").eq("ativo", true).then(({ data }) => {
+      if (data) setCooperativasList(["Todos", ...data.map((c: any) => c.nome)]);
+    });
+  }, []);
 
   const toggleCheckbox = (arr: string[], val: string, setter: (v: string[]) => void) => {
     if (val === "Todos") { setter(arr.includes("Todos") ? [] : ["Todos"]); return; }

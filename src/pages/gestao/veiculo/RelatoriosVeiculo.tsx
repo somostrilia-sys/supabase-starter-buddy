@@ -95,7 +95,7 @@ export default function RelatoriosVeiculo() {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todos">Todas</SelectItem>
-                      {["Cooperativa São Paulo","Cooperativa Rio","Cooperativa Minas","Cooperativa Sul","Cooperativa Centro-Oeste"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      {cooperativasList.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

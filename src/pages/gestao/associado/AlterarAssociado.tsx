@@ -424,6 +424,17 @@ export default function AlterarAssociado() {
   const [editForm, setEditForm] = useState<Record<string, string>>({});
   const [perPage, setPerPage] = useState(10);
   const [page, setPage] = useState(1);
+  const [regionaisOpts, setRegionaisOpts] = useState<string[]>([]);
+  const [cooperativasOpts, setCooperativasOpts] = useState<string[]>([]);
+
+  useEffect(() => {
+    supabase.from("regionais").select("nome").eq("ativo", true).order("nome").then(({ data }) => {
+      if (data) setRegionaisOpts(data.map((r: any) => r.nome));
+    });
+    supabase.from("cooperativas").select("nome").eq("ativo", true).order("nome").then(({ data }) => {
+      if (data) setCooperativasOpts(data.map((c: any) => c.nome));
+    });
+  }, []);
   const [ocModal, setOcModal] = useState(false);
   const [newOc, setNewOc] = useState({ tipo: "", veiculo: "", data: "", descricao: "", valor: "" });
 
@@ -513,24 +524,11 @@ export default function AlterarAssociado() {
         }));
         setResults(mapped);
       } else {
-        // Fallback to mock data
-        let r = [...mockAssociados];
-        if (filters.cpf) r = r.filter(a => a.cpf.replace(/\D/g, "").includes(filters.cpf.replace(/\D/g, "")));
-        if (filters.nome && filters.nome.trim().length >= 3) r = r.filter(a => a.nome.toLowerCase().includes(filters.nome.toLowerCase()));
-        if (filters.placa) r = r.filter(a => a.veiculos.some(v => v.placa.toLowerCase().replace("-","").includes(filters.placa.toLowerCase().replace("-",""))));
-        if (filters.situacao === "Inadimplente") r = r.filter(a => a.status === "Inativo" || a.status === "Inadimplente");
-        else if (filters.situacao !== "Todos") r = r.filter(a => a.status === filters.situacao);
-        if (filters.regional !== "Todos") r = r.filter(a => a.regional === filters.regional);
-        if (filters.cooperativa !== "Todos") r = r.filter(a => a.cooperativa === filters.cooperativa);
-        setResults(r);
+        setResults([]);
       }
     } catch (err: any) {
       toast.error(err.message || "Erro ao buscar associados");
-      // fallback to mock
-      let r = [...mockAssociados];
-      if (filters.cpf) r = r.filter(a => a.cpf.replace(/\D/g, "").includes(filters.cpf.replace(/\D/g, "")));
-      if (filters.nome && filters.nome.trim().length >= 3) r = r.filter(a => a.nome.toLowerCase().includes(filters.nome.toLowerCase()));
-      setResults(r);
+      setResults([]);
     } finally {
       setSearching(false);
     }
@@ -631,14 +629,14 @@ export default function AlterarAssociado() {
                 <Label className="text-xs">Regional</Label>
                 <Select value={filters.regional} onValueChange={v => setF("regional", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{["Todos","Regional Capital","Regional Interior","Regional Litoral","Regional Metropolitana"].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                  <SelectContent>{["Todos",...regionaisOpts].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <Label className="text-xs">Cooperativa</Label>
                 <Select value={filters.cooperativa} onValueChange={v => setF("cooperativa", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{["Todos","Cooperativa São Paulo","Cooperativa Campinas","Cooperativa Rio","Cooperativa Minas","Cooperativa Sul","Cooperativa Centro-Oeste","Cooperativa Nordeste"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  <SelectContent>{["Todos",...cooperativasOpts].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>

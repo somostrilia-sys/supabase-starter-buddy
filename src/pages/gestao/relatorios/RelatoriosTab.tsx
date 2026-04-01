@@ -335,14 +335,44 @@ export default function RelatoriosTab() {
     return true;
   });
 
-  const exportCsv = (data: Record<string, unknown>[], filename: string) => {
-    if (!data.length) return;
-    const keys = Object.keys(data[0]);
-    const header = keys.join(";") + "\n";
-    const rows = data.map(r => keys.map(k => String(r[k] ?? "")).join(";")).join("\n");
-    const blob = new Blob([header + rows], { type: "text/csv" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${filename}.csv`; a.click();
-  };
+  // Column definitions for each report type
+  const assocColumns: ExportColumn[] = selectedCols.map(k => ({
+    key: k,
+    label: allColumns.find(c => c.key === k)?.label || k,
+  }));
+
+  const veicColumns: ExportColumn[] = [
+    { key: "placa", label: "Placa" }, { key: "modelo", label: "Modelo" },
+    { key: "ano", label: "Ano" }, { key: "tipo", label: "Tipo" },
+    { key: "categoria", label: "Categoria" }, { key: "cota", label: "Cota" },
+    { key: "nome", label: "Associado" }, { key: "cooperativa", label: "Cooperativa" },
+  ];
+
+  const bolColumns: ExportColumn[] = [
+    { key: "nosso_numero", label: "N Boleto" }, { key: "associado_nome", label: "Associado" },
+    { key: "cpf", label: "CPF" }, { key: "valor", label: "Valor" },
+    { key: "created_at", label: "Emissao" }, { key: "vencimento", label: "Vencimento" },
+    { key: "data_pagamento", label: "Pagamento" }, { key: "status", label: "Status" },
+    { key: "unidade", label: "Unidade" }, { key: "consultor", label: "Consultor" },
+    { key: "tipo", label: "Tipo" }, { key: "banco", label: "Banco" },
+    { key: "forma_pagamento", label: "Pagto" }, { key: "contrato", label: "Contrato" },
+  ];
+
+  const handleExportAssocCSV = () => exportCSV(filteredAssoc as Record<string, unknown>[], "associados", assocColumns);
+  const handleExportAssocExcel = () => exportExcel(filteredAssoc as Record<string, unknown>[], "associados", assocColumns);
+  const handleExportAssocPDF = () => exportPDF(filteredAssoc as Record<string, unknown>[], "associados", assocColumns, "Relatorio de Associados");
+  const handlePrintAssoc = () => printData(filteredAssoc as Record<string, unknown>[], assocColumns, "Relatorio de Associados");
+
+  const veicData = () => realAssociados.map((a: any) => ({ placa: a.placa, modelo: a.modelo, ano: a.ano, tipo: a.tipo, categoria: a.categoria, cota: a.cota, nome: a.nome, cooperativa: a.cooperativa }));
+  const handleExportVeicCSV = () => exportCSV(veicData(), "veiculos", veicColumns);
+  const handleExportVeicExcel = () => exportExcel(veicData(), "veiculos", veicColumns);
+  const handleExportVeicPDF = () => exportPDF(veicData(), "veiculos", veicColumns, "Relatorio de Veiculos");
+  const handlePrintVeic = () => printData(veicData(), veicColumns, "Relatorio de Veiculos");
+
+  const handleExportBolCSV = () => exportCSV(filteredBoletos as Record<string, unknown>[], "boletos", bolColumns);
+  const handleExportBolExcel = () => exportExcel(filteredBoletos as Record<string, unknown>[], "boletos", bolColumns);
+  const handleExportBolPDF = () => exportPDF(filteredBoletos as Record<string, unknown>[], "boletos", bolColumns, "Relatorio de Boletos", `Total: R$ ${somaBoletosTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`);
+  const handlePrintBol = () => printData(filteredBoletos as Record<string, unknown>[], bolColumns, "Relatorio de Boletos");
 
   const toggleCol = (key: string) => setSelectedCols(prev => prev.includes(key) ? prev.filter(c => c !== key) : [...prev, key]);
 
@@ -411,7 +441,10 @@ export default function RelatoriosTab() {
               busca={busca}
               setBusca={setBusca}
               onGenerate={() => { setShowResults(true); setPageAssoc(1); toast.success("Relatório gerado"); }}
-              onExport={() => exportCsv(filteredAssoc as unknown as Record<string, unknown>[], "associados")}
+              onExportCSV={handleExportAssocCSV}
+              onExportExcel={handleExportAssocExcel}
+              onExportPDF={handleExportAssocPDF}
+              onPrint={handlePrintAssoc}
               placeholder="Busca rápida: Nome, CPF ou placa..."
             />
           </div>
@@ -467,7 +500,10 @@ export default function RelatoriosTab() {
               busca={buscaVeic}
               setBusca={setBuscaVeic}
               onGenerate={() => { setVeicPageDb(1); toast.success("Relatório gerado"); }}
-              onExport={() => exportCsv(realVeiculos.map((v: any) => ({ placa: v.placa, modelo: v.modelo, ano: v.ano_fabricacao, marca: v.marca, cor: v.cor, chassi: v.chassi })), "veiculos")}
+              onExportCSV={handleExportVeicCSV}
+              onExportExcel={handleExportVeicExcel}
+              onExportPDF={handleExportVeicPDF}
+              onPrint={handlePrintVeic}
               placeholder="Busca por placa ou modelo..."
             />
           </div>
