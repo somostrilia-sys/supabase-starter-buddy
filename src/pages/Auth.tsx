@@ -69,11 +69,10 @@ export default function Auth() {
       <div className="hidden lg:flex lg:w-[58%] relative overflow-hidden" style={{ minHeight: '100vh' }}>
         <div style={{
           position: 'absolute', inset: 0,
-          backgroundColor: '#0a1628',
           backgroundImage: "url('/login-bg.png')",
-          backgroundSize: 'contain',
+          backgroundSize: 'cover',
           backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center',
+          backgroundPosition: 'left center',
         }} />
       </div>
 
@@ -86,7 +85,7 @@ export default function Auth() {
         </div>
         <div className="w-full max-w-[380px] space-y-8 relative z-10 login-glow">
           {/* Mobile logo */}
-          <div className="text-center lg:hidden space-y-3">
+          <div className="text-center space-y-3">
             {brand.logoUrl && (
               <img src={brand.logoUrl} alt={brand.name} className="h-12 mx-auto object-contain" />
             )}
@@ -94,13 +93,6 @@ export default function Auth() {
               <h1 className="text-xl font-bold tracking-tight text-foreground">{brand.name}</h1>
               <p className="text-sm text-muted-foreground">{brand.subtitle}</p>
             </div>
-          </div>
-
-          {/* Desktop logo acima do form */}
-          <div className="hidden lg:flex justify-center mb-2">
-            {brand.logoUrl && (
-              <img src={brand.logoUrl} alt={brand.name} className="h-14 object-contain" />
-            )}
           </div>
 
           {/* Form header */}
