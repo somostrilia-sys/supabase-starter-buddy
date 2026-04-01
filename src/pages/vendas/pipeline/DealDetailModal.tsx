@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -13,17 +13,16 @@ import { usePermission } from "@/hooks/usePermission";
 import { useAuth } from "@/hooks/useAuth";
 import AssociadoTab from "./AssociadoTab";
 import CotacaoTab from "./CotacaoTab";
+import DocumentosTab from "./DocumentosTab";
 import VistoriaTab from "./VistoriaTab";
 import AssinaturaTab from "./AssinaturaTab";
 import FinanceiroNegociacaoTab from "./FinanceiroNegociacaoTab";
 import TagsInline from "@/components/TagsInline";
-import DocumentoUpload from "@/components/DocumentoUpload";
 import { supabase, callEdge } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   FileText, User, Car, ClipboardCheck, Activity, PenTool, Wallet,
-  Mail, MessageSquare, Plus, Send,
-  Image, Archive,
+  Mail, MessageSquare, Plus, Send, Image, Archive, Paperclip,
 } from "lucide-react";
 
 interface Props {
@@ -32,8 +31,6 @@ interface Props {
   onOpenChange: (o: boolean) => void;
   onUpdate?: () => void;
 }
-
-
 
 const MOTIVOS_ARQUIVAR = ["Teste", "Erro de cadastro", "Cancelamento pelo cliente", "Duplicidade", "Sem interesse", "Outro"];
 
@@ -47,6 +44,49 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
   const [consultoresTransf, setConsultoresTransf] = useState<string[]>([]);
   const { isAdmin } = usePermission();
   const { profile } = useAuth();
+
+  // OCR auto-fill state
+  const [dadosCnh, setDadosCnh] = useState<Record<string, any> | null>(null);
+
+  const handleCnhExtraida = useCallback(async (dados: Record<string, any>) => {
+    setDadosCnh(dados);
+    // Salvar no banco
+    const update: any = {};
+    if (dados.nome) update.lead_nome = dados.nome;
+    if (dados.cpf) update.cpf_cnpj = dados.cpf;
+    if (dados.data_nascimento) update.data_nascimento = dados.data_nascimento;
+    if (dados.rg) update.rg = dados.rg;
+    if (dados.numero_registro) update.cnh = dados.numero_registro;
+    if (dados.categoria) update.cnh_categoria = dados.categoria;
+    if (dados.validade) update.cnh_validade = dados.validade;
+    if (dados.uf) update.estado_circulacao = dados.uf;
+    if (dados.local_emissao) update.cidade_circulacao = dados.local_emissao.split(",")[0]?.trim();
+    if (Object.keys(update).length > 0) {
+      await supabase.from("negociacoes").update(update as any).eq("id", deal.id);
+    }
+    onUpdate?.();
+  }, [deal.id, onUpdate]);
+
+  const handleCrlvExtraida = useCallback(async (dados: Record<string, any>) => {
+    // Salvar no banco
+    const update: any = {};
+    if (dados.placa) update.veiculo_placa = dados.placa;
+    if (dados.marca_modelo) update.veiculo_modelo = dados.marca_modelo;
+    if (dados.chassi) update.chassi = dados.chassi;
+    if (dados.renavam) update.renavam = dados.renavam;
+    if (dados.ano_fabricacao) update.ano_fabricacao = dados.ano_fabricacao;
+    if (dados.ano_modelo) update.ano_modelo = dados.ano_modelo;
+    if (dados.cor) update.cor = dados.cor;
+    if (dados.combustivel) update.combustivel = dados.combustivel;
+    if (dados.municipio) update.cidade_circulacao = dados.municipio;
+    if (dados.uf) update.estado_circulacao = dados.uf;
+    if (dados.nome_proprietario) update.lead_nome = dados.nome_proprietario;
+    if (dados.cpf_cnpj_proprietario) update.cpf_cnpj = dados.cpf_cnpj_proprietario;
+    if (Object.keys(update).length > 0) {
+      await supabase.from("negociacoes").update(update as any).eq("id", deal.id);
+    }
+    onUpdate?.();
+  }, [deal.id, onUpdate]);
 
   async function handleArquivar() {
     if (!motivoArquivar) { toast("Selecione um motivo"); return; }
@@ -71,13 +111,11 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
   React.useEffect(() => {
     if (!showTransferir) return;
     const funcao = (profile as any)?.funcao || "";
-    const isGestor = funcao.toLowerCase().includes("gestor") || funcao.toLowerCase().includes("administrador") || funcao.toLowerCase().includes("diretor") || isAdmin;
     const coopUsuario = (profile as any)?.cooperativa || "";
 
     supabase.from("usuarios").select("nome, cooperativa").eq("status", "ativo").order("nome")
       .then(({ data }) => {
         let lista = (data || []).map((u: any) => u.nome).filter(Boolean);
-        // Se não é admin/diretor, filtrar pela mesma cooperativa
         if (!isAdmin && !funcao.toLowerCase().includes("diretor")) {
           const minhasCoops = coopUsuario.split(",").map((c: string) => c.trim().toLowerCase());
           lista = (data || []).filter((u: any) => {
@@ -107,7 +145,7 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
     { v: "cotacao", l: "Cotação", i: FileText },
     { v: "associado", l: "Associado", i: User },
     { v: "veiculo", l: "Veículo", i: Car },
-    { v: "documentos", l: "Documentos", i: Image },
+    { v: "documentos", l: "Documentos", i: Paperclip },
     { v: "vistoria", l: "Vistoria", i: ClipboardCheck },
     { v: "assinatura", l: "Assinatura", i: PenTool },
     { v: "financeiro", l: "Financeiro", i: Wallet },
@@ -158,7 +196,7 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
               <CotacaoTab deal={deal} />
             </TabsContent>
             <TabsContent value="associado" className="mt-0">
-              <AssociadoTab deal={deal} />
+              <AssociadoTab deal={deal} dadosCnh={dadosCnh} />
             </TabsContent>
 
             {/* TAB 3 - Veículo (dados reais da placa) */}
@@ -175,45 +213,12 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
             </TabsContent>
 
             {/* TAB - Documentos OCR */}
-            <TabsContent value="documentos" className="mt-0 space-y-3">
-              <p className="text-xs text-muted-foreground">Anexe CNH e CRLV para preenchimento automático dos dados do associado e veículo.</p>
-              <DocumentoUpload negociacaoId={deal.id} tipo="cnh" onDadosExtraidos={async (dados) => {
-                const update: any = {};
-                if (dados.nome) update.lead_nome = dados.nome;
-                if (dados.cpf) update.cpf_cnpj = dados.cpf;
-                if (dados.data_nascimento) update.data_nascimento = dados.data_nascimento;
-                if (dados.rg) update.rg = dados.rg;
-                if (dados.numero_registro) update.cnh = dados.numero_registro;
-                if (dados.categoria) update.cnh_categoria = dados.categoria;
-                if (dados.validade) update.cnh_validade = dados.validade;
-                if (dados.uf) update.estado_circulacao = dados.uf;
-                if (dados.local_emissao) update.cidade_circulacao = dados.local_emissao.split(",")[0]?.trim();
-                if (Object.keys(update).length > 0) {
-                  await supabase.from("negociacoes").update(update as any).eq("id", deal.id);
-                }
-                toast.success("Dados do associado preenchidos automaticamente");
-                onUpdate?.();
-              }} />
-              <DocumentoUpload negociacaoId={deal.id} tipo="crlv" onDadosExtraidos={async (dados) => {
-                const update: any = {};
-                if (dados.placa) update.veiculo_placa = dados.placa;
-                if (dados.marca_modelo) update.veiculo_modelo = dados.marca_modelo;
-                if (dados.chassi) update.chassi = dados.chassi;
-                if (dados.renavam) update.renavam = dados.renavam;
-                if (dados.ano_fabricacao) update.ano_fabricacao = dados.ano_fabricacao;
-                if (dados.ano_modelo) update.ano_modelo = dados.ano_modelo;
-                if (dados.cor) update.cor = dados.cor;
-                if (dados.combustivel) update.combustivel = dados.combustivel;
-                if (dados.municipio) update.cidade_circulacao = dados.municipio;
-                if (dados.uf) update.estado_circulacao = dados.uf;
-                if (dados.nome_proprietario) update.lead_nome = dados.nome_proprietario;
-                if (dados.cpf_cnpj_proprietario) update.cpf_cnpj = dados.cpf_cnpj_proprietario;
-                if (Object.keys(update).length > 0) {
-                  await supabase.from("negociacoes").update(update as any).eq("id", deal.id);
-                }
-                toast.success("Dados do veículo preenchidos automaticamente");
-                onUpdate?.();
-              }} />
+            <TabsContent value="documentos" className="mt-0">
+              <DocumentosTab
+                negociacaoId={deal.id}
+                onCnhExtraida={handleCnhExtraida}
+                onCrlvExtraida={handleCrlvExtraida}
+              />
             </TabsContent>
 
             {/* TAB - Vistoria */}

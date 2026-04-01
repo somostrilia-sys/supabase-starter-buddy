@@ -27,6 +27,19 @@ const cidadesPorUF: Record<string, string[]> = {
 
 const CATEGORIAS_CNH = ["A", "B", "AB", "C", "D", "E"];
 
+// Converte datas OCR (DD/MM/YYYY ou DD-MM-YYYY) para YYYY-MM-DD (input date)
+function formatDateOcr(dateStr: string | null | undefined): string {
+  if (!dateStr) return "";
+  // Já está no formato ISO
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  // DD/MM/YYYY ou DD-MM-YYYY
+  const parts = dateStr.split(/[\/\-\.]/);
+  if (parts.length === 3 && parts[0].length <= 2) {
+    return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+  }
+  return dateStr;
+}
+
 function maskCPF(v: string) {
   return v.replace(/\D/g, "").slice(0, 11)
     .replace(/(\d{3})(\d)/, "$1.$2")
@@ -47,9 +60,10 @@ function maskCEP(v: string) {
 
 interface Props {
   deal: PipelineDeal;
+  dadosCnh?: Record<string, any> | null;
 }
 
-export default function AssociadoTab({ deal }: Props) {
+export default function AssociadoTab({ deal, dadosCnh }: Props) {
   const [form, setForm] = useState({
     nome: deal.lead_nome || "",
     cpf: deal.cpf_cnpj || "",
@@ -97,6 +111,25 @@ export default function AssociadoTab({ deal }: Props) {
         }));
       });
   }, [deal.id]);
+
+  // Auto-fill quando dados da CNH chegam via OCR
+  useEffect(() => {
+    if (!dadosCnh) return;
+    setForm(prev => ({
+      ...prev,
+      nome: dadosCnh.nome || prev.nome,
+      cpf: dadosCnh.cpf ? maskCPF(dadosCnh.cpf.replace(/\D/g, "")) : prev.cpf,
+      rg: dadosCnh.rg || prev.rg,
+      orgaoExpedidor: dadosCnh.orgao_emissor || prev.orgaoExpedidor,
+      cnh: dadosCnh.numero_registro || prev.cnh,
+      categoriaCNH: dadosCnh.categoria || prev.categoriaCNH,
+      dataPrimeiraHab: formatDateOcr(dadosCnh.primeira_habilitacao) || prev.dataPrimeiraHab,
+      validadeHab: formatDateOcr(dadosCnh.validade) || prev.validadeHab,
+      dataNascimento: formatDateOcr(dadosCnh.data_nascimento) || prev.dataNascimento,
+      estado: dadosCnh.uf || prev.estado,
+    }));
+    toast.success("Dados do associado preenchidos automaticamente");
+  }, [dadosCnh]);
 
   const set = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
