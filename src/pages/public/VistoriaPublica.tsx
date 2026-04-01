@@ -1,508 +1,316 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import {
-  Camera,
-  CheckCircle,
-  MapPin,
-  Clock,
-  AlertTriangle,
-  Upload,
-  X,
-} from "lucide-react";
+import { Camera, CheckCircle, MapPin, Clock, AlertTriangle, Upload, X } from "lucide-react";
+
+// Imagens de referência
+import imgFrente from "@/assets/vistoria/frente.jpg";
+import imgTraseira from "@/assets/vistoria/traseira.jpg";
+import imgLateralEsq from "@/assets/vistoria/lateral-esquerda.jpg";
+import imgLateralDir from "@/assets/vistoria/lateral-direita.jpg";
+import imgInterior from "@/assets/vistoria/interior-painel.jpg";
+import imgBancoDiant from "@/assets/vistoria/banco-dianteiro.jpg";
+import imgBancoTras from "@/assets/vistoria/banco-traseiro.jpg";
+import imgTeto from "@/assets/vistoria/teto.jpg";
+import imgMotor from "@/assets/vistoria/motor-capo.jpg";
+import imgPortaMalas from "@/assets/vistoria/porta-malas.jpg";
+import imgRodas from "@/assets/vistoria/rodas-pneus.jpg";
+import imgChave from "@/assets/vistoria/chave.jpg";
+import imgChassi from "@/assets/vistoria/chassi.jpg";
+import imgQuilometragem from "@/assets/vistoria/quilometragem.jpg";
 
 const CATEGORIAS = [
-  "Frente",
-  "Traseira",
-  "Lateral Esquerda",
-  "Lateral Direita",
-  "Interior/Painel",
-  "Banco Dianteiro",
-  "Banco Traseiro",
-  "Teto",
-  "Motor/Capô",
-  "Porta-malas",
-  "Rodas e Pneus",
-  "Chave do Veículo",
-  "Chassi",
-  "Quilometragem",
-] as const;
-
-type Categoria = (typeof CATEGORIAS)[number];
+  { id: "frente", label: "Frente", img: imgFrente },
+  { id: "traseira", label: "Traseira", img: imgTraseira },
+  { id: "lateral_esquerda", label: "Lateral Esquerda", img: imgLateralEsq },
+  { id: "lateral_direita", label: "Lateral Direita", img: imgLateralDir },
+  { id: "interior_painel", label: "Interior / Painel", img: imgInterior },
+  { id: "banco_dianteiro", label: "Banco Dianteiro", img: imgBancoDiant },
+  { id: "banco_traseiro", label: "Banco Traseiro", img: imgBancoTras },
+  { id: "teto", label: "Teto", img: imgTeto },
+  { id: "motor_capo", label: "Motor / Capô", img: imgMotor },
+  { id: "porta_malas", label: "Porta-malas", img: imgPortaMalas },
+  { id: "rodas_pneus", label: "Rodas e Pneus", img: imgRodas },
+  { id: "chave", label: "Chave do Veículo", img: imgChave },
+  { id: "chassi", label: "Chassi", img: imgChassi, obs: "Se não encontrar no motor, pode ser do vidro" },
+  { id: "quilometragem", label: "Quilometragem", img: imgQuilometragem },
+];
 
 interface FotoCapturada {
-  categoria: Categoria;
+  id: string;
   blob: Blob;
   previewUrl: string;
   timestamp: string;
   lat: number;
   lng: number;
-  uploaded: boolean;
 }
 
 export default function VistoriaPublica() {
   const { token } = useParams<{ token: string }>();
-
-  // Vistoria data
   const [vistoria, setVistoria] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
-
-  // Geo
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geoErro, setGeoErro] = useState<string | null>(null);
-
-  // Clock
   const [agora, setAgora] = useState(new Date());
-
-  // Photos
-  const [fotos, setFotos] = useState<Map<Categoria, FotoCapturada>>(new Map());
-  const [categoriaAtiva, setCategoriaAtiva] = useState<Categoria | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [fotos, setFotos] = useState<Map<string, FotoCapturada>>(new Map());
   const [enviando, setEnviando] = useState(false);
   const [concluido, setConcluido] = useState(false);
-
-  // Camera refs
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [usandoCamera, setUsandoCamera] = useState(false);
-  const [cameraErro, setCameraErro] = useState(false);
 
-  // ── Fetch vistoria ──────────────────────────────────
+  // Fetch vistoria
   useEffect(() => {
     if (!token) return;
-    supabase
-      .from("vistorias" as any)
-      .select("*")
-      .eq("token_publico", token)
-      .maybeSingle()
+    supabase.from("vistorias" as any).select("*").eq("token_publico", token).maybeSingle()
       .then(({ data, error }) => {
-        if (error || !data) {
-          setErro("Vistoria não encontrada ou link inválido.");
-        } else {
-          setVistoria(data);
-        }
+        if (error || !data) setErro("Vistoria não encontrada ou link inválido.");
+        else setVistoria(data);
         setLoading(false);
       });
   }, [token]);
 
-  // ── Geolocation ─────────────────────────────────────
+  // Geolocation
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setGeoErro("Geolocalização não suportada neste navegador.");
-      return;
-    }
+    if (!navigator.geolocation) { setGeoErro("Geolocalização não suportada."); return; }
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-      },
-      (err) => {
-        setGeoErro(
-          err.code === 1
-            ? "Permissão de localização negada. Ative nas configurações do navegador."
-            : "Não foi possível obter localização. Tente novamente."
-        );
-      },
+      (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) => setGeoErro(err.code === 1 ? "Permissão de localização negada. Ative nas configurações." : "Não foi possível obter localização."),
       { enableHighAccuracy: true, timeout: 15000 }
     );
+    // Keep updating
+    const wid = navigator.geolocation.watchPosition(
+      (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true }
+    );
+    return () => navigator.geolocation.clearWatch(wid);
   }, []);
 
-  // ── Clock tick ──────────────────────────────────────
+  // Clock
   useEffect(() => {
     const id = setInterval(() => setAgora(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // ── Camera helpers ──────────────────────────────────
-  const abrirCamera = useCallback(async (cat: Categoria) => {
-    setCategoriaAtiva(cat);
-    setCameraErro(false);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
-      streamRef.current = stream;
-      setUsandoCamera(true);
-      // Wait for the video ref to be available after render
-      requestAnimationFrame(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
-        }
-      });
-    } catch {
-      setCameraErro(true);
-      // Fallback: trigger file input
-      fileInputRef.current?.click();
-    }
-  }, []);
+  // Handle file input (camera or gallery)
+  const handleFile = (catId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !coords) return;
 
-  const fecharCamera = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-    setUsandoCamera(false);
-    setCategoriaAtiva(null);
-    setCameraErro(false);
-  }, []);
+    // Draw timestamp on image
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0);
 
-  const capturarFoto = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current || !categoriaAtiva || !coords) return;
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(video, 0, 0);
+        // Burn timestamp + coords
+        const ts = new Date().toLocaleString("pt-BR");
+        const info = `${ts} | ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`;
+        const barH = Math.max(30, img.height * 0.04);
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillRect(0, img.height - barH, img.width, barH);
+        ctx.fillStyle = "#fff";
+        ctx.font = `bold ${Math.max(14, barH * 0.5)}px sans-serif`;
+        ctx.fillText(info, 10, img.height - barH * 0.3);
 
-    // Burn timestamp + coords into image
-    const ts = new Date().toLocaleString("pt-BR");
-    const infoText = `${ts} | ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`;
-    ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
-    ctx.fillStyle = "#fff";
-    ctx.font = "bold 16px sans-serif";
-    ctx.fillText(infoText, 10, canvas.height - 14);
-
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) return;
-        const previewUrl = URL.createObjectURL(blob);
-        const foto: FotoCapturada = {
-          categoria: categoriaAtiva,
-          blob,
-          previewUrl,
-          timestamp: new Date().toISOString(),
-          lat: coords.lat,
-          lng: coords.lng,
-          uploaded: false,
-        };
-        setFotos((prev) => new Map(prev).set(categoriaAtiva, foto));
-        fecharCamera();
-      },
-      "image/jpeg",
-      0.85
-    );
-  }, [categoriaAtiva, coords, fecharCamera]);
-
-  // File input fallback
-  const handleFileInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file || !categoriaAtiva || !coords) return;
-      const previewUrl = URL.createObjectURL(file);
-      const foto: FotoCapturada = {
-        categoria: categoriaAtiva,
-        blob: file,
-        previewUrl,
-        timestamp: new Date().toISOString(),
-        lat: coords.lat,
-        lng: coords.lng,
-        uploaded: false,
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const previewUrl = URL.createObjectURL(blob);
+          setFotos(prev => new Map(prev).set(catId, {
+            id: catId, blob, previewUrl,
+            timestamp: new Date().toISOString(),
+            lat: coords.lat, lng: coords.lng,
+          }));
+        }, "image/jpeg", 0.85);
       };
-      setFotos((prev) => new Map(prev).set(categoriaAtiva, foto));
-      setCategoriaAtiva(null);
-      // Reset file input
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    },
-    [categoriaAtiva, coords]
+      img.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  // Upload all
+  const enviarFotos = async () => {
+    if (!vistoria || fotos.size === 0) return;
+    setEnviando(true);
+    try {
+      for (const [catId, foto] of fotos) {
+        const ts = foto.timestamp.replace(/[:.]/g, "-");
+        const path = `${vistoria.id}/${catId}_${ts}.jpg`;
+        await supabase.storage.from("vistoria-fotos").upload(path, foto.blob, { contentType: "image/jpeg", upsert: true });
+      }
+      await supabase.from("vistorias" as any).update({
+        status: "em_aprovacao",
+        fotos_enviadas: Array.from(fotos.entries()).map(([catId, f]) => ({
+          categoria: catId, timestamp: f.timestamp, lat: f.lat, lng: f.lng,
+        })),
+      } as any).eq("id", vistoria.id);
+      setConcluido(true);
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao enviar fotos. Tente novamente.");
+    }
+    setEnviando(false);
+  };
+
+  const removeFoto = (catId: string) => {
+    setFotos(prev => { const n = new Map(prev); n.delete(catId); return n; });
+  };
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#1A3A5C]">
+      <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin" />
+    </div>
   );
 
-  // ── Upload all photos ───────────────────────────────
-  const enviarFotos = useCallback(async () => {
-    if (!vistoria || fotos.size < CATEGORIAS.length) return;
-    setEnviando(true);
-
-    try {
-      const vistoriaId = vistoria.id;
-      const uploads: Promise<void>[] = [];
-
-      fotos.forEach((foto, cat) => {
-        if (foto.uploaded) return;
-        const safeCat = cat
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-zA-Z0-9]/g, "_")
-          .toLowerCase();
-        const ts = foto.timestamp.replace(/[:.]/g, "-");
-        const path = `${vistoriaId}/${safeCat}_${ts}.jpg`;
-
-        uploads.push(
-          supabase.storage
-            .from("vistoria-fotos")
-            .upload(path, foto.blob, {
-              contentType: "image/jpeg",
-              upsert: true,
-            })
-            .then(({ error }) => {
-              if (error) throw error;
-              foto.uploaded = true;
-            })
-        );
-      });
-
-      await Promise.all(uploads);
-
-      // Update vistoria record
-      const fotosMeta = Array.from(fotos.values()).map((f) => ({
-        categoria: f.categoria,
-        timestamp: f.timestamp,
-        lat: f.lat,
-        lng: f.lng,
-      }));
-
-      await supabase
-        .from("vistorias" as any)
-        .update({
-          fotos_metadata: fotosMeta,
-          status_fotos: "enviadas",
-          data_envio_fotos: new Date().toISOString(),
-          latitude: coords?.lat,
-          longitude: coords?.lng,
-        } as any)
-        .eq("id", vistoriaId);
-
-      setConcluido(true);
-    } catch (err: any) {
-      alert("Erro ao enviar fotos: " + (err?.message || "tente novamente"));
-    } finally {
-      setEnviando(false);
-    }
-  }, [vistoria, fotos, coords]);
-
-  // ── Render helpers ──────────────────────────────────
-  const fotosCount = fotos.size;
-  const progressPct = (fotosCount / CATEGORIAS.length) * 100;
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#1A3A5C]" />
+  if (erro || !vistoria) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#1A3A5C] px-4">
+      <div className="bg-white rounded-xl p-8 text-center max-w-md">
+        <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+        <h2 className="text-lg font-bold mb-2">Vistoria não encontrada</h2>
+        <p className="text-sm text-gray-600">{erro || "Verifique o link e tente novamente."}</p>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (erro || !vistoria) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6 text-center">
-            <AlertTriangle className="mx-auto h-12 w-12 text-orange-500 mb-4" />
-            <h2 className="text-lg font-semibold mb-2">Link Inválido</h2>
-            <p className="text-gray-600 text-sm">{erro || "Vistoria não encontrada."}</p>
-          </CardContent>
-        </Card>
+  if (concluido) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#1A3A5C] px-4">
+      <div className="bg-white rounded-xl p-8 text-center max-w-md">
+        <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-3" />
+        <h2 className="text-xl font-bold text-[#1A3A5C] mb-2">Fotos enviadas com sucesso!</h2>
+        <p className="text-sm text-gray-600">Sua vistoria será analisada em breve. Você receberá uma notificação com o resultado.</p>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (concluido) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6 text-center">
-            <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
-            <h2 className="text-xl font-bold mb-2">Fotos Enviadas!</h2>
-            <p className="text-gray-600">
-              Todas as {CATEGORIAS.length} fotos da vistoria foram enviadas com sucesso.
-            </p>
-            <p className="text-sm text-gray-400 mt-4">Você pode fechar esta página.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const fotosTiradas = fotos.size;
+  const totalFotos = CATEGORIAS.length;
+  const progresso = Math.round((fotosTiradas / totalFotos) * 100);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-32">
+    <div className="min-h-screen bg-gray-100">
       {/* Header */}
-      <div className="bg-[#1A3A5C] text-white px-4 py-5">
-        <h1 className="text-lg font-bold">Vistoria Veicular</h1>
-        <div className="flex items-center gap-3 mt-2 text-sm opacity-90">
-          {vistoria.placa && (
-            <span className="bg-white/20 px-2 py-0.5 rounded font-mono font-bold">
-              {vistoria.placa}
-            </span>
-          )}
-          {vistoria.modelo && <span>{vistoria.modelo}</span>}
-        </div>
-      </div>
-
-      {/* Geolocation & Time Bar */}
-      <div className="bg-white border-b px-4 py-3 text-xs space-y-1">
-        <div className="flex items-center gap-2">
-          <Clock className="h-3.5 w-3.5 text-gray-400" />
-          <span className="font-mono">
-            {agora.toLocaleDateString("pt-BR")} {agora.toLocaleTimeString("pt-BR")}
-          </span>
-        </div>
-        {coords ? (
-          <div className="flex items-center gap-2 text-green-700">
-            <MapPin className="h-3.5 w-3.5" />
-            <span className="font-mono">
-              {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
-            </span>
-          </div>
-        ) : geoErro ? (
-          <div className="flex items-center gap-2 text-red-600">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            <span>{geoErro}</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 text-gray-400">
-            <MapPin className="h-3.5 w-3.5 animate-pulse" />
-            <span>Obtendo localização...</span>
-          </div>
-        )}
-      </div>
-
-      {/* Progress */}
-      <div className="px-4 py-3 bg-white border-b">
-        <div className="flex items-center justify-between mb-1.5 text-sm">
-          <span className="font-medium">Progresso</span>
-          <span className="text-gray-500">
-            {fotosCount}/{CATEGORIAS.length} fotos
-          </span>
-        </div>
-        <Progress value={progressPct} className="h-2" />
-      </div>
-
-      {/* Categories Checklist */}
-      <div className="px-4 py-3">
-        <div className="grid gap-2">
-          {CATEGORIAS.map((cat) => {
-            const foto = fotos.get(cat);
-            const done = !!foto;
-            return (
-              <button
-                key={cat}
-                disabled={!coords}
-                onClick={() => abrirCamera(cat)}
-                className={`flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${
-                  done
-                    ? "bg-green-50 border-green-200"
-                    : "bg-white border-gray-200 hover:border-[#1A3A5C] hover:shadow-sm"
-                } ${!coords ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-              >
-                {done ? (
-                  <img
-                    src={foto.previewUrl}
-                    alt={cat}
-                    className="h-12 w-12 rounded object-cover flex-shrink-0"
-                  />
-                ) : (
-                  <div className="h-12 w-12 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <Camera className="h-5 w-5 text-gray-400" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <span className="text-sm font-medium block">{cat}</span>
-                  {cat === "Chassi" && (
-                    <span className="text-xs text-gray-400">
-                      Obs: se não encontrar no motor, pode ser do vidro
-                    </span>
-                  )}
+      <header className="bg-[#1A3A5C] text-white px-4 py-3 sticky top-0 z-50">
+        <div className="max-w-lg mx-auto">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-sm font-bold">Vistoria Veicular</h1>
+              <p className="text-[10px] text-white/70">{vistoria.placa} — {vistoria.modelo}</p>
+            </div>
+            <div className="text-right">
+              <div className="flex items-center gap-1 text-[10px] text-white/70">
+                <Clock className="w-3 h-3" />
+                {agora.toLocaleTimeString("pt-BR")}
+              </div>
+              {coords ? (
+                <div className="flex items-center gap-1 text-[10px] text-green-400">
+                  <MapPin className="w-3 h-3" />GPS OK
                 </div>
-                {done ? (
-                  <Badge
-                    variant="secondary"
-                    className="bg-green-100 text-green-700 flex-shrink-0"
-                  >
-                    <CheckCircle className="h-3 w-3 mr-1" /> OK
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-gray-400 flex-shrink-0">
-                    Pendente
-                  </Badge>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Camera Overlay */}
-      {categoriaAtiva && usandoCamera && (
-        <div className="fixed inset-0 bg-black z-50 flex flex-col">
-          <div className="bg-[#1A3A5C] text-white px-4 py-3 flex items-center justify-between">
-            <span className="font-medium text-sm">{categoriaAtiva}</span>
-            <button onClick={fecharCamera} className="p-1">
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="flex-1 relative">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
-            {/* Timestamp overlay on video */}
-            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs px-3 py-2 font-mono">
-              {new Date().toLocaleString("pt-BR")} | {coords?.lat.toFixed(6)},{" "}
-              {coords?.lng.toFixed(6)}
+              ) : (
+                <div className="flex items-center gap-1 text-[10px] text-red-400">
+                  <MapPin className="w-3 h-3" />{geoErro ? "GPS negado" : "Aguardando..."}
+                </div>
+              )}
             </div>
           </div>
-          <div className="bg-black py-6 flex justify-center">
-            <button
-              onClick={capturarFoto}
-              className="h-16 w-16 rounded-full border-4 border-white bg-white/20 active:bg-white/40 transition-colors"
-            />
+          {/* Progress bar */}
+          <div className="mt-2 bg-white/20 rounded-full h-2">
+            <div className="bg-green-400 h-2 rounded-full transition-all" style={{ width: `${progresso}%` }} />
           </div>
+          <p className="text-[10px] text-white/70 mt-1">{fotosTiradas}/{totalFotos} fotos tiradas</p>
+        </div>
+      </header>
+
+      {/* GPS warning */}
+      {!coords && geoErro && (
+        <div className="bg-red-500 text-white text-center text-xs py-2 px-4">
+          <AlertTriangle className="w-3 h-3 inline mr-1" />{geoErro}
         </div>
       )}
 
-      {/* Hidden canvas for capture */}
-      <canvas ref={canvasRef} className="hidden" />
+      {/* Grid de fotos */}
+      <div className="max-w-lg mx-auto px-3 py-4">
+        <div className="grid grid-cols-2 gap-3">
+          {CATEGORIAS.map(cat => {
+            const foto = fotos.get(cat.id);
+            return (
+              <div key={cat.id} className="relative">
+                {foto ? (
+                  // Foto tirada — mostra miniatura
+                  <div className="relative aspect-[4/3] rounded-lg overflow-hidden border-2 border-green-500">
+                    <img src={foto.previewUrl} alt={cat.label} className="w-full h-full object-cover" />
+                    <div className="absolute top-1 right-1">
+                      <button onClick={() => removeFoto(cat.id)} className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <div className="absolute top-1 left-1">
+                      <CheckCircle className="w-5 h-5 text-green-500 drop-shadow" />
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 bg-green-600/90 text-white text-[10px] font-semibold text-center py-1">
+                      {cat.label}
+                    </div>
+                  </div>
+                ) : (
+                  // Não tirada — mostra referência + botão
+                  <label className={`block relative aspect-[4/3] rounded-lg overflow-hidden border-2 border-dashed cursor-pointer transition-all ${
+                    coords ? "border-[#1A3A5C] hover:border-blue-400" : "border-gray-300 opacity-50 cursor-not-allowed"
+                  }`}>
+                    <img src={cat.img} alt={cat.label} className="w-full h-full object-cover opacity-60" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30">
+                      <Camera className="w-8 h-8 text-white mb-1" />
+                      <span className="text-white text-[10px] font-semibold">Tirar foto</span>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 bg-[#1A3A5C]/90 text-white text-[10px] font-semibold text-center py-1">
+                      {cat.label}
+                    </div>
+                    {cat.obs && (
+                      <div className="absolute bottom-6 left-0 right-0 text-[8px] text-white/80 text-center px-1">{cat.obs}</div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={(e) => handleFile(cat.id, e)}
+                      disabled={!coords}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
-      {/* Hidden file input fallback */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={handleFileInput}
-      />
-
-      {/* Submit Button - Fixed bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 z-40">
-        {fotosCount < CATEGORIAS.length ? (
-          <Button disabled className="w-full" size="lg">
-            <Camera className="h-4 w-4 mr-2" />
-            {fotosCount === 0
-              ? `Tire as ${CATEGORIAS.length} fotos para enviar`
-              : `Faltam ${CATEGORIAS.length - fotosCount} foto(s)`}
-          </Button>
-        ) : (
-          <Button
+        {/* Botão enviar */}
+        <div className="mt-6 space-y-3">
+          <button
             onClick={enviarFotos}
-            disabled={enviando}
-            className="w-full bg-green-600 hover:bg-green-700"
-            size="lg"
+            disabled={fotosTiradas === 0 || enviando || !coords}
+            className={`w-full py-4 rounded-xl font-bold text-white text-base transition-all ${
+              fotosTiradas >= totalFotos
+                ? "bg-green-500 hover:bg-green-600 shadow-lg"
+                : fotosTiradas > 0
+                ? "bg-[#1A3A5C] hover:bg-[#15304D]"
+                : "bg-gray-300 cursor-not-allowed"
+            }`}
           >
-            {enviando ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                Enviando...
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4 mr-2" />
-                Enviar {CATEGORIAS.length} Fotos
-              </>
-            )}
-          </Button>
-        )}
+            {enviando ? "Enviando..." : fotosTiradas >= totalFotos ? `Enviar ${fotosTiradas} fotos` : fotosTiradas > 0 ? `Enviar ${fotosTiradas}/${totalFotos} fotos` : "Tire as fotos para enviar"}
+          </button>
+          {fotosTiradas > 0 && fotosTiradas < totalFotos && (
+            <p className="text-xs text-center text-gray-500">Faltam {totalFotos - fotosTiradas} fotos. Você pode enviar parcial.</p>
+          )}
+        </div>
       </div>
+
+      {/* Canvas oculto para processar imagens */}
+      <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 }
