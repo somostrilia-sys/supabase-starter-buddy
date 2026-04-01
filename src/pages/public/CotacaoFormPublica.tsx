@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase, callEdge } from "@/integrations/supabase/client";
 import { CheckCircle, Loader2, ChevronRight, ChevronLeft, Car, Shield, Phone, MessageSquare } from "lucide-react";
@@ -46,6 +46,14 @@ export default function CotacaoFormPublica() {
 
   const [enviando, setEnviando] = useState(false);
   const [concluido, setConcluido] = useState(false);
+  const [cidadesOptions, setCidadesOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!estado) { setCidadesOptions([]); setCidade(""); return; }
+    supabase.from("municipios" as any).select("nome").eq("uf", estado).order("nome")
+      .then(({ data }) => setCidadesOptions((data || []).map((d: any) => d.nome)));
+    setCidade("");
+  }, [estado]);
 
   // Auto-busca placa
   const buscarPlaca = async (placaVal: string) => {
@@ -334,12 +342,14 @@ export default function CotacaoFormPublica() {
 
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-[#002b5e]">Na cidade:</label>
-                <input
-                  className="w-full border-2 border-gray-200 rounded-lg px-4 py-3 text-sm focus:border-[#177ef3] focus:outline-none transition-colors"
-                  placeholder="Sua cidade"
+                <select
+                  className="w-full border-2 border-gray-200 rounded-lg px-4 py-3 text-sm focus:border-[#177ef3] focus:outline-none bg-white"
                   value={cidade}
                   onChange={e => setCidade(e.target.value)}
-                />
+                >
+                  <option value="">Selecione a cidade</option>
+                  {cidadesOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
               </div>
 
               <label className="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 hover:border-gray-300 cursor-pointer">

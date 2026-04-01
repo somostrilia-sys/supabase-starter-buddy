@@ -1,5 +1,5 @@
 import { maskCpfCnpj, maskTelefone, maskPlaca } from "@/lib/masks";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,6 +99,13 @@ export default function Pipeline() {
   // New deal form
   const [form, setForm] = useState({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", anoModelo: "", anoFab: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "", cidadeCirc: "", estadoCirc: "" });
   const [formTouched, setFormTouched] = useState({ lead_nome: false, telefone: false });
+  const [cidadesCircOptions, setCidadesCircOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!form.estadoCirc) { setCidadesCircOptions([]); return; }
+    supabase.from("municipios" as any).select("nome").eq("uf", form.estadoCirc).order("nome")
+      .then(({ data }) => setCidadesCircOptions((data || []).map((d: any) => d.nome)));
+  }, [form.estadoCirc]);
 
   // Drag state
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -781,7 +788,12 @@ export default function Pipeline() {
                 </Select>
               </div>
               <div className="space-y-1.5"><Label>Cidade Circulação *</Label>
-                <Input value={form.cidadeCirc} onChange={e => setForm({ ...form, cidadeCirc: e.target.value })} placeholder="Cidade do veículo" />
+                <Select value={form.cidadeCirc} onValueChange={v => setForm({ ...form, cidadeCirc: v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione a cidade" /></SelectTrigger>
+                  <SelectContent>
+                    {cidadesCircOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

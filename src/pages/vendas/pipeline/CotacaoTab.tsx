@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -79,14 +79,7 @@ const UFS = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA",
   "PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
 ];
-const cidadesPorUF: Record<string, string[]> = {
-  SP: ["São Paulo", "Campinas", "Ribeirão Preto", "Santos", "Sorocaba"],
-  RJ: ["Rio de Janeiro", "Niterói", "Petrópolis"],
-  MG: ["Belo Horizonte", "Uberlândia", "Contagem"],
-  PR: ["Curitiba", "Londrina", "Maringá"],
-  GO: ["Goiânia", "Anápolis"],
-  DF: ["Brasília"],
-};
+// Cities loaded dynamically from municipios table
 
 function maskPlaca(v: string) {
   return v.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 7)
@@ -177,6 +170,14 @@ export default function CotacaoTab({ deal }: Props) {
   const [fipeFetched, setFipeFetched] = useState(false);
   const [descontoMensal, setDescontoMensal] = useState("");
   const [descontoAdesao, setDescontoAdesao] = useState("");
+
+  // Cidades dinâmicas do banco
+  const [cidades, setCidades] = useState<string[]>([]);
+  useEffect(() => {
+    if (!form.estadoCirc) { setCidades([]); return; }
+    supabase.from("municipios" as any).select("nome").eq("uf", form.estadoCirc).order("nome")
+      .then(({ data }) => setCidades((data || []).map((d: any) => d.nome)));
+  }, [form.estadoCirc]);
 
   // Dados reais do banco
   const [precosReais, setPrecosReais] = useState<any[]>([]);
@@ -331,8 +332,6 @@ export default function CotacaoTab({ deal }: Props) {
   // Usar valor FIPE real da API se disponível, senão do mock
   const valorFipe = valorFipeReal > 0 ? valorFipeReal : (modeloAtual?.valorFipe || 0);
   const codFipe = codFipeReal || (modeloAtual?.codFipe || "");
-
-  const cidades = cidadesPorUF[form.estadoCirc] || [];
 
   const set = (field: string, value: string | boolean) => setForm(prev => ({ ...prev, [field]: value }));
 
