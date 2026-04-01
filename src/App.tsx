@@ -61,6 +61,7 @@ import ConfigComissoes from "./pages/vendas/ConfigComissoes";
 import LandingPagePublica from "./pages/public/LandingPagePublica";
 import VistoriaPublica from "./pages/public/VistoriaPublica";
 import CotacaoPublica from "./pages/public/CotacaoPublica";
+import CotacaoFormPublica from "./pages/public/CotacaoFormPublica";
 
 const queryClient = new QueryClient();
 
@@ -92,6 +93,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/lp/:slug" element={<LandingPagePublica />} />
             <Route path="/vistoria/:token" element={<VistoriaPublica />} />
+            <Route path="/cotacao" element={<CotacaoFormPublica />} />
             <Route path="/cotacao/:id" element={<CotacaoPublica />} />
             <Route path="/" element={<D><Dashboard /></D>} />
 
