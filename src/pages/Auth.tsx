@@ -41,44 +41,39 @@ export default function Auth() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex' }}>
-
-      {/* PAINEL ESQUERDO — imagem do designer ocupa 58% */}
+    /* Imagem do designer É a tela inteira — fullscreen */
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      backgroundImage: "url('/login-bg.png')",
+      backgroundSize: '100% 100%',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+    }}>
+      {/* Formulário sobreposto no lado direito (painel cinza da imagem) */}
       <div style={{
-        width: '58%',
-        flexShrink: 0,
-        backgroundImage: "url('/login-bg.png')",
-        backgroundSize: 'contain',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundColor: '#0d1b2e',
-        minHeight: '100vh',
-      }} />
-
-      {/* PAINEL DIREITO — fundo branco/cinza, formulário centralizado */}
-      <div style={{
-        flex: 1,
-        minHeight: '100vh',
-        backgroundColor: '#f0f0f1',
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: '42%',
+        height: '100%',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '32px 24px',
       }}>
-        {/* Logo */}
         {brand.logoUrl && (
-          <img src={brand.logoUrl} alt={brand.name} style={{ height: '52px', objectFit: 'contain', marginBottom: '24px' }} />
+          <img src={brand.logoUrl} alt={brand.name} style={{ height: '48px', objectFit: 'contain', marginBottom: '24px' }} />
         )}
 
-        {/* Card formulário */}
         <div style={{
           width: '100%',
-          maxWidth: '320px',
+          maxWidth: '310px',
           borderRadius: '16px',
           padding: '28px 24px',
-          backgroundColor: 'white',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
+          backgroundColor: 'rgba(255,255,255,0.95)',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
         }}>
           <div style={{ marginBottom: '18px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1a1a2e', margin: 0 }}>
