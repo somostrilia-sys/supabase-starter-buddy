@@ -77,23 +77,6 @@ export default function Pipeline() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
 
-  // Masks
-  function maskCpfCnpj(v: string) {
-    const d = v.replace(/\D/g, "");
-    if (d.length <= 11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, (_, a, b, c, e) => e ? `${a}.${b}.${c}-${e}` : c ? `${a}.${b}.${c}` : b ? `${a}.${b}` : a);
-    return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, (_, a, b, c, e, f) => f ? `${a}.${b}.${c}/${e}-${f}` : e ? `${a}.${b}.${c}/${e}` : c ? `${a}.${b}.${c}` : b ? `${a}.${b}` : a);
-  }
-  function maskTelefone(v: string) {
-    const d = v.replace(/\D/g, "");
-    if (d.length <= 10) return d.replace(/(\d{2})(\d{4})(\d{0,4})/, (_, a, b, c) => c ? `(${a}) ${b}-${c}` : b ? `(${a}) ${b}` : a ? `(${a}` : "");
-    return d.replace(/(\d{2})(\d{5})(\d{0,4})/, (_, a, b, c) => c ? `(${a}) ${b}-${c}` : b ? `(${a}) ${b}` : a ? `(${a}` : "");
-  }
-  function maskPlaca(v: string) {
-    const clean = v.toUpperCase().replace(/[^A-Z0-9]/g, "");
-    if (clean.length <= 3) return clean;
-    return clean.slice(0, 3) + "-" + clean.slice(3, 7);
-  }
-
   // New deal form
   const [form, setForm] = useState({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", anoModelo: "", anoFab: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
   const [formTouched, setFormTouched] = useState({ lead_nome: false, telefone: false });
@@ -666,12 +649,12 @@ export default function Pipeline() {
               {formNomeInvalid && <p className="text-xs text-destructive">Nome é obrigatório</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={e => setForm({ ...form, cpf_cnpj: maskCpfCnpj(e.target.value) })} placeholder="000.000.000-00" maxLength={18} /></div>
+              <div className="space-y-1.5"><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={e => setForm({ ...form, cpf_cnpj: e.target.value })} placeholder="000.000.000-00" maxLength={18} /></div>
               <div className="space-y-1.5">
                 <Label>Telefone/WhatsApp *</Label>
                 <Input
                   value={form.telefone}
-                  onChange={e => setForm({ ...form, telefone: maskTelefone(e.target.value) })}
+                  onChange={e => setForm({ ...form, telefone: e.target.value })}
                   onBlur={() => setFormTouched(t => ({ ...t, telefone: true }))}
                   placeholder="(00) 00000-0000"
                   maxLength={15}
@@ -683,7 +666,7 @@ export default function Pipeline() {
             <div className="space-y-1.5"><Label>E-mail</Label><Input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Placa do Veículo</Label><Input value={form.placa} maxLength={8} onChange={e => {
-                const v = maskPlaca(e.target.value);
+                const v = e.target.value.toUpperCase();
                 setForm(f => ({ ...f, placa: v }));
                 const clean = v.replace(/[^A-Z0-9]/g, "");
                 if (clean.length >= 7) {
