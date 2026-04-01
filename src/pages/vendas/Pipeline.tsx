@@ -394,7 +394,7 @@ export default function Pipeline() {
             </div>
             <div className="space-y-1"><Label className="text-xs">Consultor</Label>
               <Select value={fConsultor} onValueChange={setFConsultor}><SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">Todos</SelectItem>{consultoresLista.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="all">Todos</SelectItem>{consultoresLista.filter(Boolean).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1"><Label className="text-xs">Etapa</Label>
@@ -404,12 +404,12 @@ export default function Pipeline() {
             </div>
             <div className="space-y-1"><Label className="text-xs">Cooperativa</Label>
               <Select value={fCoop} onValueChange={setFCoop}><SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">Todas</SelectItem>{cooperativasLista.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="all">Todas</SelectItem>{cooperativasLista.filter(Boolean).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1"><Label className="text-xs">Regional</Label>
               <Select value={fRegional} onValueChange={setFRegional}><SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">Todas</SelectItem>{regionaisLista.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="all">Todas</SelectItem>{regionaisLista.filter(Boolean).map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1"><Label className="text-xs">Gerente</Label>
@@ -688,12 +688,12 @@ export default function Pipeline() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Plano</Label>
                 <Select value={form.plano} onValueChange={v => setForm({ ...form, plano: v })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{planosLista.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                  <SelectContent>{planosLista.filter(Boolean).map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5"><Label>Cooperativa</Label>
                 <Select value={form.cooperativa} onValueChange={handleCooperativaChange}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{cooperativasLista.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  <SelectContent>{cooperativasLista.filter(Boolean).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
@@ -703,7 +703,7 @@ export default function Pipeline() {
               </div>
               <div className="space-y-1.5"><Label>Consultor Responsável</Label>
                 <Select value={form.consultor} onValueChange={v => setForm({ ...form, consultor: v })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{consultoresLista.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  <SelectContent>{consultoresLista.filter(Boolean).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
