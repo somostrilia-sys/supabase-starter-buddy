@@ -65,85 +65,16 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left side - Hero with gradient */}
-      <div className="hidden lg:flex lg:w-[58%] relative gradient-hero overflow-hidden">
-        {/* Animated orbs */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="orb orb-1" />
-          <div className="orb orb-2" />
-          <div className="orb orb-3" />
-          {/* Grid pattern overlay */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{
-            backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-            backgroundSize: '60px 60px'
-          }} />
-        </div>
-
-        <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
-          {/* Top - Logo */}
-          <div className="flex items-center gap-3">
-            {brand.logoUrl && (
-              <img src={brand.logoUrl} alt={brand.name} className="h-10 object-contain brightness-0 invert" />
-            )}
-            <div>
-              <h1 className="text-xl font-bold text-white tracking-tight">{brand.name}</h1>
-              <p className="text-xs text-white/40 uppercase tracking-wider">{brand.subtitle}</p>
-            </div>
-          </div>
-
-          {/* Center - Main content */}
-          <div className="space-y-10 max-w-xl">
-            <div className="space-y-5">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass text-xs text-accent font-medium">
-                <Zap className="w-3.5 h-3.5" />
-                Plataforma Inteligente de Gestão
-              </div>
-              <h2 className="text-4xl xl:text-5xl font-bold text-white leading-[1.1] tracking-tight">
-                Software completo para
-                <span className="text-accent"> proteção veicular</span>
-              </h2>
-              <p className="text-base text-white/50 leading-relaxed max-w-md">
-                Unifique vendas, financeiro e gestão com uma plataforma moderna, segura e escalável.
-              </p>
-            </div>
-
-            {/* Feature cards - 2x2 grid */}
-            <div className="grid grid-cols-2 gap-3">
-              {features.map((f) => (
-                <div key={f.title} className="glass rounded-xl p-4 space-y-2.5 hover:bg-white/10 transition-colors group cursor-default">
-                  <div className="w-9 h-9 rounded-lg gradient-accent flex items-center justify-center">
-                    <f.icon className="w-4.5 h-4.5 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-sm text-white">{f.title}</h3>
-                  <p className="text-xs text-white/40 leading-relaxed">{f.desc}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Differential highlight */}
-            <div className="flex items-center gap-4 pt-2">
-              {differentials.map((d) => (
-                <div key={d.title} className="flex items-center gap-3 glass rounded-xl px-5 py-3">
-                  <div className="w-10 h-10 rounded-lg gradient-accent flex items-center justify-center">
-                    <d.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold text-white">{d.title}</p>
-                    <p className="text-xs text-white/50">{d.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Bottom */}
-          <p className="text-xs text-white/20">
-            © 2026 {brand.name} — Todos os direitos reservados
-          </p>
-        </div>
+      {/* Left side - Imagem GIA */}
+      <div className="hidden lg:flex lg:w-[58%] relative overflow-hidden" style={{ minHeight: '100vh' }}>
+        <img
+          src="/login-bg.png"
+          alt=""
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
+        />
       </div>
 
-      {/* Right side - Login form */}
+            {/* Right side - Login form */}
       <div className="flex-1 flex items-center justify-center bg-background p-6 sm:p-10 relative overflow-hidden">
         {/* Subtle orbs on right side too */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none lg:hidden">
@@ -160,6 +91,13 @@ export default function Auth() {
               <h1 className="text-xl font-bold tracking-tight text-foreground">{brand.name}</h1>
               <p className="text-sm text-muted-foreground">{brand.subtitle}</p>
             </div>
+          </div>
+
+          {/* Desktop logo acima do form */}
+          <div className="hidden lg:flex justify-center mb-2">
+            {brand.logoUrl && (
+              <img src={brand.logoUrl} alt={brand.name} className="h-14 object-contain" />
+            )}
           </div>
 
           {/* Form header */}
