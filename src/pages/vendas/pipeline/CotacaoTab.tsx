@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { PipelineDeal } from "./mockData";
 import { supabase, callEdge } from "@/integrations/supabase/client";
+import { gerarPdfCotacao } from "@/lib/gerarPdfCotacao";
 import { MessageSquare, Mail, Link2, CreditCard, CheckCircle, Shield, ShieldCheck, ShieldPlus, Search, Loader2 } from "lucide-react";
 
 /* ─── FIPE mock data ─── */
@@ -245,7 +246,38 @@ export default function CotacaoTab({ deal }: Props) {
 
   const set = (field: string, value: string | boolean) => setForm(prev => ({ ...prev, [field]: value }));
 
+  const handleBaixarPdf = () => {
+    if (!planoSelecionado) { toast.error("Selecione um plano para baixar o PDF"); return; }
+    const precoPlano = precosReais.find((p: any) => p.plano === planoSelecionado);
+    const mensal = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
+    gerarPdfCotacao({
+      numeroCotacao: `${Date.now().toString().slice(-8)}`,
+      data: new Date().toLocaleDateString("pt-BR"),
+      validade: 7,
+      cliente: {
+        nome: deal.lead_nome,
+        veiculo: `${marca} ${modeloAtual?.modelo || deal.veiculo_modelo}`,
+        placa: form.placa,
+        codFipe: codFipe,
+        valorFipe,
+        cidade: form.cidadeCirc,
+        estado: form.estadoCirc,
+      },
+      plano: {
+        nome: planoSelecionado,
+        mensal,
+        adesao: precoPlano ? Number(precoPlano.adesao) : 400,
+        participacao: precoPlano ? `${precoPlano.tipo_franquia} ${precoPlano.valor_franquia}` : "5% FIPE",
+        rastreador: precoPlano?.rastreador || "Não",
+      },
+      coberturas: coberturasPlano.map((c: any) => ({ nome: c.cobertura, inclusa: c.inclusa, tipo: c.tipo })),
+      consultor: { nome: deal.consultor || "Consultor", telefone: "", email: "" },
+    });
+    toast.success("PDF da cotação baixado!");
+  };
+
   const handleEnviar = async (tipo: string) => {
+    if (tipo === "PDF") { handleBaixarPdf(); return; }
     // Criar cotação no banco se não existe
     const { data: cotacao } = await supabase
       .from("cotacoes")
@@ -288,7 +320,7 @@ export default function CotacaoTab({ deal }: Props) {
   }, []);
 
   // FIPE auto-lookup when plate is complete (7 chars: ABC-1D23)
-  const consultarFipe = useCallback((placa: string) => {
+  const consultarFipe = useCallback(async (placa: string) => {
     const cleanPlaca = placa.replace("-", "");
     if (cleanPlaca.length !== 7) return;
 
