@@ -78,7 +78,7 @@ export default function Pipeline() {
   const [perPage, setPerPage] = useState(10);
 
   // New deal form
-  const [form, setForm] = useState({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
+  const [form, setForm] = useState({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", anoModelo: "", anoFab: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
   const [formTouched, setFormTouched] = useState({ lead_nome: false, telefone: false });
 
   // Drag state
@@ -173,7 +173,7 @@ export default function Pipeline() {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       setNewDealOpen(false);
       toast.success("Negociação criada com sucesso!");
-      setForm({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
+      setForm({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", anoModelo: "", anoFab: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
       setFormTouched({ lead_nome: false, telefone: false });
     },
     onError: (e: any) => toast.error(e.message),
@@ -644,13 +644,17 @@ export default function Pipeline() {
                     const res = await callEdge("gia-buscar-placa", { acao: "placa", placa: clean });
                     if (res.sucesso && res.resultado) {
                       const r = res.resultado;
-                      setForm(f => ({ ...f, modelo: `${r.marca} ${r.modelo} ${r.anoModelo}` }));
-                      toast.success(`${r.marca} ${r.modelo} ${r.anoModelo} — R$ ${(r.valorFipe || 0).toLocaleString("pt-BR")}`);
+                      setForm(f => ({ ...f, modelo: `${r.marca} ${r.modelo}`, anoModelo: r.anoModelo || "", anoFab: r.anoFabricacao || "" }));
+                      toast.success(`${r.marca} ${r.modelo} ${r.anoFabricacao}/${r.anoModelo} — R$ ${(r.valorFipe || 0).toLocaleString("pt-BR")}`);
                     }
                   } catch {}
                 }
               }} placeholder="ABC1D23" /></div>
-              <div className="space-y-1.5"><Label>Modelo do Veículo</Label><Input value={form.modelo} onChange={e => setForm({ ...form, modelo: e.target.value })} placeholder="Preenchido automaticamente pela placa" /></div>
+              <div className="space-y-1.5"><Label>Modelo do Veículo</Label><Input value={form.modelo} onChange={e => setForm({ ...form, modelo: e.target.value })} placeholder="Preenchido pela placa" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label>Ano Modelo *</Label><Input value={form.anoModelo} onChange={e => setForm({ ...form, anoModelo: e.target.value })} placeholder="2024" required /></div>
+              <div className="space-y-1.5"><Label>Ano Fabricação *</Label><Input value={form.anoFab} onChange={e => setForm({ ...form, anoFab: e.target.value })} placeholder="2023" required /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Plano</Label>
