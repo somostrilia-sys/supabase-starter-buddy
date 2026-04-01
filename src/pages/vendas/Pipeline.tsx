@@ -129,9 +129,19 @@ export default function Pipeline() {
   });
   const consultoresReais = [...new Set((usuariosReais || []).map((u: any) => u.nome).filter(Boolean))];
 
+  // Carregar planos reais do banco
+  const { data: planosDb } = useQuery({
+    queryKey: ["planos_gia_db"],
+    queryFn: async () => {
+      const { data } = await supabase.from("planos_gia").select("nome").eq("ativo", true).order("nome");
+      return (data || []).map((p: any) => p.nome);
+    },
+  });
+
   const cooperativasLista = cooperativasDb && cooperativasDb.length > 0 ? cooperativasDb.map((c: any) => c.nome) : cooperativas;
   const regionaisLista = regionaisDb && regionaisDb.length > 0 ? regionaisDb.map((r: any) => r.nome) : regionais;
   const consultoresLista = consultoresReais.length > 0 ? consultoresReais : consultores;
+  const planosLista = planosDb && planosDb.length > 0 ? planosDb : planos;
 
   // Ao selecionar cooperativa → preencher regional automaticamente
   function handleCooperativaChange(coopNome: string) {
@@ -696,7 +706,7 @@ export default function Pipeline() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Plano</Label>
                 <Select value={form.plano} onValueChange={v => setForm({ ...form, plano: v })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{planos.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                  <SelectContent>{planosLista.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5"><Label>Cooperativa</Label>

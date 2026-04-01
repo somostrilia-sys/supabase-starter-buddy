@@ -55,27 +55,14 @@ export const DRAG_ALLOWED: Record<PipelineStage, PipelineStage[]> = {
   perdido: ["novo_lead"],
 };
 
-export const consultores = ["Ana Silva", "Carlos Souza", "Maria Lima"];
-export const gerentes = ["Roberto Costa", "Fernanda Dias"];
-export const cooperativas = ["Coop Norte", "Coop Sul", "Coop Leste"];
-export const regionais = ["SP Capital", "Interior SP", "RJ", "MG"];
-export const planos = ["Básico", "Intermediário", "Premium", "Frota"];
+export const consultores: string[] = [];
+export const gerentes: string[] = [];
+export const cooperativas: string[] = [];
+export const regionais: string[] = [];
+export const planos = ["Básico", "Completo", "Objetivo", "Premium", "Objetivo (Leves)", "PESADOS"];
 
 const day = 86400000;
 
-export const mockDeals: PipelineDeal[] = [
-  { id: "p1", codigo: "NEG-2026-001", lead_nome: "João Pereira", cpf_cnpj: "123.456.789-00", telefone: "(11) 98765-1234", email: "joao@email.com", veiculo_modelo: "Honda Civic 2022", veiculo_placa: "ABC-1D23", plano: "Premium", valor_plano: 289.90, stage: "novo_lead", consultor: "Ana Silva", cooperativa: "Coop Norte", regional: "SP Capital", gerente: "Roberto Costa", origem: "WhatsApp", observacoes: "", enviado_sga: false, visualizacoes_proposta: 0, status_icons: { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false }, created_at: new Date(Date.now() - 0.5 * day).toISOString(), updated_at: new Date(Date.now() - 0.5 * day).toISOString() },
-  { id: "p2", codigo: "NEG-2026-002", lead_nome: "Maria Santos", cpf_cnpj: "987.654.321-00", telefone: "(11) 97654-5678", email: "maria@email.com", veiculo_modelo: "VW Gol 2023", veiculo_placa: "DEF-2G34", plano: "Básico", valor_plano: 149.90, stage: "em_contato", consultor: "Carlos Souza", cooperativa: "Coop Sul", regional: "Interior SP", gerente: "Fernanda Dias", origem: "Facebook", observacoes: "", enviado_sga: false, visualizacoes_proposta: 0, status_icons: { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false }, created_at: new Date(Date.now() - 2 * day).toISOString(), updated_at: new Date(Date.now() - 1 * day).toISOString() },
-  { id: "p3", codigo: "NEG-2026-003", lead_nome: "Carlos Oliveira", cpf_cnpj: "456.789.123-00", telefone: "(21) 99876-4321", email: "carlos@email.com", veiculo_modelo: "Fiat Argo 2024", veiculo_placa: "GHI-3J45", plano: "Intermediário", valor_plano: 199.90, stage: "em_contato", consultor: "Maria Lima", cooperativa: "Coop Leste", regional: "RJ", gerente: "Roberto Costa", origem: "Indicação", observacoes: "", enviado_sga: false, visualizacoes_proposta: 2, status_icons: { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false }, created_at: new Date(Date.now() - 5 * day).toISOString(), updated_at: new Date(Date.now() - 4 * day).toISOString() },
-  { id: "p4", codigo: "NEG-2026-004", lead_nome: "Ana Costa", cpf_cnpj: "321.654.987-00", telefone: "(11) 91234-5678", email: "ana@email.com", veiculo_modelo: "Toyota Corolla 2023", veiculo_placa: "JKL-4M56", plano: "Premium", valor_plano: 289.90, stage: "em_negociacao", consultor: "Ana Silva", cooperativa: "Coop Norte", regional: "SP Capital", gerente: "Roberto Costa", origem: "Google", observacoes: "", enviado_sga: true, visualizacoes_proposta: 3, status_icons: { aceita: true, pendente: false, aprovada: false, sga: true, rastreador: false, inadimplencia: false }, created_at: new Date(Date.now() - 3 * day).toISOString(), updated_at: new Date(Date.now() - 0.2 * day).toISOString() },
-  { id: "p5", codigo: "NEG-2026-005", lead_nome: "Pedro Souza", cpf_cnpj: "147.258.369-00", telefone: "(21) 92345-6789", email: "pedro@email.com", veiculo_modelo: "Jeep Compass 2024", veiculo_placa: "UVW-7X89", plano: "Frota", valor_plano: 349.90, stage: "liberado_cadastro", consultor: "Ana Silva", cooperativa: "Coop Leste", regional: "RJ", gerente: "Fernanda Dias", origem: "Indicação", observacoes: "", enviado_sga: true, visualizacoes_proposta: 2, status_icons: { aceita: true, pendente: false, aprovada: true, sga: true, rastreador: true, inadimplencia: false }, created_at: new Date(Date.now() - 6 * day).toISOString(), updated_at: new Date(Date.now() - 0.1 * day).toISOString() },
-  { id: "p6", codigo: "NEG-2026-006", lead_nome: "Juliana Mendes", cpf_cnpj: "258.369.147-00", telefone: "(31) 91234-0987", email: "juliana@email.com", veiculo_modelo: "Honda HR-V 2023", veiculo_placa: "YZA-8B01", plano: "Intermediário", valor_plano: 199.90, stage: "concluido", consultor: "Carlos Souza", cooperativa: "Coop Sul", regional: "MG", gerente: "Roberto Costa", origem: "Facebook", observacoes: "", enviado_sga: true, visualizacoes_proposta: 7, status_icons: { aceita: true, pendente: false, aprovada: true, sga: true, rastreador: true, inadimplencia: false }, created_at: new Date(Date.now() - 10 * day).toISOString(), updated_at: new Date(Date.now() - 1 * day).toISOString() },
-  { id: "p7", codigo: "NEG-2026-007", lead_nome: "Roberto Lima", cpf_cnpj: "654.321.987-00", telefone: "(31) 98765-9876", email: "roberto@email.com", veiculo_modelo: "Hyundai HB20 2024", veiculo_placa: "MNO-5P67", plano: "Básico", valor_plano: 149.90, stage: "perdido", consultor: "Carlos Souza", cooperativa: "Coop Sul", regional: "MG", gerente: "Fernanda Dias", origem: "Telefone", observacoes: "Cliente optou por outro serviço", enviado_sga: false, visualizacoes_proposta: 1, status_icons: { aceita: false, pendente: false, aprovada: false, sga: false, rastreador: false, inadimplencia: false }, created_at: new Date(Date.now() - 1 * day).toISOString(), updated_at: new Date(Date.now() - 0.5 * day).toISOString() },
-];
+export const mockDeals: PipelineDeal[] = [];
 
-export const mockActivities = [
-  { id: "a1", tipo: "Ligação", descricao: "Primeiro contato realizado", data: new Date(Date.now() - 5 * day).toISOString(), usuario: "Ana Silva" },
-  { id: "a2", tipo: "WhatsApp", descricao: "Enviou proposta por WhatsApp", data: new Date(Date.now() - 4 * day).toISOString(), usuario: "Ana Silva" },
-  { id: "a3", tipo: "Email", descricao: "Documentação solicitada", data: new Date(Date.now() - 3 * day).toISOString(), usuario: "Carlos Souza" },
-  { id: "a4", tipo: "Reunião", descricao: "Reunião presencial agendada", data: new Date(Date.now() - 1 * day).toISOString(), usuario: "Maria Lima" },
-];
+export const mockActivities: any[] = [];
