@@ -12,7 +12,7 @@ import { gerarLaudoVistoria } from "@/lib/gerarLaudoVistoria";
 import { usePermission } from "@/hooks/usePermission";
 import {
   ClipboardCheck, Copy, MessageSquare, CheckCircle, XCircle,
-  Clock, AlertCircle, Camera, RotateCcw, Download, Eye, Mail,
+  Clock, AlertCircle, Camera, Globe, RotateCcw, Download, Eye, Mail,
 } from "lucide-react";
 
 type VistoriaStatus = "pendente" | "em_aprovacao" | "aprovada" | "reprovada";
