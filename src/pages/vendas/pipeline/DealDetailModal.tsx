@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import {
   FileText, User, Car, ClipboardCheck, Send, Activity, PenTool, Wallet,
   Phone, Mail, MessageSquare, Video, Plus, Download, CheckCircle, XCircle,
-  Clock, Image,
+  Clock, Image, Archive,
 } from "lucide-react";
 
 interface Props {
@@ -40,9 +40,25 @@ const mockGestaoHistory = [
   { campo: "Financeiro", status: "Pendente", data: "—", erro: null },
 ];
 
+const MOTIVOS_ARQUIVAR = ["Teste", "Erro de cadastro", "Cancelamento pelo cliente", "Duplicidade", "Sem interesse", "Outro"];
+
 export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
   const [activeTab, setActiveTab] = useState("cotacao");
   const [historicoReal, setHistoricoReal] = useState<any[]>([]);
+  const [showArquivar, setShowArquivar] = useState(false);
+  const [motivoArquivar, setMotivoArquivar] = useState("");
+
+  async function handleArquivar() {
+    if (!motivoArquivar) { toast("Selecione um motivo"); return; }
+    await supabase.from("negociacoes").update({ stage: "perdido" } as any).eq("id", deal.id);
+    await supabase.from("pipeline_transicoes").insert({
+      negociacao_id: deal.id, stage_anterior: deal.stage, stage_novo: "perdido",
+      motivo: `Arquivado: ${motivoArquivar}`, automatica: false,
+    } as any);
+    toast.success("Card arquivado");
+    setShowArquivar(false);
+    onOpenChange(false);
+  }
 
   React.useEffect(() => {
     if (!deal.id || deal.id.startsWith("p")) return;
@@ -67,13 +83,28 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
       <DialogContent className="max-w-5xl max-h-[92vh] p-0 gap-0 flex flex-col rounded-none">
         {/* Header com nome e código */}
         <DialogHeader className="px-6 pt-5 pb-3 border-b" style={{ backgroundColor: "#1A3A5C" }}>
-          <DialogTitle className="flex items-center gap-3 text-white">
-            <span className="">{deal.lead_nome}</span>
+          <DialogTitle className="flex items-center gap-3 text-white flex-wrap">
+            <span>{deal.lead_nome}</span>
             <Badge variant="outline" className="text-[10px] font-mono border-white/30 text-white/80 rounded-none">{deal.codigo}</Badge>
             <Badge variant="outline" className="text-xs border-white/30 text-white/80 rounded-none">{deal.veiculo_modelo}</Badge>
             <Badge className="text-[10px] font-mono bg-white/15 text-white rounded-none">{deal.veiculo_placa}</Badge>
+            <Button size="sm" variant="ghost" className="ml-auto text-white/60 hover:text-white hover:bg-white/10 text-xs rounded-none h-7" onClick={() => setShowArquivar(!showArquivar)}>
+              <Archive className="h-3 w-3 mr-1" />Arquivar
+            </Button>
           </DialogTitle>
         </DialogHeader>
+
+        {showArquivar && (
+          <div className="px-6 py-3 bg-destructive/10 border-b flex items-center gap-3">
+            <span className="text-sm font-semibold text-destructive">Arquivar negociação:</span>
+            <Select value={motivoArquivar} onValueChange={setMotivoArquivar}>
+              <SelectTrigger className="w-48 h-8 text-xs rounded-none"><SelectValue placeholder="Motivo" /></SelectTrigger>
+              <SelectContent>{MOTIVOS_ARQUIVAR.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+            </Select>
+            <Button size="sm" variant="destructive" className="rounded-none text-xs h-8" onClick={handleArquivar}>Confirmar</Button>
+            <Button size="sm" variant="ghost" className="rounded-none text-xs h-8" onClick={() => setShowArquivar(false)}>Cancelar</Button>
+          </div>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="mx-6 mt-3 justify-start flex-wrap gap-1">

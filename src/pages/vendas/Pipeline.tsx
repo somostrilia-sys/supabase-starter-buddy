@@ -469,7 +469,7 @@ export default function Pipeline() {
                           draggable
                           onDragStart={e => handleDragStart(e, deal.id)}
                           onClick={() => setDetailDeal(deal)}
-                          className={`kanban-card group bg-card border-2 border-[#747474] border-l-4 rounded-lg cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${draggedId === deal.id ? "opacity-40" : ""}`}
+                          className={`kanban-card group bg-card border-2 border-[#747474] border-l-4 rounded-lg cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""}`}
                           style={{ borderLeftColor: col.color }}
                         >
                           <div className="p-3 space-y-1.5">
