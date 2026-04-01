@@ -1,53 +1,203 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import {
-  Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertTriangle, ArrowRight,
+  Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertTriangle, ArrowRight, X,
 } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import * as XLSX from "xlsx";
 
-const mockCSVData = [
-  { nome: "Ricardo Almeida", email: "ricardo@email.com", telefone: "(11) 99111-2233", veiculo: "Honda Civic 2024", placa: "ABC1D23", cidade: "São Paulo", valido: true },
-  { nome: "Sandra Oliveira", email: "sandra@email.com", telefone: "(11) 99222-3344", veiculo: "Toyota Corolla 2023", placa: "DEF2G34", cidade: "Campinas", valido: true },
-  { nome: "Marcos Pereira", email: "", telefone: "(11) 99333-4455", veiculo: "VW Gol 2022", placa: "GHI3J45", cidade: "Santos", valido: false },
-  { nome: "Julia Costa", email: "julia@email.com", telefone: "(21) 99444-5566", veiculo: "Fiat Argo 2024", placa: "JKL4M56", cidade: "Rio de Janeiro", valido: true },
-  { nome: "Fernando Santos", email: "fernando@email.com", telefone: "(21) 99555-6677", veiculo: "Hyundai HB20 2023", placa: "MNO5P67", cidade: "Niterói", valido: true },
-  { nome: "Camila Rodrigues", email: "camila@email.com", telefone: "(31) 99666-7788", veiculo: "Chevrolet Onix 2024", placa: "QRS6T78", cidade: "BH", valido: true },
-  { nome: "Paulo Mendes", email: "paulo@email.com", telefone: "(31) 99777-8899", veiculo: "Renault Kwid 2023", placa: "", cidade: "Uberlândia", valido: false },
-  { nome: "Tatiana Lima", email: "tatiana@email.com", telefone: "(11) 99888-9900", veiculo: "VW T-Cross 2024", placa: "UVW7X89", cidade: "Guarulhos", valido: true },
-  { nome: "Roberto Silva", email: "roberto@email.com", telefone: "(11) 99999-0011", veiculo: "Honda HR-V 2023", placa: "YZA8B01", cidade: "Osasco", valido: true },
-  { nome: "Adriana Ferreira", email: "adriana@email.com", telefone: "(21) 99000-1122", veiculo: "Jeep Renegade 2023", placa: "BCD9E12", cidade: "Petrópolis", valido: true },
-  { nome: "Lucas Barbosa", email: "lucas.b@email.com", telefone: "", veiculo: "Nissan Kicks 2024", placa: "FGH0I23", cidade: "São Paulo", valido: false },
-  { nome: "Marina Souza", email: "marina@email.com", telefone: "(11) 99112-2334", veiculo: "Toyota Hilux 2024", placa: "JKL1M34", cidade: "Campinas", valido: true },
-  { nome: "Diego Cardoso", email: "diego@email.com", telefone: "(31) 99223-3445", veiculo: "Hyundai Creta 2024", placa: "NOP2Q45", cidade: "Contagem", valido: true },
-  { nome: "Patricia Nunes", email: "patricia@email.com", telefone: "(21) 99334-4556", veiculo: "Chevrolet Tracker 2024", placa: "RST3U56", cidade: "Volta Redonda", valido: true },
-  { nome: "Ricardo Almeida", email: "ricardo@email.com", telefone: "(11) 99111-2233", veiculo: "Honda Civic 2024", placa: "ABC1D23", cidade: "São Paulo", valido: true },
+// Fields in negociacoes that we can map to
+const NEGOCIACAO_FIELDS = [
+  { value: "__ignore__", label: "-- Ignorar --" },
+  { value: "lead_nome", label: "Nome do Lead" },
+  { value: "telefone", label: "Telefone" },
+  { value: "email", label: "Email" },
+  { value: "veiculo_placa", label: "Placa" },
+  { value: "veiculo_modelo", label: "Modelo Veiculo" },
+  { value: "consultor", label: "Consultor" },
+  { value: "origem", label: "Origem" },
+  { value: "observacoes", label: "Observacoes" },
+  { value: "valor_plano", label: "Valor Plano" },
 ];
 
-const csvColumns = ["nome","email","telefone","veiculo","placa","cidade"];
-const sysColumns = ["Nome","Email","Telefone","Veículo","Placa","Cidade"];
+interface ImportRecord {
+  fileName: string;
+  count: number;
+  date: Date;
+}
 
 export default function ImportarLeads() {
-  const [step, setStep] = useState<"upload"|"mapping"|"importing"|"done">("upload");
+  const [step, setStep] = useState<"upload" | "mapping" | "importing" | "done">("upload");
   const [progress, setProgress] = useState(0);
+  const [fileName, setFileName] = useState("");
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [rows, setRows] = useState<string[][]>([]);
+  const [mapping, setMapping] = useState<Record<number, string>>({});
+  const [importHistory, setImportHistory] = useState<ImportRecord[]>([]);
+  const [importedCount, setImportedCount] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const validos = mockCSVData.filter(d => d.valido).length;
-  const erros = mockCSVData.filter(d => !d.valido).length;
-  const duplicatas = 1;
+  const resetState = () => {
+    setStep("upload");
+    setProgress(0);
+    setFileName("");
+    setHeaders([]);
+    setRows([]);
+    setMapping({});
+  };
 
-  function simulateImport() {
+  const parseCSV = (text: string): { headers: string[]; rows: string[][] } => {
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length === 0) return { headers: [], rows: [] };
+    const parseLine = (line: string) => {
+      const result: string[] = [];
+      let current = "";
+      let inQuotes = false;
+      for (const ch of line) {
+        if (ch === '"') { inQuotes = !inQuotes; continue; }
+        if ((ch === "," || ch === ";") && !inQuotes) { result.push(current.trim()); current = ""; continue; }
+        current += ch;
+      }
+      result.push(current.trim());
+      return result;
+    };
+    const h = parseLine(lines[0]);
+    const r = lines.slice(1).map(parseLine);
+    return { headers: h, rows: r };
+  };
+
+  const handleFile = useCallback(async (file: File) => {
+    setFileName(file.name);
+    const isXlsx = file.name.match(/\.xlsx?$/i);
+
+    try {
+      if (isXlsx) {
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData: string[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+        if (jsonData.length === 0) { toast.error("Arquivo vazio"); return; }
+        setHeaders(jsonData[0].map(String));
+        setRows(jsonData.slice(1).map(r => r.map(String)));
+      } else {
+        const text = await file.text();
+        const { headers: h, rows: r } = parseCSV(text);
+        if (h.length === 0) { toast.error("Arquivo vazio"); return; }
+        setHeaders(h);
+        setRows(r);
+      }
+
+      // Auto-map: try to guess column mapping
+      setStep("mapping");
+    } catch (err) {
+      toast.error("Erro ao ler arquivo");
+      console.error(err);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  }, [handleFile]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  };
+
+  const updateMapping = (colIndex: number, field: string) => {
+    setMapping(prev => ({ ...prev, [colIndex]: field }));
+  };
+
+  // Auto-guess mapping based on header names
+  const autoGuess = () => {
+    const guessMap: Record<string, string> = {};
+    const lower = headers.map(h => h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+    lower.forEach((h, i) => {
+      if (h.includes("nome") || h.includes("name")) guessMap[i] = "lead_nome";
+      else if (h.includes("telefone") || h.includes("phone") || h.includes("tel") || h.includes("celular")) guessMap[i] = "telefone";
+      else if (h.includes("email") || h.includes("e-mail")) guessMap[i] = "email";
+      else if (h.includes("placa")) guessMap[i] = "veiculo_placa";
+      else if (h.includes("modelo") || h.includes("veiculo") || h.includes("vehicle")) guessMap[i] = "veiculo_modelo";
+      else if (h.includes("consultor") || h.includes("vendedor") || h.includes("responsavel")) guessMap[i] = "consultor";
+      else if (h.includes("origem") || h.includes("source")) guessMap[i] = "origem";
+      else if (h.includes("obs")) guessMap[i] = "observacoes";
+      else if (h.includes("valor")) guessMap[i] = "valor_plano";
+    });
+    setMapping(guessMap);
+  };
+
+  // Validate row: at least lead_nome
+  const mappedFields = Object.values(mapping).filter(v => v !== "__ignore__");
+  const hasNome = mappedFields.includes("lead_nome");
+  const hasContact = mappedFields.includes("telefone") || mappedFields.includes("email");
+  const canImport = hasNome && hasContact && rows.length > 0;
+
+  const validRows = rows.filter(row => {
+    const nomeIdx = Object.entries(mapping).find(([, v]) => v === "lead_nome")?.[0];
+    if (nomeIdx === undefined) return false;
+    return row[Number(nomeIdx)]?.trim();
+  });
+
+  const doImport = async () => {
     setStep("importing");
-    let p = 0;
-    const interval = setInterval(() => {
-      p += 8;
-      setProgress(p);
-      if (p >= 100) { clearInterval(interval); setStep("done"); }
-    }, 200);
-  }
+    setProgress(0);
+
+    const records = validRows.map(row => {
+      const obj: Record<string, any> = { stage: "novo_lead", origem: "Importacao CSV" };
+      Object.entries(mapping).forEach(([colIdx, field]) => {
+        if (field === "__ignore__") return;
+        const val = row[Number(colIdx)]?.trim();
+        if (!val) return;
+        if (field === "valor_plano") {
+          obj[field] = parseFloat(val.replace(/[^\d.,]/g, "").replace(",", ".")) || 0;
+        } else {
+          obj[field] = val;
+        }
+      });
+      return obj;
+    });
+
+    if (records.length === 0) {
+      toast.error("Nenhum registro valido para importar");
+      setStep("mapping");
+      return;
+    }
+
+    // Insert in batches of 25
+    const batchSize = 25;
+    let imported = 0;
+    let errors = 0;
+
+    for (let i = 0; i < records.length; i += batchSize) {
+      const batch = records.slice(i, i + batchSize);
+      const { error } = await (supabase as any).from("negociacoes").insert(batch);
+      if (error) {
+        console.error("Import batch error:", error);
+        errors += batch.length;
+      } else {
+        imported += batch.length;
+      }
+      setProgress(Math.round(((i + batch.length) / records.length) * 100));
+    }
+
+    setImportedCount(imported);
+    if (errors > 0) {
+      toast.warning(`${imported} importados, ${errors} com erro`);
+    } else {
+      toast.success(`${imported} leads importados com sucesso`);
+    }
+
+    setImportHistory(prev => [...prev, { fileName, count: imported, date: new Date() }]);
+    setStep("done");
+  };
 
   if (step === "upload") {
     return (
@@ -58,8 +208,19 @@ export default function ImportarLeads() {
         </div>
         <Card className="border border-border/50">
           <CardContent className="p-0">
-            <div className="border-2 border-dashed border-border/50 rounded-xl m-4 p-16 text-center hover:border-primary/50 transition-colors cursor-pointer"
-              onClick={() => setStep("mapping")}>
+            <div
+              className="border-2 border-dashed border-border/50 rounded-xl m-4 p-16 text-center hover:border-primary/50 transition-colors cursor-pointer"
+              onDragOver={e => e.preventDefault()}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                className="hidden"
+                onChange={handleInputChange}
+              />
               <Upload className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
               <h3 className="text-lg font-semibold mb-1">Arraste seu arquivo CSV ou Excel aqui</h3>
               <p className="text-sm text-muted-foreground mb-4">ou clique para selecionar</p>
@@ -69,91 +230,124 @@ export default function ImportarLeads() {
         </Card>
         <Card className="border border-border/50">
           <CardContent className="p-4">
-            <h3 className="text-sm font-semibold mb-2">Dicas para importação</h3>
+            <h3 className="text-sm font-semibold mb-2">Dicas para importacao</h3>
             <ul className="space-y-1 text-xs text-muted-foreground">
-              <li>• A primeira linha deve conter os nomes das colunas</li>
-              <li>• Campos obrigatórios: Nome e pelo menos Telefone ou Email</li>
-              <li>• Telefones no formato (XX) XXXXX-XXXX</li>
-              <li>• CPF no formato XXX.XXX.XXX-XX</li>
+              <li>A primeira linha deve conter os nomes das colunas</li>
+              <li>Campos obrigatorios: Nome e pelo menos Telefone ou Email</li>
+              <li>Telefones no formato (XX) XXXXX-XXXX</li>
+              <li>Os leads serao criados na etapa "Novo Lead" do pipeline</li>
             </ul>
           </CardContent>
         </Card>
+
+        {importHistory.length > 0 && (
+          <Card className="border border-border/50">
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Importacoes desta sessao</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {importHistory.map((h, i) => (
+                <div key={i} className="flex items-center justify-between text-xs p-2 rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
+                    <span>{h.fileName}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline" className="text-[10px]">{h.count} leads</Badge>
+                    <span className="text-muted-foreground">{h.date.toLocaleTimeString("pt-BR")}</span>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   }
 
   if (step === "mapping") {
+    const previewRows = rows.slice(0, 10);
     return (
       <div className="space-y-5">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Mapeamento de Colunas</h1>
-          <p className="text-sm text-muted-foreground">
-            <FileSpreadsheet className="h-4 w-4 inline mr-1" />leads_março_2026.csv · {mockCSVData.length} linhas
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Mapeamento de Colunas</h1>
+            <p className="text-sm text-muted-foreground">
+              <FileSpreadsheet className="h-4 w-4 inline mr-1" />{fileName} -- {rows.length} linhas
+            </p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={resetState}><X className="h-4 w-4 mr-1" />Cancelar</Button>
         </div>
 
         <div className="grid grid-cols-3 gap-4">
           <Card className="border border-border/50">
             <CardContent className="p-4 flex items-center gap-3">
               <CheckCircle2 className="h-8 w-8 text-[#22C55E]" />
-              <div><p className="text-2xl font-bold text-[#22C55E]">{validos}</p><p className="text-xs text-muted-foreground">Válidos</p></div>
+              <div><p className="text-2xl font-bold text-[#22C55E]">{validRows.length}</p><p className="text-xs text-muted-foreground">Validos</p></div>
             </CardContent>
           </Card>
           <Card className="border border-border/50">
             <CardContent className="p-4 flex items-center gap-3">
               <XCircle className="h-8 w-8 text-destructive" />
-              <div><p className="text-2xl font-bold text-destructive">{erros}</p><p className="text-xs text-muted-foreground">Com erro</p></div>
+              <div><p className="text-2xl font-bold text-destructive">{rows.length - validRows.length}</p><p className="text-xs text-muted-foreground">Sem nome</p></div>
             </CardContent>
           </Card>
           <Card className="border border-border/50">
             <CardContent className="p-4 flex items-center gap-3">
-              <AlertTriangle className="h-8 w-8 text-[#F59E0B]" />
-              <div><p className="text-2xl font-bold text-[#F59E0B]">{duplicatas}</p><p className="text-xs text-muted-foreground">Duplicatas</p></div>
+              <FileSpreadsheet className="h-8 w-8 text-primary" />
+              <div><p className="text-2xl font-bold text-primary">{headers.length}</p><p className="text-xs text-muted-foreground">Colunas</p></div>
             </CardContent>
           </Card>
         </div>
 
         <Card className="border border-border/50">
-          <CardHeader className="pb-3"><CardTitle className="text-sm">Mapeamento</CardTitle></CardHeader>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm">Mapeamento</CardTitle>
+              <Button variant="outline" size="sm" className="text-xs h-7" onClick={autoGuess}>Auto-detectar</Button>
+            </div>
+          </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-3">
-              {csvColumns.map((col, i) => (
-                <div key={col} className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-[10px] w-24 justify-center">{col}</Badge>
-                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                  <Select defaultValue={sysColumns[i]}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {headers.map((col, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[10px] w-32 justify-center shrink-0 truncate" title={col}>{col}</Badge>
+                  <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                  <Select value={mapping[i] || "__ignore__"} onValueChange={v => updateMapping(i, v)}>
                     <SelectTrigger className="h-8 text-xs flex-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{sysColumns.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                    <SelectContent>{NEGOCIACAO_FIELDS.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               ))}
             </div>
+            {!hasNome && <p className="text-xs text-destructive mt-3">Mapeie pelo menos a coluna "Nome do Lead"</p>}
+            {hasNome && !hasContact && <p className="text-xs text-warning mt-3">Recomendado: mapeie Telefone ou Email</p>}
           </CardContent>
         </Card>
 
         <Card className="border border-border/50">
-          <CardHeader className="pb-3"><CardTitle className="text-sm">Preview (10 primeiras linhas)</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-sm">Preview (primeiras {Math.min(10, previewRows.length)} linhas)</CardTitle></CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead><tr className="border-b-2 border-[#747474] bg-muted/30">
                   <th className="p-2 text-left text-[10px] uppercase text-muted-foreground">#</th>
-                  {csvColumns.map(c => <th key={c} className="p-2 text-left text-[10px] uppercase text-muted-foreground">{c}</th>)}
-                  <th className="p-2 text-left text-[10px] uppercase text-muted-foreground">Status</th>
+                  {headers.map((h, i) => (
+                    <th key={i} className="p-2 text-left text-[10px] uppercase text-muted-foreground">
+                      {h}
+                      {mapping[i] && mapping[i] !== "__ignore__" && (
+                        <Badge className="ml-1 text-[8px] bg-primary/15 text-primary">{NEGOCIACAO_FIELDS.find(f => f.value === mapping[i])?.label}</Badge>
+                      )}
+                    </th>
+                  ))}
                 </tr></thead>
                 <tbody>
-                  {mockCSVData.slice(0,10).map((row, i) => (
-                    <tr key={i} className={`border-b-2 border-[#747474] ${!row.valido ? "bg-destructive/5" : ""}`}>
+                  {previewRows.map((row, i) => (
+                    <tr key={i} className="border-b border-border/30">
                       <td className="p-2 text-muted-foreground">{i + 1}</td>
-                      <td className="p-2">{row.nome}</td>
-                      <td className={`p-2 ${!row.email ? "text-destructive font-medium" : ""}`}>{row.email || "—"}</td>
-                      <td className={`p-2 ${!row.telefone ? "text-destructive font-medium" : ""}`}>{row.telefone || "—"}</td>
-                      <td className="p-2">{row.veiculo}</td>
-                      <td className={`p-2 ${!row.placa ? "text-destructive font-medium" : ""}`}>{row.placa || "—"}</td>
-                      <td className="p-2">{row.cidade}</td>
-                      <td className="p-2">
-                        {row.valido ? <CheckCircle2 className="h-3.5 w-3.5 text-[#22C55E]" /> : <XCircle className="h-3.5 w-3.5 text-destructive" />}
-                      </td>
+                      {headers.map((_, ci) => (
+                        <td key={ci} className={`p-2 ${!row[ci]?.trim() ? "text-muted-foreground italic" : ""}`}>
+                          {row[ci]?.trim() || "—"}
+                        </td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
@@ -162,37 +356,10 @@ export default function ImportarLeads() {
           </CardContent>
         </Card>
 
-        <Card className="border border-border/50">
-          <CardHeader className="pb-3"><CardTitle className="text-sm">Configurações</CardTitle></CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="space-y-1"><Label className="text-xs">Cooperativa</Label>
-                <Select><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent><SelectItem value="sp">Central SP</SelectItem><SelectItem value="rj">Central RJ</SelectItem></SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1"><Label className="text-xs">Responsável</Label>
-                <Select><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent><SelectItem value="maria">Maria Santos</SelectItem><SelectItem value="joao">João Pedro</SelectItem></SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1"><Label className="text-xs">Etapa Pipeline</Label>
-                <Select defaultValue="prospeccao"><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="prospeccao">Prospecção</SelectItem><SelectItem value="qualificacao">Qualificação</SelectItem></SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1"><Label className="text-xs">Tags Automáticas</Label>
-                <Select><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent><SelectItem value="importado">Importado</SelectItem><SelectItem value="novo">Novo Lead</SelectItem></SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-end">
-          <Button onClick={simulateImport} className="px-8">
-            Importar {validos} leads <ArrowRight className="h-4 w-4 ml-1" />
+        <div className="flex justify-between">
+          <Button variant="outline" onClick={resetState}>Voltar</Button>
+          <Button onClick={doImport} disabled={!canImport} className="px-8">
+            Importar {validRows.length} leads <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
       </div>
@@ -212,14 +379,15 @@ export default function ImportarLeads() {
     );
   }
 
+  // done
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
       <CheckCircle2 className="h-16 w-16 text-[#22C55E]" />
-      <h2 className="text-xl font-bold">Importação Concluída!</h2>
-      <p className="text-sm text-muted-foreground">{validos} leads importados com sucesso</p>
+      <h2 className="text-xl font-bold">Importacao Concluida!</h2>
+      <p className="text-sm text-muted-foreground">{importedCount} leads importados com sucesso</p>
       <div className="flex gap-2">
-        <Button variant="outline" onClick={() => setStep("upload")}>Nova Importação</Button>
-        <Button>Ver no Pipeline</Button>
+        <Button variant="outline" onClick={resetState}>Nova Importacao</Button>
+        <Button onClick={() => window.location.href = "/vendas/pipeline"}>Ver no Pipeline</Button>
       </div>
     </div>
   );

@@ -1,164 +1,193 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Loader2, Package, ChevronDown, ChevronRight } from "lucide-react";
 
-const mockPlanos = [
-  { id: 1, nome: "Básico", descricao: "Proteção essencial contra roubo e furto", status: "Ativo", regionais: "SP Capital, Interior SP", mensalidade: "89,90", adesao: "299,90" },
-  { id: 2, nome: "Intermediário", descricao: "Proteção ampliada com colisão e incêndio", status: "Ativo", regionais: "SP Capital, Sul, Nordeste", mensalidade: "149,90", adesao: "399,90" },
-  { id: 3, nome: "Premium", descricao: "Cobertura total com todos os serviços", status: "Ativo", regionais: "Todas", mensalidade: "249,90", adesao: "599,90" },
-  { id: 4, nome: "Executivo", descricao: "Para veículos de alto valor com assistência premium", status: "Ativo", regionais: "SP Capital", mensalidade: "349,90", adesao: "799,90" },
-  { id: 5, nome: "Empresarial", descricao: "Plano corporativo para frotas", status: "Inativo", regionais: "SP Capital, Interior SP", mensalidade: "199,90", adesao: "499,90" },
-];
+interface ProdutoGia {
+  id: string;
+  nome: string;
+  categoria: string | null;
+  valor: number | null;
+  descricao: string | null;
+}
 
-const coberturas = ["Roubo/Furto", "Colisão", "Incêndio", "Fenômenos Naturais", "Vidros", "Terceiros"];
-const servicos = ["Guincho", "Carro Reserva", "Assistência 24h"];
-const regionaisOpcoes = ["SP Capital", "Interior SP", "Regional Sul", "Regional Nordeste", "Regional Norte", "Regional Centro-Oeste"];
+interface GrupoProduto {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  produtos_ids: string[] | null;
+  ativo: boolean;
+  created_at: string;
+}
 
 export default function PlanosTab() {
-  const [showModal, setShowModal] = useState(false);
-  const [nome, setNome] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [coberturasSelec, setCoberturasSelec] = useState<string[]>([]);
-  const [servicosSelec, setServicosSelec] = useState<string[]>([]);
-  const [mensalidade, setMensalidade] = useState("");
-  const [adesao, setAdesao] = useState("");
-  const [valorRastreador, setValorRastreador] = useState("");
-  const [nuncaCobrarRastreador, setNuncaCobrarRastreador] = useState(false);
-  const [valorAcrescido, setValorAcrescido] = useState("");
-  const [regionaisSelec, setRegionaisSelec] = useState<string[]>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const toggle = (arr: string[], setArr: (v: string[]) => void, item: string) => {
-    setArr(arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item]);
+  const { data: planos, isLoading: loadingPlanos } = useQuery({
+    queryKey: ["grupos_produtos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("grupos_produtos")
+        .select("*")
+        .order("nome");
+      if (error) throw error;
+      return (data || []) as GrupoProduto[];
+    },
+  });
+
+  const { data: produtos } = useQuery({
+    queryKey: ["produtos_gia_all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("produtos_gia")
+        .select("id, nome, categoria, valor, descricao")
+        .order("nome");
+      if (error) throw error;
+      return (data || []) as ProdutoGia[];
+    },
+  });
+
+  const produtosMap = new Map<string, ProdutoGia>();
+  produtos?.forEach((p) => produtosMap.set(p.id, p));
+
+  const getProdutosDoPlano = (ids: string[] | null): ProdutoGia[] => {
+    if (!ids || !produtos) return [];
+    return ids.map((id) => produtosMap.get(id)).filter(Boolean) as ProdutoGia[];
   };
 
-  const openModal = () => {
-    setNome(""); setDescricao(""); setCoberturasSelec([]); setServicosSelec([]);
-    setMensalidade(""); setAdesao(""); setValorRastreador(""); setNuncaCobrarRastreador(false);
-    setValorAcrescido(""); setRegionaisSelec([]);
-    setShowModal(true);
+  const toggleExpand = (id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id));
   };
+
+  if (loadingPlanos) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <span className="ml-2 text-muted-foreground">Carregando planos...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Planos</h3>
-          <p className="text-sm text-muted-foreground">Gerencie os planos de proteção veicular</p>
-        </div>
-        <Button onClick={openModal} className="gap-2"><Plus className="h-4 w-4" /> Novo Plano</Button>
+      <div>
+        <h3 className="text-lg font-semibold">Planos (Grupos de Produtos)</h3>
+        <p className="text-sm text-muted-foreground">
+          Visualize os planos cadastrados e seus produtos vinculados
+        </p>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Regionais</TableHead>
-                <TableHead>Mensalidade</TableHead>
-                <TableHead>Adesão</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockPlanos.map(p => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.nome}</TableCell>
-                  <TableCell className="max-w-[200px] truncate text-muted-foreground">{p.descricao}</TableCell>
-                  <TableCell>
-                    <Badge variant={p.status === "Ativo" ? "default" : "secondary"} className={p.status === "Ativo" ? "bg-emerald-500/10 text-emerald-600 border-success/20" : ""}>
-                      {p.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">{p.regionais}</TableCell>
-                  <TableCell>R$ {p.mensalidade}</TableCell>
-                  <TableCell>R$ {p.adesao}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                  </TableCell>
+      {!planos || planos.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            Nenhum plano cadastrado na tabela grupos_produtos.
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-8"></TableHead>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Descricao</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Produtos</TableHead>
+                  <TableHead>Criado em</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Novo Plano</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Nome do Plano</Label>
-              <Input value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Premium Plus" />
-            </div>
-            <div>
-              <Label>Descrição</Label>
-              <Textarea value={descricao} onChange={e => setDescricao(e.target.value)} placeholder="Descreva o plano..." />
-            </div>
-            <div>
-              <Label className="mb-2 block">Coberturas</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {coberturas.map(c => (
-                  <div key={c} className="flex items-center gap-2">
-                    <Checkbox checked={coberturasSelec.includes(c)} onCheckedChange={() => toggle(coberturasSelec, setCoberturasSelec, c)} />
-                    <span className="text-sm">{c}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <Label className="mb-2 block">Serviços Opcionais</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {servicos.map(s => (
-                  <div key={s} className="flex items-center gap-2">
-                    <Checkbox checked={servicosSelec.includes(s)} onCheckedChange={() => toggle(servicosSelec, setServicosSelec, s)} />
-                    <span className="text-sm">{s}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>Mensalidade Base (R$)</Label><Input value={mensalidade} onChange={e => setMensalidade(e.target.value)} placeholder="0,00" /></div>
-              <div><Label>Adesão (R$)</Label><Input value={adesao} onChange={e => setAdesao(e.target.value)} placeholder="0,00" /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>Valor Rastreador (R$)</Label><Input value={valorRastreador} onChange={e => setValorRastreador(e.target.value)} placeholder="0,00" /></div>
-              <div><Label>Valor Acrescido (R$)</Label><Input value={valorAcrescido} onChange={e => setValorAcrescido(e.target.value)} placeholder="0,00" /></div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch checked={nuncaCobrarRastreador} onCheckedChange={setNuncaCobrarRastreador} />
-              <Label>Nunca cobrar rastreador</Label>
-            </div>
-            <div>
-              <Label className="mb-2 block">Regionais Vinculadas</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {regionaisOpcoes.map(r => (
-                  <div key={r} className="flex items-center gap-2">
-                    <Checkbox checked={regionaisSelec.includes(r)} onCheckedChange={() => toggle(regionaisSelec, setRegionaisSelec, r)} />
-                    <span className="text-sm">{r}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 pt-4 border-t-2 border-[#747474]">
-              <Button variant="outline" onClick={() => setShowModal(false)}>Cancelar</Button>
-              <Button onClick={() => setShowModal(false)}>Salvar Plano</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+              </TableHeader>
+              <TableBody>
+                {planos.map((plano) => {
+                  const produtosDoPlano = getProdutosDoPlano(plano.produtos_ids);
+                  const isExpanded = expandedId === plano.id;
+                  return (
+                    <>
+                      <TableRow
+                        key={plano.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => toggleExpand(plano.id)}
+                      >
+                        <TableCell>
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium">{plano.nome}</TableCell>
+                        <TableCell className="max-w-[200px] truncate text-muted-foreground">
+                          {plano.descricao || "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={plano.ativo ? "default" : "secondary"}
+                            className={
+                              plano.ativo
+                                ? "bg-emerald-500/10 text-emerald-600 border-success/20"
+                                : ""
+                            }
+                          >
+                            {plano.ativo ? "Ativo" : "Inativo"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {produtosDoPlano.length} produto{produtosDoPlano.length !== 1 ? "s" : ""}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(plano.created_at).toLocaleDateString("pt-BR")}
+                        </TableCell>
+                      </TableRow>
+                      {isExpanded && (
+                        <TableRow key={`${plano.id}-detail`}>
+                          <TableCell colSpan={6} className="bg-muted/30 p-4">
+                            {produtosDoPlano.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">
+                                Nenhum produto vinculado a este plano.
+                              </p>
+                            ) : (
+                              <div className="space-y-2">
+                                <p className="text-sm font-medium mb-2">Produtos vinculados:</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                  {produtosDoPlano.map((prod) => (
+                                    <div
+                                      key={prod.id}
+                                      className="flex items-center gap-2 p-2 rounded-md border bg-card"
+                                    >
+                                      <Package className="h-4 w-4 text-primary shrink-0" />
+                                      <div className="min-w-0">
+                                        <p className="text-sm font-medium truncate">{prod.nome}</p>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                          {prod.categoria && <span>{prod.categoria}</span>}
+                                          {prod.valor != null && (
+                                            <span>
+                                              R$ {prod.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
