@@ -280,8 +280,8 @@ export default function VistoriaTab({ deal }: Props) {
                     <AlertCircle className="h-3 w-3 mr-1" />Reprovada pela IA — solicite exceção ao diretor
                   </Badge>
                 )}
-                <Button size="sm" variant="outline" className="rounded-none" onClick={() => {
-                  gerarLaudoVistoria({
+                <Button size="sm" variant="outline" className="rounded-none" onClick={async () => {
+                  await gerarLaudoVistoria({
                     dataImpressao: new Date().toLocaleString("pt-BR"),
                     contratante: "OBJETIVO AUTO BENEFÍCIOS",
                     configuracao: categoriaVistoria === "automovel" ? "Carro" : categoriaVistoria === "motocicleta" ? "Moto" : "Caminhão",

@@ -5,11 +5,16 @@ interface DadosLaudo {
   dataImpressao: string;
   contratante: string;
   configuracao: string;
+  cadastro?: string;
   solicitante: string;
   vistoriador: string;
   proponente: { nome: string; cpf: string; telefone: string; email: string };
-  veiculo: { marcaModelo: string; anoModelo: string; placa: string; chassi: string; renavam: string; gnv: string; quilometragem: string; chassiRemarcado: string };
+  veiculo: {
+    marcaModelo: string; anoModelo: string; placa: string; chassi: string;
+    renavam: string; gnv: string; quilometragem: string; chassiRemarcado: string;
+  };
   observacoes: string;
+  assinadoPor?: string;
   acessorios: string[];
   parecer: string;
   avaliador: string;
@@ -18,156 +23,301 @@ interface DadosLaudo {
   corPrimaria?: string;
 }
 
-export function gerarLaudoVistoria(dados: DadosLaudo) {
+const AZUL_HEADER: [number, number, number] = [33, 150, 243]; // #2196F3
+const FOTOS_PER_PAGE = 3;
+
+function sectionHeader(doc: jsPDF, titulo: string, y: number): number {
+  const w = doc.internal.pageSize.getWidth();
+  doc.setFillColor(...AZUL_HEADER);
+  doc.rect(14, y, w - 28, 8, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text(titulo, w / 2, y + 5.5, { align: "center" });
+  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "normal");
+  return y + 10;
+}
+
+function labelValue(label: string, value: string): any[] {
+  return [
+    { content: label, styles: { fontStyle: "bold" as const, cellWidth: 45 } },
+    value,
+  ];
+}
+
+function addFooter(doc: jsPDF, dataImpressao: string) {
+  const totalPages = doc.getNumberOfPages();
+  const w = doc.internal.pageSize.getWidth();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(6);
+    doc.setTextColor(130, 130, 130);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Impresso por GIA em ${dataImpressao}. Todos os Direitos Reservados.`, 14, 288);
+    doc.text(`Página ${i} de ${totalPages}`, w - 14, 288, { align: "right" });
+  }
+}
+
+async function loadImage(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function gerarLaudoVistoria(dados: DadosLaudo) {
   const doc = new jsPDF();
-  const cor = dados.corPrimaria || "#1A3A5C";
-  const corRGB = hexToRgb(cor);
   const w = doc.internal.pageSize.getWidth();
 
-  // === PÁGINA 1 ===
-  // Header
-  doc.setFontSize(22);
+  // ===================== PAGE 1 TOP: HEADER =====================
+  // Logo top-left
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bolditalic");
+  doc.setTextColor(33, 150, 243);
+  doc.text("OBJETIVO", 14, 14);
+  doc.setFontSize(6);
+  doc.text("AUTO BENEFÍCIOS", 14, 18);
+
+  // Title center
+  doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0, 0, 0);
-  doc.text("LAUDO DE VISTORIA", w / 2, 20, { align: "center" });
+  doc.text("LAUDO DE VISTORIA", w / 2, 16, { align: "center" });
 
+  // Date top-right
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(80, 80, 80);
+  doc.text("Data de Impressão", w - 14, 10, { align: "right" });
   doc.setFontSize(9);
-  doc.setFont("helvetica", "italic");
-  doc.text(`Data de Impressão: ${dados.dataImpressao}`, w - 14, 15, { align: "right" });
+  doc.setFont("helvetica", "bold");
+  doc.text(dados.dataImpressao, w - 14, 16, { align: "right" });
 
-  // Dados da Vistoria
-  secaoHeader(doc, "DADOS DA VISTORIA", 30, cor, corRGB);
+  // ===================== DADOS DA VISTORIA =====================
+  let startY = sectionHeader(doc, "DADOS DA VISTORIA", 24);
+
   autoTable(doc, {
-    startY: 35, head: [], theme: "plain", margin: { left: 14, right: 14 },
-    styles: { fontSize: 8, cellPadding: 1.5 },
+    startY,
+    head: [],
+    theme: "plain",
+    margin: { left: 14, right: 14 },
+    styles: { fontSize: 7.5, cellPadding: 1.8 },
+    columnStyles: {
+      0: { fontStyle: "bold", cellWidth: 55 },
+      1: { cellWidth: (w - 28 - 55) },
+    },
     body: [
-      [{ content: "CONTRATANTE", styles: { fontStyle: "bold" } }, dados.contratante, { content: "CONFIGURAÇÃO/ROTEIRO", styles: { fontStyle: "bold" } }, dados.configuracao],
-      [{ content: "SOLICITANTE/RESPONSÁVEL", styles: { fontStyle: "bold" } }, dados.solicitante, "", ""],
-      [{ content: "VISTORIADOR", styles: { fontStyle: "bold" } }, dados.vistoriador, "", ""],
+      ["CONTRATANTE", dados.contratante],
+      ["CONFIGURAÇÃO / ROTEIRO", dados.configuracao],
+      ["CADASTRO", dados.cadastro || ""],
+      ["SOLICITANTE / RESPONSÁVEL", dados.solicitante],
+      ["VISTORIADOR", dados.vistoriador],
     ],
   });
 
-  // Dados do Proponente
+  // ===================== DADOS DO PROPONENTE =====================
   let y = (doc as any).lastAutoTable.finalY + 3;
-  secaoHeader(doc, "DADOS DO PROPONENTE", y, cor, corRGB);
+  startY = sectionHeader(doc, "DADOS DO PROPONENTE", y);
+
   autoTable(doc, {
-    startY: y + 5, head: [], theme: "plain", margin: { left: 14, right: 14 },
-    styles: { fontSize: 8, cellPadding: 1.5 },
+    startY,
+    head: [],
+    theme: "plain",
+    margin: { left: 14, right: 14 },
+    styles: { fontSize: 7.5, cellPadding: 1.8 },
+    columnStyles: {
+      0: { fontStyle: "bold", cellWidth: 30 },
+      1: { cellWidth: (w - 28) / 2 - 30 },
+      2: { fontStyle: "bold", cellWidth: 30 },
+      3: {},
+    },
     body: [
-      [{ content: "NOME", styles: { fontStyle: "bold" } }, dados.proponente.nome, { content: "CPF/CNPJ", styles: { fontStyle: "bold" } }, dados.proponente.cpf],
-      [{ content: "TELEFONE", styles: { fontStyle: "bold" } }, dados.proponente.telefone, { content: "E-MAIL", styles: { fontStyle: "bold" } }, dados.proponente.email],
+      ["NOME", dados.proponente.nome, "CPF/CNPJ", dados.proponente.cpf],
+      ["TELEFONE", dados.proponente.telefone, "E-MAIL", dados.proponente.email],
     ],
   });
 
-  // Dados do Veículo
+  // ===================== DADOS DO VEICULO =====================
   y = (doc as any).lastAutoTable.finalY + 3;
-  secaoHeader(doc, "DADOS DO VEÍCULO", y, cor, corRGB);
+  startY = sectionHeader(doc, "DADOS DO VEÍCULO", y);
+
   autoTable(doc, {
-    startY: y + 5, head: [], theme: "plain", margin: { left: 14, right: 14 },
-    styles: { fontSize: 8, cellPadding: 1.5 },
+    startY,
+    head: [],
+    theme: "plain",
+    margin: { left: 14, right: 14 },
+    styles: { fontSize: 7.5, cellPadding: 1.8 },
+    columnStyles: {
+      0: { fontStyle: "bold", cellWidth: 40 },
+      1: { cellWidth: (w - 28) / 2 - 40 },
+      2: { fontStyle: "bold", cellWidth: 40 },
+      3: {},
+    },
     body: [
-      [{ content: "MARCA / MODELO", styles: { fontStyle: "bold" } }, dados.veiculo.marcaModelo, { content: "ANO MODELO", styles: { fontStyle: "bold" } }, dados.veiculo.anoModelo],
-      [{ content: "PLACA", styles: { fontStyle: "bold" } }, dados.veiculo.placa, { content: "RENAVAM", styles: { fontStyle: "bold" } }, dados.veiculo.renavam],
-      [{ content: "CHASSI", styles: { fontStyle: "bold" } }, dados.veiculo.chassi, "", ""],
-      [{ content: "POSSUI GNV?", styles: { fontStyle: "bold" } }, dados.veiculo.gnv, { content: "QUILOMETRAGEM", styles: { fontStyle: "bold" } }, dados.veiculo.quilometragem],
-      [{ content: "CHASSI REMARCADO?", styles: { fontStyle: "bold" } }, dados.veiculo.chassiRemarcado, "", ""],
+      ["MARCA / MODELO", dados.veiculo.marcaModelo, "ANO MODELO", dados.veiculo.anoModelo],
+      ["PLACA", dados.veiculo.placa, "CHASSI", dados.veiculo.chassi],
+      ["RENAVAM", dados.veiculo.renavam, "POSSUI GNV?", dados.veiculo.gnv],
+      ["CHASSI REMARCADO?", dados.veiculo.chassiRemarcado, "QUILOMETRAGEM", dados.veiculo.quilometragem],
     ],
   });
 
-  // Observações
+  // ===================== OBSERVACOES DO VISTORIADOR =====================
   y = (doc as any).lastAutoTable.finalY + 3;
-  secaoHeader(doc, "OBSERVAÇÕES DO VISTORIADOR", y, cor, corRGB);
+  startY = sectionHeader(doc, "OBSERVAÇÕES DO VISTORIADOR", y);
+
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(0, 0, 0);
-  doc.text(dados.observacoes || "Sem observações", 14, y + 10);
+  const obsText = dados.observacoes || "Sem observações";
+  const obsLines = doc.splitTextToSize(obsText, w - 28);
+  doc.text(obsLines, 14, startY + 2);
+  y = startY + 2 + obsLines.length * 3.5 + 3;
 
-  // Acessórios
-  y = y + 18;
-  secaoHeader(doc, "ACESSÓRIOS", y, cor, corRGB);
-  doc.setFontSize(7);
+  if (dados.assinadoPor) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.text(`Assinado por: ${dados.assinadoPor}`, 14, y);
+    y += 5;
+  }
+
+  // ===================== ACESSORIOS =====================
+  y += 2;
+  startY = sectionHeader(doc, "ACESSÓRIOS", y);
+
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "normal");
   const accText = dados.acessorios.join(", ");
   const accLines = doc.splitTextToSize(accText, w - 28);
-  doc.text(accLines, 14, y + 10);
+  doc.text(accLines, 14, startY + 2);
+  y = startY + 2 + accLines.length * 3.5 + 3;
 
-  // Análise
-  y = y + 10 + accLines.length * 4;
-  secaoHeader(doc, "ANÁLISE DA VISTORIA", y, cor, corRGB);
+  // ===================== ANALISE DA VISTORIA =====================
+  y += 2;
+  startY = sectionHeader(doc, "ANÁLISE DA VISTORIA", y);
+
   doc.setFontSize(8);
-  doc.text(`Avaliado por: ${dados.avaliador} em ${dados.dataAnalise}, parecer: (${dados.parecer})`, 14, y + 8);
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    `Avaliado por: ${dados.avaliador} em ${dados.dataAnalise}, parecer: (${dados.parecer})`,
+    14,
+    startY + 3,
+  );
 
-  // === PÁGINAS DE FOTOS ===
-  if (dados.fotos.length > 0) {
-    secaoHeader(doc, "FOTOS", y + 15, cor, corRGB);
+  // ===================== FOTOS =====================
+  if (dados.fotos && dados.fotos.length > 0) {
+    y = startY + 10;
 
-    let fotoY = y + 25;
-    const fotosPerPage = 3;
+    // Check if we need a new page for photos header
+    if (y > 250) {
+      doc.addPage();
+      y = 15;
+    }
+
+    sectionHeader(doc, "FOTOS", y);
+    let fotoY = y + 12;
     let fotoCount = 0;
 
+    // Preload all images
+    const imageDataArray: (string | null)[] = [];
     for (const foto of dados.fotos) {
-      if (fotoCount > 0 && fotoCount % fotosPerPage === 0) {
+      if (foto.url) {
+        const imgData = await loadImage(foto.url);
+        imageDataArray.push(imgData);
+      } else {
+        imageDataArray.push(null);
+      }
+    }
+
+    for (let i = 0; i < dados.fotos.length; i++) {
+      const foto = dados.fotos[i];
+
+      if (fotoCount > 0 && fotoCount % FOTOS_PER_PAGE === 0) {
         doc.addPage();
         fotoY = 20;
       }
 
-      // Placeholder da foto (retângulo cinza com nome)
-      doc.setDrawColor(200, 200, 200);
-      doc.setFillColor(245, 245, 245);
-      doc.rect(14, fotoY, 60, 45, "FD");
-      doc.setFontSize(7);
-      doc.setTextColor(150, 150, 150);
-      doc.text("[Foto]", 44, fotoY + 25, { align: "center" });
+      const imgW = 60;
+      const imgH = 45;
 
-      // Info da foto
-      doc.setTextColor(0, 120, 215);
+      // Try to render actual image
+      const imgData = imageDataArray[i];
+      if (imgData) {
+        try {
+          doc.addImage(imgData, "JPEG", 14, fotoY, imgW, imgH);
+        } catch {
+          // Fallback: draw placeholder
+          doc.setDrawColor(200, 200, 200);
+          doc.setFillColor(245, 245, 245);
+          doc.rect(14, fotoY, imgW, imgH, "FD");
+          doc.setFontSize(7);
+          doc.setTextColor(150, 150, 150);
+          doc.text("[Foto indisponível]", 14 + imgW / 2, fotoY + imgH / 2, { align: "center" });
+        }
+      } else {
+        // Placeholder rectangle
+        doc.setDrawColor(200, 200, 200);
+        doc.setFillColor(245, 245, 245);
+        doc.rect(14, fotoY, imgW, imgH, "FD");
+        doc.setFontSize(7);
+        doc.setTextColor(150, 150, 150);
+        doc.text("[Foto]", 14 + imgW / 2, fotoY + imgH / 2, { align: "center" });
+      }
+
+      // Photo info on the right
+      const infoX = 14 + imgW + 8;
+
+      doc.setTextColor(33, 150, 243);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text(foto.titulo, 80, fotoY + 10);
+      doc.text(foto.titulo, infoX, fotoY + 8);
 
-      doc.setTextColor(100, 100, 100);
-      doc.setFontSize(7);
+      doc.setTextColor(80, 80, 80);
+      doc.setFontSize(7.5);
       doc.setFont("helvetica", "normal");
-      if (foto.lat) doc.text(`Latitude: ${foto.lat}`, 80, fotoY + 18);
-      if (foto.lng) doc.text(`Longitude: ${foto.lng}`, 80, fotoY + 24);
-      if (foto.data) doc.text(`Data Criação da Foto: ${foto.data}`, 80, fotoY + 30);
 
-      // Linha separadora
-      doc.setDrawColor(200, 200, 200);
-      doc.line(14, fotoY + 50, w - 14, fotoY + 50);
+      let infoY = fotoY + 16;
+      if (foto.lat) {
+        doc.setFont("helvetica", "bold");
+        doc.text("Latitude: ", infoX, infoY);
+        doc.setFont("helvetica", "normal");
+        doc.text(foto.lat, infoX + 20, infoY);
+        infoY += 6;
+      }
+      if (foto.lng) {
+        doc.setFont("helvetica", "bold");
+        doc.text("Longitude: ", infoX, infoY);
+        doc.setFont("helvetica", "normal");
+        doc.text(foto.lng, infoX + 22, infoY);
+        infoY += 6;
+      }
+      if (foto.data) {
+        doc.setFont("helvetica", "bold");
+        doc.text("Data Criação da Foto: ", infoX, infoY);
+        doc.setFont("helvetica", "normal");
+        doc.text(foto.data, infoX + 38, infoY);
+      }
 
-      fotoY += 58;
+      // Separator line
+      doc.setDrawColor(220, 220, 220);
+      doc.line(14, fotoY + imgH + 4, w - 14, fotoY + imgH + 4);
+
+      fotoY += imgH + 10;
       fotoCount++;
     }
   }
 
-  // Footer em cada página
-  const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    doc.setFontSize(7);
-    doc.setTextColor(150, 150, 150);
-    doc.text(`Gerado pelo GIA em ${dados.dataImpressao}. Todos os Direitos Reservados.`, 14, 290);
-    doc.text(`Página ${i} de ${totalPages}`, w - 14, 290, { align: "right" });
-  }
+  // ===================== FOOTER ALL PAGES =====================
+  addFooter(doc, dados.dataImpressao);
 
+  // Save
   doc.save(`Laudo-Vistoria-${dados.veiculo.placa || "sem-placa"}.pdf`);
-}
-
-function secaoHeader(doc: jsPDF, titulo: string, y: number, _cor: string, corRGB: number[]) {
-  const w = doc.internal.pageSize.getWidth();
-  doc.setFillColor(corRGB[0], corRGB[1], corRGB[2]);
-  doc.rect(14, y, w - 28, 7, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.text(titulo, w / 2, y + 5, { align: "center" });
-  doc.setTextColor(0, 0, 0);
-  doc.setFont("helvetica", "normal");
-}
-
-function hexToRgb(hex: string): number[] {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return [r, g, b];
 }

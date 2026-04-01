@@ -83,8 +83,7 @@ export default function AssinaturaTab({ deal }: Props) {
       associado: { nome: deal.lead_nome, cpf: deal.cpf_cnpj || "", rg: "", cnh: "", sexo: "", nascimento: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "", cep: "", email: deal.email || "", celular: deal.telefone || "" },
       veiculo: { placa: deal.veiculo_placa, modelo: deal.veiculo_modelo, marca: "", anoFab: "", anoModelo: "", cor: "", combustivel: "", chassi: "", renavam: "", codFipe: "", valorFipe: deal.valor_plano || 0, valorProtegido: deal.valor_plano || 0, diaVencimento: "10", veiculoTrabalho: "Não" },
       plano: { nome: deal.plano || "Completo", valorMensal: deal.valor_plano || 0, adesao: 400, participacao: "5% FIPE" },
-      coberturas: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total"],
-      assistencias: ["Assistência 24H", "Reboque", "Chaveiro", "Hospedagem"],
+      produtos: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Assistência 24H", "Reboque", "Chaveiro", "Hospedagem"],
       consultor: { nome: deal.consultor || "", celular: "", email: "" },
     });
 
@@ -113,8 +112,7 @@ export default function AssinaturaTab({ deal }: Props) {
       associado: { nome: deal.lead_nome, cpf: deal.cpf_cnpj || "", rg: "", cnh: "", sexo: "", nascimento: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "", cep: "", email: deal.email || "", celular: deal.telefone || "" },
       veiculo: { placa: deal.veiculo_placa, modelo: deal.veiculo_modelo, marca: "", anoFab: "", anoModelo: "", cor: "", combustivel: "", chassi: "", renavam: "", codFipe: "", valorFipe: deal.valor_plano || 0, valorProtegido: deal.valor_plano || 0, diaVencimento: "10", veiculoTrabalho: "Não" },
       plano: { nome: deal.plano || "Completo", valorMensal: deal.valor_plano || 0, adesao: 400, participacao: "5% FIPE" },
-      coberturas: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total"],
-      assistencias: ["Assistência 24H", "Reboque", "Chaveiro", "Hospedagem"],
+      produtos: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Assistência 24H", "Reboque", "Chaveiro", "Hospedagem"],
       consultor: { nome: deal.consultor || "", celular: "", email: "" },
     });
     const url = URL.createObjectURL(blob);
