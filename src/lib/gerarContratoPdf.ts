@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import logoImg from "@/assets/cotacao/logo-objetivo.png";
 
 interface DadosContrato {
   empresa: { nome: string; cnpj: string };
@@ -35,14 +36,14 @@ const TOTAL_PAGES = 5;
 function sectionHeader(doc: jsPDF, titulo: string, y: number): number {
   const w = doc.internal.pageSize.getWidth();
   doc.setFillColor(...AZUL_ESCURO);
-  doc.rect(14, y, w - 28, 8, "F");
+  doc.rect(14, y, w - 28, 9, "F");
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.text(titulo, w / 2, y + 6, { align: "center" });
+  doc.text(titulo, w / 2, y + 6.5, { align: "center" });
   doc.setTextColor(0, 0, 0);
   doc.setFont("helvetica", "normal");
-  return y + 10;
+  return y + 11;
 }
 
 function fmtMoney(v: number): string {
@@ -141,22 +142,26 @@ export function gerarContratoPdf(dados: DadosContrato): Blob {
       ];
 
   // ===================== PAGE 1: TERMO DE ADESAO =====================
-  // Logo top-left
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bolditalic");
-  doc.setTextColor(...AZUL_ESCURO);
-  doc.text("OBJETIVO", 14, 16);
-  doc.setFontSize(7);
-  doc.text("AUTO BENEFÍCIOS", 14, 21);
+  // Logo top-left (real image)
+  try {
+    doc.addImage(logoImg, "PNG", 14, 5, 30, 20);
+  } catch {
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bolditalic");
+    doc.setTextColor(...AZUL_ESCURO);
+    doc.text("OBJETIVO", 14, 16);
+    doc.setFontSize(7);
+    doc.text("AUTO BENEFÍCIOS", 14, 21);
+  }
 
   // TERMO DE ADESAO top-right
   doc.setTextColor(0, 0, 0);
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  doc.text("TERMO DE ADESÃO", w - 14, 16, { align: "right" });
-  doc.setFontSize(8);
+  doc.text("TERMO DE ADESÃO", w - 14, 14, { align: "right" });
+  doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text(`CNPJ: ${dados.empresa.cnpj}`, w - 14, 22, { align: "right" });
+  doc.text(`CNPJ: ${dados.empresa.cnpj}`, w - 14, 21, { align: "right" });
 
   // --- DADOS DO ASSOCIADO ---
   let startY = sectionHeader(doc, "DADOS DO ASSOCIADO", 30);
@@ -165,7 +170,7 @@ export function gerarContratoPdf(dados: DadosContrato): Blob {
     head: [],
     theme: "grid",
     margin: { left: 14, right: 14 },
-    styles: { fontSize: 7, cellPadding: 2, lineColor: CINZA_BORDA, lineWidth: 0.2 },
+    styles: { fontSize: 8.5, cellPadding: 3, lineColor: CINZA_BORDA, lineWidth: 0.2, textColor: [0, 0, 0] },
     columnStyles: {
       0: { cellWidth: (w - 28) * 0.5 },
       1: { cellWidth: (w - 28) * 0.5 },
@@ -195,14 +200,14 @@ export function gerarContratoPdf(dados: DadosContrato): Blob {
   });
 
   // --- DADOS DO VEICULO ---
-  let y = (doc as any).lastAutoTable.finalY + 4;
+  let y = (doc as any).lastAutoTable.finalY + 3;
   startY = sectionHeader(doc, "DADOS DO VEÍCULO", y);
   autoTable(doc, {
     startY,
     head: [],
     theme: "grid",
     margin: { left: 14, right: 14 },
-    styles: { fontSize: 7, cellPadding: 2, lineColor: CINZA_BORDA, lineWidth: 0.2 },
+    styles: { fontSize: 8.5, cellPadding: 3, lineColor: CINZA_BORDA, lineWidth: 0.2, textColor: [0, 0, 0] },
     columnStyles: {
       0: { cellWidth: (w - 28) / 3 },
       1: { cellWidth: (w - 28) / 3 },
@@ -237,7 +242,7 @@ export function gerarContratoPdf(dados: DadosContrato): Blob {
   });
 
   // --- DADOS DO AGREGADO ---
-  y = (doc as any).lastAutoTable.finalY + 4;
+  y = (doc as any).lastAutoTable.finalY + 3;
   startY = sectionHeader(doc, "DADOS DO AGREGADO", y);
   if (dados.agregado && dados.agregado.nome) {
     autoTable(doc, {
@@ -245,7 +250,7 @@ export function gerarContratoPdf(dados: DadosContrato): Blob {
       head: [],
       theme: "grid",
       margin: { left: 14, right: 14 },
-      styles: { fontSize: 7, cellPadding: 2, lineColor: CINZA_BORDA, lineWidth: 0.2 },
+      styles: { fontSize: 8.5, cellPadding: 3, lineColor: CINZA_BORDA, lineWidth: 0.2, textColor: [0, 0, 0] },
       body: [
         [`Nome: ${dados.agregado.nome}`, `CPF: ${dados.agregado.cpf || ""}`, `Parentesco: ${dados.agregado.parentesco || ""}`],
       ],
@@ -261,17 +266,7 @@ export function gerarContratoPdf(dados: DadosContrato): Blob {
   // ===================== PAGE 2: PRODUTOS =====================
   doc.addPage();
 
-  // Logo top-left repeated
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bolditalic");
-  doc.setTextColor(...AZUL_ESCURO);
-  doc.text("OBJETIVO", 14, 16);
-  doc.setFontSize(7);
-  doc.text("AUTO BENEFÍCIOS", 14, 21);
-  doc.setTextColor(0, 0, 0);
-  doc.setFont("helvetica", "normal");
-
-  startY = sectionHeader(doc, "PRODUTOS VEÍCULO", 28);
+  startY = sectionHeader(doc, "PRODUTOS VEÍCULO", 15);
 
   // Plano table with light blue background
   autoTable(doc, {
@@ -279,7 +274,7 @@ export function gerarContratoPdf(dados: DadosContrato): Blob {
     head: [],
     theme: "grid",
     margin: { left: 14, right: 14 },
-    styles: { fontSize: 8, cellPadding: 3, lineColor: CINZA_BORDA, lineWidth: 0.2 },
+    styles: { fontSize: 9, cellPadding: 3.5, lineColor: CINZA_BORDA, lineWidth: 0.2, textColor: [0, 0, 0] },
     body: [
       [
         { content: `Plano: ${dados.plano.nome}`, styles: { fontStyle: "bold", fillColor: AZUL_CLARO } },
@@ -295,12 +290,13 @@ export function gerarContratoPdf(dados: DadosContrato): Blob {
   y = (doc as any).lastAutoTable.finalY + 5;
 
   // Produtos list
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
+  doc.setTextColor(0, 0, 0);
   doc.text("Produtos:", 14, y);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  y += 5;
+  doc.setFontSize(9);
+  y += 6;
 
   const defaultProdutos = [
     "Roubo", "Furto", "Colisão", "Incêndio", "Danos a Terceiros",
@@ -312,16 +308,16 @@ export function gerarContratoPdf(dados: DadosContrato): Blob {
 
   for (const p of produtosList) {
     doc.text(`• ${p}`, 16, y);
-    y += 4.5;
+    y += 5.5;
   }
 
-  y += 3;
-  doc.setFontSize(9);
+  y += 4;
+  doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.text("Opcionais:", 14, y);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  y += 5;
+  doc.setFontSize(9);
+  y += 6;
   if (dados.opcionais && dados.opcionais.length > 0) {
     for (const o of dados.opcionais) {
       doc.text(`• ${o}`, 16, y);
@@ -334,13 +330,13 @@ export function gerarContratoPdf(dados: DadosContrato): Blob {
     y += 5;
   }
 
-  y += 2;
-  doc.setFontSize(9);
+  y += 4;
+  doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.text("Observações:", 14, y);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  y += 5;
+  doc.setFontSize(9);
+  y += 6;
   const obsText = dados.observacoes || "";
   if (obsText) {
     const obsLines = doc.splitTextToSize(obsText, w - 28);
@@ -348,7 +344,7 @@ export function gerarContratoPdf(dados: DadosContrato): Blob {
     y += obsLines.length * 4;
   }
 
-  y += 5;
+  y += 4;
   // DADOS DO CONSULTOR
   startY = sectionHeader(doc, "DADOS DO CONSULTOR", y);
   autoTable(doc, {
@@ -356,7 +352,7 @@ export function gerarContratoPdf(dados: DadosContrato): Blob {
     head: [],
     theme: "grid",
     margin: { left: 14, right: 14 },
-    styles: { fontSize: 8, cellPadding: 2.5, lineColor: CINZA_BORDA, lineWidth: 0.2 },
+    styles: { fontSize: 9, cellPadding: 3.5, lineColor: CINZA_BORDA, lineWidth: 0.2, textColor: [0, 0, 0] },
     body: [
       [
         `Nome: ${dados.consultor.nome}`,
@@ -369,25 +365,15 @@ export function gerarContratoPdf(dados: DadosContrato): Blob {
   // ===================== PAGES 3-4: CONTRATO DE ADESAO =====================
   doc.addPage();
 
-  // Logo top-left repeated
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bolditalic");
-  doc.setTextColor(...AZUL_ESCURO);
-  doc.text("OBJETIVO", 14, 16);
-  doc.setFontSize(7);
-  doc.text("AUTO BENEFÍCIOS", 14, 21);
-  doc.setTextColor(0, 0, 0);
-  doc.setFont("helvetica", "normal");
-
-  sectionHeader(doc, "CONTRATO DE ADESÃO", 28);
+  sectionHeader(doc, "CONTRATO DE ADESÃO", 15);
 
   const contratoText = dados.textoContrato || CONTRATO_COMPLETO;
-  doc.setFontSize(7.5);
+  doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(0, 0, 0);
+  doc.setTextColor(20, 20, 20);
 
   const contratoLines = doc.splitTextToSize(contratoText, w - 28);
-  let cY = 42;
+  let cY = 30;
   for (const line of contratoLines) {
     if (cY > 275) {
       doc.addPage();
@@ -402,15 +388,18 @@ export function gerarContratoPdf(dados: DadosContrato): Blob {
       !trimmed.startsWith("-") &&
       trimmed.length > 3
     ) {
+      cY += 2; // extra space before section header
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
+      doc.setFontSize(9.5);
+      doc.setTextColor(0, 0, 0);
       doc.text(line, 14, cY);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(7.5);
+      doc.setFontSize(9);
+      doc.setTextColor(20, 20, 20);
     } else {
       doc.text(line, 14, cY);
     }
-    cY += 3.8;
+    cY += 4.5;
   }
 
   // ===================== PAGE 5: ASSINATURAS =====================
@@ -422,31 +411,33 @@ export function gerarContratoPdf(dados: DadosContrato): Blob {
     month: "long",
     year: "numeric",
   });
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
   doc.setTextColor(0, 0, 0);
-  doc.text(dataAtual, w / 2, 40, { align: "center" });
+  doc.text(dataAtual, w / 2, 50, { align: "center" });
 
-  const sigY = 80;
+  const sigY = 90;
 
   // Signature line - associado (left)
   doc.setDrawColor(0, 0, 0);
-  doc.line(25, sigY, 95, sigY);
-  doc.setFontSize(9);
+  doc.setLineWidth(0.5);
+  doc.line(22, sigY, 98, sigY);
+  doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text(dados.associado.nome, 60, sigY + 6, { align: "center" });
-  doc.setFontSize(7);
+  doc.text(dados.associado.nome, 60, sigY + 7, { align: "center" });
+  doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  doc.text(`CPF: ${dados.associado.cpf}`, 60, sigY + 11, { align: "center" });
+  doc.text(`CPF: ${dados.associado.cpf}`, 60, sigY + 13, { align: "center" });
 
   // Signature line - empresa (right)
-  doc.line(115, sigY, 185, sigY);
-  doc.setFontSize(9);
+  doc.line(112, sigY, 188, sigY);
+  doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text(dados.empresa.nome, 150, sigY + 6, { align: "center" });
-  doc.setFontSize(7);
+  doc.text(dados.empresa.nome, 150, sigY + 7, { align: "center" });
+  doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  doc.text(`CNPJ: ${dados.empresa.cnpj}`, 150, sigY + 11, { align: "center" });
+  doc.text(`CNPJ: ${dados.empresa.cnpj}`, 150, sigY + 13, { align: "center" });
+  doc.setLineWidth(0.2);
 
   // ===================== FOOTER ALL PAGES =====================
   addPageFooter(doc, hash);
