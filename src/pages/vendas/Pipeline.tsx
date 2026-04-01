@@ -524,7 +524,7 @@ export default function Pipeline() {
 
       {/* KANBAN VIEW */}
       {viewMode === "kanban" ? (
-        <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0" style={{ minHeight: "70vh" }}>
+        <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0" style={{ height: "calc(100vh - 220px)" }}>
           {stageColumns.map(col => {
             const colDeals = filtered.filter(d => d.stage === col.key);
             const isOver = dragOverStage === col.key;
@@ -542,7 +542,7 @@ export default function Pipeline() {
                     <Badge className="text-[10px] h-5 px-1.5 bg-white/20 text-white border-white/30">{colDeals.length}</Badge>
                   </div>
                 </div>
-                <ScrollArea className="flex-1 px-2 pb-2">
+                <ScrollArea className="flex-1 px-2 pb-2" style={{ maxHeight: "calc(100vh - 300px)" }}>
                   <div className="space-y-2">
                     {colDeals.map(deal => {
                       const days = daysStalled(deal.updated_at);
