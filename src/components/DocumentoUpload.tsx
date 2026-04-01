@@ -89,8 +89,8 @@ export default function DocumentoUpload({ negociacaoId, tipo, onDadosExtraidos }
         {!doc ? (
           <label className="flex flex-col items-center gap-2 p-6 border-2 border-dashed rounded cursor-pointer hover:bg-muted/30 transition-colors">
             <Upload className="h-8 w-8 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Envie o {label} para extração automática</span>
-            <input type="file" accept="image/*,.pdf" onChange={handleUpload} disabled={uploading} className="hidden" />
+            <span className="text-xs text-muted-foreground">Envie foto do {label} (JPG, PNG) para extração automática</span>
+            <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleUpload} disabled={uploading} className="hidden" />
             {uploading && <span className="text-xs text-primary">Enviando...</span>}
           </label>
         ) : processando ? (
@@ -116,7 +116,7 @@ export default function DocumentoUpload({ negociacaoId, tipo, onDadosExtraidos }
               </Button>
               <label className="inline-flex items-center gap-1 text-xs text-primary cursor-pointer hover:underline">
                 Reenviar
-                <input type="file" accept="image/*,.pdf" onChange={handleUpload} className="hidden" />
+                <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleUpload} className="hidden" />
               </label>
             </div>
           </div>
@@ -129,7 +129,7 @@ export default function DocumentoUpload({ negociacaoId, tipo, onDadosExtraidos }
               </Button>
               <label className="inline-flex items-center gap-1 text-xs border rounded-none px-2 h-7 cursor-pointer hover:bg-muted/30">
                 <Upload className="h-3 w-3" />Reenviar
-                <input type="file" accept="image/*,.pdf" onChange={handleUpload} className="hidden" />
+                <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleUpload} className="hidden" />
               </label>
             </div>
           </div>
