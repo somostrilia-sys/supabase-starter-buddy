@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#E8EDF2" rx="8"/>
+  <g transform="translate(200, 115)" fill="none" stroke="#1A3A5C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-70,0 Q-30,0 0,-10 Q30,-20 50,-20"/>
+    <ellipse cx="60" cy="-20" rx="15" ry="10"/>
+    <line x1="-70" y1="-8" x2="-70" y2="8" stroke-width="6"/>
+    <path d="M70,-15 Q80,-10 75,0" opacity="0.3" stroke-width="3"/>
+    <path d="M75,-20 Q85,-12 82,-2" opacity="0.2" stroke-width="3"/>
+  </g>
+  <text x="200" y="210" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="600" fill="#1A3A5C">Escapamento</text>
+  <text x="200" y="238" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#1A3A5C" opacity="0.6">Foto obrigatória</text>
+</svg>

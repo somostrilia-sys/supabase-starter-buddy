@@ -3,6 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Camera, CheckCircle2 } from "lucide-react";
 
+// ── Imagens comuns ──
 import imgFrente from "@/assets/vistoria/frente.jpg";
 import imgTraseira from "@/assets/vistoria/traseira.jpg";
 import imgLateralEsq from "@/assets/vistoria/lateral-esquerda.jpg";
@@ -10,13 +11,25 @@ import imgLateralDir from "@/assets/vistoria/lateral-direita.jpg";
 import imgInterior from "@/assets/vistoria/interior-painel.jpg";
 import imgBancoDiant from "@/assets/vistoria/banco-dianteiro.jpg";
 import imgBancoTras from "@/assets/vistoria/banco-traseiro.jpg";
-import imgTeto from "@/assets/vistoria/teto.jpg";
 import imgMotor from "@/assets/vistoria/motor-capo.jpg";
 import imgPortaMalas from "@/assets/vistoria/porta-malas.jpg";
 import imgRodas from "@/assets/vistoria/rodas-pneus.jpg";
 import imgChave from "@/assets/vistoria/chave.jpg";
 import imgChassi from "@/assets/vistoria/chassi.jpg";
 import imgQuilometragem from "@/assets/vistoria/quilometragem.jpg";
+import imgParaBrisa from "@/assets/vistoria/para-brisa.svg";
+
+// ── Imagens moto ──
+import imgGuidao from "@/assets/vistoria/guidao.svg";
+import imgCarenagem from "@/assets/vistoria/carenagem.svg";
+import imgEscapamento from "@/assets/vistoria/escapamento.svg";
+import imgPainelMoto from "@/assets/vistoria/painel-moto.svg";
+
+// ── Imagens caminhão ──
+import imgCabine from "@/assets/vistoria/cabine.svg";
+import imgCarroceria from "@/assets/vistoria/carroceria.svg";
+import imgTacografo from "@/assets/vistoria/tacografo.svg";
+import imgEixos from "@/assets/vistoria/eixos.svg";
 
 export interface VistoriaParte {
   id: string;
@@ -25,11 +38,14 @@ export interface VistoriaParte {
   obs?: string;
 }
 
-const partes: VistoriaParte[] = [
+// ── Fotos por tipo de veículo ──
+
+const partesAutomovel: VistoriaParte[] = [
   { id: "frente", label: "Frente", img: imgFrente },
   { id: "traseira", label: "Traseira", img: imgTraseira },
   { id: "lateral_esquerda", label: "Lateral Esquerda", img: imgLateralEsq },
   { id: "lateral_direita", label: "Lateral Direita", img: imgLateralDir },
+  { id: "para_brisa", label: "Para-brisa", img: imgParaBrisa },
   { id: "interior_painel", label: "Interior / Painel", img: imgInterior },
   { id: "banco_dianteiro", label: "Banco Dianteiro", img: imgBancoDiant },
   { id: "banco_traseiro", label: "Banco Traseiro", img: imgBancoTras },
@@ -41,12 +57,56 @@ const partes: VistoriaParte[] = [
   { id: "quilometragem", label: "Quilometragem", img: imgQuilometragem },
 ];
 
+const partesMoto: VistoriaParte[] = [
+  { id: "frente", label: "Frente", img: imgFrente },
+  { id: "traseira", label: "Traseira", img: imgTraseira },
+  { id: "lateral_esquerda", label: "Lateral Esquerda", img: imgLateralEsq },
+  { id: "lateral_direita", label: "Lateral Direita", img: imgLateralDir },
+  { id: "guidao", label: "Guidão", img: imgGuidao },
+  { id: "painel_moto", label: "Painel / Velocímetro", img: imgPainelMoto },
+  { id: "carenagem", label: "Carenagem / Tanque", img: imgCarenagem },
+  { id: "motor_capo", label: "Motor", img: imgMotor },
+  { id: "escapamento", label: "Escapamento", img: imgEscapamento },
+  { id: "rodas_pneus", label: "Rodas e Pneus", img: imgRodas },
+  { id: "chave", label: "Chave da Moto", img: imgChave },
+  { id: "chassi", label: "Chassi", img: imgChassi, obs: "(No chassi ou no cabeçote)" },
+  { id: "quilometragem", label: "Quilometragem", img: imgQuilometragem },
+];
+
+const partesCaminhao: VistoriaParte[] = [
+  { id: "frente", label: "Frente", img: imgFrente },
+  { id: "traseira", label: "Traseira", img: imgTraseira },
+  { id: "lateral_esquerda", label: "Lateral Esquerda", img: imgLateralEsq },
+  { id: "lateral_direita", label: "Lateral Direita", img: imgLateralDir },
+  { id: "para_brisa", label: "Para-brisa", img: imgParaBrisa },
+  { id: "cabine", label: "Cabine", img: imgCabine },
+  { id: "interior_painel", label: "Interior / Painel", img: imgInterior },
+  { id: "carroceria", label: "Carroceria / Baú", img: imgCarroceria },
+  { id: "motor_capo", label: "Motor", img: imgMotor },
+  { id: "eixos", label: "Eixos / Suspensão", img: imgEixos },
+  { id: "rodas_pneus", label: "Rodas e Pneus", img: imgRodas },
+  { id: "tacografo", label: "Tacógrafo", img: imgTacografo },
+  { id: "chave", label: "Chave do Veículo", img: imgChave },
+  { id: "chassi", label: "Chassi", img: imgChassi },
+  { id: "quilometragem", label: "Quilometragem", img: imgQuilometragem },
+];
+
+export type TipoVeiculo = "automovel" | "moto" | "caminhao";
+
+const PARTES_MAP: Record<TipoVeiculo, VistoriaParte[]> = {
+  automovel: partesAutomovel,
+  moto: partesMoto,
+  caminhao: partesCaminhao,
+};
+
 interface Props {
   selected?: string[];
   onChange?: (selected: string[]) => void;
+  tipoVeiculo?: TipoVeiculo;
 }
 
-export default function VistoriaFotoSelector({ selected: controlledSelected, onChange }: Props) {
+export default function VistoriaFotoSelector({ selected: controlledSelected, onChange, tipoVeiculo = "automovel" }: Props) {
+  const partes = PARTES_MAP[tipoVeiculo] || partesAutomovel;
   const [internalSelected, setInternalSelected] = useState<string[]>(partes.map(p => p.id));
   const selected = controlledSelected ?? internalSelected;
 
@@ -98,19 +158,15 @@ export default function VistoriaFotoSelector({ selected: controlledSelected, onC
                   : "border-border opacity-60 hover:opacity-90"
               }`}
             >
-              {/* Thumbnail */}
               <div className="aspect-[4/3] relative">
                 <img
                   src={parte.img}
                   alt={parte.label}
                   className="w-full h-full object-cover"
                 />
-                {/* Overlay */}
                 <div className={`absolute inset-0 transition-colors ${
                   isSelected ? "bg-[hsl(212_35%_18%/0.1)]" : "bg-black/20"
                 }`} />
-
-                {/* Checkbox */}
                 <div className="absolute top-2 left-2">
                   <Checkbox
                     checked={isSelected}
@@ -118,19 +174,13 @@ export default function VistoriaFotoSelector({ selected: controlledSelected, onC
                     tabIndex={-1}
                   />
                 </div>
-
-                {/* Selected indicator */}
                 {isSelected && (
                   <div className="absolute top-2 right-2">
                     <CheckCircle2 className="h-5 w-5 text-white drop-shadow-lg" />
                   </div>
                 )}
-
-                {/* Label overlay on top of photo */}
                 <div className={`absolute bottom-0 left-0 right-0 px-2 py-1.5 text-center ${
-                  isSelected
-                    ? "bg-primary/90 text-white"
-                    : "bg-black/60 text-white"
+                  isSelected ? "bg-primary/90 text-white" : "bg-black/60 text-white"
                 }`}>
                   <span className="text-xs font-semibold">{parte.label}</span>
                   {parte.obs && <span className="block text-[9px] font-normal opacity-90">{parte.obs}</span>}

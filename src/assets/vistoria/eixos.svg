@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#E8EDF2" rx="8"/>
+  <g transform="translate(200, 115)" fill="none" stroke="#1A3A5C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="-70" y1="0" x2="70" y2="0" stroke-width="6"/>
+    <circle cx="-70" cy="0" r="16" stroke-width="5"/>
+    <circle cx="-70" cy="0" r="6" fill="#1A3A5C" opacity="0.3"/>
+    <circle cx="70" cy="0" r="16" stroke-width="5"/>
+    <circle cx="70" cy="0" r="6" fill="#1A3A5C" opacity="0.3"/>
+    <line x1="-70" y1="-30" x2="70" y2="-30" stroke-width="6"/>
+    <circle cx="-70" cy="-30" r="14" stroke-width="4"/>
+    <circle cx="70" cy="-30" r="14" stroke-width="4"/>
+  </g>
+  <text x="200" y="210" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="600" fill="#1A3A5C">Eixos</text>
+  <text x="200" y="238" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#1A3A5C" opacity="0.6">Foto obrigatória</text>
+</svg>

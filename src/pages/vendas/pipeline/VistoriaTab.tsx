@@ -112,7 +112,16 @@ export default function VistoriaTab({ deal }: Props) {
     "banco_dianteiro","banco_traseiro","motor_capo","porta_malas","rodas_pneus",
     "chave","chassi","quilometragem"
   ]);
-  const [categoriaVistoria] = useState<string>("automovel");
+  // Detectar tipo de veículo pelo modelo
+  const detectarTipo = (): string => {
+    const modelo = (deal.veiculo_modelo || "").toLowerCase();
+    const motos = ["cg", "cb", "xre", "pcx", "nmax", "factor", "fazer", "twister", "titan", "fan", "biz", "pop", "bros", "lander", "crosser", "tenere", "mt-", "yzf", "ninja", "z900", "duke", "bmw gs", "harley", "indian", "honda moto", "yamaha moto", "suzuki moto", "motocicleta", "moto"];
+    const caminhoes = ["caminhao", "caminhão", "truck", "trator", "carreta", "scania", "volvo fh", "mercedes actros", "iveco", "man tgx", "daf", "vuc", "3/4", "toco", "bi-truck", "micro-onibus", "micro onibus"];
+    if (motos.some(m => modelo.includes(m))) return "moto";
+    if (caminhoes.some(c => modelo.includes(c))) return "caminhao";
+    return "automovel";
+  };
+  const [categoriaVistoria] = useState<string>(detectarTipo());
 
   const handleAprovar = async () => {
     if (vistoriaId) {
@@ -397,7 +406,7 @@ export default function VistoriaTab({ deal }: Props) {
       {/* Seleção de fotos */}
       <Card className="rounded-none border-2 border-border">
         <CardContent className="p-5">
-          <VistoriaFotoSelector selected={selectedFotos} onChange={setSelectedFotos} />
+          <VistoriaFotoSelector selected={selectedFotos} onChange={setSelectedFotos} tipoVeiculo={categoriaVistoria as any} />
         </CardContent>
       </Card>
 
