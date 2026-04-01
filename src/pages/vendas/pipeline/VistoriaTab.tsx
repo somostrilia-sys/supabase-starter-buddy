@@ -130,6 +130,22 @@ export default function VistoriaTab({ deal }: Props) {
   const StIcon = st.icon;
 
   const handleSolicitar = async () => {
+    // Validar dados obrigatórios antes de solicitar vistoria
+    const faltando: string[] = [];
+    if (!deal.lead_nome?.trim()) faltando.push("Nome do Lead");
+    if (!deal.telefone?.trim()) faltando.push("Telefone");
+    if (!deal.veiculo_placa?.trim()) faltando.push("Placa do Veículo");
+    if (!deal.veiculo_modelo?.trim()) faltando.push("Modelo do Veículo");
+    if (!deal.cidade_circulacao?.trim()) faltando.push("Cidade de Circulação");
+    if (!deal.estado_circulacao?.trim()) faltando.push("Estado de Circulação");
+    if (!deal.cpf_cnpj?.trim()) faltando.push("CPF/CNPJ");
+    if (!deal.consultor?.trim()) faltando.push("Consultor Responsável");
+
+    if (faltando.length > 0) {
+      toast.error(`Preencha antes de solicitar vistoria:\n• ${faltando.join("\n• ")}`, { duration: 6000 });
+      return;
+    }
+
     // Gerar token único
     const token = `VST-${Date.now().toString(36).toUpperCase()}`;
 
