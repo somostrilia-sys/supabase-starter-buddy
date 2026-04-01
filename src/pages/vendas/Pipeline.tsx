@@ -1,3 +1,4 @@
+import { maskCpfCnpj, maskTelefone, maskPlaca } from "@/lib/masks";
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -649,12 +650,12 @@ export default function Pipeline() {
               {formNomeInvalid && <p className="text-xs text-destructive">Nome é obrigatório</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={e => setForm({ ...form, cpf_cnpj: e.target.value })} placeholder="000.000.000-00" maxLength={18} /></div>
+              <div className="space-y-1.5"><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={e => setForm({ ...form, cpf_cnpj: maskCpfCnpj(e.target.value) })} placeholder="000.000.000-00" maxLength={18} /></div>
               <div className="space-y-1.5">
                 <Label>Telefone/WhatsApp *</Label>
                 <Input
                   value={form.telefone}
-                  onChange={e => setForm({ ...form, telefone: e.target.value })}
+                  onChange={e => setForm({ ...form, telefone: maskTelefone(e.target.value) })}
                   onBlur={() => setFormTouched(t => ({ ...t, telefone: true }))}
                   placeholder="(00) 00000-0000"
                   maxLength={15}
@@ -666,7 +667,7 @@ export default function Pipeline() {
             <div className="space-y-1.5"><Label>E-mail</Label><Input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Placa do Veículo</Label><Input value={form.placa} maxLength={8} onChange={e => {
-                const v = e.target.value.toUpperCase();
+                const v = maskPlaca(e.target.value);
                 setForm(f => ({ ...f, placa: v }));
                 const clean = v.replace(/[^A-Z0-9]/g, "");
                 if (clean.length >= 7) {
