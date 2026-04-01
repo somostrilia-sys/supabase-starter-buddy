@@ -159,12 +159,23 @@ export default function Pipeline() {
     });
   }
 
+  // Normaliza nome de cooperativa para comparação (remove "filial", espaços extras, case)
+  const normCoop = (s: string) => s.toLowerCase().replace(/filial\s*/gi, "").replace(/\s+/g, " ").trim();
+
   // Consultores filtrados pela cooperativa selecionada
   const consultoresDaCooperativa = form.cooperativa
-    ? (usuariosReais || []).filter((u: any) => {
-        const coops = (u.cooperativa || "").split(",").map((c: string) => c.trim().toLowerCase());
-        return coops.some((c: string) => form.cooperativa.toLowerCase().includes(c) || c.includes(form.cooperativa.toLowerCase()));
-      }).map((u: any) => u.nome).filter(Boolean)
+    ? (() => {
+        const coopSel = normCoop(form.cooperativa);
+        const filtered = (usuariosReais || []).filter((u: any) => {
+          const userCoops = (u.cooperativa || "").split(",").map((c: string) => normCoop(c));
+          return userCoops.some((c: string) => c === coopSel || coopSel.includes(c) || c.includes(coopSel));
+        });
+        if (filtered.length === 0) {
+          console.warn("[GIA] Nenhum consultor encontrado para cooperativa:", form.cooperativa,
+            "| Cooperativas no banco:", [...new Set((usuariosReais || []).map((u: any) => u.cooperativa))]);
+        }
+        return filtered.length > 0 ? filtered.map((u: any) => u.nome).filter(Boolean) : consultoresLista;
+      })()
     : consultoresLista;
 
   // Ao selecionar consultor → buscar cooperativa dele e preencher
