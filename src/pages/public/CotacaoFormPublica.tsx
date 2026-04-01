@@ -127,7 +127,7 @@ export default function CotacaoFormPublica() {
       } as any).select().single();
 
       if (cot) {
-        navigate(`/cotacao/${(cot as any).id}`);
+        navigate(`/planos/${(cot as any).id}`);
       } else {
         setConcluido(true);
       }

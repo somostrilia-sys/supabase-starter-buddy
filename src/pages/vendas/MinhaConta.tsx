@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { supabase, callEdge } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
@@ -19,6 +20,7 @@ import {
   Landmark, Save, Info, CheckCircle, Clock, User, KeyRound,
   DollarSign, Search, FileSpreadsheet, FileText, CalendarIcon,
   ChevronLeft, ChevronRight, TrendingUp, History,
+  Camera, ImagePlus, Link, Instagram, MessageCircle, Trash2, ExternalLink, Loader2,
 } from "lucide-react";
 
 // ── Bank account constants & masks (kept from original) ──
@@ -88,11 +90,35 @@ const statusConfig: Record<ComissaoStatus, { label: string; cls: string }> = {
 
 const PAGE_SIZE = 10;
 
+function slugify(text: string): string {
+  return text
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+
 export default function MinhaConta() {
   const { profile } = useAuth();
   const [comissoesReais, setComissoesReais] = useState<any[]>([]);
   const [powerlinksData, setPowerlinksData] = useState<any[]>([]);
   const [afiliadosData, setAfiliadosData] = useState<any[]>([]);
+
+  // ── Profile / consultant fields ──
+  const [slug, setSlug] = useState("");
+  const [fotoCapa, setFotoCapa] = useState<string | null>(null);
+  const [fotosTrabalho, setFotosTrabalho] = useState<string[]>([]);
+  const [bio, setBio] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [instagramHandle, setInstagramHandle] = useState("");
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingCapa, setUploadingCapa] = useState(false);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const capaInputRef = useRef<HTMLInputElement>(null);
+  const fotosInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -106,6 +132,111 @@ export default function MinhaConta() {
     supabase.from("afiliados" as any).select("*").eq("consultor_id", profile.id).eq("ativo", true)
       .then(({ data }) => { if (data) setAfiliadosData(data as any[]); });
   }, [profile?.id]);
+
+  // ── Load consultant profile fields from usuarios ──
+  useEffect(() => {
+    if (!profile?.id) return;
+    supabase.from("usuarios" as any)
+      .select("slug, foto_capa_url, fotos_trabalho, bio, whatsapp, instagram, nome")
+      .eq("id", profile.id)
+      .maybeSingle()
+      .then(({ data }: any) => {
+        if (data) {
+          setSlug(data.slug || slugify(data.nome || profile.full_name || ""));
+          setFotoCapa(data.foto_capa_url || null);
+          setFotosTrabalho(data.fotos_trabalho || []);
+          setBio(data.bio || "");
+          setWhatsapp(data.whatsapp || "");
+          setInstagramHandle(data.instagram || "");
+        } else {
+          // fallback slug from profile name
+          setSlug(slugify(profile.full_name || ""));
+        }
+        setProfileLoaded(true);
+      });
+  }, [profile?.id]);
+
+  // ── Upload helpers ──
+  const uploadFile = useCallback(async (file: File, path: string): Promise<string | null> => {
+    const { error } = await supabase.storage.from("consultor-fotos").upload(path, file, { upsert: true });
+    if (error) {
+      toast({ title: "Erro no upload", description: error.message, variant: "destructive" });
+      return null;
+    }
+    const { data: pub } = supabase.storage.from("consultor-fotos").getPublicUrl(path);
+    return pub.publicUrl;
+  }, []);
+
+  async function handleCapaUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !profile?.id) return;
+    setUploadingCapa(true);
+    const url = await uploadFile(file, `${profile.id}/capa.jpg`);
+    if (url) {
+      setFotoCapa(url + "?t=" + Date.now());
+      await supabase.from("usuarios" as any).update({ foto_capa_url: url } as any).eq("id", profile.id);
+      toast({ title: "Foto de capa atualizada!" });
+    }
+    setUploadingCapa(false);
+    if (capaInputRef.current) capaInputRef.current.value = "";
+  }
+
+  async function handleFotosUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || !profile?.id) return;
+    const remaining = 6 - fotosTrabalho.length;
+    if (files.length > remaining) {
+      toast({ title: `Máximo 6 fotos. Você pode adicionar mais ${remaining}.`, variant: "destructive" });
+      return;
+    }
+    setUploadingFoto(true);
+    const newUrls = [...fotosTrabalho];
+    for (let i = 0; i < files.length; i++) {
+      const idx = fotosTrabalho.length + i;
+      const url = await uploadFile(files[i], `${profile.id}/foto_${idx}.jpg`);
+      if (url) newUrls.push(url);
+    }
+    setFotosTrabalho(newUrls);
+    await supabase.from("usuarios" as any).update({ fotos_trabalho: newUrls } as any).eq("id", profile.id);
+    toast({ title: "Fotos atualizadas!" });
+    setUploadingFoto(false);
+    if (fotosInputRef.current) fotosInputRef.current.value = "";
+  }
+
+  async function handleRemoveFoto(index: number) {
+    if (!profile?.id) return;
+    const newUrls = fotosTrabalho.filter((_, i) => i !== index);
+    setFotosTrabalho(newUrls);
+    await supabase.from("usuarios" as any).update({ fotos_trabalho: newUrls } as any).eq("id", profile.id);
+    toast({ title: "Foto removida." });
+  }
+
+  async function handleSaveProfile() {
+    if (!profile?.id) return;
+    if (!slug.trim()) {
+      toast({ title: "Slug é obrigatório", variant: "destructive" });
+      return;
+    }
+    setSavingProfile(true);
+    const { error } = await supabase.from("usuarios" as any).update({
+      slug: slug.trim(),
+      bio,
+      whatsapp,
+      instagram: instagramHandle,
+    } as any).eq("id", profile.id);
+    if (error) {
+      if (error.message.includes("unique") || error.message.includes("duplicate")) {
+        toast({ title: "Este slug já está em uso. Escolha outro.", variant: "destructive" });
+      } else {
+        toast({ title: "Erro ao salvar perfil", description: error.message, variant: "destructive" });
+      }
+    } else {
+      toast({ title: "Perfil do consultor salvo com sucesso!" });
+    }
+    setSavingProfile(false);
+  }
+
+  const landingPageUrl = slug ? `${window.location.origin}/c/${slug}` : "";
 
   // Bank form state
   const [tipoConta, setTipoConta] = useState("");
@@ -170,6 +301,166 @@ export default function MinhaConta() {
         <h1 className="text-2xl font-bold tracking-tight">Minha Conta</h1>
         <p className="text-sm text-muted-foreground">Gerencie suas informações pessoais e dados bancários</p>
       </div>
+
+      {/* ═══════════ Perfil do Consultor ═══════════ */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-violet-500/10">
+              <User className="h-5 w-5 text-violet-600" />
+            </div>
+            Perfil do Consultor
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <Alert className="border-violet-200 bg-violet-50/50 dark:bg-violet-950/20 dark:border-violet-800">
+            <Info className="h-4 w-4 text-violet-600" />
+            <AlertDescription className="text-xs text-violet-700 dark:text-violet-400">
+              Personalize seu perfil para sua landing page pública. Clientes poderão ver sua foto, bio e fotos do seu trabalho.
+            </AlertDescription>
+          </Alert>
+
+          {/* Foto de Capa */}
+          <div className="space-y-2">
+            <Label className="text-xs font-medium flex items-center gap-1">
+              <Camera className="h-3 w-3" /> Foto de Capa (Hero Image)
+            </Label>
+            <div
+              className="relative w-full h-48 bg-muted rounded-lg overflow-hidden border-2 border-dashed border-muted-foreground/20 cursor-pointer hover:border-primary/40 transition-colors"
+              onClick={() => capaInputRef.current?.click()}
+            >
+              {fotoCapa ? (
+                <img src={fotoCapa} alt="Capa" className="w-full h-full object-cover" />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                  <ImagePlus className="h-10 w-10 mb-2" />
+                  <p className="text-sm">Clique para enviar foto de capa</p>
+                  <p className="text-[10px]">Recomendado: 1200x400px</p>
+                </div>
+              )}
+              {uploadingCapa && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 text-white animate-spin" />
+                </div>
+              )}
+            </div>
+            <input ref={capaInputRef} type="file" accept="image/*" className="hidden" onChange={handleCapaUpload} />
+          </div>
+
+          {/* Fotos Trabalhando */}
+          <div className="space-y-2">
+            <Label className="text-xs font-medium flex items-center gap-1">
+              <ImagePlus className="h-3 w-3" /> Fotos Trabalhando (até 6)
+            </Label>
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+              {fotosTrabalho.map((url, i) => (
+                <div key={i} className="relative aspect-square rounded-lg overflow-hidden border group">
+                  <img src={url} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => handleRemoveFoto(i)}
+                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              {fotosTrabalho.length < 6 && (
+                <div
+                  className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-colors"
+                  onClick={() => fotosInputRef.current?.click()}
+                >
+                  {uploadingFoto ? (
+                    <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
+                  ) : (
+                    <>
+                      <ImagePlus className="h-6 w-6 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground mt-1">Adicionar</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+            <input ref={fotosInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFotosUpload} />
+          </div>
+
+          <Separator />
+
+          {/* Slug */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium flex items-center gap-1">
+                <Link className="h-3 w-3" /> Slug Personalizado <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                placeholder="seu-nome"
+                value={slug}
+                onChange={e => setSlug(slugify(e.target.value))}
+                maxLength={60}
+              />
+              <p className="text-[10px] text-muted-foreground">Será usado na URL da sua landing page</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Preview da Landing Page</Label>
+              {slug ? (
+                <div className="flex items-center gap-2 h-9 px-3 rounded-md border bg-muted/50">
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="text-xs text-primary truncate">{landingPageUrl}</span>
+                </div>
+              ) : (
+                <div className="flex items-center h-9 px-3 rounded-md border bg-muted/50">
+                  <span className="text-xs text-muted-foreground">Defina um slug para gerar o link</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Bio */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Bio / Descrição Pessoal</Label>
+            <Textarea
+              placeholder="Conte um pouco sobre você, sua experiência e como pode ajudar o cliente..."
+              value={bio}
+              onChange={e => setBio(e.target.value)}
+              maxLength={500}
+              className="min-h-[100px]"
+            />
+            <p className="text-[10px] text-muted-foreground text-right">{bio.length}/500</p>
+          </div>
+
+          {/* WhatsApp & Instagram */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium flex items-center gap-1">
+                <MessageCircle className="h-3 w-3" /> WhatsApp Pessoal
+              </Label>
+              <Input
+                placeholder="(11) 99999-9999"
+                value={whatsapp}
+                onChange={e => setWhatsapp(e.target.value)}
+                maxLength={20}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium flex items-center gap-1">
+                <Instagram className="h-3 w-3" /> Instagram
+              </Label>
+              <Input
+                placeholder="@seuusuario"
+                value={instagramHandle}
+                onChange={e => setInstagramHandle(e.target.value)}
+                maxLength={50}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button onClick={handleSaveProfile} disabled={savingProfile} className="min-w-[200px]">
+              {savingProfile ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              Salvar Perfil
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* ═══════════ Conta Bancária ═══════════ */}
       <Card>
