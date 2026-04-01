@@ -148,6 +148,7 @@ export default function Pipeline() {
   const regionaisLista = regionaisDb && regionaisDb.length > 0 ? regionaisDb.map((r: any) => r.nome) : regionais;
   const consultoresLista = consultoresReais.length > 0 ? consultoresReais : consultores;
   const planosLista = planosDb && planosDb.length > 0 ? planosDb : planos;
+  const [planosPermitidos, setPlanosPermitidos] = useState<string[]>([]);
 
   // Ao selecionar cooperativa → preencher regional automaticamente
   function handleCooperativaChange(coopNome: string) {
@@ -723,6 +724,12 @@ export default function Pipeline() {
                       const r = res.resultado;
                       setForm(f => ({ ...f, modelo: `${r.marca} ${r.modelo}`, anoModelo: r.anoModelo || "", anoFab: r.anoFabricacao || "" }));
                       toast.success(`${r.marca} ${r.modelo} ${r.anoFabricacao}/${r.anoModelo} — R$ ${(r.valorFipe || 0).toLocaleString("pt-BR")}`);
+                      // Buscar planos permitidos pro modelo
+                      supabase.from("modelos_veiculo" as any).select("planos").ilike("nome", `%${(r.submodelo || r.modelo || "").split(" ")[0]}%`).eq("aceito", true).limit(1).maybeSingle()
+                        .then(({ data: mv }) => {
+                          if (mv?.planos) setPlanosPermitidos((mv.planos as string).split(",").map((p: string) => p.trim()).filter(Boolean));
+                          else setPlanosPermitidos([]);
+                        });
                     }
                   }).catch(() => {});
                 }
@@ -736,7 +743,7 @@ export default function Pipeline() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Plano</Label>
                 <Select value={form.plano} onValueChange={v => setForm({ ...form, plano: v })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{planosLista.filter(Boolean).map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                  <SelectContent>{(planosPermitidos.length > 0 ? planosPermitidos : planosLista).filter(Boolean).map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5"><Label>Cooperativa</Label>
