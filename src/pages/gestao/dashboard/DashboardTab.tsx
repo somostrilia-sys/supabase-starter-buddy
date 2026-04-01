@@ -109,9 +109,9 @@ export default function DashboardTab() {
     queryFn: async () => {
       const mesInicio = mesAtual + "-01";
       const proximoMes = mesAtual.slice(0, 4) + "-" + String(Number(mesAtual.slice(5, 7)) % 12 + 1).padStart(2, "0") + "-01";
-      const { data, error } = await (supabase
-        .from("mensalidades").select("valor").eq("status", "pago")
-        .gte("data_pagamento", mesInicio).lt("data_pagamento", proximoMes) as any);
+      const { data, error } = await (supabase as any)
+        .from("boletos").select("valor").eq("status", "baixado")
+        .gte("data_pagamento", mesInicio).lt("data_pagamento", proximoMes);
       if (error) throw error;
       return (data || []).reduce((s: number, m: { valor: number }) => s + (m.valor ?? 0), 0);
     },
@@ -150,11 +150,20 @@ export default function DashboardTab() {
   const { data: boletosMes = { gerados: 0, recebidos: 0 } } = useQuery({
     queryKey: ["kpi_boletos_mes", mesAtual],
     queryFn: async () => {
-      const { data, error } = await (supabase
-        .from("mensalidades").select("status").gte("created_at", mesAtual + "-01T00:00:00Z") as any);
-      if (error) throw error;
-      const rows = (data || []) as { status: string }[];
-      return { gerados: rows.length, recebidos: rows.filter(r => r.status === "pago").length };
+      const mesInicio = mesAtual + "-01";
+      const proximoMes = mesAtual.slice(0, 4) + "-" + String(Number(mesAtual.slice(5, 7)) % 12 + 1).padStart(2, "0") + "-01";
+      // Boletos gerados: count of boletos created in current month
+      const { count: gerados, error: errGerados } = await (supabase as any)
+        .from("boletos").select("id", { count: "exact", head: true })
+        .gte("created_at", mesInicio + "T00:00:00Z").lt("created_at", proximoMes + "T00:00:00Z");
+      if (errGerados) throw errGerados;
+      // Boletos recebidos: count of boletos with status=baixado and data_pagamento in current month
+      const { count: recebidos, error: errRecebidos } = await (supabase as any)
+        .from("boletos").select("id", { count: "exact", head: true })
+        .eq("status", "baixado")
+        .gte("data_pagamento", mesInicio).lt("data_pagamento", proximoMes);
+      if (errRecebidos) throw errRecebidos;
+      return { gerados: gerados ?? 0, recebidos: recebidos ?? 0 };
     },
   });
 
@@ -166,11 +175,11 @@ export default function DashboardTab() {
   const { data: boletosDoMesData = [] } = useQuery({
     queryKey: ["chart_boletos_semana", mesAtual],
     queryFn: async () => {
-      const { data, error } = await (supabase
-        .from("mensalidades")
+      const { data, error } = await (supabase as any)
+        .from("boletos")
         .select("status, created_at")
         .gte("created_at", mesInicio.toISOString())
-        .lte("created_at", mesFim.toISOString()) as any);
+        .lte("created_at", mesFim.toISOString());
       if (error) throw error;
       const rows = (data || []) as { status: string; created_at: string }[];
       const weeks: Record<number, { gerados: number; recebidos: number }> = {};
@@ -179,7 +188,7 @@ export default function DashboardTab() {
         const weekNum = Math.ceil(d.getDate() / 7);
         if (!weeks[weekNum]) weeks[weekNum] = { gerados: 0, recebidos: 0 };
         weeks[weekNum].gerados += 1;
-        if (r.status === "pago") weeks[weekNum].recebidos += 1;
+        if (r.status === "baixado") weeks[weekNum].recebidos += 1;
       });
       return [1, 2, 3, 4, 5].filter(w => weeks[w]).map(w => ({
         semana: `Sem ${w}`,

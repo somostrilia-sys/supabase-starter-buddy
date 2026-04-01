@@ -765,7 +765,7 @@ function CooperativaSection({ subView, setSubView }: { subView: number; setSubVi
   const [coopDeleteId, setCoopDeleteId] = useState<string | null>(null);
 
   const loadCooperativas = async () => {
-    const { data, error } = await supabase.from("cooperativas").select("*");
+    const { data, error } = await (supabase as any).from("cooperativas").select("id, nome, codigo, cidade, estado, ativo, regional_id, regionais(nome)");
     if (!error && data) setCooperativas(data);
   };
 
@@ -809,20 +809,21 @@ function CooperativaSection({ subView, setSubView }: { subView: number; setSubVi
           </div>
           <div className="border rounded-lg border-border overflow-x-auto">
             <Table className="min-w-[600px]">
-              <TableHeader><TableRow className="bg-muted/50"><TableHead className="text-xs">Nome</TableHead><TableHead className="text-xs">Código</TableHead><TableHead className="text-xs">Cidade</TableHead><TableHead className="text-xs">Estado</TableHead><TableHead className="text-xs">Status</TableHead><TableHead className="text-xs w-[80px]">Ações</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow className="bg-muted/50"><TableHead className="text-xs">Nome</TableHead><TableHead className="text-xs">Código</TableHead><TableHead className="text-xs">Cidade</TableHead><TableHead className="text-xs">Estado</TableHead><TableHead className="text-xs">Regional</TableHead><TableHead className="text-xs">Status</TableHead><TableHead className="text-xs w-[80px]">Ações</TableHead></TableRow></TableHeader>
               <TableBody>
                 {cooperativas.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell className="text-sm font-medium">{row.nome}</TableCell>
-                    <TableCell className="text-sm">{row.codigo || "---"}</TableCell>
-                    <TableCell className="text-sm">{row.cidade || "---"}</TableCell>
-                    <TableCell className="text-sm">{row.estado || "---"}</TableCell>
+                    <TableCell className="text-sm">{row.codigo || "—"}</TableCell>
+                    <TableCell className="text-sm">{row.cidade || "—"}</TableCell>
+                    <TableCell className="text-sm">{row.estado || "—"}</TableCell>
+                    <TableCell className="text-sm">{row.regionais?.nome || "—"}</TableCell>
                     <TableCell><Badge className={row.ativo ? "bg-emerald-500/10 text-emerald-600 text-xs" : "bg-muted text-muted-foreground text-xs"}>{row.ativo ? "Ativa" : "Inativa"}</Badge></TableCell>
                     <TableCell><div className="flex gap-1"><Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openCoopEdit(row)}><Edit className="h-3 w-3" /></Button><Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setCoopDeleteId(row.id)}><Trash2 className="h-3 w-3 text-destructive" /></Button></div></TableCell>
                   </TableRow>
                 ))}
                 {cooperativas.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Nenhum registro cadastrado</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Nenhum registro cadastrado</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>

@@ -19,6 +19,7 @@ import {
   Monitor, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { exportCSV, exportExcel, exportPDF, printData, type ExportColumn } from "@/utils/exportUtils";
 
 // ── Filter section data ──
 const situacoesVeiculo = [
@@ -92,15 +93,17 @@ function FilterSection({
 
 // ── Action bar with View/Print/Excel/PDF ──
 function ReportActionBar({
-  busca, setBusca, onGenerate, onExport, placeholder = "Busca rápida...",
+  busca, setBusca, onGenerate, onExportCSV, onExportExcel, onExportPDF, onPrint, placeholder = "Busca rápida...",
 }: {
-  busca: string; setBusca: (v: string) => void; onGenerate: () => void; onExport: () => void; placeholder?: string;
+  busca: string; setBusca: (v: string) => void; onGenerate: () => void;
+  onExportCSV: () => void; onExportExcel: () => void; onExportPDF: () => void; onPrint: () => void;
+  placeholder?: string;
 }) {
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleAction = (action: string, fn: () => void) => {
     setLoading(action);
-    setTimeout(() => { fn(); setLoading(null); }, 800);
+    setTimeout(() => { fn(); setLoading(null); }, 400);
   };
 
   return (
@@ -113,15 +116,19 @@ function ReportActionBar({
         {loading === "tela" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Monitor className="h-4 w-4" />}
         Visualizar Tela
       </Button>
-      <Button variant="outline" onClick={() => handleAction("print", () => { window.print(); toast.success("Enviado para impressão"); })} disabled={loading === "print"}>
+      <Button variant="outline" onClick={() => handleAction("print", () => { onPrint(); toast.success("Enviado para impressão"); })} disabled={loading === "print"}>
         {loading === "print" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
         Imprimir
       </Button>
-      <Button variant="outline" onClick={() => handleAction("excel", () => { onExport(); toast.success("CSV exportado"); })} disabled={loading === "excel"}>
-        {loading === "excel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+      <Button variant="outline" onClick={() => handleAction("csv", () => { onExportCSV(); toast.success("CSV exportado"); })} disabled={loading === "csv"}>
+        {loading === "csv" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
         Exportar CSV
       </Button>
-      <Button variant="outline" onClick={() => handleAction("pdf", () => toast.success("PDF gerado"))} disabled={loading === "pdf"}>
+      <Button variant="outline" onClick={() => handleAction("excel", () => { onExportExcel(); toast.success("Excel exportado"); })} disabled={loading === "excel"}>
+        {loading === "excel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+        Excel
+      </Button>
+      <Button variant="outline" onClick={() => handleAction("pdf", () => { onExportPDF(); toast.success("PDF gerado"); })} disabled={loading === "pdf"}>
         {loading === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
         PDF
       </Button>
@@ -231,18 +238,37 @@ export default function RelatoriosTab() {
   const { data: associadosData } = useQuery({
     queryKey: ["associados-relatorio"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("associados").select("*").limit(100);
+      const { data, error } = await supabase.from("associados").select("*");
       if (error) throw error;
       return data || [];
     },
   });
   const realAssociados: any[] = associadosData || [];
 
+  // Fetch veiculos from Supabase with pagination
+  const [veicPageDb, setVeicPageDb] = useState(1);
+  const VEIC_PAGE_SIZE = 50;
+  const { data: veiculosResult } = useQuery({
+    queryKey: ["veiculos-relatorio", veicPageDb],
+    queryFn: async () => {
+      const offset = (veicPageDb - 1) * VEIC_PAGE_SIZE;
+      const { data, error, count } = await (supabase as any)
+        .from("veiculos")
+        .select("*", { count: "exact" })
+        .range(offset, offset + VEIC_PAGE_SIZE - 1);
+      if (error) throw error;
+      return { rows: data || [], total: count ?? 0 };
+    },
+  });
+  const realVeiculos: any[] = veiculosResult?.rows || [];
+  const totalVeiculosCount = veiculosResult?.total || 0;
+  const totalPagesVeicDb = Math.ceil(totalVeiculosCount / VEIC_PAGE_SIZE);
+
   // Fetch boletos from Supabase
   const { data: boletosData } = useQuery({
     queryKey: ["boletos-relatorio"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("boletos").select("*").limit(100);
+      const { data, error } = await supabase.from("boletos").select("*").limit(1000);
       if (error) throw error;
       return data || [];
     },
@@ -440,21 +466,31 @@ export default function RelatoriosTab() {
             <ReportActionBar
               busca={buscaVeic}
               setBusca={setBuscaVeic}
-              onGenerate={() => { setPageVeic(1); toast.success("Relatório gerado"); }}
-              onExport={() => exportCsv(realAssociados.map((a: any) => ({ placa: a.placa, modelo: a.modelo, ano: a.ano, tipo: a.tipo, categoria: a.categoria, cota: a.cota, associado: a.nome, cooperativa: a.cooperativa })), "veiculos")}
+              onGenerate={() => { setVeicPageDb(1); toast.success("Relatório gerado"); }}
+              onExport={() => exportCsv(realVeiculos.map((v: any) => ({ placa: v.placa, modelo: v.modelo, ano: v.ano_fabricacao, marca: v.marca, cor: v.cor, chassi: v.chassi })), "veiculos")}
               placeholder="Busca por placa ou modelo..."
             />
           </div>
 
           <Card><CardContent className="p-0">
             <Table>
-              <TableHeader><TableRow><TableHead className="font-bold text-xs uppercase">Placa</TableHead><TableHead className="font-bold text-xs uppercase">Modelo</TableHead><TableHead className="font-bold text-xs uppercase">Ano</TableHead><TableHead className="font-bold text-xs uppercase">Tipo</TableHead><TableHead className="font-bold text-xs uppercase">Categoria</TableHead><TableHead className="font-bold text-xs uppercase">Cota</TableHead><TableHead className="font-bold text-xs uppercase">Associado</TableHead><TableHead className="font-bold text-xs uppercase">Cooperativa</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead className="font-bold text-xs uppercase">Placa</TableHead><TableHead className="font-bold text-xs uppercase">Modelo</TableHead><TableHead className="font-bold text-xs uppercase">Marca</TableHead><TableHead className="font-bold text-xs uppercase">Ano Fab.</TableHead><TableHead className="font-bold text-xs uppercase">Cor</TableHead><TableHead className="font-bold text-xs uppercase">Chassi</TableHead><TableHead className="font-bold text-xs uppercase">Status</TableHead></TableRow></TableHeader>
               <TableBody>
-                {realAssociados.map((a: any) => (
-                  <TableRow key={a.id}><TableCell className="font-mono">{a.placa}</TableCell><TableCell className="">{a.modelo}</TableCell><TableCell className="">{a.ano}</TableCell><TableCell><Badge variant="outline">{a.tipo}</Badge></TableCell><TableCell className="">{a.categoria}</TableCell><TableCell className="">{a.cota}</TableCell><TableCell className="font-medium">{a.nome}</TableCell><TableCell className="">{a.cooperativa}</TableCell></TableRow>
+                {realVeiculos.map((v: any) => (
+                  <TableRow key={v.id}><TableCell className="font-mono">{v.placa}</TableCell><TableCell>{v.modelo}</TableCell><TableCell>{v.marca}</TableCell><TableCell>{v.ano_fabricacao}</TableCell><TableCell>{v.cor}</TableCell><TableCell className="font-mono text-xs">{v.chassi}</TableCell><TableCell><Badge variant="outline">{v.status || "—"}</Badge></TableCell></TableRow>
                 ))}
+                {realVeiculos.length === 0 && (
+                  <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Nenhum veículo encontrado</TableCell></TableRow>
+                )}
               </TableBody>
             </Table>
+            <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-t">
+              <span className="text-xs text-muted-foreground">{totalVeiculosCount} veículos - Página {veicPageDb} de {totalPagesVeicDb || 1}</span>
+              <div className="flex gap-1">
+                <Button variant="outline" size="sm" disabled={veicPageDb <= 1} onClick={() => setVeicPageDb(p => p - 1)} className="h-7 px-2"><ChevronLeft className="h-3.5 w-3.5" /></Button>
+                <Button variant="outline" size="sm" disabled={veicPageDb >= totalPagesVeicDb} onClick={() => setVeicPageDb(p => p + 1)} className="h-7 px-2"><ChevronRight className="h-3.5 w-3.5" /></Button>
+              </div>
+            </div>
           </CardContent></Card>
         </TabsContent>
 

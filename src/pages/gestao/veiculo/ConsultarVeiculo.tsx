@@ -252,6 +252,13 @@ export default function ConsultarVeiculo() {
   const [page, setPage] = useState(1);
   const [condutorModal, setCondutorModal] = useState(false);
   const [newObs, setNewObs] = useState("");
+  const [cooperativasList, setCooperativasList] = useState<string[]>([]);
+
+  useEffect(() => {
+    supabase.from("cooperativas").select("nome").eq("ativo", true).then(({ data }) => {
+      if (data) setCooperativasList(data.map((c: any) => c.nome));
+    });
+  }, []);
 
   const setF = (k: string, v: string) => setFilters(p => ({ ...p, [k]: v }));
 
@@ -316,7 +323,7 @@ export default function ConsultarVeiculo() {
               </div>
               <div><Label className="text-xs">Cooperativa</Label>
                 <Select value={filters.cooperativa} onValueChange={v => setF("cooperativa", v)}><SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{["Todos","Cooperativa São Paulo","Cooperativa Campinas","Cooperativa Rio","Cooperativa Minas","Cooperativa Sul","Cooperativa Centro-Oeste","Cooperativa Nordeste"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+                <SelectContent><SelectItem value="Todos">Todos</SelectItem>{cooperativasList.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
               </div>
             </div>
             <div className="flex gap-2">
