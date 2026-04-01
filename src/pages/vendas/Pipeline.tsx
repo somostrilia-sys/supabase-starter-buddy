@@ -738,7 +738,7 @@ export default function Pipeline() {
 
       {/* Deal detail modal */}
       {detailDeal && (
-        <DealDetailModal deal={detailDeal} open={!!detailDeal} onOpenChange={o => { if (!o) setDetailDeal(null); }} />
+        <DealDetailModal deal={detailDeal} open={!!detailDeal} onOpenChange={o => { if (!o) setDetailDeal(null); }} onUpdate={() => { queryClient.invalidateQueries({ queryKey: ["leads"] }); }} />
       )}
 
       {/* Concretizar Venda Modal */}

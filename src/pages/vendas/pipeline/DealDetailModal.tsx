@@ -30,6 +30,7 @@ interface Props {
   deal: PipelineDeal;
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  onUpdate?: () => void;
 }
 
 const tipoIcons: Record<string, React.ElementType> = { "Ligação": Phone, Email: Mail, WhatsApp: MessageSquare, Reunião: Video, Visita: User };
@@ -42,7 +43,7 @@ const mockGestaoHistory = [
 
 const MOTIVOS_ARQUIVAR = ["Teste", "Erro de cadastro", "Cancelamento pelo cliente", "Duplicidade", "Sem interesse", "Outro"];
 
-export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
+export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: Props) {
   const [activeTab, setActiveTab] = useState("cotacao");
   const [historicoReal, setHistoricoReal] = useState<any[]>([]);
   const [showArquivar, setShowArquivar] = useState(false);
@@ -57,6 +58,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
     } as any);
     toast.success("Card arquivado");
     setShowArquivar(false);
+    onUpdate?.();
     onOpenChange(false);
   }
 
