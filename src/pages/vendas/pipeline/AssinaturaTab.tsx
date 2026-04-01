@@ -91,7 +91,7 @@ export default function AssinaturaTab({ deal }: Props) {
     const reader = new FileReader();
     reader.onload = async () => {
       const base64 = (reader.result as string).split(",")[1];
-      const result = await callEdge("gia-gerar-contrato", { negociacao_id: deal.id, canal, pdf_base64: base64 });
+      const result = await callEdge("gia-gerar-contrato", { negociacao_id: deal.id, canal, pdf_base64: base64, telefone_associado: deal.telefone });
       setGerando(false);
       setEnviado(true);
       setStatus("enviado");
