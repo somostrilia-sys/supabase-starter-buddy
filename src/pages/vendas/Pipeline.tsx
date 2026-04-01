@@ -97,7 +97,7 @@ export default function Pipeline() {
   const [perPage, setPerPage] = useState(10);
 
   // New deal form
-  const [form, setForm] = useState({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", anoModelo: "", anoFab: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "", cidadeCirc: "", estadoCirc: "" });
+  const [form, setForm] = useState({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", anoModelo: "", anoFab: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "", cidadeCirc: "", estadoCirc: "", origem: "" });
   const [formTouched, setFormTouched] = useState({ lead_nome: false, telefone: false });
   const [cidadesCircOptions, setCidadesCircOptions] = useState<string[]>([]);
 
@@ -254,7 +254,7 @@ export default function Pipeline() {
         cidade_circulacao: data.cidadeCirc || undefined,
         estado_circulacao: data.estadoCirc || undefined,
         stage: "novo_lead",
-        origem: "Manual",
+        origem: data.origem || "Manual",
         enviado_sga: false,
         visualizacoes_proposta: 0,
         status_icons: { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false },
@@ -434,7 +434,7 @@ export default function Pipeline() {
 
   const formNomeInvalid = formTouched.lead_nome && !form.lead_nome.trim();
   const formTelInvalid = formTouched.telefone && !form.telefone.trim();
-  const canCreateDeal = form.lead_nome.trim().length > 0 && form.telefone.trim().length > 0 && form.estadoCirc.length > 0 && form.cidadeCirc.trim().length > 0;
+  const canCreateDeal = form.lead_nome.trim().length > 0 && form.telefone.trim().length > 0 && form.estadoCirc.length > 0 && form.cidadeCirc.trim().length > 0 && form.origem.length > 0;
 
   function handleNewDeal() {
     setFormTouched({ lead_nome: true, telefone: true });
@@ -814,6 +814,23 @@ export default function Pipeline() {
               <div className="space-y-1.5"><Label>Regional (preenchida pela cooperativa)</Label>
                 <Input value={form.regional} readOnly className="bg-muted cursor-not-allowed" placeholder="Selecione a cooperativa" />
               </div>
+            </div>
+            <div className="space-y-1.5"><Label>Origem do Lead *</Label>
+              <Select value={form.origem} onValueChange={v => setForm({ ...form, origem: v })}>
+                <SelectTrigger><SelectValue placeholder="Selecione a origem" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
+                  <SelectItem value="LuxSales">LuxSales</SelectItem>
+                  <SelectItem value="Indicação">Indicação</SelectItem>
+                  <SelectItem value="Redes Sociais">Redes Sociais</SelectItem>
+                  <SelectItem value="Site Objetivo">Site Objetivo</SelectItem>
+                  <SelectItem value="Landing Page">Landing Page</SelectItem>
+                  <SelectItem value="WhatsApp">WhatsApp</SelectItem>
+                  <SelectItem value="Telefone">Telefone</SelectItem>
+                  <SelectItem value="Presencial">Presencial</SelectItem>
+                  <SelectItem value="Outros">Outros</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5"><Label>Observações</Label><Textarea value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} rows={3} /></div>
             <div className="flex justify-end gap-2">
