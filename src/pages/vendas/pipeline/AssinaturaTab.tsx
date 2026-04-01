@@ -99,8 +99,7 @@ export default function AssinaturaTab({ deal }: Props) {
         toast.error(result.error || "Erro ao gerar contrato");
       } else {
         if (result.link_assinatura) setLinkAssinatura(result.link_assinatura);
-        const msg = canal === "ambos" ? "e-mail e WhatsApp" : canal === "email" ? "e-mail" : "WhatsApp";
-        toast.success(`Contrato enviado para assinatura via ${msg}!`);
+        toast.success("Contrato enviado para assinatura via SMS + E-mail!");
 
         // Notificar associado via SMS + Email (ClickSend)
         const linkAss = result.link_assinatura || "";
