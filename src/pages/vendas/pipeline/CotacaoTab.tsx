@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -219,6 +219,25 @@ export default function CotacaoTab({ deal }: Props) {
       setPrecosReais(d2 || []);
     }
   };
+
+  // Auto-carregar preços reais ao montar se tem placa
+  React.useEffect(() => {
+    const placa = (deal.veiculo_placa || "").replace(/[^A-Z0-9]/gi, "");
+    if (placa.length >= 7 && precosReais.length === 0) {
+      callEdge("gia-buscar-placa", { acao: "placa", placa }).then(res => {
+        if (res.sucesso && res.resultado) {
+          const r = res.resultado;
+          const vFipe = r.valorFipe || 0;
+          if (vFipe > 0) {
+            carregarPrecos(vFipe);
+            carregarCoberturas(planoSelecionado);
+            verificarAceitacao(r.marca || "", r.modelo || "");
+            setFipeFetched(true);
+          }
+        }
+      }).catch(() => {});
+    }
+  }, [deal.veiculo_placa]);
 
   const modelos = modelosPorMarca[marca] || [];
   const modeloAtual = modelos[modeloIdx] || modelos[0];
