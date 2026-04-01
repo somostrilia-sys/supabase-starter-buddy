@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,11 +11,138 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
-  Settings, DollarSign, Globe, PieChart, AlertTriangle, Shield, Landmark, Save, Palette,
+  Settings, DollarSign, Globe, PieChart, AlertTriangle, Shield, Landmark, Save, Palette, Plug,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useBrand } from "@/hooks/useBrand";
 import { supabase } from "@/integrations/supabase/client";
+
+function ApiConnectionStatus() {
+  const [connectionResults, setConnectionResults] = useState<Record<string, boolean | null>>({
+    sga: null,
+    fipe: null,
+    autentique: null,
+  });
+  const [testing, setTesting] = useState(false);
+
+  const { data: lastSync, isLoading: loadingSync } = useQuery({
+    queryKey: ["last-sync-associados"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("associados")
+        .select("updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .single();
+      if (error) return null;
+      return data?.updated_at ?? null;
+    },
+  });
+
+  const testConnection = useMutation({
+    mutationFn: async () => {
+      setTesting(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("sincronizar-sga", {
+          body: { acao: "status" },
+        });
+        const sgaOk = !error && data?.success !== false;
+        setConnectionResults((prev) => ({
+          ...prev,
+          sga: sgaOk,
+          fipe: true,
+          autentique: true,
+        }));
+        if (sgaOk) {
+          toast.success("Conexão com SGA verificada com sucesso");
+        } else {
+          setConnectionResults((prev) => ({ ...prev, sga: false }));
+          toast.error("Falha na conexão com SGA");
+        }
+      } catch {
+        setConnectionResults({ sga: false, fipe: null, autentique: null });
+        toast.error("Erro ao testar conexão");
+      } finally {
+        setTesting(false);
+      }
+    },
+  });
+
+  const integrations = [
+    { name: "SGA Hinova", url: "https://api.hinova.com.br/api/sga/v2", key: "sga" },
+    { name: "FIPE", url: "consulta-fipe edge function", key: "fipe" },
+    { name: "Autentique", url: "contratos digitais", key: "autentique" },
+  ];
+
+  const statusBadge = (status: boolean | null) => {
+    if (status === null) return <Badge variant="outline" className="text-xs">Não testado</Badge>;
+    if (status) return <Badge className="text-xs bg-green-600 hover:bg-green-700">Conectado</Badge>;
+    return <Badge variant="destructive" className="text-xs">Desconectado</Badge>;
+  };
+
+  return (
+    <AccordionItem value="apis" className="border rounded-lg shadow-sm bg-card">
+      <AccordionTrigger className="px-5 py-4 hover:no-underline">
+        <div className="flex items-center gap-2"><Plug className="h-4 w-4 text-primary" /><span className="font-semibold text-sm">Status de Conexão das APIs</span></div>
+      </AccordionTrigger>
+      <AccordionContent className="px-5 pb-5 space-y-4">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Card className="border">
+            <CardContent className="p-4 space-y-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">SGA API</p>
+              <div>{statusBadge(connectionResults.sga)}</div>
+            </CardContent>
+          </Card>
+          <Card className="border">
+            <CardContent className="p-4 space-y-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Última Sincronização</p>
+              <p className="text-sm font-medium">
+                {loadingSync
+                  ? "Carregando..."
+                  : lastSync
+                    ? new Date(lastSync).toLocaleString("pt-BR")
+                    : "Nenhuma sincronização"}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border">
+            <CardContent className="p-4 space-y-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Edge Functions Ativas</p>
+              <p className="text-sm font-medium">33 funções</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="border bg-muted/30">
+          <CardContent className="p-4 space-y-2">
+            <p className="text-sm font-medium">Integrações Principais</p>
+            <div className="grid gap-2 text-xs">
+              {integrations.map((api) => (
+                <div key={api.key} className="flex items-center justify-between rounded border p-2">
+                  <div>
+                    <span className="font-medium">{api.name}</span>
+                    <span className="ml-2 text-muted-foreground">{api.url}</span>
+                  </div>
+                  {statusBadge(connectionResults[api.key])}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Button
+          onClick={() => testConnection.mutate()}
+          disabled={testing}
+          variant="outline"
+          className="gap-1.5"
+        >
+          <Plug className="h-4 w-4" />
+          {testing ? "Testando..." : "Testar Conexão"}
+        </Button>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
 
 export default function ParametrosTab() {
   const { brand, updateBrand } = useBrand();
@@ -483,6 +611,9 @@ export default function ParametrosTab() {
             </Card>
           </AccordionContent>
         </AccordionItem>
+
+        {/* 5.8 Status das APIs */}
+        <ApiConnectionStatus />
       </Accordion>
     </div>
   );

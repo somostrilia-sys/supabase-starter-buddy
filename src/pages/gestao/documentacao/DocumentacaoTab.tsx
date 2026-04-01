@@ -641,87 +641,215 @@ function RelatorioTermosTab() {
 // ── 5) API / Edge Functions ─────────────────────────────────
 
 const edgeFunctions = [
-  { nome: "sga-sync", metodo: "POST", path: "/functions/v1/sga-sync", descricao: "Sincronização SGA", grupo: "SGA" },
-  { nome: "sga-boletos", metodo: "POST", path: "/functions/v1/sga-boletos", descricao: "Sincronizar boletos SGA", grupo: "SGA" },
-  { nome: "sincronizar-sga", metodo: "POST", path: "/functions/v1/sincronizar-sga", descricao: "Sync completo SGA", grupo: "SGA" },
-  { nome: "gerar-relatorio", metodo: "POST", path: "/functions/v1/gerar-relatorio", descricao: "Gerar relatórios", grupo: "Relatórios" },
-  { nome: "enviar-notificacao", metodo: "POST", path: "/functions/v1/enviar-notificacao", descricao: "Enviar notificações", grupo: "Comunicação" },
+  // SGA / Integração (3)
+  { nome: "sga-sync", metodo: "POST", path: "/functions/v1/sga-sync", descricao: "Sincronização completa SGA → GIA", grupo: "SGA" },
+  { nome: "sga-boletos", metodo: "POST", path: "/functions/v1/sga-boletos", descricao: "Gestão de boletos SGA", grupo: "SGA" },
+  { nome: "sincronizar-sga", metodo: "POST", path: "/functions/v1/sincronizar-sga", descricao: "Importação validada SGA", grupo: "SGA" },
+  // Pipeline Vendas (13)
+  { nome: "gia-afiliados", metodo: "POST", path: "/functions/v1/gia-afiliados", descricao: "Gestão de afiliados", grupo: "Pipeline" },
+  { nome: "gia-analisar-concorrente", metodo: "POST", path: "/functions/v1/gia-analisar-concorrente", descricao: "Análise de concorrência", grupo: "Pipeline" },
+  { nome: "gia-associado-buscar", metodo: "POST", path: "/functions/v1/gia-associado-buscar", descricao: "Busca de associado", grupo: "Pipeline" },
+  { nome: "gia-autentique-webhook", metodo: "POST", path: "/functions/v1/gia-autentique-webhook", descricao: "Webhook Autentique", grupo: "Pipeline" },
+  { nome: "gia-buscar-placa", metodo: "POST", path: "/functions/v1/gia-buscar-placa", descricao: "Consulta placa veículo", grupo: "Pipeline" },
+  { nome: "gia-conselheiro-ia", metodo: "POST", path: "/functions/v1/gia-conselheiro-ia", descricao: "Conselheiro IA para vendas", grupo: "Pipeline" },
+  { nome: "gia-converter-lead", metodo: "POST", path: "/functions/v1/gia-converter-lead", descricao: "Conversão de lead", grupo: "Pipeline" },
+  { nome: "gia-cotacao-publica", metodo: "GET", path: "/functions/v1/gia-cotacao-publica", descricao: "Cotação pública via token", grupo: "Pipeline" },
+  { nome: "gia-excecao-link", metodo: "POST", path: "/functions/v1/gia-excecao-link", descricao: "Link de exceção/aprovação", grupo: "Pipeline" },
+  { nome: "gia-gerar-contrato", metodo: "POST", path: "/functions/v1/gia-gerar-contrato", descricao: "Geração de contrato digital", grupo: "Pipeline" },
+  { nome: "gia-gerar-pdf-cotacao", metodo: "POST", path: "/functions/v1/gia-gerar-pdf-cotacao", descricao: "PDF de cotação", grupo: "Pipeline" },
+  { nome: "gia-landing-page", metodo: "GET", path: "/functions/v1/gia-landing-page", descricao: "Landing page de captação", grupo: "Pipeline" },
+  { nome: "gia-pagamento-webhook", metodo: "POST", path: "/functions/v1/gia-pagamento-webhook", descricao: "Webhook de pagamento", grupo: "Pipeline" },
+  { nome: "gia-vistoria-ai-analise", metodo: "POST", path: "/functions/v1/gia-vistoria-ai-analise", descricao: "Análise IA de vistoria", grupo: "Pipeline" },
+  // Operacional (8)
+  { nome: "alertas", metodo: "POST", path: "/functions/v1/alertas", descricao: "Sistema de alertas", grupo: "Operacional" },
+  { nome: "calcular-rateio", metodo: "POST", path: "/functions/v1/calcular-rateio", descricao: "Cálculo de rateio mensal", grupo: "Operacional" },
+  { nome: "calcular-taxa-admin", metodo: "POST", path: "/functions/v1/calcular-taxa-admin", descricao: "Taxa administrativa", grupo: "Operacional" },
+  { nome: "collect-associados-inadimplentes", metodo: "POST", path: "/functions/v1/collect-associados-inadimplentes", descricao: "Coleta inadimplentes", grupo: "Operacional" },
+  { nome: "concretizar-venda", metodo: "POST", path: "/functions/v1/concretizar-venda", descricao: "Finalização de venda", grupo: "Operacional" },
+  { nome: "emitir-boleto", metodo: "POST", path: "/functions/v1/emitir-boleto", descricao: "Emissão de boleto", grupo: "Operacional" },
+  { nome: "fechamento-mensal", metodo: "POST", path: "/functions/v1/fechamento-mensal", descricao: "Fechamento financeiro mensal", grupo: "Operacional" },
+  { nome: "gerar-relatorio", metodo: "POST", path: "/functions/v1/gerar-relatorio", descricao: "Geração de relatórios", grupo: "Operacional" },
+  // Consulta (3)
+  { nome: "consulta-fipe", metodo: "POST", path: "/functions/v1/consulta-fipe", descricao: "Consulta tabela FIPE", grupo: "Consulta" },
+  { nome: "gia-ocr-documento", metodo: "POST", path: "/functions/v1/gia-ocr-documento", descricao: "OCR de documentos", grupo: "Consulta" },
+  { nome: "gestao-sync-fornecedor", metodo: "POST", path: "/functions/v1/gestao-sync-fornecedor", descricao: "Sync fornecedores", grupo: "Consulta" },
+  // Utilitários (4)
+  { nome: "cota-template", metodo: "POST", path: "/functions/v1/cota-template", descricao: "Template de cotas", grupo: "Utilitários" },
+  { nome: "gestao-chat-ia", metodo: "POST", path: "/functions/v1/gestao-chat-ia", descricao: "Chat IA gestão", grupo: "Utilitários" },
+  { nome: "processar-retorno", metodo: "POST", path: "/functions/v1/processar-retorno", descricao: "Processar retorno bancário", grupo: "Utilitários" },
+  { nome: "supabase", metodo: "POST", path: "/functions/v1/supabase", descricao: "Utilidades Supabase", grupo: "Utilitários" },
 ];
 
-const gruposUnicos = Array.from(new Set(edgeFunctions.map(f => f.grupo)));
+const edgeFunctionGrupos = ["SGA", "Pipeline", "Operacional", "Consulta", "Utilitários"];
+
+const sgaV2Endpoints = [
+  { metodo: "POST", path: "/usuario/autenticar", descricao: "Autenticação" },
+  { metodo: "POST", path: "/listar/associado", descricao: "Listar associados por situação" },
+  { metodo: "POST", path: "/listar/veiculo", descricao: "Listar veículos" },
+  { metodo: "GET", path: "/associado/buscar/{codigo}", descricao: "Buscar associado" },
+  { metodo: "GET", path: "/associado-ativo-inativo/listar", descricao: "Listar ativos/inativos" },
+  { metodo: "POST", path: "/listar/cooperativa", descricao: "Listar cooperativas" },
+  { metodo: "POST", path: "/listar/regional", descricao: "Listar regionais" },
+  { metodo: "POST", path: "/listar/produto", descricao: "Listar produtos" },
+  { metodo: "POST", path: "/listar/boleto", descricao: "Listar boletos" },
+  { metodo: "POST", path: "/listar/evento", descricao: "Listar eventos" },
+];
 
 function ApiEdgeFunctionsTab() {
   const [filtroGrupo, setFiltroGrupo] = useState("Todos");
+  const [busca, setBusca] = useState("");
+  const [apiSubTab, setApiSubTab] = useState<"edge" | "sga-v2">("edge");
 
-  const filtered = filtroGrupo === "Todos"
-    ? edgeFunctions
-    : edgeFunctions.filter(f => f.grupo === filtroGrupo);
+  const filtered = edgeFunctions.filter(f => {
+    if (filtroGrupo !== "Todos" && f.grupo !== filtroGrupo) return false;
+    if (busca && !f.nome.toLowerCase().includes(busca.toLowerCase()) && !f.descricao.toLowerCase().includes(busca.toLowerCase())) return false;
+    return true;
+  });
 
   return (
     <div className="space-y-5">
-      <Card className="border-border shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base text-primary">Edge Functions — Supabase</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Documentação das edge functions disponíveis no projeto GIA Objetivo.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-3 items-end flex-wrap">
-            <div>
-              <Label className="text-xs">Filtrar por grupo</Label>
-              <Select value={filtroGrupo} onValueChange={setFiltroGrupo}>
-                <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Todos">Todos</SelectItem>
-                  {gruposUnicos.map(g => (
-                    <SelectItem key={g} value={g}>{g}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+      {/* Sub-tabs: Edge Functions vs SGA v2 */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setApiSubTab("edge")}
+          className={`rounded-md px-4 py-2 text-sm font-medium transition-all ${
+            apiSubTab === "edge"
+              ? "bg-primary text-white shadow-md"
+              : "bg-muted text-foreground hover:bg-muted/80"
+          }`}
+        >
+          Edge Functions ({edgeFunctions.length})
+        </button>
+        <button
+          onClick={() => setApiSubTab("sga-v2")}
+          className={`rounded-md px-4 py-2 text-sm font-medium transition-all ${
+            apiSubTab === "sga-v2"
+              ? "bg-primary text-white shadow-md"
+              : "bg-muted text-foreground hover:bg-muted/80"
+          }`}
+        >
+          Endpoints SGA v2 ({sgaV2Endpoints.length})
+        </button>
+      </div>
 
-          <div className="border rounded-lg border-border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted">
-                  <TableHead className="text-xs">Nome</TableHead>
-                  <TableHead className="text-xs">Método</TableHead>
-                  <TableHead className="text-xs">Path</TableHead>
-                  <TableHead className="text-xs">Descrição</TableHead>
-                  <TableHead className="text-xs">Grupo</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map(f => (
-                  <TableRow key={f.nome}>
-                    <TableCell className="text-sm font-mono font-medium">{f.nome}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="border-primary/30 text-foreground bg-primary/8 text-xs font-mono">
-                        {f.metodo}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm font-mono text-muted-foreground">{f.path}</TableCell>
-                    <TableCell className="text-sm">{f.descricao}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs">{f.grupo}</Badge>
-                    </TableCell>
+      {apiSubTab === "edge" && (
+        <Card className="border-border shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base text-primary">Edge Functions — Supabase</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Documentação das {edgeFunctions.length} edge functions disponíveis no projeto GIA Objetivo.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-3 items-end flex-wrap">
+              <div>
+                <Label className="text-xs">Filtrar por grupo</Label>
+                <Select value={filtroGrupo} onValueChange={setFiltroGrupo}>
+                  <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Todos">Todos</SelectItem>
+                    {edgeFunctionGrupos.map(g => (
+                      <SelectItem key={g} value={g}>{g}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <Label className="text-xs">Buscar por nome</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input className="pl-9" placeholder="Nome ou descrição da function..." value={busca} onChange={e => setBusca(e.target.value)} />
+                </div>
+              </div>
+            </div>
+
+            <div className="border rounded-lg border-border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted">
+                    <TableHead className="text-xs">Nome</TableHead>
+                    <TableHead className="text-xs">Método</TableHead>
+                    <TableHead className="text-xs">Path</TableHead>
+                    <TableHead className="text-xs">Descrição</TableHead>
+                    <TableHead className="text-xs">Grupo</TableHead>
                   </TableRow>
-                ))}
-                {filtered.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      Nenhuma function encontrada
-                    </TableCell>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map(f => (
+                    <TableRow key={f.nome}>
+                      <TableCell className="text-sm font-mono font-medium">{f.nome}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={`text-xs font-mono ${
+                          f.metodo === "GET"
+                            ? "border-green-400/50 text-green-700 bg-green-50"
+                            : "border-primary/30 text-foreground bg-primary/8"
+                        }`}>
+                          {f.metodo}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm font-mono text-muted-foreground">{f.path}</TableCell>
+                      <TableCell className="text-sm">{f.descricao}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">{f.grupo}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filtered.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        Nenhuma function encontrada
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            <p className="text-xs text-muted-foreground">{filtered.length} de {edgeFunctions.length} function(s) listada(s)</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {apiSubTab === "sga-v2" && (
+        <Card className="border-border shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base text-primary">Endpoints SGA v2</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Endpoints ativos da API SGA v2 utilizados pela integração GIA.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="border rounded-lg border-border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted">
+                    <TableHead className="text-xs">Método</TableHead>
+                    <TableHead className="text-xs">Endpoint</TableHead>
+                    <TableHead className="text-xs">Descrição</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          <p className="text-xs text-muted-foreground">{filtered.length} function(s) listada(s)</p>
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {sgaV2Endpoints.map(e => (
+                    <TableRow key={e.path}>
+                      <TableCell>
+                        <Badge variant="outline" className={`text-xs font-mono ${
+                          e.metodo === "GET"
+                            ? "border-green-400/50 text-green-700 bg-green-50"
+                            : "border-primary/30 text-foreground bg-primary/8"
+                        }`}>
+                          {e.metodo}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm font-mono font-medium">{e.path}</TableCell>
+                      <TableCell className="text-sm">{e.descricao}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <p className="text-xs text-muted-foreground">{sgaV2Endpoints.length} endpoint(s) listado(s)</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
