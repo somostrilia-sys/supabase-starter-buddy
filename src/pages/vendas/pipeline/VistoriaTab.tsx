@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { PipelineDeal } from "./mockData";
 import { useQuery } from "@tanstack/react-query";
 import { supabase, callEdge } from "@/integrations/supabase/client";
+import { gerarLaudoVistoria } from "@/lib/gerarLaudoVistoria";
 import { usePermission } from "@/hooks/usePermission";
 import {
   ClipboardCheck, Copy, Link2, MessageSquare, CheckCircle, XCircle,
@@ -261,7 +262,33 @@ export default function VistoriaTab({ deal }: Props) {
                     <AlertCircle className="h-3 w-3 mr-1" />Reprovada pela IA — solicite exceção ao diretor
                   </Badge>
                 )}
-                <Button size="sm" variant="outline" className="rounded-none" onClick={() => toast.info("Gerando laudo PDF...")}>
+                <Button size="sm" variant="outline" className="rounded-none" onClick={() => {
+                  gerarLaudoVistoria({
+                    dataImpressao: new Date().toLocaleString("pt-BR"),
+                    contratante: "OBJETIVO AUTO BENEFÍCIOS",
+                    configuracao: categoriaVistoria === "automovel" ? "Carro" : categoriaVistoria === "motocicleta" ? "Moto" : "Caminhão",
+                    solicitante: deal.cooperativa || "Objetivo Auto Benefícios",
+                    vistoriador: deal.consultor || "Sistema",
+                    proponente: { nome: deal.lead_nome, cpf: deal.cpf_cnpj || "", telefone: deal.telefone || "", email: deal.email || "" },
+                    veiculo: {
+                      marcaModelo: deal.veiculo_modelo,
+                      anoModelo: "",
+                      placa: deal.veiculo_placa,
+                      chassi: "",
+                      renavam: "",
+                      gnv: "Não",
+                      quilometragem: "",
+                      chassiRemarcado: "Não",
+                    },
+                    observacoes: "",
+                    acessorios: ["Air Bag", "Alarme", "Ar Condicionado", "Vidros Elétricos", "Travas Elétricas", "Direção Elétrica", "Freio ABS"],
+                    parecer: status === "aprovada" ? "Aprovado" : status === "reprovada" ? "Reprovado" : "Pendente",
+                    avaliador: "Sistema IA",
+                    dataAnalise: new Date().toLocaleString("pt-BR"),
+                    fotos: selectedFotos.map(f => ({ titulo: f.replace(/_/g, " "), url: "", lat: "", lng: "", data: new Date().toLocaleString("pt-BR") })),
+                  });
+                  toast.success("Laudo de vistoria baixado!");
+                }}>
                   <Download className="h-3.5 w-3.5 mr-1" />Laudo PDF
                 </Button>
               </>

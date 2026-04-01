@@ -57,7 +57,7 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[92vh] p-0 gap-0 flex flex-col rounded-none">
+      <DialogContent className="max-w-5xl max-h-[92vh] p-0 gap-0 flex flex-col rounded-none">
         {/* Header com nome e código */}
         <DialogHeader className="px-6 pt-5 pb-3 border-b" style={{ backgroundColor: "#1A3A5C" }}>
           <DialogTitle className="flex items-center gap-3 text-white">
@@ -68,10 +68,6 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="px-6 py-1.5 border-b bg-muted/30">
-          <TagsInline negociacaoId={deal.id} />
-        </div>
-
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="mx-6 mt-3 justify-start flex-wrap gap-1">
             {tabs.map(t => (
@@ -81,7 +77,8 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
             ))}
           </TabsList>
 
-          <ScrollArea className="flex-1 px-6 py-4 overflow-y-auto" style={{ maxHeight: 'calc(92vh - 140px)' }}>
+          <div className="flex-1 flex overflow-hidden" style={{ maxHeight: 'calc(92vh - 140px)' }}>
+          <ScrollArea className="flex-1 px-6 py-4 overflow-y-auto">
             {/* TAB 1 - Cotação */}
             <TabsContent value="cotacao" className="mt-0">
               <CotacaoTab deal={deal} />
@@ -237,6 +234,73 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
               </div>
             </TabsContent>
           </ScrollArea>
+
+          {/* SIDEBAR DIREITA */}
+          <div className="w-64 shrink-0 border-l bg-muted/20 p-4 space-y-4 overflow-y-auto">
+            {/* Responsável */}
+            <div className="space-y-1">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Responsável</span>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-[#1A3A5C] flex items-center justify-center text-white text-xs font-bold">
+                  {(deal.consultor || "?")[0].toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold leading-tight">{deal.consultor || "Não atribuído"}</p>
+                  <p className="text-[10px] text-muted-foreground">{deal.cooperativa}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Afiliado */}
+            <div className="space-y-1 border-t pt-3">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <span className="text-[10px] text-muted-foreground">Afiliado(a)</span>
+                  <p className="text-sm">Nenhum</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-success" />
+                <div>
+                  <span className="text-[10px] text-muted-foreground">Comissão</span>
+                  <p className="text-sm font-semibold text-success">R$ 0,00</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Stepper contratação */}
+            <div className="space-y-1 border-t pt-3">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Contratação online</span>
+              <div className="flex gap-1 mt-1">
+                {["cotacao", "vistoria", "assinatura", "boleto", "sga"].map((step, i) => {
+                  const stageOrder = ["novo_lead", "em_contato", "em_negociacao", "aguardando_vistoria", "liberado_cadastro", "concluido"];
+                  const currentIdx = stageOrder.indexOf(deal.stage);
+                  const filled = i <= Math.max(0, currentIdx - 1);
+                  return <div key={step} className={`h-2 flex-1 rounded-sm ${filled ? "bg-warning" : "bg-border"}`} title={step} />;
+                })}
+              </div>
+            </div>
+
+            {/* Cooperativa */}
+            <div className="space-y-1 border-t pt-3">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Cooperativa</span>
+              <p className="text-sm">{deal.cooperativa || "Não definida"}</p>
+            </div>
+
+            {/* Origem */}
+            <div className="space-y-1 border-t pt-3">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Origem do lead</span>
+              <p className="text-sm">{deal.origem || "Manual"}</p>
+            </div>
+
+            {/* Tags */}
+            <div className="space-y-1 border-t pt-3">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Tags</span>
+              <TagsInline negociacaoId={deal.id} />
+            </div>
+          </div>
+          </div>
         </Tabs>
       </DialogContent>
     </Dialog>
