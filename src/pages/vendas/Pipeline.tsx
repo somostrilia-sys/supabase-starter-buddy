@@ -155,9 +155,17 @@ export default function Pipeline() {
     setForm(f => {
       const coop = (cooperativasDb || []).find((c: any) => c.nome === coopNome);
       const regionalNome = coop?.regionais?.nome || f.regional;
-      return { ...f, cooperativa: coopNome, regional: regionalNome };
+      return { ...f, cooperativa: coopNome, regional: regionalNome, consultor: "" };
     });
   }
+
+  // Consultores filtrados pela cooperativa selecionada
+  const consultoresDaCooperativa = form.cooperativa
+    ? (usuariosReais || []).filter((u: any) => {
+        const coops = (u.cooperativa || "").split(",").map((c: string) => c.trim().toLowerCase());
+        return coops.some((c: string) => form.cooperativa.toLowerCase().includes(c) || c.includes(form.cooperativa.toLowerCase()));
+      }).map((u: any) => u.nome).filter(Boolean)
+    : consultoresLista;
 
   // Ao selecionar consultor → buscar cooperativa dele e preencher
   function handleConsultorChange(consultorNome: string) {
@@ -758,7 +766,7 @@ export default function Pipeline() {
               </div>
               <div className="space-y-1.5"><Label>Consultor Responsável</Label>
                 <Select value={form.consultor} onValueChange={handleConsultorChange}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{consultoresLista.filter(Boolean).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  <SelectContent>{consultoresDaCooperativa.filter(Boolean).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>

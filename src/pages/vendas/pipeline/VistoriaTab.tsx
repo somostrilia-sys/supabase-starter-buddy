@@ -33,16 +33,6 @@ interface TimelineEvent {
   usuario?: string;
 }
 
-const mockTimeline: TimelineEvent[] = [
-  { data: "05/03/2026 09:15", descricao: "Vistoria solicitada pelo comercial", tipo: "solicitacao", usuario: "João Silva" },
-  { data: "05/03/2026 09:16", descricao: "Código VST-2026-0042 gerado e enviado ao cliente via WhatsApp", tipo: "envio" },
-  { data: "05/03/2026 14:30", descricao: "Fotos enviadas pelo cliente via App Visto", tipo: "envio", usuario: "Cliente" },
-  { data: "05/03/2026 15:00", descricao: "Vistoria encaminhada para análise", tipo: "analise", usuario: "Sistema" },
-  { data: "06/03/2026 10:20", descricao: "Reprovada — foto do chassi ilegível", tipo: "resultado", usuario: "Ana Pereira" },
-  { data: "06/03/2026 11:00", descricao: "Solicitado reenvio das fotos do chassi e motor", tipo: "reenvio", usuario: "João Silva" },
-  { data: "06/03/2026 16:45", descricao: "Novas fotos enviadas pelo cliente via link web", tipo: "envio", usuario: "Cliente" },
-  { data: "07/03/2026 08:30", descricao: "Vistoria em análise (2ª tentativa)", tipo: "analise", usuario: "Sistema" },
-];
 
 const tipoIconMap: Record<string, React.ElementType> = {
   solicitacao: ClipboardCheck,
@@ -100,18 +90,17 @@ export default function VistoriaTab({ deal }: Props) {
         tipo: t.automatica ? "analise" : "solicitacao",
         usuario: t.automatica ? "Sistema" : "Consultor",
       }))
-    : mockTimeline;
+    : [];
 
   const [codigoGerado, setCodigoGerado] = useState(!!vistoriaReal);
-  const [codigo] = useState(vistoriaReal?.token_publico || "VST-2026-0042");
-  const [status, setStatus] = useState<VistoriaStatus>("em_aprovacao");
+  const [codigo] = useState(vistoriaReal?.token_publico || "");
+  const [status, setStatus] = useState<VistoriaStatus>(vistoriaReal?.status || "pendente");
   const [prazo, setPrazo] = useState("7");
   const [selectedFotos, setSelectedFotos] = useState<string[]>([
     "frente","traseira","lateral_esquerda","lateral_direita","interior_painel",
-    "banco_dianteiro","banco_traseiro","teto","motor_capo","porta_malas","rodas_pneus","documentos"
+    "banco_dianteiro","banco_traseiro","teto","motor_capo","porta_malas","rodas_pneus",
+    "chave","chassi","quilometragem"
   ]);
-  const [tentativa] = useState(2);
-
   // Categoria para carregar template
   const [categoriaVistoria, setCategoriaVistoria] = useState<string>("automovel");
   const [itensConcluidoIds, setItensConcluidoIds] = useState<string[]>([]);
@@ -200,11 +189,11 @@ export default function VistoriaTab({ deal }: Props) {
                   </div>
                   <div>
                     <span className="text-xs text-muted-foreground">Solicitada em</span>
-                    <p className="text-sm">05/03/2026 09:15</p>
+                    <p className="text-sm">{vistoriaReal?.created_at ? new Date(vistoriaReal.created_at).toLocaleString("pt-BR") : "—"}</p>
                   </div>
                   <div>
                     <span className="text-xs text-muted-foreground">Tentativa atual</span>
-                    <p className="text-sm font-semibold">{tentativa}ª tentativa</p>
+                    <p className="text-sm font-semibold">{vistoriaReal?.tentativa || 1}ª tentativa</p>
                   </div>
                   <div>
                     <span className="text-xs text-muted-foreground">Veículo</span>
@@ -366,30 +355,32 @@ export default function VistoriaTab({ deal }: Props) {
       {/* Timeline de eventos */}
       <fieldset className="space-y-3">
         <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">HISTÓRICO DA VISTORIA</legend>
-        <div className="relative pl-6 space-y-0">
-          {timeline.map((ev, i) => {
-            const Icon = tipoIconMap[ev.tipo] || Clock;
-            const iconColor = tipoColorMap[ev.tipo] || "bg-gray-400 text-white";
-            const isLast = i === timeline.length - 1;
-            return (
-              <div key={i} className="relative pb-4">
-                {/* Vertical line */}
-                {!isLast && <div className="absolute left-[-14px] top-6 bottom-0 w-px bg-border" />}
-                {/* Icon dot */}
-                <div className={`absolute left-[-22px] top-1 h-5 w-5 rounded-full flex items-center justify-center ${iconColor}`}>
-                  <Icon className="h-3 w-3" />
-                </div>
-                <div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-xs font-mono text-muted-foreground">{ev.data}</span>
-                    {ev.usuario && <span className="text-[10px] text-muted-foreground">• {ev.usuario}</span>}
+        {timeline.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4 text-center">Nenhum evento registrado</p>
+        ) : (
+          <div className="relative pl-6 space-y-0">
+            {timeline.map((ev, i) => {
+              const Icon = tipoIconMap[ev.tipo] || Clock;
+              const iconColor = tipoColorMap[ev.tipo] || "bg-gray-400 text-white";
+              const isLast = i === timeline.length - 1;
+              return (
+                <div key={i} className="relative pb-4">
+                  {!isLast && <div className="absolute left-[-14px] top-6 bottom-0 w-px bg-border" />}
+                  <div className={`absolute left-[-22px] top-1 h-5 w-5 rounded-full flex items-center justify-center ${iconColor}`}>
+                    <Icon className="h-3 w-3" />
                   </div>
-                  <p className="text-sm mt-0.5">{ev.descricao}</p>
+                  <div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xs font-mono text-muted-foreground">{ev.data}</span>
+                      {ev.usuario && <span className="text-[10px] text-muted-foreground">• {ev.usuario}</span>}
+                    </div>
+                    <p className="text-sm mt-0.5">{ev.descricao}</p>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </fieldset>
     </div>
   );

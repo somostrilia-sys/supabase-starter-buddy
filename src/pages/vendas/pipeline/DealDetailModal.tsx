@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PipelineDeal, mockActivities, planos } from "./mockData";
+import { PipelineDeal, planos } from "./mockData";
 import AssociadoTab from "./AssociadoTab";
 import CotacaoTab from "./CotacaoTab";
 import VistoriaTab from "./VistoriaTab";
@@ -22,7 +22,7 @@ import { supabase, callEdge } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   FileText, User, Car, ClipboardCheck, Send, Activity, PenTool, Wallet,
-  Phone, Mail, MessageSquare, Video, Plus, Download, CheckCircle, XCircle,
+  Mail, MessageSquare, Plus, Download, CheckCircle, XCircle,
   Clock, Image, Archive,
 } from "lucide-react";
 
@@ -33,13 +33,7 @@ interface Props {
   onUpdate?: () => void;
 }
 
-const tipoIcons: Record<string, React.ElementType> = { "Ligação": Phone, Email: Mail, WhatsApp: MessageSquare, Reunião: Video, Visita: User };
 
-const mockGestaoHistory = [
-  { campo: "Associado", status: "Enviado", data: "01/03/2026 14:30", erro: null },
-  { campo: "Veículo", status: "Erro", data: "01/03/2026 14:31", erro: "Placa não encontrada" },
-  { campo: "Financeiro", status: "Pendente", data: "—", erro: null },
-];
 
 const MOTIVOS_ARQUIVAR = ["Teste", "Erro de cadastro", "Cancelamento pelo cliente", "Duplicidade", "Sem interesse", "Outro"];
 
@@ -213,13 +207,13 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
                   <TableHead className="text-xs">Ação</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
-                  {mockGestaoHistory.map((h, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="text-sm">{h.campo}</TableCell>
-                      <TableCell><Badge variant={h.status === "Enviado" ? "default" : h.status === "Erro" ? "destructive" : "outline"} className="text-[10px] rounded-none">{h.status}</Badge></TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{h.data}</TableCell>
-                      <TableCell className="text-xs text-destructive">{h.erro || "—"}</TableCell>
-                      <TableCell>{h.status === "Erro" && <Button size="sm" variant="ghost" className="text-xs h-7 rounded-none">Reenviar</Button>}</TableCell>
+                  {["Associado", "Veículo", "Financeiro"].map((campo) => (
+                    <TableRow key={campo}>
+                      <TableCell className="text-sm">{campo}</TableCell>
+                      <TableCell><Badge variant="outline" className="text-[10px] rounded-none">Pendente</Badge></TableCell>
+                      <TableCell className="text-xs text-muted-foreground">—</TableCell>
+                      <TableCell className="text-xs text-destructive">—</TableCell>
+                      <TableCell />
                     </TableRow>
                   ))}
                 </TableBody>
@@ -229,31 +223,33 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
             {/* TAB 6 - Atividades */}
             <TabsContent value="atividades" className="mt-0 space-y-4">
               <Button size="sm" className="rounded-none"><Plus className="h-3.5 w-3.5 mr-1" />Nova Atividade</Button>
-              <div className="space-y-3">
-                {(historicoReal.length > 0 ? historicoReal : mockActivities).map((a: any, i: number) => {
-                  const isReal = !!a.stage_novo;
-                  const Icon = isReal ? Activity : (tipoIcons[a.tipo] || Activity);
-                  const desc = isReal ? `${a.stage_anterior || "—"} → ${a.stage_novo}${a.motivo ? ` — ${a.motivo}` : ""}` : a.descricao;
-                  const data = isReal ? a.created_at : a.data;
-                  const usuario = isReal ? (a.automatica ? "Sistema" : "Consultor") : a.usuario;
-                  const tipo = isReal ? (a.automatica ? "Auto" : "Manual") : a.tipo;
-                  return (
-                    <div key={a.id || i} className="flex gap-3 items-start">
-                      <div className="mt-1 w-8 h-8 bg-primary/10 flex items-center justify-center shrink-0">
-                        <Icon className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="flex-1 border-b-2 border-[#747474] pb-3">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-[10px] rounded-none">{tipo}</Badge>
-                          <span className="text-xs text-muted-foreground">{new Date(data).toLocaleDateString("pt-BR")} {new Date(data).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+              {historicoReal.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">Nenhuma atividade registrada</p>
+              ) : (
+                <div className="space-y-3">
+                  {historicoReal.map((a: any, i: number) => {
+                    const desc = `${a.stage_anterior || "—"} → ${a.stage_novo}${a.motivo ? ` — ${a.motivo}` : ""}`;
+                    const data = a.created_at;
+                    const usuario = a.automatica ? "Sistema" : "Consultor";
+                    const tipo = a.automatica ? "Auto" : "Manual";
+                    return (
+                      <div key={a.id || i} className="flex gap-3 items-start">
+                        <div className="mt-1 w-8 h-8 bg-primary/10 flex items-center justify-center shrink-0">
+                          <Activity className="h-4 w-4 text-primary" />
                         </div>
-                        <p className="text-sm mt-1">{desc}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">por {usuario}</p>
+                        <div className="flex-1 border-b-2 border-[#747474] pb-3">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-[10px] rounded-none">{tipo}</Badge>
+                            <span className="text-xs text-muted-foreground">{new Date(data).toLocaleDateString("pt-BR")} {new Date(data).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                          </div>
+                          <p className="text-sm mt-1">{desc}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">por {usuario}</p>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </TabsContent>
           </ScrollArea>
 

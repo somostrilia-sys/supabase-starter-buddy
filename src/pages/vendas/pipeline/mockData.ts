@@ -65,5 +65,3 @@ export const planos = ["Básico", "Completo", "Objetivo", "Premium", "Objetivo (
 const day = 86400000;
 
 export const mockDeals: PipelineDeal[] = [];
-
-export const mockActivities: any[] = [];

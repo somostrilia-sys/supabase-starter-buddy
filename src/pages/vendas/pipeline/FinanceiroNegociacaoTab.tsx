@@ -32,17 +32,8 @@ interface Fatura {
   descricao: string;
   valor: number;
   status: PagamentoStatus;
-  tipo: "adesao" | "mensalidade" | "recibo";
+  tipo: "adesao" | "rastreador" | "cota_participacao";
 }
-
-const mockFaturas: Fatura[] = [
-  { id: "fat-1", data: "05/03/2026", descricao: "Taxa de Adesão — Parcela 1/3", valor: 266.33, status: "pago", tipo: "adesao" },
-  { id: "fat-2", data: "05/04/2026", descricao: "Taxa de Adesão — Parcela 2/3", valor: 266.33, status: "pendente", tipo: "adesao" },
-  { id: "fat-3", data: "05/05/2026", descricao: "Taxa de Adesão — Parcela 3/3", valor: 266.34, status: "nao_pago", tipo: "adesao" },
-  { id: "fat-4", data: "10/03/2026", descricao: "Mensalidade — Plano Completo (Mar/2026)", valor: 189.90, status: "pago", tipo: "mensalidade" },
-  { id: "fat-5", data: "10/04/2026", descricao: "Mensalidade — Plano Completo (Abr/2026)", valor: 189.90, status: "pendente", tipo: "mensalidade" },
-  { id: "fat-6", data: "05/03/2026", descricao: "Recibo de Pagamento — Adesão + 1ª Mensalidade", valor: 456.23, status: "pago", tipo: "recibo" },
-];
 
 function fmt(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -53,24 +44,43 @@ interface Props { deal: PipelineDeal; }
 export default function FinanceiroNegociacaoTab({ deal }: Props) {
   const [formaPgto, setFormaPgto] = useState("pix");
   const [configEmpresa, setConfigEmpresa] = useState<any>(null);
+  const [faturas, setFaturas] = useState<Fatura[]>([]);
 
   useEffect(() => {
     supabase.from("config_empresa" as any).select("*").limit(1).maybeSingle()
       .then(({ data }) => setConfigEmpresa(data));
   }, []);
 
-  const valorPlano = 189.90;
-  const taxaAdesao = 799.00;
-  const totalPago = mockFaturas.filter(f => f.status === "pago").reduce((s, f) => s + f.valor, 0);
-  const totalPendente = mockFaturas.filter(f => f.status !== "pago").reduce((s, f) => s + f.valor, 0);
+  // Buscar faturas reais da negociação
+  useEffect(() => {
+    if (!deal.id || deal.id.startsWith("p")) return;
+    supabase.from("faturas" as any).select("*")
+      .eq("negociacao_id", deal.id)
+      .order("created_at", { ascending: true })
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setFaturas(data.map((f: any) => ({
+            id: f.id,
+            data: new Date(f.data_vencimento || f.created_at).toLocaleDateString("pt-BR"),
+            descricao: f.descricao || "Taxa de Adesão",
+            valor: Number(f.valor),
+            status: f.status || "pendente",
+            tipo: f.tipo || "adesao",
+          })));
+        }
+      });
+  }, [deal.id]);
+
+  const taxaAdesao = deal.valor_plano || 0;
+  const totalPago = faturas.filter(f => f.status === "pago").reduce((s, f) => s + f.valor, 0);
+  const totalPendente = faturas.filter(f => f.status !== "pago").reduce((s, f) => s + f.valor, 0);
 
   return (
     <div className="space-y-5">
-      {/* Cards resumo */}
-      <div className="grid grid-cols-4 gap-3">
+      {/* Cards resumo — sem mensalidade */}
+      <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Valor do Plano", valor: valorPlano, sub: "/mês", color: "#1A3A5C", icon: DollarSign },
-          { label: "Taxa de Adesão", valor: taxaAdesao, sub: "3x", color: "#1A3A5C", icon: FileText },
+          { label: "Taxa de Adesão", valor: taxaAdesao, sub: "", color: "#1A3A5C", icon: FileText },
           { label: "Total Pago", valor: totalPago, sub: "", color: "#16a34a", icon: CreditCard },
           { label: "Pendente", valor: totalPendente, sub: "", color: "#dc2626", icon: Receipt },
         ].map(c => (
@@ -87,9 +97,17 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
         ))}
       </div>
 
+      {/* Info: associado em contratação */}
+      <Card className="rounded-none border-2 border-blue-200 bg-blue-50/50">
+        <CardContent className="p-4">
+          <p className="text-sm font-semibold text-[#1A3A5C]">Associado em fase de contratação</p>
+          <p className="text-xs text-muted-foreground mt-1">O financeiro desta negociação refere-se apenas aos custos de contratação (adesão, rastreador e cota de participação). Mensalidades serão geradas após a conclusão da venda.</p>
+        </CardContent>
+      </Card>
+
       {/* Forma de pagamento */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">FORMA DE PAGAMENTO</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">FORMA DE PAGAMENTO DA ADESÃO</legend>
         <div className="flex gap-2">
           {formasPgto.map(f => {
             const selected = formaPgto === f.id;
@@ -109,7 +127,9 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Status geral:</span>
-          <Badge className={`rounded-none border ${statusBadge.pendente.cls}`}>{statusBadge.pendente.label}</Badge>
+          <Badge className={`rounded-none border ${faturas.some(f => f.status === "pago") ? statusBadge.pago.cls : statusBadge.pendente.cls}`}>
+            {faturas.some(f => f.status === "pago") ? "Parcialmente Pago" : "Pendente"}
+          </Badge>
         </div>
 
         {/* PIX da empresa */}
@@ -121,13 +141,11 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
                 <span className="text-sm font-bold text-[#1A3A5C]">Pagamento via PIX</span>
               </div>
 
-              {configEmpresa?.pix_qrcode_url && (
+              {configEmpresa?.pix_qrcode_url ? (
                 <div className="flex justify-center py-2">
                   <img src={configEmpresa.pix_qrcode_url} alt="QR Code PIX" className="w-48 h-48 border" />
                 </div>
-              )}
-
-              {!configEmpresa?.pix_qrcode_url && (
+              ) : (
                 <div className="flex justify-center py-4">
                   <div className="w-48 h-48 border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
                     <span className="text-xs text-muted-foreground text-center px-4">QR Code não configurado.<br/>Configure em Minha Empresa.</span>
@@ -139,22 +157,22 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
                 <div>
                   <span className="text-[10px] text-muted-foreground uppercase">Chave PIX ({configEmpresa?.pix_tipo || "CNPJ"})</span>
                   <div className="flex items-center gap-2">
-                    <code className="text-sm font-mono bg-muted px-3 py-1.5 flex-1 select-all">{configEmpresa?.pix_chave || configEmpresa?.cnpj || "58.506.161/0001-31"}</code>
+                    <code className="text-sm font-mono bg-muted px-3 py-1.5 flex-1 select-all">{configEmpresa?.pix_chave || configEmpresa?.cnpj || "—"}</code>
                     <Button size="sm" variant="outline" className="rounded-none text-xs" onClick={() => {
-                      navigator.clipboard.writeText(configEmpresa?.pix_chave || configEmpresa?.cnpj || "58.506.161/0001-31");
+                      navigator.clipboard.writeText(configEmpresa?.pix_chave || configEmpresa?.cnpj || "");
                       toast.success("Chave PIX copiada!");
                     }}>Copiar</Button>
                   </div>
                 </div>
                 <div>
                   <span className="text-[10px] text-muted-foreground uppercase">Favorecido</span>
-                  <p className="text-sm font-medium">{configEmpresa?.pix_nome || configEmpresa?.nome || "Objetivo Auto Benefícios"}</p>
+                  <p className="text-sm font-medium">{configEmpresa?.pix_nome || configEmpresa?.nome || "—"}</p>
                 </div>
               </div>
 
               <div className="flex gap-2 pt-1">
                 <Button size="sm" variant="outline" className="rounded-none text-xs flex-1" onClick={() => {
-                  const texto = `PIX para ${configEmpresa?.pix_nome || "Objetivo Auto Benefícios"}\nChave: ${configEmpresa?.pix_chave || configEmpresa?.cnpj || "58.506.161/0001-31"}\nTipo: ${configEmpresa?.pix_tipo || "CNPJ"}`;
+                  const texto = `PIX para ${configEmpresa?.pix_nome || "—"}\nChave: ${configEmpresa?.pix_chave || configEmpresa?.cnpj || "—"}\nTipo: ${configEmpresa?.pix_tipo || "CNPJ"}`;
                   navigator.clipboard.writeText(texto);
                   toast.success("Dados PIX copiados para enviar ao cliente!");
                 }}>
@@ -192,54 +210,58 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
         </div>
       </fieldset>
 
-      {/* Tabela de faturas */}
+      {/* Tabela de faturas — apenas adesão/rastreador/cota */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">FATURAS E RECIBOS</legend>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {["Data", "Descrição", "Valor", "Status", "Ação"].map(h => (
-                <TableHead key={h} className="text-xs">{h}</TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {mockFaturas.map(f => {
-              const st = statusBadge[f.status];
-              return (
-                <TableRow key={f.id}>
-                  <TableCell className="text-xs font-mono">{f.data}</TableCell>
-                  <TableCell className="text-sm">{f.descricao}</TableCell>
-                  <TableCell className="text-sm font-semibold">{fmt(f.valor)}</TableCell>
-                  <TableCell><Badge className={`rounded-none border text-[10px] ${st.cls}`}>{st.label}</Badge></TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      {f.status === "pago" && (
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => toast.info("Baixando recibo...")}>
-                          <Download className="h-3.5 w-3.5" />
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">PAGAMENTOS DA CONTRATAÇÃO</legend>
+        {faturas.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4 text-center">Nenhum pagamento registrado</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {["Data", "Descrição", "Valor", "Status", "Ação"].map(h => (
+                  <TableHead key={h} className="text-xs">{h}</TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {faturas.map(f => {
+                const st = statusBadge[f.status];
+                return (
+                  <TableRow key={f.id}>
+                    <TableCell className="text-xs font-mono">{f.data}</TableCell>
+                    <TableCell className="text-sm">{f.descricao}</TableCell>
+                    <TableCell className="text-sm font-semibold">{fmt(f.valor)}</TableCell>
+                    <TableCell><Badge className={`rounded-none border text-[10px] ${st.cls}`}>{st.label}</Badge></TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {f.status === "pago" && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => toast.info("Baixando recibo...")}>
+                            <Download className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {f.status !== "pago" && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => toast.success("Link de pagamento copiado!")}>
+                            <Link2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => toast.info("Visualizando fatura...")}>
+                          <Eye className="h-3.5 w-3.5" />
                         </Button>
-                      )}
-                      {f.status !== "pago" && (
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => toast.success("Link de pagamento copiado!")}>
-                          <Link2 className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => toast.info("Visualizando fatura...")}>
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
       </fieldset>
 
       {/* Ações */}
       <div className="flex flex-wrap gap-2">
         <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white" onClick={() => toast.success("Boleto gerado com sucesso!")}>
-          <Receipt className="h-3.5 w-3.5 mr-1" />Gerar Boleto
+          <Receipt className="h-3.5 w-3.5 mr-1" />Gerar Boleto Adesão
         </Button>
         <Button size="sm" variant="outline" className="rounded-none" onClick={() => toast.success("Link de pagamento gerado!")}>
           <Link2 className="h-3.5 w-3.5 mr-1" />Gerar Link de Pagamento

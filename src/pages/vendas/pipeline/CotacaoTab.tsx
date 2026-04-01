@@ -137,28 +137,32 @@ async function buscarPrecosReais(valorFipe: number): Promise<{ plano: string; co
 interface Props { deal: PipelineDeal; }
 
 export default function CotacaoTab({ deal }: Props) {
-  // Infer initial marca/modelo from deal
+  // Infer initial marca/modelo from deal (empty if not found in mock list)
   const inferredMarca = marcas.find(m => {
     const models = modelosPorMarca[m];
     return models?.some(mod => deal.veiculo_modelo?.includes(mod.modelo.split(" ")[0]));
-  }) || "Honda";
+  }) || "";
 
   const [marca, setMarca] = useState(inferredMarca);
+  const [marcaReal, setMarcaReal] = useState(""); // marca vinda da API (pode não estar na lista mock)
+  const [modeloReal, setModeloReal] = useState(""); // modelo vindo da API
+  const [valorFipeReal, setValorFipeReal] = useState(0); // valor FIPE real da API
+  const [codFipeReal, setCodFipeReal] = useState(""); // código FIPE real da API
   const [modeloIdx, setModeloIdx] = useState(0);
   const [form, setForm] = useState({
     tipoVeiculo: "Automóvel",
-    placa: deal.veiculo_placa || "ABC-1D23",
-    chassi: "9BWZZZ377VT004251",
-    renavam: "01234567890",
-    anoFab: "2023",
-    cor: "Prata",
-    cambio: "Automático",
-    combustivel: "Flex",
-    quilometragem: "25000",
-    numMotor: "HRV2024EXL001",
-    estadoCirc: "SP",
-    cidadeCirc: "São Paulo",
-    diaVencimento: "10",
+    placa: deal.veiculo_placa || "",
+    chassi: "",
+    renavam: "",
+    anoFab: "",
+    cor: "",
+    cambio: "",
+    combustivel: "",
+    quilometragem: "",
+    numMotor: "",
+    estadoCirc: "",
+    cidadeCirc: "",
+    diaVencimento: (() => { const d = new Date().getDate(); if (d >= 26 || d <= 5) return "1"; if (d >= 6 && d <= 15) return "10"; return "20"; })(),
     veiculoTrabalho: false,
     taxi: false,
     chassiRemarcado: false,
@@ -171,6 +175,8 @@ export default function CotacaoTab({ deal }: Props) {
   const [planoSelecionado, setPlanoSelecionado] = useState("Completo");
   const [fipeLoading, setFipeLoading] = useState(false);
   const [fipeFetched, setFipeFetched] = useState(false);
+  const [descontoMensal, setDescontoMensal] = useState("");
+  const [descontoAdesao, setDescontoAdesao] = useState("");
 
   // Dados reais do banco
   const [precosReais, setPrecosReais] = useState<any[]>([]);
@@ -222,24 +228,50 @@ export default function CotacaoTab({ deal }: Props) {
     }
   };
 
-  // Auto-carregar preços reais ao montar se tem placa
+  // Auto-carregar dados reais do veículo ao montar
+  const [dadosReaisCarregados, setDadosReaisCarregados] = React.useState(false);
   React.useEffect(() => {
+    if (dadosReaisCarregados) return;
     const placa = (deal.veiculo_placa || "").replace(/[^A-Z0-9]/gi, "");
-    if (placa.length >= 7 && precosReais.length === 0) {
+    if (placa.length >= 7) {
+      setFipeLoading(true);
       callEdge("gia-buscar-placa", { acao: "placa", placa }).then(res => {
         if (res.sucesso && res.resultado) {
           const r = res.resultado;
+          // Guardar dados reais da API
+          setMarcaReal(r.marca || "");
+          setModeloReal(r.modelo || "");
+          setValorFipeReal(r.valorFipe || 0);
+          setCodFipeReal(r.codFipe || "");
+          // Preencher form com dados reais
+          setForm(prev => ({
+            ...prev,
+            placa: deal.veiculo_placa || prev.placa,
+            chassi: r.chassi || "",
+            renavam: r.renavam || "",
+            anoFab: r.anoFabricacao || "",
+            cor: r.cor || "",
+            combustivel: r.combustivel || "",
+          }));
+          // Setar marca no select (se encontrar no mock) ou deixar marcaReal
+          const matchMarca = marcas.find(m => (r.marca || "").toUpperCase().includes(m.toUpperCase()));
+          if (matchMarca) setMarca(matchMarca);
+
           const vFipe = r.valorFipe || 0;
           if (vFipe > 0) {
             carregarPrecos(vFipe);
             carregarCoberturas(planoSelecionado);
-            verificarAceitacao(r.marca || "", r.modelo || "");
-            setFipeFetched(true);
           }
+          verificarAceitacao(r.marca || "", r.modelo || "");
+          setFipeLoading(false);
+          setFipeFetched(true);
+          setDadosReaisCarregados(true);
+        } else {
+          setFipeLoading(false);
         }
-      }).catch(() => {});
+      }).catch(() => setFipeLoading(false));
     }
-  }, [deal.veiculo_placa]);
+  }, [deal.veiculo_placa, dadosReaisCarregados]);
 
   const modelos = modelosPorMarca[marca] || [];
   const modeloAtual = modelos[modeloIdx] || modelos[0];
@@ -286,12 +318,14 @@ export default function CotacaoTab({ deal }: Props) {
       },
       plano: {
         nome: planoSelecionado,
-        mensal,
-        adesao: precoPlano ? Number(precoPlano.adesao) : 400,
+        mensal: descontoMensal ? Number(descontoMensal) : mensal,
+        mensalOriginal: descontoMensal ? mensal : undefined,
+        adesao: descontoAdesao ? Number(descontoAdesao) : (precoPlano ? Number(precoPlano.adesao) : 400),
+        adesaoOriginal: descontoAdesao ? (precoPlano ? Number(precoPlano.adesao) : 400) : undefined,
         participacao: precoPlano ? `${precoPlano.tipo_franquia} ${precoPlano.valor_franquia}` : "5% FIPE",
         rastreador: precoPlano?.rastreador || "Não",
       },
-      coberturas: coberturasPlano.map((c: any) => ({ nome: c.cobertura, inclusa: c.inclusa, tipo: c.tipo })),
+      coberturas: coberturasPlano.map((c: any) => ({ nome: c.cobertura, inclusa: c.inclusa, tipo: c.tipo, detalhe: c.detalhe })),
       consultor: { nome: deal.consultor || "Consultor", telefone: "", email: "" },
     });
     toast.success("PDF da cotação baixado!");
@@ -532,8 +566,13 @@ export default function CotacaoTab({ deal }: Props) {
             <Label className={lbl}>Dia Vencimento</Label>
             <Select value={form.diaVencimento} onValueChange={v => set("diaVencimento", v)}>
               <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
-              <SelectContent>{Array.from({ length: 28 }, (_, i) => String(i + 1)).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                <SelectItem value="1">Dia 1 (fechamento entre 26 e 05)</SelectItem>
+                <SelectItem value="10">Dia 10 (fechamento entre 06 e 15)</SelectItem>
+                <SelectItem value="20">Dia 20 (fechamento entre 16 e 25)</SelectItem>
+              </SelectContent>
             </Select>
+            <p className="text-[10px] text-muted-foreground">Calculado automaticamente pela data de fechamento</p>
           </div>
         </div>
 
@@ -676,6 +715,20 @@ export default function CotacaoTab({ deal }: Props) {
           <span className="text-sm font-semibold">
             {formatCurrency(Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0)))}/mês
           </span>
+        </div>
+
+        {/* Campos de desconto para a cotação */}
+        <div className="grid grid-cols-2 gap-4 pt-2 p-3 border rounded bg-muted/20">
+          <div className="space-y-1">
+            <Label className="text-xs font-semibold">Desconto Mensalidade (valor final)</Label>
+            <Input className="rounded-none" type="number" placeholder="Deixe vazio = sem desconto" value={descontoMensal} onChange={e => setDescontoMensal(e.target.value)} />
+            <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs font-semibold">Desconto Adesão (valor final)</Label>
+            <Input className="rounded-none" type="number" placeholder="Deixe vazio = sem desconto" value={descontoAdesao} onChange={e => setDescontoAdesao(e.target.value)} />
+            <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2 pt-2">

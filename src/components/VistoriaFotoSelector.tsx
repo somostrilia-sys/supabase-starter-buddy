@@ -14,12 +14,15 @@ import imgTeto from "@/assets/vistoria/teto.jpg";
 import imgMotor from "@/assets/vistoria/motor-capo.jpg";
 import imgPortaMalas from "@/assets/vistoria/porta-malas.jpg";
 import imgRodas from "@/assets/vistoria/rodas-pneus.jpg";
-import imgDocumentos from "@/assets/vistoria/documentos.jpg";
+import imgChave from "@/assets/vistoria/chave.svg";
+import imgChassi from "@/assets/vistoria/chassi.svg";
+import imgQuilometragem from "@/assets/vistoria/quilometragem.svg";
 
 export interface VistoriaParte {
   id: string;
   label: string;
   img: string;
+  obs?: string;
 }
 
 const partes: VistoriaParte[] = [
@@ -34,7 +37,9 @@ const partes: VistoriaParte[] = [
   { id: "motor_capo", label: "Motor / Capô", img: imgMotor },
   { id: "porta_malas", label: "Porta-malas", img: imgPortaMalas },
   { id: "rodas_pneus", label: "Rodas e Pneus", img: imgRodas },
-  { id: "documentos", label: "Documentos", img: imgDocumentos },
+  { id: "chave", label: "Chave do Veículo", img: imgChave },
+  { id: "chassi", label: "Chassi", img: imgChassi, obs: "(Se não encontrar no motor, pode ser do vidro)" },
+  { id: "quilometragem", label: "Quilometragem", img: imgQuilometragem },
 ];
 
 interface Props {
@@ -123,12 +128,13 @@ export default function VistoriaFotoSelector({ selected: controlledSelected, onC
                 )}
 
                 {/* Label overlay on top of photo */}
-                <div className={`absolute bottom-0 left-0 right-0 px-2 py-1.5 text-center text-xs font-semibold ${
+                <div className={`absolute bottom-0 left-0 right-0 px-2 py-1.5 text-center ${
                   isSelected
                     ? "bg-primary/90 text-white"
                     : "bg-black/60 text-white"
                 }`}>
-                  {parte.label}
+                  <span className="text-xs font-semibold">{parte.label}</span>
+                  {parte.obs && <span className="block text-[9px] font-normal opacity-90">{parte.obs}</span>}
                 </div>
               </div>
             </button>
