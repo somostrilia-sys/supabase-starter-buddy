@@ -315,11 +315,11 @@ export default function CotacaoTab({ deal }: Props) {
 
   const set = (field: string, value: string | boolean) => setForm(prev => ({ ...prev, [field]: value }));
 
-  const handleBaixarPdf = () => {
+  const handleBaixarPdf = async () => {
     if (!planoSelecionado) { toast.error("Selecione um plano para baixar o PDF"); return; }
-    const precoPlano = precosReais.find((p: any) => p.plano === planoSelecionado);
+    const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
     const mensal = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
-    gerarPdfCotacao({
+    await gerarPdfCotacao({
       numeroCotacao: `${Date.now().toString().slice(-8)}`,
       data: new Date().toLocaleDateString("pt-BR"),
       validade: 7,
