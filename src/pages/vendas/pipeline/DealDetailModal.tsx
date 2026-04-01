@@ -178,18 +178,41 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
             <TabsContent value="documentos" className="mt-0 space-y-3">
               <p className="text-xs text-muted-foreground">Anexe CNH e CRLV para preenchimento automático dos dados do associado e veículo.</p>
               <DocumentoUpload negociacaoId={deal.id} tipo="cnh" onDadosExtraidos={async (dados) => {
-                await supabase.from("negociacoes").update({
-                  lead_nome: dados.nome || deal.lead_nome,
-                  cpf_cnpj: dados.cpf || deal.cpf_cnpj,
-                } as any).eq("id", deal.id);
+                const update: any = {};
+                if (dados.nome) update.lead_nome = dados.nome;
+                if (dados.cpf) update.cpf_cnpj = dados.cpf;
+                if (dados.data_nascimento) update.data_nascimento = dados.data_nascimento;
+                if (dados.rg) update.rg = dados.rg;
+                if (dados.numero_registro) update.cnh = dados.numero_registro;
+                if (dados.categoria) update.cnh_categoria = dados.categoria;
+                if (dados.validade) update.cnh_validade = dados.validade;
+                if (dados.uf) update.estado_circulacao = dados.uf;
+                if (dados.local_emissao) update.cidade_circulacao = dados.local_emissao.split(",")[0]?.trim();
+                if (Object.keys(update).length > 0) {
+                  await supabase.from("negociacoes").update(update as any).eq("id", deal.id);
+                }
                 toast.success("Dados do associado preenchidos automaticamente");
+                onUpdate?.();
               }} />
               <DocumentoUpload negociacaoId={deal.id} tipo="crlv" onDadosExtraidos={async (dados) => {
-                await supabase.from("negociacoes").update({
-                  veiculo_placa: dados.placa || deal.veiculo_placa,
-                  veiculo_modelo: dados.modelo || deal.veiculo_modelo,
-                } as any).eq("id", deal.id);
+                const update: any = {};
+                if (dados.placa) update.veiculo_placa = dados.placa;
+                if (dados.marca_modelo) update.veiculo_modelo = dados.marca_modelo;
+                if (dados.chassi) update.chassi = dados.chassi;
+                if (dados.renavam) update.renavam = dados.renavam;
+                if (dados.ano_fabricacao) update.ano_fabricacao = dados.ano_fabricacao;
+                if (dados.ano_modelo) update.ano_modelo = dados.ano_modelo;
+                if (dados.cor) update.cor = dados.cor;
+                if (dados.combustivel) update.combustivel = dados.combustivel;
+                if (dados.municipio) update.cidade_circulacao = dados.municipio;
+                if (dados.uf) update.estado_circulacao = dados.uf;
+                if (dados.nome_proprietario) update.lead_nome = dados.nome_proprietario;
+                if (dados.cpf_cnpj_proprietario) update.cpf_cnpj = dados.cpf_cnpj_proprietario;
+                if (Object.keys(update).length > 0) {
+                  await supabase.from("negociacoes").update(update as any).eq("id", deal.id);
+                }
                 toast.success("Dados do veículo preenchidos automaticamente");
+                onUpdate?.();
               }} />
             </TabsContent>
 
