@@ -19,6 +19,10 @@ interface Cooperativa {
   cidade: string;
   estado: string;
   ativo: boolean;
+  codigo_sga: string | null;
+  cpf_cnpj: string | null;
+  email: string | null;
+  telefone: string | null;
 }
 
 interface Regional {
@@ -28,6 +32,7 @@ interface Regional {
 
 const emptyForm = {
   nome: "", codigo: "", regional_id: "", cidade: "", estado: "", ativo: true,
+  codigo_sga: "", cpf_cnpj: "", email: "", telefone: "",
 };
 
 const ufs = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
@@ -72,6 +77,10 @@ export default function CadastrarCooperativa() {
         cidade: payload.cidade,
         estado: payload.estado,
         ativo: payload.ativo,
+        codigo_sga: payload.codigo_sga || null,
+        cpf_cnpj: payload.cpf_cnpj || null,
+        email: payload.email || null,
+        telefone: payload.telefone || null,
       };
       if (payload.id) {
         const { error } = await supabase.from("cooperativas").update(row).eq("id", payload.id);
@@ -106,7 +115,7 @@ export default function CadastrarCooperativa() {
   const openNew = () => { setEditId(null); setForm(emptyForm); setModalOpen(true); };
   const openEdit = (c: Cooperativa) => {
     setEditId(c.id);
-    setForm({ nome: c.nome, codigo: c.codigo, regional_id: c.regional_id || "", cidade: c.cidade, estado: c.estado, ativo: c.ativo });
+    setForm({ nome: c.nome, codigo: c.codigo, regional_id: c.regional_id || "", cidade: c.cidade, estado: c.estado, ativo: c.ativo, codigo_sga: c.codigo_sga || "", cpf_cnpj: c.cpf_cnpj || "", email: c.email || "", telefone: c.telefone || "" });
     setModalOpen(true);
   };
 
@@ -155,6 +164,10 @@ export default function CadastrarCooperativa() {
                 </div>
                 <div className="space-y-1.5 text-xs text-muted-foreground mb-3">
                   <div className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /> {c.cidade}/{c.estado}</div>
+                  {c.codigo_sga && <div className="flex items-center gap-1.5"><Users className="h-3 w-3" /> SGA: {c.codigo_sga}</div>}
+                  {c.cpf_cnpj && <div className="flex items-center gap-1.5"><Building2 className="h-3 w-3" /> {c.cpf_cnpj}</div>}
+                  {c.telefone && <div className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> {c.telefone}</div>}
+                  {c.email && <div className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> {c.email}</div>}
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => openEdit(c)} className="gap-1.5"><Pencil className="h-3.5 w-3.5" /> Editar</Button>
@@ -188,6 +201,10 @@ export default function CadastrarCooperativa() {
                   <SelectContent>{ufs.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+              <div><Label>Codigo SGA</Label><Input value={form.codigo_sga} onChange={e => set("codigo_sga", e.target.value)} /></div>
+              <div><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={e => set("cpf_cnpj", e.target.value)} /></div>
+              <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => set("email", e.target.value)} /></div>
+              <div><Label>Telefone</Label><Input value={form.telefone} onChange={e => set("telefone", e.target.value)} /></div>
             </div>
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>

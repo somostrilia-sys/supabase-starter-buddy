@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ArrowLeft, Table2, Info, Calculator, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,48 +29,34 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-
-interface Props {
-  onBack: () => void;
-}
+import { useQuery } from "@tanstack/react-query";
 
 interface Plano {
   id: string;
   nome: string;
-  tipo: string;
-  valor_base: number;
+  descricao: string | null;
+  valor_mensal: number;
   ativo: boolean;
+}
+
+interface Regional {
+  id: string;
+  nome: string;
 }
 
 const TIPOS_VEICULO = [
   { id: "todos", label: "Todos", multiplicador: 1.0 },
-  { id: "automovel", label: "Automóvel", multiplicador: 1.0 },
+  { id: "automovel", label: "Automovel", multiplicador: 1.0 },
   { id: "motocicleta", label: "Motocicleta", multiplicador: 0.6 },
   { id: "pesados", label: "Pesados", multiplicador: 1.8 },
-  { id: "utilitarios", label: "Utilitários", multiplicador: 1.2 },
-];
-
-const REGIONAIS = [
-  { id: "todas", label: "Todas", fator: 1.0 },
-  { id: "Matriz", label: "Matriz", fator: 1.0 },
-  { id: "SP Interior", label: "SP Interior", fator: 1.05 },
-  { id: "Sul Interior", label: "Sul Interior", fator: 0.98 },
-  { id: "Norte Minas Sul", label: "Norte Minas Sul", fator: 0.95 },
-  { id: "Minas Interior", label: "Minas Interior", fator: 0.97 },
-  { id: "Norte", label: "Norte", fator: 0.92 },
-  { id: "Paraná", label: "Paraná", fator: 1.02 },
-  { id: "Bahia", label: "Bahia", fator: 0.9 },
-  { id: "Ceará", label: "Ceará", fator: 0.88 },
-  { id: "Natal", label: "Natal", fator: 0.87 },
-  { id: "Alagoas", label: "Alagoas", fator: 0.86 },
-  { id: "Mato Grosso Sul", label: "Mato Grosso Sul", fator: 0.93 },
+  { id: "utilitarios", label: "Utilitarios", multiplicador: 1.2 },
 ];
 
 const FAIXAS_FIPE = [
   { id: "todas", label: "Todos" },
-  { id: "ate20k", label: "Até R$20k" },
-  { id: "20k-40k", label: "R$20k – R$40k" },
-  { id: "40k-80k", label: "R$40k – R$80k" },
+  { id: "ate20k", label: "Ate R$20k" },
+  { id: "20k-40k", label: "R$20k - R$40k" },
+  { id: "40k-80k", label: "R$40k - R$80k" },
   { id: "acima80k", label: "Acima de R$80k" },
 ];
 
@@ -79,11 +65,15 @@ function fmt(v: number) {
 }
 
 function badgeClass(tipo: string) {
-  if (tipo === "basico" || tipo === "Básico")
+  if (tipo === "basico" || tipo === "Basico")
     return "bg-muted text-muted-foreground border border-border";
-  if (tipo === "intermediario" || tipo === "Intermediário")
+  if (tipo === "intermediario" || tipo === "Intermediario")
     return "bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800";
   return "bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800";
+}
+
+interface Props {
+  onBack: () => void;
 }
 
 export default function TabelaPlanos({ onBack }: Props) {
@@ -91,29 +81,45 @@ export default function TabelaPlanos({ onBack }: Props) {
   const [tipoVeiculo, setTipoVeiculo] = useState("todos");
   const [faixaFipe, setFaixaFipe] = useState("todas");
   const [detalhe, setDetalhe] = useState<Plano | null>(null);
-  const [planos, setPlanos] = useState<Plano[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchPlanos() {
-      setLoading(true);
+  // Load regionais from Supabase
+  const { data: regionais = [], isLoading: loadingRegionais } = useQuery({
+    queryKey: ["tabela_planos_regionais"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("regionais")
+        .select("id, nome")
+        .order("nome");
+      if (error) throw error;
+      return (data || []) as Regional[];
+    },
+  });
+
+  // Load planos from Supabase
+  const { data: planos = [], isLoading: loadingPlanos } = useQuery({
+    queryKey: ["tabela_planos_lista"],
+    queryFn: async () => {
       const { data, error } = await supabase
-        .from("produtos_gia")
+        .from("planos")
         .select("*")
         .eq("ativo", true)
         .order("nome");
-      if (!error && data) setPlanos(data);
-      setLoading(false);
-    }
-    fetchPlanos();
-  }, []);
+      if (error) throw error;
+      return (data || []) as Plano[];
+    },
+  });
 
-  const fatorRegional = REGIONAIS.find((r) => r.id === regional)?.fator ?? 1.0;
+  const loading = loadingRegionais || loadingPlanos;
+
+  // For now, regional factor is 1.0 (could be extended with a fator column on regionais table)
+  const fatorRegional = 1.0;
   const multiplicador =
     TIPOS_VEICULO.find((t) => t.id === tipoVeiculo)?.multiplicador ?? 1.0;
 
   const regionalLabel =
-    REGIONAIS.find((r) => r.id === regional)?.label ?? "Todas";
+    regional === "todas"
+      ? "Todas"
+      : regionais.find((r) => r.id === regional)?.nome ?? "Todas";
   const tipoLabel =
     TIPOS_VEICULO.find((t) => t.id === tipoVeiculo)?.label ?? "Todos";
 
@@ -153,9 +159,10 @@ export default function TabelaPlanos({ onBack }: Props) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {REGIONAIS.map((r) => (
+                  <SelectItem value="todas">Todas</SelectItem>
+                  {regionais.map((r) => (
                     <SelectItem key={r.id} value={r.id}>
-                      {r.label}
+                      {r.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -164,7 +171,7 @@ export default function TabelaPlanos({ onBack }: Props) {
 
             <div className="flex flex-col gap-1.5 min-w-[160px]">
               <span className="text-xs font-medium text-muted-foreground">
-                Tipo de Veículo
+                Tipo de Veiculo
               </span>
               <Select value={tipoVeiculo} onValueChange={setTipoVeiculo}>
                 <SelectTrigger className="h-9">
@@ -207,17 +214,17 @@ export default function TabelaPlanos({ onBack }: Props) {
         <span>
           Tipo:{" "}
           <span className="font-medium text-foreground">{tipoLabel}</span>
-          {" · "}Regional:{" "}
+          {" . "}Regional:{" "}
           <span className="font-medium text-foreground">{regionalLabel}</span>
           {faixaFipe !== "todas" && (
             <>
-              {" · "}FIPE:{" "}
+              {" . "}FIPE:{" "}
               <span className="font-medium text-foreground">
                 {FAIXAS_FIPE.find((f) => f.id === faixaFipe)?.label}
               </span>
             </>
           )}
-          {" · "}
+          {" . "}
           <span className="text-muted-foreground/70">
             Duplo clique em uma linha para ver detalhes
           </span>
@@ -239,18 +246,18 @@ export default function TabelaPlanos({ onBack }: Props) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Plano</TableHead>
-                  <TableHead className="text-right">Valor Base</TableHead>
+                  <TableHead className="text-right">Valor Mensal</TableHead>
                   <TableHead className="text-right">Multiplicador</TableHead>
                   <TableHead className="text-right">Fator Regional</TableHead>
                   <TableHead className="text-right font-semibold">
                     Valor Final
                   </TableHead>
-                  <TableHead className="text-center w-[160px]">Ação</TableHead>
+                  <TableHead className="text-center w-[160px]">Acao</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {planos.map((plano) => {
-                  const valorFinal = (plano.valor_base || 0) * multiplicador * fatorRegional;
+                  const valorFinal = (plano.valor_mensal || 0) * multiplicador * fatorRegional;
                   return (
                     <TableRow
                       key={plano.id}
@@ -259,13 +266,13 @@ export default function TabelaPlanos({ onBack }: Props) {
                     >
                       <TableCell>
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClass(plano.tipo || plano.nome)}`}
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClass(plano.nome)}`}
                         >
                           {plano.nome}
                         </span>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {fmt(plano.valor_base || 0)}
+                        {fmt(plano.valor_mensal || 0)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-muted-foreground">
                         {multiplicador.toFixed(1)}x
@@ -308,7 +315,7 @@ export default function TabelaPlanos({ onBack }: Props) {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-base">
                 <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClass(detalhe.tipo || detalhe.nome)}`}
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClass(detalhe.nome)}`}
                 >
                   {detalhe.nome}
                 </span>
@@ -319,7 +326,7 @@ export default function TabelaPlanos({ onBack }: Props) {
             <div className="space-y-5 pt-1">
               {/* Info do plano */}
               <div>
-                <p className="text-sm font-medium mb-2">Informações</p>
+                <p className="text-sm font-medium mb-2">Informacoes</p>
                 <div className="rounded-lg border overflow-hidden">
                   <table className="w-full text-sm">
                     <tbody>
@@ -328,12 +335,12 @@ export default function TabelaPlanos({ onBack }: Props) {
                         <td className="px-3 py-2 font-medium">{detalhe.nome}</td>
                       </tr>
                       <tr className="border-b">
-                        <td className="px-3 py-2 text-muted-foreground">Tipo</td>
-                        <td className="px-3 py-2">{detalhe.tipo}</td>
+                        <td className="px-3 py-2 text-muted-foreground">Descricao</td>
+                        <td className="px-3 py-2">{detalhe.descricao || "—"}</td>
                       </tr>
                       <tr>
-                        <td className="px-3 py-2 text-muted-foreground">Valor Base</td>
-                        <td className="px-3 py-2 font-medium">{fmt(detalhe.valor_base || 0)}</td>
+                        <td className="px-3 py-2 text-muted-foreground">Valor Mensal</td>
+                        <td className="px-3 py-2 font-medium">{fmt(detalhe.valor_mensal || 0)}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -343,7 +350,7 @@ export default function TabelaPlanos({ onBack }: Props) {
               {/* Valor por categoria */}
               <div>
                 <p className="text-sm font-medium mb-2">
-                  Valor base por categoria de veículo
+                  Valor base por categoria de veiculo
                 </p>
                 <div className="rounded-lg border overflow-hidden">
                   <table className="w-full text-sm">
@@ -363,7 +370,7 @@ export default function TabelaPlanos({ onBack }: Props) {
                           <tr key={t.id} className="border-t">
                             <td className="px-3 py-2 text-sm">{t.label}</td>
                             <td className="px-3 py-2 text-right text-sm font-medium">
-                              {fmt((detalhe.valor_base || 0) * t.multiplicador)}
+                              {fmt((detalhe.valor_mensal || 0) * t.multiplicador)}
                             </td>
                           </tr>
                         )

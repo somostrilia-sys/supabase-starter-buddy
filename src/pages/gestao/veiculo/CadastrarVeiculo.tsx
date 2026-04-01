@@ -112,6 +112,8 @@ interface AssociadoData {
   telefone: string | null;
   email: string | null;
   status: string;
+  regional_nome: string | null;
+  cooperativa_nome: string | null;
 }
 
 type CategoriaVeiculo = "Leves" | "Pesados" | "Motos" | "Vans";
@@ -296,11 +298,17 @@ export default function CadastrarVeiculo() {
         const q = searchQuery.trim();
         const { data, error } = await supabase
           .from("associados")
-          .select("id, nome, cpf, telefone, email, status")
+          .select("id, nome, cpf, telefone, email, status, regionais(nome), cooperativas(nome)")
           .or(`nome.ilike.%${q}%,cpf.ilike.%${q}%`)
           .limit(10);
         if (error) throw error;
-        setSearchResults((data as AssociadoData[]) || []);
+        const mapped = (data || []).map((a: any) => ({
+          id: a.id, nome: a.nome, cpf: a.cpf,
+          telefone: a.telefone, email: a.email, status: a.status,
+          regional_nome: a.regionais?.nome ?? null,
+          cooperativa_nome: a.cooperativas?.nome ?? null,
+        }));
+        setSearchResults(mapped);
       } catch {
         setSearchResults([]);
       } finally {
@@ -341,7 +349,7 @@ export default function CadastrarVeiculo() {
         email: novoForm.email || null,
       }).select("id, nome, cpf, telefone, email, status").single();
       if (error) throw error;
-      selectAssociado(data as AssociadoData);
+      selectAssociado({ ...(data as any), regional_nome: null, cooperativa_nome: null } as AssociadoData);
       setShowNovoModal(false);
       setNovoForm(initialNovoAssociado);
       toast.success("Associado cadastrado e vinculado!");
@@ -526,6 +534,10 @@ export default function CadastrarVeiculo() {
                       {associadoData.telefone && <span className="text-xs text-muted-foreground">📱 {associadoData.telefone}</span>}
                       {associadoData.email && <span className="text-xs text-muted-foreground">✉️ {associadoData.email}</span>}
                     </div>
+                    <div className="flex gap-3 mt-0.5">
+                      {associadoData.regional_nome && <span className="text-xs text-muted-foreground">🏢 {associadoData.regional_nome}</span>}
+                      {associadoData.cooperativa_nome && <span className="text-xs text-muted-foreground">🤝 {associadoData.cooperativa_nome}</span>}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -571,6 +583,9 @@ export default function CadastrarVeiculo() {
                       <div>
                         <p className="text-sm font-medium">{a.nome}</p>
                         <p className="text-xs text-muted-foreground">CPF: {maskCpf(a.cpf)}</p>
+                        {(a.cooperativa_nome || a.regional_nome) && (
+                          <p className="text-xs text-muted-foreground">{[a.regional_nome, a.cooperativa_nome].filter(Boolean).join(" / ")}</p>
+                        )}
                       </div>
                       <Badge variant={a.status === "ativo" ? "default" : "secondary"} className="text-xs">
                         {a.status}

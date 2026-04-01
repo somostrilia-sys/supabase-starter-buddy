@@ -214,8 +214,8 @@ export default function CadastrarAssociado() {
   const [form, setForm] = useState(initialForm);
   const queryClient = useQueryClient();
   const [situacoes, setSituacoes] = useState<{ descricao: string }[]>([]);
-  const [regionaisLista, setRegionaisLista] = useState<string[]>([]);
-  const [cooperativasLista, setCooperativasLista] = useState<string[]>([]);
+  const [regionaisLista, setRegionaisLista] = useState<{id: string; nome: string}[]>([]);
+  const [cooperativasLista, setCooperativasLista] = useState<{id: string; nome: string; regional_id: string | null}[]>([]);
 
   useEffect(() => {
     const fetchSituacoes = async () => {
@@ -227,17 +227,25 @@ export default function CadastrarAssociado() {
       if (data) setSituacoes(data as any);
     };
     const fetchRegionais = async () => {
-      const { data } = await supabase.from("regionais").select("nome").eq("ativo", true).order("nome");
-      if (data) setRegionaisLista(data.map((r: any) => r.nome));
+      const { data } = await supabase.from("regionais").select("id, nome").eq("ativo", true).order("nome");
+      if (data) setRegionaisLista(data as any);
     };
     const fetchCooperativas = async () => {
-      const { data } = await supabase.from("cooperativas").select("nome").eq("ativo", true).order("nome");
-      if (data) setCooperativasLista(data.map((c: any) => c.nome));
+      const { data } = await supabase.from("cooperativas").select("id, nome, regional_id").eq("ativo", true).order("nome");
+      if (data) setCooperativasLista(data as any);
     };
     fetchSituacoes();
     fetchRegionais();
     fetchCooperativas();
   }, []);
+
+  // Filter cooperativas by selected regional
+  const cooperativasFiltradas = form.regional
+    ? cooperativasLista.filter(c => {
+        const reg = regionaisLista.find(r => r.nome === form.regional);
+        return reg ? c.regional_id === reg.id : true;
+      })
+    : cooperativasLista;
   const [implementos, setImplementos] = useState<Implemento[]>([
     { item: "Som Automotivo", descricao: "Pioneer AVH-Z9290TV", valor: "2.800,00" },
     { item: "Rodas Liga Leve", descricao: "Aro 18 TSW", valor: "4.200,00" },
@@ -561,8 +569,8 @@ export default function CadastrarAssociado() {
               </div>
               <div><Label>Login</Label><Input value={form.login} onChange={e => set("login", e.target.value)} /></div>
               <div><Label>Senha</Label><Input type="password" value={form.senha} onChange={e => set("senha", e.target.value)} /></div>
-              <SelectWithAdd label="Regional" value={form.regional} onValueChange={v => set("regional", v)} options={regionaisLista} />
-              <SelectWithAdd label="Cooperativa" value={form.cooperativa} onValueChange={v => set("cooperativa", v)} options={cooperativasLista} />
+              <SelectWithAdd label="Regional" value={form.regional} onValueChange={v => { set("regional", v); set("cooperativa", ""); }} options={regionaisLista.map(r => r.nome)} />
+              <SelectWithAdd label="Cooperativa" value={form.cooperativa} onValueChange={v => set("cooperativa", v)} options={cooperativasFiltradas.map(c => c.nome)} />
               <div>
                 <Label>Consultor Responsável</Label>
                 <Select value={form.consultorResp} onValueChange={v => set("consultorResp", v)}>

@@ -55,7 +55,7 @@ const finBadge = (s: string) => {
 };
 
 export default function ConsultarVeiculo() {
-  const [filters, setFilters] = useState({ placa: "", chassi: "", idExterno: "", proprietario: "", idVeiculo: "", sitVeiculo: "Todos", sitAssociado: "Todos", cooperativa: "Todos" });
+  const [filters, setFilters] = useState({ placa: "", chassi: "", idExterno: "", proprietario: "", idVeiculo: "", sitVeiculo: "Todos", sitAssociado: "Todos", cooperativa: "Todos", regional: "Todos" });
   const [results, setResults] = useState<Veiculo[]>([]);
   const [searched, setSearched] = useState(false);
   const [selected, setSelected] = useState<Veiculo | null>(null);
@@ -63,11 +63,15 @@ export default function ConsultarVeiculo() {
   const [page, setPage] = useState(1);
   const [condutorModal, setCondutorModal] = useState(false);
   const [newObs, setNewObs] = useState("");
-  const [cooperativasList, setCooperativasList] = useState<string[]>([]);
+  const [cooperativasList, setCooperativasList] = useState<{id: string; nome: string}[]>([]);
+  const [regionaisList, setRegionaisList] = useState<{id: string; nome: string}[]>([]);
 
   useEffect(() => {
-    supabase.from("cooperativas").select("nome").eq("ativo", true).then(({ data }) => {
-      if (data) setCooperativasList(data.map((c: any) => c.nome));
+    supabase.from("cooperativas").select("id, nome").eq("ativo", true).order("nome").then(({ data }) => {
+      if (data) setCooperativasList(data as any);
+    });
+    supabase.from("regionais").select("id, nome").eq("ativo", true).order("nome").then(({ data }) => {
+      if (data) setRegionaisList(data as any);
     });
   }, []);
 
@@ -77,7 +81,7 @@ export default function ConsultarVeiculo() {
 
   const buscar = async () => {
     setLoading(true);
-    let query = supabase.from("veiculos").select("*, associados(nome, cpf, status, telefone, email)").limit(100);
+    let query = supabase.from("veiculos").select("*, associados(nome, cpf, status, telefone, email, regional_id, cooperativa_id, regionais(nome), cooperativas(nome))").limit(100);
     if (filters.placa) query = query.ilike("placa", `%${filters.placa.replace("-","")}%`);
     if (filters.chassi) query = query.ilike("chassi", `%${filters.chassi}%`);
     if (filters.proprietario) query = query.ilike("associados.nome", `%${filters.proprietario}%`);
@@ -87,7 +91,7 @@ export default function ConsultarVeiculo() {
       idExterno: v.renavam ?? "", modelo: v.modelo ?? "", marca: v.marca ?? "",
       anoFab: v.ano ?? 0, anoMod: v.ano ?? 0, cor: v.cor ?? "",
       valorFipe: v.valor_fipe ?? 0, cota: "", combustivel: "", km: 0,
-      regional: "", cooperativa: "", tipoAdesao: "",
+      regional: v.associados?.regionais?.nome ?? "", cooperativa: v.associados?.cooperativas?.nome ?? "", tipoAdesao: "",
       dataCadastro: v.created_at?.split("T")[0] ?? "", dataContrato: "", diaVenc: 0,
       sitVeiculo: v.status ?? "Ativo", sitAssociado: v.associados?.status ?? "",
       associado_id: v.associado_id,
@@ -97,13 +101,15 @@ export default function ConsultarVeiculo() {
     let r = mapped;
     if (filters.sitVeiculo !== "Todos") r = r.filter(v => v.sitVeiculo === filters.sitVeiculo);
     if (filters.sitAssociado !== "Todos") r = r.filter(v => v.sitAssociado === filters.sitAssociado);
+    if (filters.cooperativa !== "Todos") r = r.filter(v => v.cooperativa === filters.cooperativa);
+    if (filters.regional !== "Todos") r = r.filter(v => v.regional === filters.regional);
     setResults(r);
     setSearched(true);
     setPage(1);
     setLoading(false);
   };
 
-  const limpar = () => { setFilters({ placa:"",chassi:"",idExterno:"",proprietario:"",idVeiculo:"",sitVeiculo:"Todos",sitAssociado:"Todos",cooperativa:"Todos" }); setResults([]); setSearched(false); };
+  const limpar = () => { setFilters({ placa:"",chassi:"",idExterno:"",proprietario:"",idVeiculo:"",sitVeiculo:"Todos",sitAssociado:"Todos",cooperativa:"Todos",regional:"Todos" }); setResults([]); setSearched(false); };
 
   const selectVehicle = async (v: Veiculo) => {
     setSelected(v);
@@ -164,9 +170,13 @@ export default function ConsultarVeiculo() {
                 <Select value={filters.sitAssociado} onValueChange={v => setF("sitAssociado", v)}><SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{["Todos","Ativo","Inativo","Suspenso"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
               </div>
+              <div><Label className="text-xs">Regional</Label>
+                <Select value={filters.regional} onValueChange={v => setF("regional", v)}><SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="Todos">Todos</SelectItem>{regionaisList.map(r => <SelectItem key={r.id} value={r.nome}>{r.nome}</SelectItem>)}</SelectContent></Select>
+              </div>
               <div><Label className="text-xs">Cooperativa</Label>
                 <Select value={filters.cooperativa} onValueChange={v => setF("cooperativa", v)}><SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="Todos">Todos</SelectItem>{cooperativasList.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+                <SelectContent><SelectItem value="Todos">Todos</SelectItem>{cooperativasList.map(c => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}</SelectContent></Select>
               </div>
             </div>
             <div className="flex gap-2">

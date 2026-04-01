@@ -27,14 +27,9 @@ type InadimplenteRow = {
   id: string;
   vencimento: string;
   valor: number;
-  contratos?: {
-    associado_id: string;
-    associados?: {
-      id: string;
-      nome: string;
-      status?: string;
-    } | null;
-  } | null;
+  status: string;
+  associado_nome: string | null;
+  cpf_associado: string | null;
 };
 
 function diasAtraso(vencimento: string) {
@@ -45,28 +40,28 @@ function diasAtraso(vencimento: string) {
 export default function DashboardTab() {
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Inadimplência +5 dias — associados com mensalidades em aberto há mais de 5 dias
+  // Inadimplência +5 dias — boletos abertos/vencidos com vencimento há mais de 5 dias
   const { data: inadimplentes = [], isLoading: loadingInad } = useQuery({
     queryKey: ["inadimplentes"],
     queryFn: async () => {
       const corte = subDays(new Date(), 5).toISOString().split("T")[0];
       const { data, error } = await (supabase as any)
-        .from("mensalidades")
-        .select("*, contratos(associado_id, associados(id, nome, status))")
-        .eq("status", "em_aberto")
+        .from("boletos")
+        .select("id, vencimento, valor, status, associado_nome, cpf_associado")
+        .in("status", ["aberto", "vencido"])
         .lt("vencimento", corte);
       if (error) throw error;
       return (data || []) as InadimplenteRow[];
     },
   });
 
-  // Group by associado — mostra todos os inadimplentes com +5 dias
+  // Group by associado_nome — mostra todos os inadimplentes com +5 dias
   const porAssociado = Object.values(
     inadimplentes.reduce<Record<string, { nome: string; associado_id: string; boletos: InadimplenteRow[] }>>((acc, m) => {
-      const assId = m.contratos?.associado_id ?? "unknown";
-      const assNome = m.contratos?.associados?.nome ?? "—";
-      if (!acc[assId]) acc[assId] = { nome: assNome, associado_id: assId, boletos: [] };
-      acc[assId].boletos.push(m);
+      const assKey = m.cpf_associado ?? m.associado_nome ?? "unknown";
+      const assNome = m.associado_nome ?? "—";
+      if (!acc[assKey]) acc[assKey] = { nome: assNome, associado_id: assKey, boletos: [] };
+      acc[assKey].boletos.push(m);
       return acc;
     }, {})
   );
@@ -305,7 +300,7 @@ export default function DashboardTab() {
             </DialogTitle>
           </DialogHeader>
           <p className="text-xs text-muted-foreground mb-3">
-            Associados com mensalidades em aberto há mais de 5 dias.
+            Associados com boletos abertos/vencidos há mais de 5 dias.
           </p>
           {loadingInad ? (
             <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
