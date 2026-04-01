@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,41 +10,116 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plus, Edit, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Edit, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 
-const mockRegionais = [
-  { id: 1, nome: "São Paulo Capital", codigoSga: "SGA-SP001", cooperativas: 3 },
-  { id: 2, nome: "Interior SP", codigoSga: "SGA-ISP002", cooperativas: 2 },
-  { id: 3, nome: "Regional Sul", codigoSga: "SGA-SUL003", cooperativas: 2 },
-  { id: 4, nome: "Regional Nordeste", codigoSga: "SGA-NE004", cooperativas: 1 },
-];
+interface RegionalData {
+  nome: string;
+  totalUsuarios: number;
+  totalCooperativas: number;
+}
 
-const mockCooperativas = [
-  { id: 1, nome: "Cooperativa Central SP", cnpj: "12.345.678/0001-90", codigoSga: "COOP-001", regional: "São Paulo Capital" },
-  { id: 2, nome: "Cooperativa ABC Paulista", cnpj: "23.456.789/0001-01", codigoSga: "COOP-002", regional: "São Paulo Capital" },
-  { id: 3, nome: "Cooperativa Campinas", cnpj: "34.567.890/0001-12", codigoSga: "COOP-003", regional: "Interior SP" },
-  { id: 4, nome: "Cooperativa Curitiba", cnpj: "45.678.901/0001-23", codigoSga: "COOP-004", regional: "Regional Sul" },
-  { id: 5, nome: "Cooperativa Porto Alegre", cnpj: "56.789.012/0001-34", codigoSga: "COOP-005", regional: "Regional Sul" },
-  { id: 6, nome: "Cooperativa Recife", cnpj: "67.890.123/0001-45", codigoSga: "COOP-006", regional: "Regional Nordeste" },
-];
+interface CooperativaData {
+  nome: string;
+  regional: string;
+  totalConsultores: number;
+  totalNegociacoes: number;
+}
+
+async function fetchRegionaisCooperativas() {
+  // Fetch all usuarios with regional and cooperativa fields
+  const { data: usuarios, error: errUsuarios } = await (supabase as any)
+    .from("usuarios")
+    .select("regional, cooperativa, nome, status");
+
+  if (errUsuarios) throw errUsuarios;
+
+  // Fetch all negociacoes with cooperativa field
+  const { data: negociacoes, error: errNeg } = await (supabase as any)
+    .from("negociacoes")
+    .select("cooperativa, regional, consultor");
+
+  if (errNeg) throw errNeg;
+
+  const usuariosList: any[] = usuarios || [];
+  const negociacoesList: any[] = negociacoes || [];
+
+  // Extract unique regionais
+  const regionaisSet = new Set<string>();
+  usuariosList.forEach((u) => {
+    if (u.regional && u.regional.trim()) {
+      regionaisSet.add(u.regional.trim());
+    }
+  });
+
+  // Extract unique cooperativas by splitting comma-separated field
+  const cooperativasSet = new Set<string>();
+  usuariosList.forEach((u) => {
+    if (u.cooperativa) {
+      u.cooperativa.split(",").forEach((c: string) => {
+        const trimmed = c.trim();
+        if (trimmed) cooperativasSet.add(trimmed);
+      });
+    }
+  });
+
+  // Build regionais data
+  const regionais: RegionalData[] = Array.from(regionaisSet).sort().map((nome) => {
+    const usuariosNaRegional = usuariosList.filter(
+      (u) => u.regional && u.regional.trim() === nome
+    );
+    // Cooperativas in this regional: unique cooperativas from usuarios in that regional
+    const coopsNaRegional = new Set<string>();
+    usuariosNaRegional.forEach((u) => {
+      if (u.cooperativa) {
+        u.cooperativa.split(",").forEach((c: string) => {
+          const trimmed = c.trim();
+          if (trimmed) coopsNaRegional.add(trimmed);
+        });
+      }
+    });
+    return {
+      nome,
+      totalUsuarios: usuariosNaRegional.length,
+      totalCooperativas: coopsNaRegional.size,
+    };
+  });
+
+  // Build cooperativas data
+  const cooperativas: CooperativaData[] = Array.from(cooperativasSet).sort().map((nome) => {
+    // Consultores: usuarios where cooperativa field contains this cooperativa
+    const consultores = usuariosList.filter((u) => {
+      if (!u.cooperativa) return false;
+      return u.cooperativa.split(",").map((c: string) => c.trim()).includes(nome);
+    });
+
+    // Regional: get from first usuario that has this cooperativa
+    const primeiroUsuario = consultores[0];
+    const regional = primeiroUsuario?.regional?.trim() || "";
+
+    // Negociacoes for this cooperativa
+    const negsCount = negociacoesList.filter(
+      (n) => n.cooperativa && n.cooperativa.trim() === nome
+    ).length;
+
+    return {
+      nome,
+      regional,
+      totalConsultores: consultores.length,
+      totalNegociacoes: negsCount,
+    };
+  });
+
+  return { regionais, cooperativas };
+}
 
 export default function RegionaisCooperativasTab() {
-  const [regionaisReais, setRegionaisReais] = useState<any[]>([]);
-  const [cooperativasReais, setCooperativasReais] = useState<any[]>([]);
+  const { data, isLoading } = useQuery({
+    queryKey: ["regionais-cooperativas"],
+    queryFn: fetchRegionaisCooperativas,
+  });
 
-  useEffect(() => {
-    supabase.from("regionais").select("*").order("nome").then(({ data }) => setRegionaisReais(data || []));
-    supabase.from("cooperativas" as any).select("*, regionais(nome)").order("nome").then(({ data }) => setCooperativasReais(data || []));
-  }, []);
-
-  // Sempre usar dados reais do banco
-  const regionais = regionaisReais.map(r => ({
-    id: r.id, nome: r.nome, codigoSga: "", cooperativas: cooperativasReais.filter((c: any) => c.regional_id === r.id).length
-  }));
-
-  const cooperativas = cooperativasReais.map((c: any) => ({
-    id: c.id, nome: c.nome, cnpj: "", codigoSga: "", regional: c.regionais?.nome || ""
-  }));
+  const regionais = data?.regionais || [];
+  const cooperativas = data?.cooperativas || [];
 
   const [showRegionalModal, setShowRegionalModal] = useState(false);
   const [showCoopModal, setShowCoopModal] = useState(false);
@@ -62,6 +138,14 @@ export default function RegionaisCooperativasTab() {
       .replace(/^(\d{2})(\d{3})/, "$1.$2")
       .replace(/^(\d{2})/, "$1");
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -82,23 +166,31 @@ export default function RegionaisCooperativasTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
-                  <TableHead>Código SGA</TableHead>
+                  <TableHead>Usuários</TableHead>
                   <TableHead>Cooperativas Vinculadas</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockRegionais.map(r => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.nome}</TableCell>
-                    <TableCell><Badge variant="outline">{r.codigoSga}</Badge></TableCell>
-                    <TableCell>{r.cooperativas}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                {regionais.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                      Nenhuma regional encontrada
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  regionais.map((r) => (
+                    <TableRow key={r.nome}>
+                      <TableCell className="font-medium">{r.nome}</TableCell>
+                      <TableCell>{r.totalUsuarios}</TableCell>
+                      <TableCell>{r.totalCooperativas}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -126,25 +218,33 @@ export default function RegionaisCooperativasTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
-                  <TableHead>CNPJ</TableHead>
-                  <TableHead>Código SGA</TableHead>
                   <TableHead>Regional</TableHead>
+                  <TableHead>Consultores</TableHead>
+                  <TableHead>Negociações</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockCooperativas.map(c => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.nome}</TableCell>
-                    <TableCell className="font-mono text-sm">{c.cnpj}</TableCell>
-                    <TableCell><Badge variant="outline">{c.codigoSga}</Badge></TableCell>
-                    <TableCell>{c.regional}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                {cooperativas.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                      Nenhuma cooperativa encontrada
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  cooperativas.map((c) => (
+                    <TableRow key={c.nome}>
+                      <TableCell className="font-medium">{c.nome}</TableCell>
+                      <TableCell>{c.regional}</TableCell>
+                      <TableCell>{c.totalConsultores}</TableCell>
+                      <TableCell>{c.totalNegociacoes}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -179,7 +279,7 @@ export default function RegionaisCooperativasTab() {
               <Select value={regionalCoop} onValueChange={setRegionalCoop}>
                 <SelectTrigger><SelectValue placeholder="Selecione a regional" /></SelectTrigger>
                 <SelectContent>
-                  {mockRegionais.map(r => <SelectItem key={r.id} value={r.nome}>{r.nome}</SelectItem>)}
+                  {regionais.map(r => <SelectItem key={r.nome} value={r.nome}>{r.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

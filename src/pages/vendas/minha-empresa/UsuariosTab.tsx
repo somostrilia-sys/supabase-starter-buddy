@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Edit, Trash2, Users, Search, Shield, ChevronDown, ChevronUp, Info } from "lucide-react";
+import { Plus, Edit, Trash2, Users, Search, Shield, ChevronDown, ChevronUp, Info, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 // ── Types ──
 
@@ -24,12 +26,12 @@ interface Usuario {
   nome: string;
   email: string;
   cpf: string;
-  unidade: string;
-  cargo: string;
-  gestorResponsavel: string;
-  grupoPermissao: string;
+  unidade: string;        // mapped from cooperativa
+  cargo: string;          // mapped from funcao
+  gestorResponsavel: string; // mapped from gerente
+  grupoPermissao: string; // mapped from grupo_permissao
   comissoes: ComissaoRegra[];
-  telefone: string;
+  telefone: string;       // mapped from celular
   status: "ativo" | "inativo";
 }
 
@@ -106,18 +108,10 @@ const gruposPermissao: GrupoPermissao[] = [
   },
 ];
 
-// ── Mock Data ──
+// ── Static Options ──
 
 const unidades = ["Matriz São Paulo", "Filial Sul", "Filial Norte", "Filial Nordeste", "Filial Centro-Oeste"];
 const cargos = ["Consultor", "Gestor", "Diretor", "Administrativo", "Vistoriador", "Financeiro"];
-
-const mockUsuarios: Usuario[] = [
-  { id: "1", nome: "Carlos Silva", email: "carlos@empresa.com", cpf: "123.456.789-00", unidade: "Matriz São Paulo", cargo: "Diretor", gestorResponsavel: "", grupoPermissao: "diretor", comissoes: [{ tipo: "venda_nova", percentual: "5" }], telefone: "(11) 99000-0001", status: "ativo" },
-  { id: "2", nome: "Ana Oliveira", email: "ana@empresa.com", cpf: "987.654.321-00", unidade: "Matriz São Paulo", cargo: "Gestor", gestorResponsavel: "Carlos Silva", grupoPermissao: "gestor", comissoes: [{ tipo: "venda_nova", percentual: "8" }, { tipo: "renovacao", percentual: "3" }], telefone: "(11) 99000-0002", status: "ativo" },
-  { id: "3", nome: "Pedro Santos", email: "pedro@empresa.com", cpf: "111.222.333-44", unidade: "Filial Sul", cargo: "Consultor", gestorResponsavel: "Ana Oliveira", grupoPermissao: "consultor", comissoes: [{ tipo: "venda_nova", percentual: "12" }, { tipo: "indicacao", percentual: "2" }], telefone: "(41) 99000-0003", status: "ativo" },
-  { id: "4", nome: "Maria Costa", email: "maria@empresa.com", cpf: "444.555.666-77", unidade: "Matriz São Paulo", cargo: "Administrativo", gestorResponsavel: "Carlos Silva", grupoPermissao: "administrativo", comissoes: [], telefone: "(11) 99000-0004", status: "inativo" },
-  { id: "5", nome: "Lucas Ferreira", email: "lucas@empresa.com", cpf: "777.888.999-00", unidade: "Filial Norte", cargo: "Consultor", gestorResponsavel: "Ana Oliveira", grupoPermissao: "consultor", comissoes: [{ tipo: "venda_nova", percentual: "10" }], telefone: "(92) 99000-0005", status: "ativo" },
-];
 
 const emptyForm: Omit<Usuario, "id"> = {
   nome: "", email: "", cpf: "", unidade: "", cargo: "", gestorResponsavel: "",
@@ -132,6 +126,24 @@ const tiposComissao = [
 
 // ── Helpers ──
 
+function mapDbToUsuario(row: any): Usuario {
+  return {
+    id: row.id,
+    nome: row.nome ?? "",
+    email: row.email ?? "",
+    cpf: row.cpf ?? "",
+    unidade: row.cooperativa ?? "",
+    cargo: row.funcao ?? "",
+    gestorResponsavel: row.gerente ?? "",
+    grupoPermissao: row.grupo_permissao ?? "",
+    comissoes: row.comissao_pct
+      ? [{ tipo: "venda_nova", percentual: String(row.comissao_pct) }]
+      : [],
+    telefone: row.celular ?? "",
+    status: (row.status === "ativo" ? "ativo" : "inativo") as "ativo" | "inativo",
+  };
+}
+
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
@@ -145,15 +157,34 @@ function getGrupoConfig(id: string) {
   return gruposPermissao.find(g => g.id === id);
 }
 
+// ── Data fetching ──
+
+async function fetchUsuarios(): Promise<Usuario[]> {
+  const { data, error } = await supabase
+    .from("usuarios")
+    .select("*")
+    .order("nome", { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []).map(mapDbToUsuario);
+}
+
 // ── Component ──
 
 export default function UsuariosTab() {
-  const [usuarios, setUsuarios] = useState<Usuario[]>(mockUsuarios);
+  const queryClient = useQueryClient();
+
+  const { data: usuarios = [], isLoading, isError } = useQuery({
+    queryKey: ["usuarios"],
+    queryFn: fetchUsuarios,
+  });
+
   const [search, setSearch] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<Omit<Usuario, "id">>(emptyForm);
   const [showPermissoes, setShowPermissoes] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const filtered = usuarios.filter(u =>
     u.nome.toLowerCase().includes(search.toLowerCase()) ||
@@ -178,7 +209,7 @@ export default function UsuariosTab() {
     setSheetOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nome.trim() || !form.email.trim() || !form.cpf.trim()) {
       toast.error("Preencha Nome, E-mail e CPF");
       return;
@@ -187,19 +218,62 @@ export default function UsuariosTab() {
     if (!form.cargo) { toast.error("Selecione o Cargo/Função"); return; }
     if (!form.grupoPermissao) { toast.error("Selecione o Grupo de Permissão"); return; }
 
-    if (editingId) {
-      setUsuarios(prev => prev.map(u => u.id === editingId ? { ...form, id: editingId } : u));
-      toast.success("Usuário atualizado com sucesso");
-    } else {
-      setUsuarios(prev => [...prev, { ...form, id: String(Date.now()) }]);
-      toast.success("Usuário criado com sucesso");
+    setSaving(true);
+
+    // Build the main comissao_pct from first commission rule (if any)
+    const mainComissao = form.comissoes.length > 0 && form.comissoes[0].percentual
+      ? parseFloat(form.comissoes[0].percentual)
+      : null;
+
+    const payload = {
+      nome: form.nome.trim(),
+      email: form.email.trim(),
+      cpf: form.cpf.trim(),
+      celular: form.telefone.trim() || null,
+      cooperativa: form.unidade,
+      funcao: form.cargo,
+      gerente: form.gestorResponsavel === "nenhum" ? null : (form.gestorResponsavel || null),
+      grupo_permissao: form.grupoPermissao,
+      comissao_pct: mainComissao,
+      status: form.status,
+    };
+
+    try {
+      if (editingId) {
+        const { error } = await supabase
+          .from("usuarios")
+          .update(payload)
+          .eq("id", editingId);
+        if (error) throw error;
+        toast.success("Usuário atualizado com sucesso");
+      } else {
+        const { error } = await supabase
+          .from("usuarios")
+          .insert(payload);
+        if (error) throw error;
+        toast.success("Usuário criado com sucesso");
+      }
+      await queryClient.invalidateQueries({ queryKey: ["usuarios"] });
+      setSheetOpen(false);
+    } catch (err: any) {
+      toast.error(err.message ?? "Erro ao salvar usuário");
+    } finally {
+      setSaving(false);
     }
-    setSheetOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    setUsuarios(prev => prev.filter(u => u.id !== id));
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase
+      .from("usuarios")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast.error(error.message ?? "Erro ao excluir usuário");
+      return;
+    }
     toast.success("Usuário excluído");
+    await queryClient.invalidateQueries({ queryKey: ["usuarios"] });
   };
 
   const updateForm = (field: keyof Omit<Usuario, "id">, value: unknown) => {
@@ -276,49 +350,58 @@ export default function UsuariosTab() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>E-mail</TableHead>
-                <TableHead>CPF</TableHead>
-                <TableHead>Unidade</TableHead>
-                <TableHead>Cargo</TableHead>
-                <TableHead>Permissão</TableHead>
-                <TableHead>Gestor</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((u) => {
-                const gc = getGrupoConfig(u.grupoPermissao);
-                return (
-                  <TableRow key={u.id}>
-                    <TableCell className="font-medium">{u.nome}</TableCell>
-                    <TableCell className="text-sm">{u.email}</TableCell>
-                    <TableCell className="font-mono text-sm">{u.cpf}</TableCell>
-                    <TableCell className="text-sm">{u.unidade}</TableCell>
-                    <TableCell className="text-sm">{u.cargo}</TableCell>
-                    <TableCell>
-                      <Badge className={`border-0 ${gc?.badgeColor ?? "bg-muted"}`}>{gc?.label ?? u.grupoPermissao}</Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">{u.gestorResponsavel || "—"}</TableCell>
-                    <TableCell>
-                      <Badge variant={u.status === "ativo" ? "default" : "secondary"}>{u.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(u)}><Edit className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(u.id)}><Trash2 className="h-4 w-4" /></Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Nenhum usuário encontrado</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">Carregando usuários...</span>
+            </div>
+          ) : isError ? (
+            <div className="text-center text-destructive py-8">Erro ao carregar usuários. Tente novamente.</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>E-mail</TableHead>
+                  <TableHead>CPF</TableHead>
+                  <TableHead>Unidade</TableHead>
+                  <TableHead>Cargo</TableHead>
+                  <TableHead>Permissão</TableHead>
+                  <TableHead>Gestor</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((u) => {
+                  const gc = getGrupoConfig(u.grupoPermissao);
+                  return (
+                    <TableRow key={u.id}>
+                      <TableCell className="font-medium">{u.nome}</TableCell>
+                      <TableCell className="text-sm">{u.email}</TableCell>
+                      <TableCell className="font-mono text-sm">{u.cpf}</TableCell>
+                      <TableCell className="text-sm">{u.unidade}</TableCell>
+                      <TableCell className="text-sm">{u.cargo}</TableCell>
+                      <TableCell>
+                        <Badge className={`border-0 ${gc?.badgeColor ?? "bg-muted"}`}>{gc?.label ?? u.grupoPermissao}</Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{u.gestorResponsavel || "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant={u.status === "ativo" ? "default" : "secondary"}>{u.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(u)}><Edit className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(u.id)}><Trash2 className="h-4 w-4" /></Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Nenhum usuário encontrado</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -452,7 +535,10 @@ export default function UsuariosTab() {
 
           <SheetFooter className="flex gap-2 pt-4">
             <Button variant="outline" onClick={() => setSheetOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave}>{editingId ? "Salvar Alterações" : "Criar Usuário"}</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {editingId ? "Salvar Alterações" : "Criar Usuário"}
+            </Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>

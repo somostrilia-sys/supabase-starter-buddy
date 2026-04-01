@@ -5,30 +5,111 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Globe, Search, Eye, Copy, ExternalLink, Users, MousePointerClick, TrendingUp, Phone, Mail, MapPin } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Globe, Search, Eye, Copy, ExternalLink, Users, MousePointerClick, TrendingUp, Phone, Mail, MapPin, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
-const consultores = [
-  { id: 1, nome: "Maria Santos", slug: "maria-santos", visitas: 1240, leads: 86, conversoes: 22, taxa: 25.6, ativa: true },
-  { id: 2, nome: "João Pedro", slug: "joao-pedro", visitas: 980, leads: 64, conversoes: 15, taxa: 23.4, ativa: true },
-  { id: 3, nome: "Carlos Lima", slug: "carlos-lima", visitas: 756, leads: 42, conversoes: 12, taxa: 28.6, ativa: true },
-  { id: 4, nome: "Ana Costa", slug: "ana-costa", visitas: 620, leads: 38, conversoes: 9, taxa: 23.7, ativa: true },
-  { id: 5, nome: "Fernanda Alves", slug: "fernanda-alves", visitas: 540, leads: 31, conversoes: 8, taxa: 25.8, ativa: false },
-  { id: 6, nome: "Marcos Souza", slug: "marcos-souza", visitas: 380, leads: 18, conversoes: 4, taxa: 22.2, ativa: true },
-];
+interface Consultor {
+  id: string;
+  nome: string;
+  slug: string;
+  cooperativa: string | null;
+  celular: string | null;
+  email: string | null;
+  foto_capa_url: string | null;
+  leads: number;
+  conversoes: number;
+  taxa: number;
+}
 
-const kpis = [
-  { label: "Total Consultores", value: consultores.length, icon: Users, color: "text-primary", bg: "bg-primary/8" },
-  { label: "Total Visitas", value: consultores.reduce((s, c) => s + c.visitas, 0).toLocaleString(), icon: MousePointerClick, color: "text-blue-600", bg: "bg-primary/6" },
-  { label: "Total Leads", value: consultores.reduce((s, c) => s + c.leads, 0), icon: TrendingUp, color: "text-success", bg: "bg-success/8" },
-  { label: "Total Conversões", value: consultores.reduce((s, c) => s + c.conversoes, 0), icon: Globe, color: "text-purple-600", bg: "bg-primary/6" },
-];
+async function fetchConsultores(): Promise<Consultor[]> {
+  // Fetch active usuarios with slug
+  const { data: usuarios, error: userError } = await supabase
+    .from("usuarios")
+    .select("id, nome, slug, cooperativa, celular, email, foto_capa_url")
+    .eq("status", "ativo")
+    .not("slug", "is", null);
+
+  if (userError) throw userError;
+  if (!usuarios || usuarios.length === 0) return [];
+
+  // Fetch all negociacoes counts grouped by consultor
+  const nomes = usuarios.map((u: any) => u.nome);
+
+  const { data: allNeg, error: negError } = await supabase
+    .from("negociacoes")
+    .select("consultor, stage")
+    .in("consultor", nomes);
+
+  if (negError) throw negError;
+
+  // Build counts map
+  const leadsMap: Record<string, number> = {};
+  const conversoesMap: Record<string, number> = {};
+
+  for (const neg of allNeg || []) {
+    const name = neg.consultor as string;
+    leadsMap[name] = (leadsMap[name] || 0) + 1;
+    if (neg.stage === "concluido") {
+      conversoesMap[name] = (conversoesMap[name] || 0) + 1;
+    }
+  }
+
+  return usuarios.map((u: any) => {
+    const leads = leadsMap[u.nome] || 0;
+    const conversoes = conversoesMap[u.nome] || 0;
+    const taxa = leads > 0 ? Math.round((conversoes / leads) * 1000) / 10 : 0;
+    return {
+      id: u.id,
+      nome: u.nome,
+      slug: u.slug,
+      cooperativa: u.cooperativa,
+      celular: u.celular,
+      email: u.email,
+      foto_capa_url: u.foto_capa_url,
+      leads,
+      conversoes,
+      taxa,
+    };
+  });
+}
 
 export default function LandingPages() {
   const [busca, setBusca] = useState("");
-  const [previewConsultor, setPreviewConsultor] = useState<typeof consultores[0] | null>(null);
+  const [previewConsultor, setPreviewConsultor] = useState<Consultor | null>(null);
+
+  const { data: consultores = [], isLoading } = useQuery({
+    queryKey: ["landing-pages-consultores"],
+    queryFn: fetchConsultores,
+  });
+
   const filtered = consultores.filter(c => !busca || c.nome.toLowerCase().includes(busca.toLowerCase()));
-  const baseUrl = "objetivoauto.com.br/c/";
+  const baseUrl = window.location.origin + "/c/";
+
+  const totalLeads = consultores.reduce((s, c) => s + c.leads, 0);
+  const totalConversoes = consultores.reduce((s, c) => s + c.conversoes, 0);
+
+  const kpis = [
+    { label: "Total Consultores", value: consultores.length, icon: Users, color: "text-primary", bg: "bg-primary/8" },
+    { label: "Total Leads", value: totalLeads, icon: TrendingUp, color: "text-success", bg: "bg-success/8" },
+    { label: "Total Conversões", value: totalConversoes, icon: Globe, color: "text-purple-600", bg: "bg-primary/6" },
+    { label: "Taxa Média", value: totalLeads > 0 ? (Math.round((totalConversoes / totalLeads) * 1000) / 10) + "%" : "0%", icon: MousePointerClick, color: "text-blue-600", bg: "bg-primary/6" },
+  ];
+
+  function handleCopy(slug: string) {
+    const url = baseUrl + slug;
+    navigator.clipboard.writeText(url).then(() => {
+      toast.success("URL copiada!", { description: url });
+    }).catch(() => {
+      toast.error("Falha ao copiar URL");
+    });
+  }
+
+  function handleOpen(slug: string) {
+    window.open(baseUrl + slug, "_blank");
+  }
 
   return (
     <div className="space-y-6">
@@ -73,51 +154,64 @@ export default function LandingPages() {
 
       {/* Table */}
       <Card className="border-border overflow-hidden">
-        
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-primary hover:bg-primary border-b-0">
-                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Consultor</TableHead>
-                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">URL</TableHead>
-                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Visitas</TableHead>
-                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Leads</TableHead>
-                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Conversões</TableHead>
-                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Taxa</TableHead>
-                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
-                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((c, i) => (
-                <TableRow key={c.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b-2 border-[#747474]`}>
-                  <TableCell className="font-medium">{c.nome}</TableCell>
-                  <TableCell>
-                    <span className="font-mono text-xs bg-muted/50 px-2 py-1 rounded">{baseUrl}{c.slug}</span>
-                  </TableCell>
-                  <TableCell className="text-right font-semibold">{c.visitas.toLocaleString()}</TableCell>
-                  <TableCell className="text-right font-semibold">{c.leads}</TableCell>
-                  <TableCell className="text-right font-semibold text-success">{c.conversoes}</TableCell>
-                  <TableCell className="text-right">
-                    <Badge className={c.taxa >= 25 ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}>{c.taxa}%</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={c.ativa ? "bg-success/10 text-success" : "bg-gray-100 text-gray-600"}>{c.ativa ? "Ativa" : "Inativa"}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" className="h-7 px-2" title="Visualizar" onClick={() => setPreviewConsultor(c)}><Eye className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="sm" className="h-7 px-2" title="Copiar URL"><Copy className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="sm" className="h-7 px-2" title="Abrir"><ExternalLink className="h-3.5 w-3.5" /></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <div className="px-4 py-3 bg-muted/30 border-t-2 border-[#747474]">
-            <span className="text-xs text-muted-foreground">{filtered.length} landing page(s)</span>
-          </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Carregando consultores...</span>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-primary hover:bg-primary border-b-0">
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Consultor</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">URL</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Leads</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Conversões</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Taxa</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((c, i) => (
+                    <TableRow key={c.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b-2 border-[#747474]`}>
+                      <TableCell className="font-medium">{c.nome}</TableCell>
+                      <TableCell>
+                        <span className="font-mono text-xs bg-muted/50 px-2 py-1 rounded">/c/{c.slug}</span>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">{c.leads}</TableCell>
+                      <TableCell className="text-right font-semibold text-success">{c.conversoes}</TableCell>
+                      <TableCell className="text-right">
+                        <Badge className={c.taxa >= 25 ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}>{c.taxa}%</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className="bg-success/10 text-success">Ativa</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 px-2" title="Visualizar" onClick={() => setPreviewConsultor(c)}><Eye className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="sm" className="h-7 px-2" title="Copiar URL" onClick={() => handleCopy(c.slug)}><Copy className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="sm" className="h-7 px-2" title="Abrir" onClick={() => handleOpen(c.slug)}><ExternalLink className="h-3.5 w-3.5" /></Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filtered.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        {busca ? "Nenhum consultor encontrado" : "Nenhum consultor ativo com landing page"}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+              <div className="px-4 py-3 bg-muted/30 border-t-2 border-[#747474]">
+                <span className="text-xs text-muted-foreground">{filtered.length} landing page(s)</span>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -131,23 +225,27 @@ export default function LandingPages() {
             <div className="space-y-4">
               <div className="rounded-lg border bg-muted/30 p-6 text-center space-y-3">
                 <Avatar className="h-16 w-16 mx-auto">
+                  {previewConsultor.foto_capa_url && (
+                    <AvatarImage src={previewConsultor.foto_capa_url} alt={previewConsultor.nome} />
+                  )}
                   <AvatarFallback className="text-lg bg-primary/10 text-primary">
                     {previewConsultor.nome.split(" ").map(n => n[0]).join("").slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>
                 <h3 className="text-lg font-bold">{previewConsultor.nome}</h3>
-                <p className="text-sm text-muted-foreground">Consultor(a) — Objetivo Proteção Veicular</p>
+                <p className="text-sm text-muted-foreground">
+                  Consultor(a) — {previewConsultor.cooperativa || "Objetivo Proteção Veicular"}
+                </p>
                 <div className="flex flex-col gap-1.5 items-center text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> (11) 99999-0000</span>
-                  <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> {previewConsultor.slug}@objetivoauto.com.br</span>
-                  <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> São Paulo, SP</span>
+                  {previewConsultor.celular && (
+                    <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> {previewConsultor.celular}</span>
+                  )}
+                  {previewConsultor.email && (
+                    <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> {previewConsultor.email}</span>
+                  )}
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="rounded-lg border p-3">
-                  <p className="text-lg font-bold">{previewConsultor.visitas.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">Visitas</p>
-                </div>
+              <div className="grid grid-cols-2 gap-3 text-center">
                 <div className="rounded-lg border p-3">
                   <p className="text-lg font-bold">{previewConsultor.leads}</p>
                   <p className="text-xs text-muted-foreground">Leads</p>
@@ -160,6 +258,14 @@ export default function LandingPages() {
               <div className="text-center">
                 <p className="text-xs text-muted-foreground">URL da página</p>
                 <p className="font-mono text-sm bg-muted px-3 py-1.5 rounded mt-1">{baseUrl}{previewConsultor.slug}</p>
+              </div>
+              <div className="flex gap-2 justify-center">
+                <Button size="sm" variant="outline" onClick={() => handleCopy(previewConsultor.slug)}>
+                  <Copy className="h-3.5 w-3.5 mr-1.5" /> Copiar URL
+                </Button>
+                <Button size="sm" onClick={() => handleOpen(previewConsultor.slug)}>
+                  <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Abrir Página
+                </Button>
               </div>
             </div>
           )}

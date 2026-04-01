@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,18 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ClipboardCheck, Search, Send, CheckCircle, XCircle, Clock, Eye, MessageCircle, Mail, Smartphone } from "lucide-react";
-
-const vistorias = [
-  { id: 1, associado: "João Silva", veiculo: "Fiat Toro 2023", placa: "BRA2E19", status: "aprovada" as const, data: "2025-07-01", consultor: "Maria Santos" },
-  { id: 2, associado: "Pedro Oliveira", veiculo: "VW Gol 2020", placa: "ABC1D23", status: "pendente" as const, data: "2025-07-03", consultor: "Carlos Lima" },
-  { id: 3, associado: "Ana Costa", veiculo: "Hyundai HB20 2022", placa: "DEF4G56", status: "em_andamento" as const, data: "2025-07-04", consultor: "Maria Santos" },
-  { id: 4, associado: "Carlos Lima", veiculo: "Toyota Corolla 2024", placa: "GHI7J89", status: "aguardando_analise" as const, data: "2025-07-05", consultor: "Fernanda Alves" },
-  { id: 5, associado: "Marcos Souza", veiculo: "Chevrolet Onix 2021", placa: "JKL0M12", status: "reprovada" as const, data: "2025-07-02", consultor: "João Pedro" },
-  { id: 6, associado: "Fernanda Lima", veiculo: "Renault Kwid 2023", placa: "NOP3Q45", status: "pendente" as const, data: "2025-07-06", consultor: "Ana Costa" },
-  { id: 7, associado: "Ricardo Alves", veiculo: "Honda Civic 2022", placa: "RST6U78", status: "aprovada" as const, data: "2025-06-28", consultor: "Carlos Lima" },
-  { id: 8, associado: "Juliana Martins", veiculo: "Jeep Renegade 2023", placa: "VWX9Y01", status: "aguardando_analise" as const, data: "2025-07-05", consultor: "Maria Santos" },
-];
+import { ClipboardCheck, Search, Send, CheckCircle, XCircle, Clock, Eye, MessageCircle, Mail, Smartphone, Loader2 } from "lucide-react";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   pendente: { label: "Pendente", className: "bg-warning/10 text-warning" },
@@ -28,18 +20,63 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   reprovada: { label: "Reprovada", className: "bg-destructive/8 text-destructive" },
 };
 
-const kpis = [
-  { label: "Total Vistorias", value: vistorias.length, icon: ClipboardCheck, color: "text-primary", bg: "bg-primary/8" },
-  { label: "Aprovadas", value: vistorias.filter(v => v.status === "aprovada").length, icon: CheckCircle, color: "text-success", bg: "bg-success/8" },
-  { label: "Reprovadas", value: vistorias.filter(v => v.status === "reprovada").length, icon: XCircle, color: "text-destructive", bg: "bg-destructive/8" },
-  { label: "Pendentes", value: vistorias.filter(v => v.status === "pendente").length, icon: Clock, color: "text-warning", bg: "bg-warning/8" },
-];
+function mapStatus(status: string): string {
+  if (status === "em_aprovacao") return "em_andamento";
+  return status;
+}
+
+async function fetchVistorias() {
+  const { data, error } = await (supabase as any)
+    .from("vistorias")
+    .select("*, negociacoes!inner(lead_nome, veiculo_modelo, veiculo_placa, consultor)")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    toast.error("Erro ao carregar vistorias: " + error.message);
+    throw error;
+  }
+
+  return (data || []).map((v: any) => ({
+    id: v.id,
+    associado: v.negociacoes?.lead_nome || "—",
+    veiculo: v.modelo || v.negociacoes?.veiculo_modelo || "—",
+    placa: v.placa || v.negociacoes?.veiculo_placa || "—",
+    status: mapStatus(v.status || "pendente"),
+    data: v.created_at ? new Date(v.created_at).toLocaleDateString("pt-BR") : "—",
+    consultor: v.negociacoes?.consultor || "—",
+    tentativa: v.tentativa,
+    token_publico: v.token_publico,
+  }));
+}
 
 export default function VistoriasVendas() {
   const [busca, setBusca] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
-  const filtered = vistorias.filter(v =>
-    !busca || v.associado.toLowerCase().includes(busca.toLowerCase()) || v.placa.toLowerCase().includes(busca.toLowerCase())
+
+  const { data: vistorias = [], isLoading, isError } = useQuery({
+    queryKey: ["vistorias-vendas"],
+    queryFn: fetchVistorias,
+  });
+
+  const filtered = useMemo(
+    () =>
+      vistorias.filter(
+        (v: any) =>
+          !busca ||
+          v.associado.toLowerCase().includes(busca.toLowerCase()) ||
+          v.placa.toLowerCase().includes(busca.toLowerCase())
+      ),
+    [vistorias, busca]
+  );
+
+  const kpis = useMemo(
+    () => [
+      { label: "Total Vistorias", value: vistorias.length, icon: ClipboardCheck, color: "text-primary", bg: "bg-primary/8" },
+      { label: "Aprovadas", value: vistorias.filter((v: any) => v.status === "aprovada").length, icon: CheckCircle, color: "text-success", bg: "bg-success/8" },
+      { label: "Reprovadas", value: vistorias.filter((v: any) => v.status === "reprovada").length, icon: XCircle, color: "text-destructive", bg: "bg-destructive/8" },
+      { label: "Pendentes", value: vistorias.filter((v: any) => v.status === "pendente").length, icon: Clock, color: "text-warning", bg: "bg-warning/8" },
+    ],
+    [vistorias]
   );
 
   return (
@@ -67,7 +104,7 @@ export default function VistoriasVendas() {
                 <Label className="text-xs font-medium">Associado</Label>
                 <Select><SelectTrigger className="mt-1"><SelectValue placeholder="Selecionar associado" /></SelectTrigger>
                   <SelectContent>
-                    {vistorias.map(v => <SelectItem key={v.id} value={v.associado}>{v.associado}</SelectItem>)}
+                    {vistorias.map((v: any) => <SelectItem key={v.id} value={v.associado}>{v.associado}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -75,7 +112,7 @@ export default function VistoriasVendas() {
                 <Label className="text-xs font-medium">Veículo</Label>
                 <Select><SelectTrigger className="mt-1"><SelectValue placeholder="Selecionar veículo" /></SelectTrigger>
                   <SelectContent>
-                    {vistorias.map(v => <SelectItem key={v.id} value={v.veiculo}>{v.veiculo} - {v.placa}</SelectItem>)}
+                    {vistorias.map((v: any) => <SelectItem key={v.id} value={v.veiculo}>{v.veiculo} - {v.placa}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -103,7 +140,7 @@ export default function VistoriasVendas() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{k.label}</p>
-                <p className="text-lg font-bold text-foreground">{k.value}</p>
+                <p className="text-lg font-bold text-foreground">{isLoading ? "—" : k.value}</p>
               </div>
             </CardContent>
           </Card>
@@ -122,39 +159,60 @@ export default function VistoriasVendas() {
 
       {/* Table */}
       <Card className="border-border overflow-hidden">
-        
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-primary hover:bg-primary border-b-0">
-                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Associado</TableHead>
-                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Veículo</TableHead>
-                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Placa</TableHead>
-                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
-                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Data</TableHead>
-                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Consultor</TableHead>
-                <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((v, i) => (
-                <TableRow key={v.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b-2 border-[#747474]`}>
-                  <TableCell className="font-medium">{v.associado}</TableCell>
-                  <TableCell className="text-sm">{v.veiculo}</TableCell>
-                  <TableCell><span className="font-mono text-sm bg-muted/50 px-2 py-0.5 rounded">{v.placa}</span></TableCell>
-                  <TableCell><Badge className={statusConfig[v.status].className}>{statusConfig[v.status].label}</Badge></TableCell>
-                  <TableCell className="text-sm font-mono">{v.data}</TableCell>
-                  <TableCell className="text-sm">{v.consultor}</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm" className="h-7 px-2"><Eye className="h-3.5 w-3.5" /></Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <div className="px-4 py-3 bg-muted/30 border-t-2 border-[#747474]">
-            <span className="text-xs text-muted-foreground">{filtered.length} vistoria(s)</span>
-          </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16 gap-3 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span className="text-sm">Carregando vistorias...</span>
+            </div>
+          ) : isError ? (
+            <div className="flex items-center justify-center py-16 text-destructive">
+              <span className="text-sm">Erro ao carregar vistorias. Tente novamente.</span>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
+              <ClipboardCheck className="h-8 w-8 opacity-40" />
+              <span className="text-sm">{busca ? "Nenhuma vistoria encontrada para esta busca." : "Nenhuma vistoria cadastrada."}</span>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-primary hover:bg-primary border-b-0">
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Associado</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Veículo</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Placa</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Data</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Consultor</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((v: any, i: number) => (
+                    <TableRow key={v.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b-2 border-[#747474]`}>
+                      <TableCell className="font-medium">{v.associado}</TableCell>
+                      <TableCell className="text-sm">{v.veiculo}</TableCell>
+                      <TableCell><span className="font-mono text-sm bg-muted/50 px-2 py-0.5 rounded">{v.placa}</span></TableCell>
+                      <TableCell>
+                        <Badge className={statusConfig[v.status]?.className || "bg-muted text-muted-foreground"}>
+                          {statusConfig[v.status]?.label || v.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm font-mono">{v.data}</TableCell>
+                      <TableCell className="text-sm">{v.consultor}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm" className="h-7 px-2"><Eye className="h-3.5 w-3.5" /></Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="px-4 py-3 bg-muted/30 border-t-2 border-[#747474]">
+                <span className="text-xs text-muted-foreground">{filtered.length} vistoria(s)</span>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

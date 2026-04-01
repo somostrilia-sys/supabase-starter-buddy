@@ -10,7 +10,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { CalendarIcon, Filter, X } from "lucide-react";
-import { consultores, cooperativas, regionais } from "./pipeline/mockData";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 import DashboardTab from "./relatorios/DashboardTab";
 import FunilTab from "./relatorios/FunilTab";
@@ -25,16 +26,39 @@ import ExtratoComissoesTab from "./relatorios/ExtratoComissoesTab";
 
 export default function RelatoriosVendas() {
   const [tab, setTab] = useState("dashboard");
-  const [fRegional, setFRegional] = useState("all");
   const [fCoop, setFCoop] = useState("all");
   const [fConsultor, setFConsultor] = useState("all");
   const [fDateStart, setFDateStart] = useState<Date | undefined>();
   const [fDateEnd, setFDateEnd] = useState<Date | undefined>();
   const [showFilters, setShowFilters] = useState(false);
 
-  const activeFilters = [fRegional !== "all", fCoop !== "all", fConsultor !== "all", !!fDateStart, !!fDateEnd].filter(Boolean).length;
+  const { data: cooperativas = [] } = useQuery({
+    queryKey: ["relatorios-cooperativas"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("negociacoes")
+        .select("cooperativa")
+        .not("cooperativa", "is", null);
+      const unique = [...new Set((data || []).map((r: any) => r.cooperativa).filter(Boolean))] as string[];
+      return unique.sort();
+    },
+  });
 
-  function clearFilters() { setFRegional("all"); setFCoop("all"); setFConsultor("all"); setFDateStart(undefined); setFDateEnd(undefined); }
+  const { data: consultores = [] } = useQuery({
+    queryKey: ["relatorios-consultores"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("usuarios")
+        .select("nome")
+        .eq("grupo_permissao", "consultor")
+        .eq("status", "ativo");
+      return (data || []).map((r: any) => r.nome as string).sort();
+    },
+  });
+
+  const activeFilters = [fCoop !== "all", fConsultor !== "all", !!fDateStart, !!fDateEnd].filter(Boolean).length;
+
+  function clearFilters() { setFCoop("all"); setFConsultor("all"); setFDateStart(undefined); setFDateEnd(undefined); }
 
   return (
     <div className="space-y-4">
@@ -52,12 +76,7 @@ export default function RelatoriosVendas() {
       {showFilters && (
         <Card>
           <CardContent className="p-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div className="space-y-1"><Label className="text-xs">Regional</Label>
-                <Select value={fRegional} onValueChange={setFRegional}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Todas</SelectItem>{regionais.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
               <div className="space-y-1"><Label className="text-xs">Cooperativa</Label>
                 <Select value={fCoop} onValueChange={setFCoop}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="all">Todas</SelectItem>{cooperativas.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
