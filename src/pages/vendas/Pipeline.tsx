@@ -50,9 +50,27 @@ function StalledBadge({ days }: { days: number }) {
 type SortKey = "id" | "lead_nome" | "veiculo_modelo" | "plano" | "stage" | "consultor" | "cooperativa" | "regional" | "created_at" | "updated_at";
 
 export default function Pipeline() {
-  const { canLiberarCadastro, canConcretizarVenda } = usePermission();
+  const { canLiberarCadastro, canConcretizarVenda, role } = usePermission();
   const leadScope = useLeadScope();
   const queryClient = useQueryClient();
+
+  // Buscar cooperativas do usuário logado
+  const { profile } = usePermission();
+  const { data: usuarioLogado } = useQuery({
+    queryKey: ["usuario_logado", profile?.id],
+    enabled: !!profile?.id,
+    queryFn: async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user?.user?.email) return null;
+      const { data } = await supabase.from("usuarios").select("nome, cooperativa, regional, funcao, grupo_permissao")
+        .eq("email", user.user.email).limit(1).maybeSingle();
+      return data as any;
+    },
+  });
+
+  // Cooperativas do usuário: split por vírgula (alguns têm múltiplas)
+  const minhasCooperativas = (usuarioLogado?.cooperativa || "").split(",").map((c: string) => c.trim()).filter(Boolean);
+  const isAdmin = ["admin", "administrativo", "diretor"].includes(role);
   const [concretizarDeal, setConcretizarDeal] = useState<PipelineDeal | null>(null);
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [newDealOpen, setNewDealOpen] = useState(false);
@@ -122,7 +140,11 @@ export default function Pipeline() {
     },
   });
 
-  const cooperativasLista = cooperativasDb && cooperativasDb.length > 0 ? cooperativasDb.map((c: any) => c.nome) : cooperativas;
+  const todasCooperativas = cooperativasDb && cooperativasDb.length > 0 ? cooperativasDb.map((c: any) => c.nome) : cooperativas;
+  // Consultor/gestor vê só suas cooperativas, admin vê todas
+  const cooperativasLista = isAdmin || minhasCooperativas.length === 0
+    ? todasCooperativas
+    : todasCooperativas.filter(c => minhasCooperativas.some((mc: string) => c.toLowerCase().includes(mc.toLowerCase()) || mc.toLowerCase().includes(c.toLowerCase())));
   const regionaisLista = regionaisDb && regionaisDb.length > 0 ? regionaisDb.map((r: any) => r.nome) : regionais;
   const consultoresLista = consultoresReais.length > 0 ? consultoresReais : consultores;
   const planosLista = planosDb && planosDb.length > 0 ? planosDb : planos;
