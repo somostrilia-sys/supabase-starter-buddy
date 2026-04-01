@@ -41,21 +41,28 @@ export default function Auth() {
   };
 
   return (
-    /* Imagem do designer É a tela inteira — fullscreen */
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      backgroundImage: "url('/login-bg.png')",
-      backgroundSize: '100% 100%',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
-    }}>
-      {/* Formulário sobreposto no lado direito (painel cinza da imagem) */}
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden' }}>
+
+      {/* Imagem cobre tudo sem distorção */}
+      <img
+        src="/login-bg.png"
+        alt=""
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          objectPosition: 'center',
+        }}
+      />
+
+      {/* Formulário sobreposto no painel direito */}
       <div style={{
         position: 'absolute',
         top: 0,
         right: 0,
-        width: '42%',
+        width: '43%',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
