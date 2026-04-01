@@ -191,13 +191,13 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
 
       const vencimento = new Date(today.getFullYear(), today.getMonth() + 1, 10);
 
-      await supabase.from("mensalidades").insert({
+      await supabase.from("boletos").insert({
         associado_id: assoc.id,
         valor: valorProporcional,
-        data_vencimento: vencimento.toISOString().split("T")[0],
+        vencimento: vencimento.toISOString().split("T")[0],
         status: "pendente",
         referencia: `${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()} (proporcional)`,
-        observacoes: `Proporcional: ${daysRemaining} dias de ${daysInMonth}`,
+        tipo: 'proporcional', // observacoes: `Proporcional: ${daysRemaining} dias de ${daysInMonth}`,
       });
 
       // 6. Create vistoria
@@ -238,7 +238,7 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
       await queryClient.invalidateQueries({ queryKey: ["associados"] });
       await queryClient.invalidateQueries({ queryKey: ["veiculos"] });
       await queryClient.invalidateQueries({ queryKey: ["contratos"] });
-      await queryClient.invalidateQueries({ queryKey: ["mensalidades"] });
+      await queryClient.invalidateQueries({ queryKey: ["boletos"] });
 
       setSuccessContrato(numero);
       onSuccess?.();

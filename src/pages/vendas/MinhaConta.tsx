@@ -144,7 +144,7 @@ export default function MinhaConta() {
 
   // Filter commissions
   const filtered = useMemo(() => {
-    return mockComissoes.filter(c => {
+    const comissoesList = comissoesReais.length > 0 ? comissoesReais.map((c: any) => ({ id: c.id, associado: c.negociacao_id || "", negociacao: c.negociacao_id || "", data: (c.created_at || "").slice(0,10), plano: c.tipo || "", valorPlano: c.valor_calculado || 0, percentualComissao: c.percentual || 0, valorRecebido: c.valor_calculado || 0, status: c.pago ? "pago" as const : "pendente" as const })) : mockComissoes; return comissoesList.filter(c => {
       if (fStatus !== "all" && c.status !== fStatus) return false;
       if (fBusca) {
         const q = fBusca.toLowerCase();

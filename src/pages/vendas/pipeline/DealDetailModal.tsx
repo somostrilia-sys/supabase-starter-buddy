@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,13 @@ const mockGestaoHistory = [
 
 export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
   const [activeTab, setActiveTab] = useState("cotacao");
+  const [historicoReal, setHistoricoReal] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (!deal.id || deal.id.startsWith("p")) return;
+    supabase.from("pipeline_transicoes" as any).select("*").eq("negociacao_id", deal.id)
+      .order("created_at", { ascending: false }).then(({ data }) => setHistoricoReal(data || []));
+  }, [deal.id]);
 
   const tabs = [
     { v: "cotacao", l: "Cotação", i: FileText },
@@ -213,20 +220,25 @@ export default function DealDetailModal({ deal, open, onOpenChange }: Props) {
             <TabsContent value="atividades" className="mt-0 space-y-4">
               <Button size="sm" className="rounded-none"><Plus className="h-3.5 w-3.5 mr-1" />Nova Atividade</Button>
               <div className="space-y-3">
-                {mockActivities.map(a => {
-                  const Icon = tipoIcons[a.tipo] || Activity;
+                {(historicoReal.length > 0 ? historicoReal : mockActivities).map((a: any, i: number) => {
+                  const isReal = !!a.stage_novo;
+                  const Icon = isReal ? Activity : (tipoIcons[a.tipo] || Activity);
+                  const desc = isReal ? `${a.stage_anterior || "—"} → ${a.stage_novo}${a.motivo ? ` — ${a.motivo}` : ""}` : a.descricao;
+                  const data = isReal ? a.created_at : a.data;
+                  const usuario = isReal ? (a.automatica ? "Sistema" : "Consultor") : a.usuario;
+                  const tipo = isReal ? (a.automatica ? "Auto" : "Manual") : a.tipo;
                   return (
-                    <div key={a.id} className="flex gap-3 items-start">
+                    <div key={a.id || i} className="flex gap-3 items-start">
                       <div className="mt-1 w-8 h-8 bg-primary/10 flex items-center justify-center shrink-0">
                         <Icon className="h-4 w-4 text-primary" />
                       </div>
                       <div className="flex-1 border-b-2 border-[#747474] pb-3">
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-[10px] rounded-none">{a.tipo}</Badge>
-                          <span className="text-xs text-muted-foreground">{new Date(a.data).toLocaleDateString("pt-BR")} {new Date(a.data).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                          <Badge variant="outline" className="text-[10px] rounded-none">{tipo}</Badge>
+                          <span className="text-xs text-muted-foreground">{new Date(data).toLocaleDateString("pt-BR")} {new Date(data).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
                         </div>
-                        <p className="text-sm mt-1">{a.descricao}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">por {a.usuario}</p>
+                        <p className="text-sm mt-1">{desc}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">por {usuario}</p>
                       </div>
                     </div>
                   );
