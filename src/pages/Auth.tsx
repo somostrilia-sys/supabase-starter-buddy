@@ -84,15 +84,9 @@ export default function Auth() {
           <div className="orb orb-2" />
         </div>
         <div className="w-full max-w-[380px] space-y-8 relative z-10 login-glow">
-          {/* Mobile logo */}
-          <div className="text-center space-y-3">
-            {brand.logoUrl && (
-              <img src={brand.logoUrl} alt={brand.name} className="h-12 mx-auto object-contain" />
-            )}
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-foreground">{brand.name}</h1>
-              <p className="text-sm text-muted-foreground">{brand.subtitle}</p>
-            </div>
+          {/* Logo GIA */}
+          <div className="text-center">
+            <img src="/logo-gia.png" alt="GIA" className="h-16 mx-auto object-contain" />
           </div>
 
           {/* Form header */}
