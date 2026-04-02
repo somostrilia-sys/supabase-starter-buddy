@@ -47,27 +47,34 @@ export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro 
 
   const load = useCallback(async () => {
     setLoading(true);
-    let q = (supabase as any)
-      .from("negociacoes")
-      .select("*", { count: "exact" })
-      .order("created_at", { ascending: false });
+    try {
+      let q = (supabase as any)
+        .from("negociacoes")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    // Filtro por período
-    const dias = PERIODO_DIAS[periodo];
-    if (dias > 0) {
-      const dataLimite = new Date();
-      dataLimite.setDate(dataLimite.getDate() - dias);
-      q = q.gte("created_at", dataLimite.toISOString());
+      // Filtro por período
+      const dias = PERIODO_DIAS[periodo];
+      if (dias > 0) {
+        const dataLimite = new Date();
+        dataLimite.setDate(dataLimite.getDate() - dias);
+        q = q.gte("created_at", dataLimite.toISOString());
+      }
+
+      if (companyId) q = q.eq("company_id", companyId);
+
+      q = q.limit(periodo === "todos" ? 5000 : 2000);
+
+      const { data, error } = await q;
+      if (error) {
+        console.error("[useNegociacoes] Erro:", error.message);
+      }
+      console.log("[useNegociacoes] Dados:", data?.length || 0, "periodo:", periodo);
+      setNegociacoes((data as Negociacao[]) || []);
+      setTotalCount(data?.length || 0);
+    } catch (err) {
+      console.error("[useNegociacoes] Exception:", err);
     }
-
-    if (companyId) q = q.eq("company_id", companyId);
-
-    // Limite maior para cobrir o período
-    q = q.limit(periodo === "todos" ? 5000 : 2000);
-
-    const { data, count } = await q;
-    setNegociacoes((data as Negociacao[]) || []);
-    setTotalCount(count || 0);
     setLoading(false);
   }, [companyId, periodo]);
 
