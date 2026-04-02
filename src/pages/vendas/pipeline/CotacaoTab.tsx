@@ -141,63 +141,6 @@ export default function CotacaoTab({ deal }: Props) {
   const [fipeModeloCod, setFipeModeloCod] = useState("");
   const [fipeAnoCod, setFipeAnoCod] = useState("");
 
-  // Carregar marcas FIPE ao mudar tipo veículo
-  useEffect(() => {
-    fipeMarcas(form.tipoVeiculo).then(setFipeMarcasList).catch(() => {});
-  }, [form.tipoVeiculo]);
-
-  // Carregar modelos ao selecionar marca
-  useEffect(() => {
-    if (!fipeMarcaCod) { setFipeModelosList([]); return; }
-    fipeModelos(form.tipoVeiculo, fipeMarcaCod).then(setFipeModelosList).catch(() => {});
-  }, [fipeMarcaCod, form.tipoVeiculo]);
-
-  // Carregar anos ao selecionar modelo
-  useEffect(() => {
-    if (!fipeMarcaCod || !fipeModeloCod) { setFipeAnosList([]); return; }
-    fipeAnos(form.tipoVeiculo, fipeMarcaCod, String(fipeModeloCod)).then(setFipeAnosList).catch(() => {});
-  }, [fipeModeloCod, fipeMarcaCod, form.tipoVeiculo]);
-
-  // Buscar valor ao selecionar ano
-  useEffect(() => {
-    if (!fipeMarcaCod || !fipeModeloCod || !fipeAnoCod) return;
-    setFipeLoading(true);
-    fipeValor(form.tipoVeiculo, fipeMarcaCod, String(fipeModeloCod), fipeAnoCod).then(data => {
-      if (data.Valor) {
-        const val = parseFloat(data.Valor.replace("R$", "").replace(/\./g, "").replace(",", ".").trim());
-        setValorFipeReal(val);
-        setMarcaReal(data.Marca || "");
-        setModeloReal(data.Modelo || "");
-        setCodFipeReal(data.CodigoFipe || "");
-        setForm(f => ({ ...f, anoFab: String(data.AnoModelo), combustivel: data.Combustivel || "" }));
-        setFipeFetched(true);
-      }
-      setFipeLoading(false);
-    }).catch(() => setFipeLoading(false));
-  }, [fipeAnoCod]);
-
-  // Carregar dados completos da negociação do banco
-  useEffect(() => {
-    if (!deal?.id || deal.id.startsWith("p")) return;
-    (supabase as any).from("negociacoes").select("*").eq("id", deal.id).maybeSingle()
-      .then((res: any) => {
-        const n = res?.data;
-        if (!n) return;
-        setForm(prev => ({
-          ...prev,
-          placa: n.veiculo_placa || prev.placa,
-          chassi: n.chassi || prev.chassi,
-          renavam: n.renavam || prev.renavam,
-          anoFab: n.ano_fabricacao || n.ano_modelo || prev.anoFab,
-          cor: (n.cor && n.cor !== "Selecione a cor") ? n.cor : prev.cor,
-          combustivel: n.combustivel || prev.combustivel,
-          estadoCirc: n.estado_circulacao || prev.estadoCirc,
-          cidadeCirc: n.cidade_circulacao || prev.cidadeCirc,
-        }));
-        if (n.valor_plano && n.valor_plano > 0) setValorFipeReal(n.valor_plano);
-      }).catch(() => {});
-  }, [deal.id]);
-
   // Detectar tipo do veículo
   const detectTipo = () => {
     const m = dealModelo.toLowerCase();
@@ -246,6 +189,35 @@ export default function CotacaoTab({ deal }: Props) {
     necessita_diretor: boolean;
   } | null>(null);
   const [propostaConcorrenteUrl, setPropostaConcorrenteUrl] = useState("");
+
+  // FIPE cascata effects (após form estar definido)
+  useEffect(() => {
+    fipeMarcas(form.tipoVeiculo).then(setFipeMarcasList).catch(() => {});
+  }, [form.tipoVeiculo]);
+  useEffect(() => {
+    if (!fipeMarcaCod) { setFipeModelosList([]); return; }
+    fipeModelos(form.tipoVeiculo, fipeMarcaCod).then(setFipeModelosList).catch(() => {});
+  }, [fipeMarcaCod, form.tipoVeiculo]);
+  useEffect(() => {
+    if (!fipeMarcaCod || !fipeModeloCod) { setFipeAnosList([]); return; }
+    fipeAnos(form.tipoVeiculo, fipeMarcaCod, String(fipeModeloCod)).then(setFipeAnosList).catch(() => {});
+  }, [fipeModeloCod, fipeMarcaCod, form.tipoVeiculo]);
+  useEffect(() => {
+    if (!fipeMarcaCod || !fipeModeloCod || !fipeAnoCod) return;
+    setFipeLoading(true);
+    fipeValor(form.tipoVeiculo, fipeMarcaCod, String(fipeModeloCod), fipeAnoCod).then(data => {
+      if (data?.Valor) {
+        const val = parseFloat(data.Valor.replace("R$", "").replace(/\./g, "").replace(",", ".").trim());
+        setValorFipeReal(val);
+        setMarcaReal(data.Marca || "");
+        setModeloReal(data.Modelo || "");
+        setCodFipeReal(data.CodigoFipe || "");
+        setForm(f => ({ ...f, anoFab: String(data.AnoModelo), combustivel: data.Combustivel || "" }));
+        setFipeFetched(true);
+      }
+      setFipeLoading(false);
+    }).catch(() => setFipeLoading(false));
+  }, [fipeAnoCod]);
 
   // Cidades dinâmicas do banco
   const [cidades, setCidades] = useState<string[]>([]);
