@@ -112,16 +112,16 @@ export default function VistoriaTab({ deal }: Props) {
     "banco_dianteiro","banco_traseiro","motor_capo","porta_malas","rodas_pneus",
     "chave","chassi","quilometragem"
   ]);
-  // Detectar tipo de veículo pelo modelo
-  const detectarTipo = (): string => {
+  // Detectar tipo de veículo pelo modelo (reativo ao deal)
+  const categoriaVistoria = React.useMemo(() => {
     const modelo = (deal.veiculo_modelo || "").toLowerCase();
-    const motos = ["cg", "cb", "xre", "pcx", "nmax", "factor", "fazer", "twister", "titan", "fan", "biz", "pop", "bros", "lander", "crosser", "tenere", "mt-", "yzf", "ninja", "z900", "duke", "bmw gs", "harley", "indian", "honda moto", "yamaha moto", "suzuki moto", "motocicleta", "moto"];
-    const caminhoes = ["caminhao", "caminhão", "truck", "trator", "carreta", "scania", "volvo fh", "mercedes actros", "iveco", "man tgx", "daf", "vuc", "3/4", "toco", "bi-truck", "micro-onibus", "micro onibus"];
-    if (motos.some(m => modelo.includes(m))) return "moto";
-    if (caminhoes.some(c => modelo.includes(c))) return "caminhao";
+    const plano = ((deal as any).plano || "").toLowerCase();
+    const motos = ["cg ", "cb ", "xre", "pcx", "nmax", "factor", "fazer", "twister", "titan", "fan ", "biz", "pop ", "bros", "lander", "crosser", "tenere", "mt-", "yzf", "ninja", "z900", "duke", "bmw gs", "harley", "indian", "motocicleta", "moto"];
+    const caminhoes = ["caminhao", "caminhão", "truck", "trator", "carreta", "scania", "volvo fh", "volvo fm", "mercedes actros", "mercedes atego", "mercedes axor", "iveco", "man tgx", "man tgs", "daf", "vuc", "3/4", "toco", "bi-truck", "micro-onibus", "micro onibus", "sprinter", "daily", "accelo", "constellation", "worker", "cargo", "volkswagen worker", "ford cargo", "pesado", "pesados"];
+    if (motos.some(m => modelo.includes(m)) || plano.includes("moto")) return "moto";
+    if (caminhoes.some(c => modelo.includes(c)) || plano.includes("pesado") || plano.includes("van")) return "caminhao";
     return "automovel";
-  };
-  const [categoriaVistoria] = useState<string>(detectarTipo());
+  }, [deal.veiculo_modelo, (deal as any).plano]);
 
   const handleAprovar = async () => {
     if (vistoriaId) {
