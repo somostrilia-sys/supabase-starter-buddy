@@ -406,8 +406,19 @@ export default function ConsultorLanding() {
           <CheckCircle className="w-16 h-16 text-[#2ecc71] mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-white mb-2">Cotacao recebida!</h2>
           <p className="text-white/80">
-            Em breve {consultor.nome} entrara em contato pelo WhatsApp.
+            Em breve {consultor.nome} entrará em contato{whatsappClean ? " pelo WhatsApp" : ""}.
           </p>
+          {whatsappClean && (
+            <a
+              href={`https://wa.me/${whatsappClean.length <= 11 ? "55" : ""}${whatsappClean}?text=${encodeURIComponent(`Olá ${consultor.nome}, acabei de fazer uma cotação pelo seu link!`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-[#2ecc71] hover:bg-[#27ae60] text-white font-semibold text-sm px-6 py-3 rounded-full transition-colors shadow-lg mt-4"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Falar no WhatsApp agora
+            </a>
+          )}
         </div>
       ) : (
         <>
