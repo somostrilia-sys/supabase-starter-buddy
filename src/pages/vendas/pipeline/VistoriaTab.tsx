@@ -437,19 +437,37 @@ export default function VistoriaTab({ deal }: Props) {
                   />
                 )}
                 <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={async () => {
+                  // Buscar fotos reais do banco
+                  const { data: fotosReais } = await (supabase as any).from("vistoria_fotos").select("*").eq("vistoria_id", vistoriaId).order("created_at");
+                  const fotosLaudo = (fotosReais || []).map((f: any) => {
+                    const { data: urlData } = supabase.storage.from("vistoria-fotos").getPublicUrl(f.storage_path);
+                    return {
+                      titulo: (f.tipo || "").replace(/_/g, " "),
+                      url: urlData.publicUrl,
+                      lat: f.latitude || "",
+                      lng: f.longitude || "",
+                      data: f.captured_at ? new Date(f.captured_at).toLocaleString("pt-BR") : new Date(f.created_at).toLocaleString("pt-BR"),
+                    };
+                  });
+
+                  // Buscar dados atualizados do banco
+                  const { data: negAtual } = await (supabase as any).from("negociacoes").select("*").eq("id", deal.id).maybeSingle();
+                  const d = negAtual || deal;
+
                   await gerarLaudoVistoria({
                     dataImpressao: new Date().toLocaleString("pt-BR"),
                     contratante: "OBJETIVO AUTO BENEFÍCIOS",
-                    configuracao: categoriaVistoria === "automovel" ? "Carro" : categoriaVistoria === "motocicleta" ? "Moto" : "Caminhão",
-                    solicitante: deal.cooperativa || "Objetivo Auto Benefícios",
-                    vistoriador: deal.consultor || "Sistema",
-                    proponente: { nome: deal.lead_nome, cpf: deal.cpf_cnpj || "", telefone: deal.telefone || "", email: deal.email || "" },
+                    logoUrl: "https://objetivoauto.com.br/wp-content/uploads/2025/11/IMG_1299.png",
+                    configuracao: categoriaVistoria === "automovel" ? "Carro" : categoriaVistoria === "moto" ? "Moto" : "Caminhão",
+                    solicitante: d.cooperativa || deal.cooperativa || "Objetivo Auto Benefícios",
+                    vistoriador: d.consultor || deal.consultor || "Sistema",
+                    proponente: { nome: d.lead_nome || deal.lead_nome, cpf: d.cpf_cnpj || "", telefone: d.telefone || "", email: d.email || "" },
                     veiculo: {
-                      marcaModelo: deal.veiculo_modelo,
-                      anoModelo: "",
-                      placa: deal.veiculo_placa,
-                      chassi: "",
-                      renavam: "",
+                      marcaModelo: d.veiculo_modelo || deal.veiculo_modelo,
+                      anoModelo: d.ano_modelo || d.ano_fabricacao || "",
+                      placa: d.veiculo_placa || deal.veiculo_placa,
+                      chassi: d.chassi || "",
+                      renavam: d.renavam || "",
                       gnv: "Não",
                       quilometragem: "",
                       chassiRemarcado: "Não",
@@ -459,8 +477,8 @@ export default function VistoriaTab({ deal }: Props) {
                     parecer: status === "aprovada" ? "Aprovado" : status === "reprovada" ? "Reprovado" : "Pendente",
                     avaliador: "Sistema IA",
                     dataAnalise: new Date().toLocaleString("pt-BR"),
-                    fotos: selectedFotos.map(f => ({ titulo: f.replace(/_/g, " "), url: "", lat: "", lng: "", data: new Date().toLocaleString("pt-BR") })),
-                  });
+                    fotos: fotosLaudo.length > 0 ? fotosLaudo : selectedFotos.map(f => ({ titulo: f.replace(/_/g, " "), url: "", lat: "", lng: "", data: "" })),
+                  } as any);
                   toast.success("Laudo de vistoria baixado!");
                 }}>
                   <Download className="h-3.5 w-3.5 mr-1" />Laudo PDF

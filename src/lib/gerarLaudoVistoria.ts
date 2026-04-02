@@ -21,6 +21,7 @@ interface DadosLaudo {
   dataAnalise: string;
   fotos: { titulo: string; url: string; lat: string; lng: string; data: string }[];
   corPrimaria?: string;
+  logoUrl?: string;
 }
 
 const AZUL_HEADER: [number, number, number] = [33, 150, 243]; // #2196F3
@@ -80,12 +81,22 @@ export async function gerarLaudoVistoria(dados: DadosLaudo) {
 
   // ===================== PAGE 1 TOP: HEADER =====================
   // Logo top-left
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bolditalic");
-  doc.setTextColor(33, 150, 243);
-  doc.text("OBJETIVO", 14, 14);
-  doc.setFontSize(6);
-  doc.text("AUTO BENEFÍCIOS", 14, 18);
+  if (dados.logoUrl) {
+    try {
+      const logoData = await loadImage(dados.logoUrl);
+      if (logoData) {
+        doc.addImage(logoData, "PNG", 14, 8, 40, 15);
+      }
+    } catch { /* fallback text below */ }
+  }
+  if (!dados.logoUrl) {
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bolditalic");
+    doc.setTextColor(33, 150, 243);
+    doc.text("OBJETIVO", 14, 14);
+    doc.setFontSize(6);
+    doc.text("AUTO BENEFÍCIOS", 14, 18);
+  }
 
   // Title center
   doc.setFontSize(20);
