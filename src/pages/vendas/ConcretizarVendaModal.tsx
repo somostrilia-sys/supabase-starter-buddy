@@ -217,6 +217,25 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
         dados_novos: { associado_id: assoc.id, veiculo_id: veic.id, numero },
       } as any);
 
+      // 8. Registrar no SGA
+      try {
+        const sgaUrl = `${import.meta.env.VITE_SUPABASE_URL || "https://dxuoppekxgvdqnytftho.supabase.co"}/functions/v1/gia-sga-cadastrar`;
+        const sgaRes = await fetch(sgaUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || ""}`,
+          },
+          body: JSON.stringify({ associado_id: assoc.id, veiculo_id: veic.id }),
+        });
+        const sgaData = await sgaRes.json();
+        if (sgaData?.codigo_sga) {
+          await supabase.from("associados").update({ codigo_sga: sgaData.codigo_sga } as any).eq("id", assoc.id);
+        }
+      } catch (_sgaErr) {
+        // SGA falhou — retry pelo cron
+      }
+
       // Atualizar negociação
       if (leadId && !leadId.startsWith("p")) {
         await supabase.from("negociacoes").update({

@@ -149,7 +149,19 @@ export default function VistoriaPublica() {
         fotos_enviadas: Array.from(fotos.entries()).map(([catId, f]) => ({
           categoria: catId, timestamp: f.timestamp, lat: f.lat, lng: f.lng,
         })),
+        geolocalizacao: coords ? { lat: coords.lat, lng: coords.lng, timestamp: new Date().toISOString() } : null,
       } as any).eq("id", vistoria.id);
+
+      // Se é revistoria, disparar webhook para atualizar cadastro automaticamente
+      if (vistoria.tipo === "revistoria") {
+        try {
+          await fetch(`${import.meta.env.VITE_SUPABASE_URL || "https://dxuoppekxgvdqnytftho.supabase.co"}/functions/v1/gia-revistoria-webhook`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "" },
+            body: JSON.stringify({ vistoria_id: vistoria.id }),
+          });
+        } catch (_) { /* webhook best-effort */ }
+      }
       setConcluido(true);
     } catch (err) {
       console.error(err);
@@ -183,7 +195,11 @@ export default function VistoriaPublica() {
       <div className="bg-white rounded-xl p-8 text-center max-w-md">
         <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-3" />
         <h2 className="text-xl font-bold text-[#1A3A5C] mb-2">Fotos enviadas com sucesso!</h2>
-        <p className="text-sm text-gray-600">Sua vistoria será analisada em breve. Você receberá uma notificação com o resultado.</p>
+        {vistoria?.tipo === "revistoria" ? (
+          <p className="text-sm text-gray-600">Sua revistoria será analisada em breve. Após aprovação, seu cadastro será atualizado automaticamente e sua proteção reativada.</p>
+        ) : (
+          <p className="text-sm text-gray-600">Sua vistoria será analisada em breve. Você receberá uma notificação com o resultado.</p>
+        )}
       </div>
     </div>
   );
