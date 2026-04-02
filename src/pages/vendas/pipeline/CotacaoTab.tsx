@@ -176,6 +176,28 @@ export default function CotacaoTab({ deal }: Props) {
     }).catch(() => setFipeLoading(false));
   }, [fipeAnoCod]);
 
+  // Carregar dados completos da negociação do banco
+  useEffect(() => {
+    if (!deal.id || deal.id.startsWith("p")) return;
+    (supabase as any).from("negociacoes").select("*").eq("id", deal.id).single()
+      .then(({ data }: any) => {
+        if (!data) return;
+        const n = data;
+        setForm(prev => ({
+          ...prev,
+          placa: n.veiculo_placa || prev.placa,
+          chassi: n.chassi || prev.chassi,
+          renavam: n.renavam || prev.renavam,
+          anoFab: n.ano_fabricacao || n.ano_modelo || prev.anoFab,
+          cor: (n.cor && n.cor !== "Selecione a cor") ? n.cor : prev.cor,
+          combustivel: n.combustivel || prev.combustivel,
+          estadoCirc: n.estado_circulacao || prev.estadoCirc,
+          cidadeCirc: n.cidade_circulacao || prev.cidadeCirc,
+        }));
+        if (n.valor_plano && n.valor_plano > 0) setValorFipeReal(n.valor_plano);
+      });
+  }, [deal.id]);
+
   // Detectar tipo do veículo
   const detectTipo = () => {
     const m = dealModelo.toLowerCase();
@@ -187,20 +209,21 @@ export default function CotacaoTab({ deal }: Props) {
     return "Automóvel";
   };
 
+  const d = deal as any;
   const [form, setForm] = useState({
     tipoVeiculo: detectTipo(),
-    placa: deal.veiculo_placa || "",
-    chassi: (deal as any).chassi || "",
-    renavam: "",
-    anoFab: "",
-    cor: "",
+    placa: d.veiculo_placa || "",
+    chassi: d.chassi || "",
+    renavam: d.renavam || "",
+    anoFab: d.ano_fabricacao || d.ano_modelo || "",
+    cor: (d.cor && d.cor !== "Selecione a cor") ? d.cor : "",
     cambio: "",
-    combustivel: "",
+    combustivel: d.combustivel || "",
     quilometragem: "",
     numMotor: "",
-    estadoCirc: deal.estado_circulacao || "",
-    cidadeCirc: deal.cidade_circulacao || "",
-    diaVencimento: (() => { const d = new Date().getDate(); if (d >= 26 || d <= 5) return "1"; if (d >= 6 && d <= 15) return "10"; return "20"; })(),
+    estadoCirc: d.estado_circulacao || "",
+    cidadeCirc: d.cidade_circulacao || "",
+    diaVencimento: d.dia_vencimento ? String(d.dia_vencimento) : (() => { const dt = new Date().getDate(); if (dt >= 26 || dt <= 5) return "1"; if (dt >= 6 && dt <= 15) return "10"; return "20"; })(),
     veiculoTrabalho: false,
     taxi: false,
     chassiRemarcado: false,
