@@ -15,49 +15,14 @@ import { gerarPdfCotacao } from "@/lib/gerarPdfCotacao";
 import { MessageSquare, Mail, Link2, CreditCard, CheckCircle, Shield, ShieldCheck, ShieldPlus, Search, Loader2, Car, AlertTriangle, BrainCircuit } from "lucide-react";
 import ExcecaoButton from "@/components/ExcecaoButton";
 
-/* ─── FIPE mock data ─── */
-const marcas = ["Chevrolet", "Hyundai", "Honda", "Toyota", "Volkswagen", "Fiat", "Jeep", "Nissan", "Renault", "Ford"];
-
-const modelosPorMarca: Record<string, { modelo: string; codFipe: string; valorFipe: number }[]> = {
-  Chevrolet: [
-    { modelo: "Onix Plus 1.0 Turbo", codFipe: "015267-0", valorFipe: 95000 },
-    { modelo: "Tracker Premier 1.2T", codFipe: "015312-9", valorFipe: 142000 },
-    { modelo: "S10 High Country 2.8", codFipe: "015401-0", valorFipe: 265000 },
-  ],
-  Hyundai: [
-    { modelo: "HB20 1.0 Comfort", codFipe: "037101-4", valorFipe: 82000 },
-    { modelo: "Creta Ultimate 2.0", codFipe: "037205-3", valorFipe: 158000 },
-  ],
-  Honda: [
-    { modelo: "Civic EXL 2.0", codFipe: "021176-0", valorFipe: 135000 },
-    { modelo: "HR-V EXL", codFipe: "021190-6", valorFipe: 155000 },
-  ],
-  Toyota: [
-    { modelo: "Corolla XEi 2.0", codFipe: "059210-1", valorFipe: 148000 },
-    { modelo: "Corolla Cross XRE", codFipe: "059222-5", valorFipe: 170000 },
-  ],
-  Volkswagen: [
-    { modelo: "Polo Highline 1.0 TSI", codFipe: "005580-2", valorFipe: 98000 },
-    { modelo: "T-Cross Highline 1.4 TSI", codFipe: "005612-4", valorFipe: 145000 },
-  ],
-  Fiat: [
-    { modelo: "Argo Drive 1.3", codFipe: "001423-8", valorFipe: 78000 },
-    { modelo: "Pulse Impetus 1.0T", codFipe: "001440-8", valorFipe: 105000 },
-  ],
-  Jeep: [
-    { modelo: "Compass Limited T270", codFipe: "064112-3", valorFipe: 185000 },
-    { modelo: "Renegade Sport 1.3T", codFipe: "064095-0", valorFipe: 120000 },
-  ],
-  Nissan: [
-    { modelo: "Kicks Advance", codFipe: "050030-2", valorFipe: 115000 },
-  ],
-  Renault: [
-    { modelo: "Kwid Outsider 1.0", codFipe: "044015-9", valorFipe: 68000 },
-  ],
-  Ford: [
-    { modelo: "Ranger Limited 3.0 V6", codFipe: "015780-0", valorFipe: 310000 },
-  ],
-};
+/* Marcas comuns para seleção manual */
+const marcas = [
+  "Chevrolet", "Fiat", "Ford", "Honda", "Hyundai", "Jeep", "Nissan", "Renault", "Toyota", "Volkswagen",
+  "BMW", "Mercedes-Benz", "Audi", "Mitsubishi", "Kia", "Peugeot", "Citroën", "Land Rover", "Volvo",
+  "Yamaha", "Suzuki", "Kawasaki", "Triumph", "Harley-Davidson", "Royal Enfield",
+  "Scania", "Iveco", "MAN", "DAF", "Agrale",
+];
+const modelosPorMarca: Record<string, { modelo: string; codFipe: string; valorFipe: number }[]> = {};
 
 /* ─── Mock plate → vehicle mapping for FIPE auto-lookup ─── */
 const placaVeiculoMap: Record<string, { marca: string; modeloIdx: number; ano: string; cor: string; combustivel: string; chassi: string }> = {
