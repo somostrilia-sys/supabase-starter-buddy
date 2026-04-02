@@ -48,30 +48,33 @@ export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      let q = (supabase as any)
-        .from("negociacoes")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const PAGE_SIZE = 1000;
+      const MAX_PAGES = periodo === "todos" ? 10 : 5;
+      let allData: any[] = [];
 
-      // Filtro por período
       const dias = PERIODO_DIAS[periodo];
-      if (dias > 0) {
-        const dataLimite = new Date();
-        dataLimite.setDate(dataLimite.getDate() - dias);
-        q = q.gte("created_at", dataLimite.toISOString());
+      const dataLimite = dias > 0 ? new Date(Date.now() - dias * 86400000).toISOString() : null;
+
+      for (let page = 0; page < MAX_PAGES; page++) {
+        let q = (supabase as any)
+          .from("negociacoes")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+        if (dataLimite) q = q.gte("created_at", dataLimite);
+        if (companyId) q = q.eq("company_id", companyId);
+
+        const { data, error } = await q;
+        if (error) { console.error("[useNegociacoes] Erro:", error.message); break; }
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data);
+        if (data.length < PAGE_SIZE) break; // última página
       }
 
-      if (companyId) q = q.eq("company_id", companyId);
-
-      q = q.limit(periodo === "todos" ? 10000 : 5000);
-
-      const { data, error } = await q;
-      if (error) {
-        console.error("[useNegociacoes] Erro:", error.message);
-      }
-      console.log("[useNegociacoes] Dados:", data?.length || 0, "periodo:", periodo);
-      setNegociacoes((data as Negociacao[]) || []);
-      setTotalCount(data?.length || 0);
+      console.log("[useNegociacoes]", allData.length, "negociações carregadas, periodo:", periodo);
+      setNegociacoes(allData as Negociacao[]);
+      setTotalCount(allData.length);
     } catch (err) {
       console.error("[useNegociacoes] Exception:", err);
     }

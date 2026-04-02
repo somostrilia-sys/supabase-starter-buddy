@@ -537,15 +537,17 @@ export default function Pipeline() {
                 <SelectContent><SelectItem value="created_at">Data Criação</SelectItem><SelectItem value="updated_at">Última Movimentação</SelectItem></SelectContent>
               </Select>
             </div>
-            <div className="flex items-end gap-2 flex-wrap">
-              <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-[10px] h-7" onClick={() => { const t = new Date().toISOString().split("T")[0]; setFDateStart(t); setFDateEnd(t); }}>Hoje</Button>
-              <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-[10px] h-7" onClick={() => { const d = new Date(); const s = new Date(d); s.setDate(d.getDate() - d.getDay()); setFDateStart(s.toISOString().split("T")[0]); setFDateEnd(d.toISOString().split("T")[0]); }}>Semana</Button>
-              <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-[10px] h-7" onClick={() => { const d = new Date(); setFDateStart(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-01`); setFDateEnd(d.toISOString().split("T")[0]); }}>Mês</Button>
-              <Button size="sm" className="bg-white/20 text-white hover:bg-white/30 font-semibold" onClick={() => reloadNegociacoes()}>
-                <Search className="h-3 w-3 mr-1" />Buscar
-              </Button>
-              <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={clearFilters}><X className="h-3 w-3 mr-1" />Limpar</Button>
-            </div>
+          </div>
+          {/* Botões de ação - sempre visíveis */}
+          <div className="flex items-center gap-2 pt-2 border-t border-white/10 mt-2">
+            <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-xs h-8" onClick={() => { const t = new Date().toISOString().split("T")[0]; setFDateStart(t); setFDateEnd(t); }}>Hoje</Button>
+            <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-xs h-8" onClick={() => { const d = new Date(); const s = new Date(d); s.setDate(d.getDate() - d.getDay()); setFDateStart(s.toISOString().split("T")[0]); setFDateEnd(d.toISOString().split("T")[0]); }}>Semana</Button>
+            <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-xs h-8" onClick={() => { const d = new Date(); setFDateStart(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-01`); setFDateEnd(d.toISOString().split("T")[0]); }}>Mês</Button>
+            <div className="flex-1" />
+            <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white font-bold text-xs h-8 px-6" onClick={() => reloadNegociacoes()}>
+              <Search className="h-3.5 w-3.5 mr-1.5" />Filtrar
+            </Button>
+            <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-xs h-8" onClick={clearFilters}><X className="h-3.5 w-3.5 mr-1" />Limpar</Button>
           </div>
         </CardContent>
       </Card>
@@ -588,8 +590,8 @@ export default function Pipeline() {
                             {/* Header: nome + código + menu */}
                             <div className="flex items-start justify-between">
                               <div className="min-w-0 flex-1">
-                                <p className="text-[13px] font-semibold leading-tight text-foreground truncate">{deal.lead_nome}</p>
-                                <span className="text-[9px] font-mono text-muted-foreground/50">{deal.codigo}</span>
+                                <p className="text-[13px] font-semibold leading-tight text-black dark:text-white truncate">{deal.lead_nome}</p>
+                                <span className="text-[9px] font-mono text-black/40 dark:text-white/40">{deal.codigo}</span>
                               </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -617,15 +619,15 @@ export default function Pipeline() {
                             {/* Veículo + Placa */}
                             <div className="flex items-center gap-1.5">
                               <Car className="h-3 w-3 shrink-0 text-muted-foreground/60" />
-                              <span className="text-[11px] font-medium text-foreground/70 truncate flex-1">{deal.veiculo_modelo}</span>
-                              {deal.veiculo_placa && <span className="text-[9px] font-mono font-bold bg-muted text-foreground/70 px-1.5 py-0 rounded">{deal.veiculo_placa}</span>}
+                              <span className="text-[11px] font-medium text-black/70 dark:text-white/70 truncate flex-1">{deal.veiculo_modelo}</span>
+                              {deal.veiculo_placa && <span className="text-[9px] font-mono font-bold bg-muted text-black/80 dark:text-white/80 px-1.5 py-0 rounded">{deal.veiculo_placa}</span>}
                             </div>
 
                             {/* Plano + Valor */}
                             {(deal.plano || deal.valor_plano > 0) && (
                               <div className="flex items-center justify-between">
                                 {deal.plano && <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded">{deal.plano}</span>}
-                                {deal.valor_plano > 0 && <span className="text-[11px] font-bold text-foreground">R$ {deal.valor_plano.toFixed(0)}</span>}
+                                {deal.valor_plano > 0 && <span className="text-[11px] font-bold text-black dark:text-white">R$ {deal.valor_plano.toFixed(0)}</span>}
                               </div>
                             )}
 
@@ -643,7 +645,7 @@ export default function Pipeline() {
 
                             {/* Data + Stalled */}
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] text-muted-foreground/60">{new Date(deal.created_at).toLocaleDateString("pt-BR")}</span>
+                              <span className="text-[10px] text-black/50 dark:text-white/50">{new Date(deal.created_at).toLocaleDateString("pt-BR")}</span>
                               <StalledBadge days={days} />
                             </div>
 
@@ -652,7 +654,7 @@ export default function Pipeline() {
                               <div className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
                                 <span className="text-[9px] font-bold text-primary">{deal.consultor?.charAt(0) || "?"}</span>
                               </div>
-                              <span className="text-[10px] font-medium text-muted-foreground truncate">{deal.consultor}</span>
+                              <span className="text-[10px] font-medium text-black/60 dark:text-white/60 truncate">{deal.consultor}</span>
                             </div>
                           </div>
                         </div>
