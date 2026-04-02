@@ -22,7 +22,7 @@ import { supabase, callEdge } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   FileText, User, Car, ClipboardCheck, Activity, PenTool, Wallet,
-  Mail, MessageSquare, Plus, Send, Image, Archive, Paperclip,
+  Mail, MessageSquare, Plus, Send, Image, Archive, Paperclip, CheckCircle,
 } from "lucide-react";
 
 interface Props {
@@ -163,6 +163,12 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
             </Button>
           </DialogTitle>
         </DialogHeader>
+
+        {deal.stage === "concluido" && (
+          <div className="px-6 py-2 bg-green-600 text-white text-center text-sm font-semibold flex items-center justify-center gap-2">
+            <CheckCircle className="h-4 w-4" /> Negociação concluída — dados migrados para o módulo Gestão. Edição bloqueada.
+          </div>
+        )}
 
         {showArquivar && (
           <div className="px-6 py-3 bg-destructive/10 border-b flex items-center gap-3">

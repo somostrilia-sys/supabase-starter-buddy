@@ -232,6 +232,11 @@ export default function Pipeline() {
   const updateLeadStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       if (id.startsWith("p")) return;
+      // Bloquear mudança de stage em negociações concluídas
+      const deal = dealsToShow.find(d => d.id === id);
+      if (deal?.stage === "concluido") {
+        throw new Error("Negociação concluída não pode ser alterada.");
+      }
       const { error } = await supabase.from("negociacoes").update({ stage: status } as any).eq("id", id);
       if (error) throw error;
     },
@@ -601,10 +606,10 @@ export default function Pipeline() {
                       return (
                         <div
                           key={deal.id}
-                          draggable
-                          onDragStart={e => handleDragStart(e, deal.id)}
+                          draggable={deal.stage !== "concluido" && deal.stage !== "perdido"}
+                          onDragStart={e => { if (deal.stage === "concluido" || deal.stage === "perdido") { e.preventDefault(); return; } handleDragStart(e, deal.id); }}
                           onClick={() => setDetailDeal(deal)}
-                          className={`kanban-card group bg-card border-2 border-[#747474] border-l-4 rounded-lg cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""}`}
+                          className={`kanban-card group bg-card border-2 border-[#747474] border-l-4 rounded-lg cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""} ${deal.stage === "concluido" ? "opacity-75" : ""}`}
                           style={{ borderLeftColor: col.color }}
                         >
                           <div className="p-3 space-y-1.5">
