@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import DocumentosVendaTab from "@/components/DocumentosVendaTab";
 import {
   Search, User, Car, DollarSign, FileText, Clock, AlertTriangle,
   Eye, Pencil, History, ArrowLeft, Save, Upload, Trash2, Plus,
@@ -113,7 +114,7 @@ export default function AlterarAssociado() {
     try {
       let query = supabase
         .from("associados")
-        .select("*, veiculos(*), contratos(*, planos(*)), regionais(id, nome), cooperativas(id, nome)")
+        .select("*, negociacao_origem_id, veiculos(*), contratos(*, planos(*)), regionais(id, nome), cooperativas(id, nome)")
         .order("nome")
         .limit(50);
 
@@ -419,6 +420,7 @@ export default function AlterarAssociado() {
           <TabsTrigger value="documentos" className="gap-1 text-xs"><FileText className="h-3.5 w-3.5" />Documentos</TabsTrigger>
           <TabsTrigger value="historico" className="gap-1 text-xs"><Clock className="h-3.5 w-3.5" />Histórico</TabsTrigger>
           <TabsTrigger value="ocorrencias" className="gap-1 text-xs"><AlertTriangle className="h-3.5 w-3.5" />Ocorrências</TabsTrigger>
+          <TabsTrigger value="venda" className="gap-1 text-xs"><Eye className="h-3.5 w-3.5" />Processo de Venda</TabsTrigger>
         </TabsList>
 
         {/* TAB 1 - DADOS PESSOAIS */}
@@ -828,6 +830,19 @@ export default function AlterarAssociado() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+        </TabsContent>
+
+        {/* Aba Processo de Venda — docs da negociação de origem */}
+        <TabsContent value="venda" className="mt-4">
+          {(selected as any).negociacao_origem_id ? (
+            <DocumentosVendaTab negociacaoId={(selected as any).negociacao_origem_id} />
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <FileText className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">Associado sem negociação de origem vinculada.</p>
+              <p className="text-xs mt-1">Associados cadastrados manualmente ou migrados do sistema antigo não possuem documentos de venda.</p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
