@@ -571,7 +571,9 @@ export default function Pipeline() {
         <div className="relative w-full max-w-full">
           <div className="flex gap-3 overflow-x-scroll overflow-y-hidden pb-5 scrollbar-thin" style={{ height: "calc(100vh - 280px)" }}>
           {stageColumns.filter(col => col.key !== "perdido").map(col => {
-            const colDeals = filtered.filter(d => d.stage === col.key);
+            const allColDeals = filtered.filter(d => d.stage === col.key);
+            const colDeals = allColDeals.slice(0, 50);
+            const hasMore = allColDeals.length > 50;
             const isOver = dragOverStage === col.key;
             return (
               <div
@@ -584,7 +586,7 @@ export default function Pipeline() {
                 <div className="px-0 pt-0 pb-2">
                   <div className="flex items-center justify-between rounded-t-xl px-4 py-2.5" style={{ backgroundColor: col.color }}>
                     <span className="text-sm font-bold text-white tracking-wide">{col.label}</span>
-                    <Badge className="text-[10px] h-5 px-1.5 bg-white/20 text-white border-white/30">{colDeals.length}</Badge>
+                    <Badge className="text-[10px] h-5 px-1.5 bg-white/20 text-white border-white/30">{allColDeals.length}</Badge>
                   </div>
                 </div>
                 <ScrollArea className="flex-1 px-2 pb-2" style={{ maxHeight: "calc(100vh - 300px)" }}>
@@ -610,23 +612,11 @@ export default function Pipeline() {
                               </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}><MoreVertical className="h-3.5 w-3.5" /></Button>
+                                  <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 shrink-0" onClick={e => e.stopPropagation()}><MoreVertical className="h-3 w-3" /></Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => setDetailDeal(deal)}><Eye className="h-3.5 w-3.5 mr-2" />Ver Detalhes</DropdownMenuItem>
-                                  <DropdownMenuItem><ArrowRight className="h-3.5 w-3.5 mr-2" />Mover Etapa</DropdownMenuItem>
-                                  <DropdownMenuItem><User className="h-3.5 w-3.5 mr-2" />Transferir Consultor</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setDetailDeal(deal)}><Eye className="h-3.5 w-3.5 mr-2" />Detalhes</DropdownMenuItem>
                                   <DropdownMenuItem><Archive className="h-3.5 w-3.5 mr-2" />Arquivar</DropdownMenuItem>
-                                  {canLiberarCadastro && deal.stage !== "liberado_cadastro" && deal.stage !== "concluido" && deal.stage !== "perdido" && (
-                                    <DropdownMenuItem onClick={e => { e.stopPropagation(); handleLiberarCadastro(deal); }}>
-                                      <CheckCircle className="h-3.5 w-3.5 mr-2 text-success" />Liberar p/ Cadastro
-                                    </DropdownMenuItem>
-                                  )}
-                                  {canConcretizarVenda && (deal.stage === "liberado_cadastro" || deal.stage === "concluido") && (
-                                    <DropdownMenuItem onClick={e => { e.stopPropagation(); setConcretizarDeal(deal); }}>
-                                      <DollarSign className="h-3.5 w-3.5 mr-2 text-success" />Concretizar Venda
-                                    </DropdownMenuItem>
-                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>
@@ -646,17 +636,15 @@ export default function Pipeline() {
                               </div>
                             )}
 
-                            {/* Status icons row */}
-                            <TooltipProvider delayDuration={200}>
-                              <div className="flex items-center gap-1 pt-0.5">
-                                <Tooltip><TooltipTrigger><CheckCircle className={`h-3.5 w-3.5 ${si.aceita ? "text-success" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Aceita</TooltipContent></Tooltip>
-                                <Tooltip><TooltipTrigger><AlertCircle className={`h-3.5 w-3.5 ${si.pendente ? "text-amber-500" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Pendente</TooltipContent></Tooltip>
-                                <Tooltip><TooltipTrigger><Shield className={`h-3.5 w-3.5 ${si.aprovada ? "text-blue-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Aprovada</TooltipContent></Tooltip>
-                                <Tooltip><TooltipTrigger><Send className={`h-3.5 w-3.5 ${si.sga ? "text-success" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Gestão</TooltipContent></Tooltip>
-                                <Tooltip><TooltipTrigger><Radio className={`h-3.5 w-3.5 ${si.rastreador ? "text-blue-600" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Rastreador</TooltipContent></Tooltip>
-                                <Tooltip><TooltipTrigger><AlertTriangle className={`h-3.5 w-3.5 ${si.inadimplencia ? "text-destructive" : "text-muted-foreground/25"}`} /></TooltipTrigger><TooltipContent className="text-[10px]">Inadimplência</TooltipContent></Tooltip>
-                              </div>
-                            </TooltipProvider>
+                            {/* Status icons */}
+                            <div className="flex items-center gap-1 pt-0.5">
+                              <CheckCircle className={`h-3 w-3 ${si.aceita ? "text-success" : "text-muted-foreground/20"}`} />
+                              <AlertCircle className={`h-3 w-3 ${si.pendente ? "text-amber-500" : "text-muted-foreground/20"}`} />
+                              <Shield className={`h-3 w-3 ${si.aprovada ? "text-blue-600" : "text-muted-foreground/20"}`} />
+                              <Send className={`h-3 w-3 ${si.sga ? "text-success" : "text-muted-foreground/20"}`} />
+                              <Radio className={`h-3 w-3 ${si.rastreador ? "text-blue-600" : "text-muted-foreground/20"}`} />
+                              <AlertTriangle className={`h-3 w-3 ${si.inadimplencia ? "text-destructive" : "text-muted-foreground/20"}`} />
+                            </div>
 
                             {/* Data + Stalled */}
                             <div className="flex items-center justify-between">
@@ -675,7 +663,14 @@ export default function Pipeline() {
                         </div>
                       );
                     })}
-                    {colDeals.length === 0 && (
+                    {hasMore && (
+                      <div className="text-center py-2">
+                        <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => setViewMode("list")}>
+                          +{allColDeals.length - 50} mais — ver em lista
+                        </Button>
+                      </div>
+                    )}
+                    {allColDeals.length === 0 && (
                       <div className="flex flex-col items-center justify-center h-20 gap-1 select-none">
                         <div className="w-8 h-1 rounded-full bg-border/50" />
                       </div>
