@@ -114,7 +114,7 @@ export default function Pipeline() {
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
 
   // Hook de negociações (Supabase real)
-  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "30d");
+  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "todos");
 
   // Dados reais de cooperativas com regional vinculada
   const { data: cooperativasDb } = useQuery({
@@ -546,11 +546,6 @@ export default function Pipeline() {
           </div>
         </CardContent>
       </Card>
-
-      {/* DEBUG - remover depois */}
-      {negociacoesLoading && <div className="bg-yellow-100 text-yellow-800 p-2 text-xs rounded">Carregando negociações...</div>}
-      {!negociacoesLoading && negociacoes.length === 0 && <div className="bg-red-100 text-red-800 p-2 text-xs rounded">Hook retornou 0 negociações. Periodo: {periodo}. Verifique console (F12).</div>}
-      {!negociacoesLoading && negociacoes.length > 0 && <div className="bg-green-100 text-green-800 p-2 text-xs rounded">{negociacoes.length} negociações carregadas. Filtradas: {filtered.length}</div>}
 
       {/* KANBAN VIEW */}
       {viewMode === "kanban" ? (

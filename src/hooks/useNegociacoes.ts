@@ -63,7 +63,7 @@ export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro 
 
       if (companyId) q = q.eq("company_id", companyId);
 
-      q = q.limit(periodo === "todos" ? 5000 : 2000);
+      q = q.limit(periodo === "todos" ? 10000 : 2000);
 
       const { data, error } = await q;
       if (error) {
