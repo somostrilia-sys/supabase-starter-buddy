@@ -1,16 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import {
   Users, FileText, Handshake, DollarSign, TrendingUp, Trophy, ArrowRightLeft,
+  BarChart3, Target,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -64,7 +64,11 @@ export default function DashboardVendas() {
     },
   });
 
-  // Negociações com filtros (paginado pra superar limite 1000)
+  // Negociacoes com filtros (paginado pra superar limite 1000)
+  // FIX: PostgREST needs both created_at filters via separate appends.
+  // The old code used the constructor object (which calls .set()) for the first filter,
+  // then .append() for the second. URLSearchParams constructor with an object only keeps
+  // the last value for duplicate keys. We now use .append() for both date filters.
   const { data: negsData, isLoading: negsLoading } = useQuery({
     queryKey: ["dash_negs", range.start, range.end, consultor, cooperativa],
     queryFn: async () => {
@@ -74,17 +78,17 @@ export default function DashboardVendas() {
       const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       let allData: any[] = [];
       for (let page = 0; page < 5; page++) {
-        const params = new URLSearchParams({
-          select: "stage,consultor,cooperativa,valor_plano,origem,created_at",
-          order: "created_at.desc",
-          offset: String(page * 1000),
-          limit: "1000",
-          created_at: `gte.${range.start}`,
-        });
-        if (range.end) params.append("created_at", `lte.${range.end}`);
+        const params = new URLSearchParams();
+        params.set("select", "stage,consultor,cooperativa,valor_plano,origem,created_at");
+        params.set("order", "created_at.desc");
+        params.set("offset", String(page * 1000));
+        params.set("limit", "1000");
+        // PostgREST supports multiple same-name params for AND range filters
+        params.append("created_at", `gte.${range.start}`);
+        params.append("created_at", `lte.${range.end}`);
         if (consultor !== "Todos") params.set("consultor", `eq.${consultor}`);
         if (cooperativa !== "Todas") params.set("cooperativa", `ilike.%${cooperativa}%`);
-        const resp = await fetch(`${url}/rest/v1/negociacoes?${params}`, {
+        const resp = await fetch(`${url}/rest/v1/negociacoes?${params.toString()}`, {
           headers: { apikey, Authorization: `Bearer ${token || apikey}` },
         });
         const data = await resp.json();
@@ -108,12 +112,12 @@ export default function DashboardVendas() {
   const funilData = [
     { etapa: "Novo Lead", valor: negs.filter(n => n.stage === "novo_lead").length },
     { etapa: "Em Contato", valor: negs.filter(n => n.stage === "em_contato").length },
-    { etapa: "Negociação", valor: negs.filter(n => n.stage === "em_negociacao").length },
+    { etapa: "Negociacao", valor: negs.filter(n => n.stage === "em_negociacao").length },
     { etapa: "Vistoria", valor: negs.filter(n => n.stage === "aguardando_vistoria").length },
-    { etapa: "Concluído", valor: contratos },
+    { etapa: "Concluido", valor: contratos },
   ];
 
-  // Evolução mensal (últimos 12 meses)
+  // Evolucao mensal (ultimos 12 meses)
   const evolucaoMensal = Array.from({ length: 12 }, (_, i) => {
     const d = new Date();
     d.setMonth(d.getMonth() - (11 - i));
@@ -132,19 +136,24 @@ export default function DashboardVendas() {
   });
 
   // Ranking consultores
-  const rankingMap: Record<string, { contratos: number; faturamento: number }> = {};
+  const rankingMap: Record<string, { contratos: number; faturamento: number; total: number }> = {};
   negs.forEach((n: any) => {
     const c = n.consultor || "Sem consultor";
-    if (!rankingMap[c]) rankingMap[c] = { contratos: 0, faturamento: 0 };
+    if (!rankingMap[c]) rankingMap[c] = { contratos: 0, faturamento: 0, total: 0 };
+    rankingMap[c].total++;
     if (n.stage === "concluido") rankingMap[c].contratos++;
     rankingMap[c].faturamento += Number(n.valor_plano) || 0;
   });
   const ranking = Object.entries(rankingMap)
-    .map(([nome, d]) => ({ nome, ...d, avatar: nome.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() }))
+    .map(([nome, d]) => ({
+      nome,
+      ...d,
+      avatar: nome.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase(),
+    }))
     .sort((a, b) => b.contratos - a.contratos || b.faturamento - a.faturamento)
     .slice(0, 10);
 
-  // Distribuição por cooperativa
+  // Distribuicao por cooperativa
   const coopMap: Record<string, number> = {};
   negs.forEach((n: any) => {
     const c = n.cooperativa || "Sem cooperativa";
@@ -156,21 +165,43 @@ export default function DashboardVendas() {
     .slice(0, 7);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="rounded-xl bg-[#1A3A5C] p-5 border border-[#747474]">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+            <BarChart3 className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-white tracking-tight">Dashboard de Vendas</h1>
+            <p className="text-xs text-slate-400">Visao geral do desempenho comercial</p>
+          </div>
+          {negsLoading && (
+            <Badge className="ml-auto bg-blue-500/20 text-blue-300 border-blue-500/30 text-[10px]">
+              Carregando...
+            </Badge>
+          )}
+          {!negsLoading && totalLeads > 0 && (
+            <Badge className="ml-auto bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px]">
+              {totalLeads} negociacoes
+            </Badge>
+          )}
+        </div>
+      </div>
+
       {/* Filtros */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div>
-          <Label className="text-xs font-semibold">Período</Label>
+          <Label className="text-xs font-semibold">Periodo</Label>
           <Select value={periodo} onValueChange={setPeriodo}>
             <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="semana">Esta Semana</SelectItem>
-              <SelectItem value="30d">Últimos 30 dias</SelectItem>
-              <SelectItem value="mes">Este Mês</SelectItem>
+              <SelectItem value="30d">Ultimos 30 dias</SelectItem>
+              <SelectItem value="mes">Este Mes</SelectItem>
               <SelectItem value="trimestre">Trimestre</SelectItem>
               <SelectItem value="ano">Este Ano</SelectItem>
               <SelectItem value="todos">Todos</SelectItem>
-              <SelectItem value="ano">Este Ano</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -178,18 +209,26 @@ export default function DashboardVendas() {
           <Label className="text-xs font-semibold">Consultor</Label>
           <Select value={consultor} onValueChange={setConsultor}>
             <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-            <SelectContent>{(consultoresDb || ["Todos"]).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+            <SelectContent>
+              {(consultoresDb || ["Todos"]).map(c => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
           </Select>
         </div>
         <div>
           <Label className="text-xs font-semibold">Cooperativa</Label>
           <Select value={cooperativa} onValueChange={setCooperativa}>
             <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-            <SelectContent>{(coopsDb || ["Todas"]).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+            <SelectContent>
+              {(coopsDb || ["Todas"]).map(c => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
           </Select>
         </div>
         <div>
-          <Label className="text-xs font-semibold">Data Início</Label>
+          <Label className="text-xs font-semibold">Data Inicio</Label>
           <Input type="date" className="w-full" value={dataInicio} onChange={e => setDataInicio(e.target.value)} />
         </div>
         <div>
@@ -201,18 +240,66 @@ export default function DashboardVendas() {
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         {[
-          { label: "Total Leads", value: totalLeads.toString(), icon: Users, color: "text-primary", bg: "bg-primary/6" },
-          { label: "Propostas Enviadas", value: propostas.toString(), icon: FileText, color: "text-[hsl(38,90%,45%)]", bg: "bg-[hsl(38,90%,95%)]" },
-          { label: "Contratos Fechados", value: contratos.toString(), icon: Handshake, color: "text-[hsl(142,50%,35%)]", bg: "bg-[hsl(142,50%,95%)]" },
-          { label: "Faturamento Total", value: `R$ ${faturamento.toLocaleString("pt-BR")}`, icon: DollarSign, color: "text-foreground", bg: "bg-muted" },
-          { label: "Taxa de Conversão", value: `${conversao}%`, icon: TrendingUp, color: "text-[hsl(142,50%,35%)]", bg: "bg-[hsl(142,50%,95%)]" },
-          { label: "Comissões Estimadas", value: `R$ ${comissoes.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`, icon: ArrowRightLeft, color: "text-[hsl(152,50%,35%)]", bg: "bg-[hsl(152,50%,95%)]" },
+          {
+            label: "Total Leads",
+            value: totalLeads.toString(),
+            icon: Users,
+            iconColor: "text-blue-400",
+            bgIcon: "bg-blue-500/15",
+            borderColor: "border-blue-500/25",
+            bgCard: "bg-blue-500/5",
+          },
+          {
+            label: "Propostas Enviadas",
+            value: propostas.toString(),
+            icon: FileText,
+            iconColor: "text-amber-400",
+            bgIcon: "bg-amber-500/15",
+            borderColor: "border-amber-500/25",
+            bgCard: "bg-amber-500/5",
+          },
+          {
+            label: "Contratos Fechados",
+            value: contratos.toString(),
+            icon: Handshake,
+            iconColor: "text-emerald-400",
+            bgIcon: "bg-emerald-500/15",
+            borderColor: "border-emerald-500/25",
+            bgCard: "bg-emerald-500/5",
+          },
+          {
+            label: "Faturamento Total",
+            value: `R$ ${faturamento.toLocaleString("pt-BR")}`,
+            icon: DollarSign,
+            iconColor: "text-slate-300",
+            bgIcon: "bg-slate-500/15",
+            borderColor: "border-[#747474]",
+            bgCard: "",
+          },
+          {
+            label: "Taxa de Conversao",
+            value: `${conversao}%`,
+            icon: TrendingUp,
+            iconColor: "text-emerald-400",
+            bgIcon: "bg-emerald-500/15",
+            borderColor: "border-emerald-500/25",
+            bgCard: "bg-emerald-500/5",
+          },
+          {
+            label: "Comissoes Estimadas",
+            value: `R$ ${comissoes.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`,
+            icon: Target,
+            iconColor: "text-violet-400",
+            bgIcon: "bg-violet-500/15",
+            borderColor: "border-violet-500/25",
+            bgCard: "bg-violet-500/5",
+          },
         ].map(c => (
-          <Card key={c.label}>
+          <Card key={c.label} className={`${c.borderColor} ${c.bgCard}`}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg ${c.bg} flex items-center justify-center`}>
-                  <c.icon className={`h-5 w-5 ${c.color}`} />
+                <div className={`w-10 h-10 rounded-lg ${c.bgIcon} flex items-center justify-center`}>
+                  <c.icon className={`h-5 w-5 ${c.iconColor}`} />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{c.value}</p>
@@ -224,38 +311,61 @@ export default function DashboardVendas() {
         ))}
       </div>
 
-      {/* Funil + Evolução */}
+      {/* Funil + Evolucao */}
       <div className="grid lg:grid-cols-2 gap-4">
-        <Card>
+        <Card className="border-[#747474]">
           <CardContent className="p-4">
-            <h3 className="font-semibold text-sm mb-3">Funil de Vendas</h3>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={funilData} layout="vertical" margin={{ left: 80 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 11 }} />
-                <YAxis type="category" dataKey="etapa" tick={{ fontSize: 12 }} width={75} />
-                <Tooltip formatter={(v: number) => [v, "Negociações"]} />
-                <Bar dataKey="valor" radius={[0, 6, 6, 0]}>
-                  {funilData.map((_, i) => <Cell key={i} fill={FUNNEL_COLORS[i]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+              <Target className="h-4 w-4 text-blue-400" />
+              Funil de Vendas
+            </h3>
+            {totalLeads === 0 && !negsLoading ? (
+              <div className="flex items-center justify-center h-[260px] text-muted-foreground text-sm">
+                Sem dados no periodo selecionado
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={funilData} layout="vertical" margin={{ left: 80 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(0,0%,25%)" />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(0,0%,60%)" }} />
+                  <YAxis type="category" dataKey="etapa" tick={{ fontSize: 12, fill: "hsl(0,0%,70%)" }} width={75} />
+                  <Tooltip
+                    formatter={(v: number) => [v, "Negociacoes"]}
+                    contentStyle={{ backgroundColor: "hsl(210,30%,15%)", border: "1px solid hsl(0,0%,30%)", borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: "hsl(0,0%,80%)" }}
+                  />
+                  <Bar dataKey="valor" radius={[0, 6, 6, 0]}>
+                    {funilData.map((_, i) => <Cell key={i} fill={FUNNEL_COLORS[i]} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-[#747474]">
           <CardContent className="p-4">
-            <h3 className="font-semibold text-sm mb-3">Evolução Mensal (12 meses)</h3>
+            <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-emerald-400" />
+              Evolucao Mensal (12 meses)
+            </h3>
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={evolucaoMensal}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
-                <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
-                <YAxis yAxisId="right" orientation="right" tickFormatter={formatCurrency} tick={{ fontSize: 10 }} />
-                <Tooltip formatter={(v: number, name: string) => [name === "faturamento" ? `R$ ${v.toLocaleString("pt-BR")}` : v, name === "faturamento" ? "Faturamento" : "Vendas"]} />
-                <Legend />
-                <Line yAxisId="left" type="monotone" dataKey="vendas" stroke="hsl(212,50%,45%)" strokeWidth={2} dot={{ r: 3 }} name="Vendas" />
-                <Line yAxisId="right" type="monotone" dataKey="faturamento" stroke="hsl(142,50%,40%)" strokeWidth={2} dot={{ r: 3 }} name="Faturamento" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,25%)" />
+                <XAxis dataKey="mes" tick={{ fontSize: 11, fill: "hsl(0,0%,60%)" }} />
+                <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "hsl(0,0%,60%)" }} />
+                <YAxis yAxisId="right" orientation="right" tickFormatter={formatCurrency} tick={{ fontSize: 10, fill: "hsl(0,0%,60%)" }} />
+                <Tooltip
+                  formatter={(v: number, name: string) => [
+                    name === "faturamento" ? `R$ ${v.toLocaleString("pt-BR")}` : v,
+                    name === "faturamento" ? "Faturamento" : "Vendas",
+                  ]}
+                  contentStyle={{ backgroundColor: "hsl(210,30%,15%)", border: "1px solid hsl(0,0%,30%)", borderRadius: 8, fontSize: 12 }}
+                  labelStyle={{ color: "hsl(0,0%,80%)" }}
+                />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Line yAxisId="left" type="monotone" dataKey="vendas" stroke="hsl(212,50%,55%)" strokeWidth={2} dot={{ r: 3 }} name="Vendas" />
+                <Line yAxisId="right" type="monotone" dataKey="faturamento" stroke="hsl(142,50%,50%)" strokeWidth={2} dot={{ r: 3 }} name="Faturamento" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -264,37 +374,54 @@ export default function DashboardVendas() {
 
       {/* Ranking + Pizza */}
       <div className="grid lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2 overflow-hidden">
+        <Card className="lg:col-span-2 overflow-hidden border-[#747474]">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Trophy className="h-4 w-4 text-[hsl(38,90%,50%)]" />
+              <Trophy className="h-4 w-4 text-amber-400" />
               <h3 className="font-semibold text-sm">Ranking de Consultores</h3>
+              {ranking.length > 0 && (
+                <Badge variant="outline" className="ml-auto text-[10px] border-[#747474]">
+                  Top {ranking.length}
+                </Badge>
+              )}
             </div>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-[#747474]">
                     <TableHead className="text-xs font-bold uppercase w-8">#</TableHead>
                     <TableHead className="text-xs font-bold uppercase">Consultor</TableHead>
+                    <TableHead className="text-xs font-bold uppercase text-center">Leads</TableHead>
                     <TableHead className="text-xs font-bold uppercase text-center">Contratos</TableHead>
                     <TableHead className="text-xs font-bold uppercase text-right">Faturamento</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {ranking.length === 0 ? (
-                    <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">Nenhuma negociação no período</TableCell></TableRow>
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                        Nenhuma negociacao no periodo
+                      </TableCell>
+                    </TableRow>
                   ) : ranking.map((c, i) => (
-                    <TableRow key={c.nome}>
-                      <TableCell className="font-bold text-muted-foreground">{i + 1}º</TableCell>
+                    <TableRow key={c.nome} className="border-[#747474]/30">
+                      <TableCell className="font-bold text-muted-foreground">{i + 1}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-7 w-7">
-                            <AvatarFallback className="text-[10px] bg-primary/8 text-primary">{c.avatar}</AvatarFallback>
+                            <AvatarFallback className="text-[10px] bg-blue-500/10 text-blue-400">
+                              {c.avatar}
+                            </AvatarFallback>
                           </Avatar>
                           <span className="font-medium text-sm">{c.nome}</span>
-                          {i === 0 && c.contratos > 0 && <Badge className="bg-[hsl(38,90%,50%)] text-white text-[9px] px-1.5 py-0">🏆</Badge>}
+                          {i === 0 && c.contratos > 0 && (
+                            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[9px] px-1.5 py-0">
+                              TOP
+                            </Badge>
+                          )}
                         </div>
                       </TableCell>
+                      <TableCell className="text-center">{c.total}</TableCell>
                       <TableCell className="text-center font-semibold">{c.contratos}</TableCell>
                       <TableCell className="text-right">R$ {c.faturamento.toLocaleString("pt-BR")}</TableCell>
                     </TableRow>
@@ -305,9 +432,12 @@ export default function DashboardVendas() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-[#747474]">
           <CardContent className="p-4">
-            <h3 className="font-semibold text-sm mb-3">Distribuição por Cooperativa</h3>
+            <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+              <ArrowRightLeft className="h-4 w-4 text-violet-400" />
+              Distribuicao por Cooperativa
+            </h3>
             {distribuicao.length > 0 ? (
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
@@ -324,11 +454,16 @@ export default function DashboardVendas() {
                   >
                     {distribuicao.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                   </Pie>
-                  <Tooltip formatter={(v: number) => [`${v} negociações`, "Total"]} />
+                  <Tooltip
+                    formatter={(v: number) => [`${v} negociacoes`, "Total"]}
+                    contentStyle={{ backgroundColor: "hsl(210,30%,15%)", border: "1px solid hsl(0,0%,30%)", borderRadius: 8, fontSize: 12 }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-[280px] text-muted-foreground text-sm">Sem dados no período</div>
+              <div className="flex items-center justify-center h-[280px] text-muted-foreground text-sm">
+                Sem dados no periodo
+              </div>
             )}
           </CardContent>
         </Card>

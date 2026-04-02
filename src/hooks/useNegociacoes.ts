@@ -59,28 +59,32 @@ export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro 
 
       const PAGE_SIZE = 1000;
       const MAX_PAGES = periodo === "todos" ? 10 : 5;
-      let allData: any[] = [];
+      const fields = "id,codigo,lead_nome,cpf_cnpj,telefone,email,veiculo_modelo,veiculo_placa,plano,valor_plano,stage,consultor,cooperativa,regional,gerente,origem,observacoes,enviado_sga,visualizacoes_proposta,status_icons,created_at,updated_at,chassi,renavam,ano_fabricacao,ano_modelo,cor,combustivel,cidade_circulacao,estado_circulacao,dia_vencimento";
+      const headers = { apikey, Authorization: `Bearer ${token || apikey}` };
 
-      for (let page = 0; page < MAX_PAGES; page++) {
-        const params = new URLSearchParams({
-          select: "id,codigo,lead_nome,cpf_cnpj,telefone,email,veiculo_modelo,veiculo_placa,plano,valor_plano,stage,consultor,cooperativa,regional,gerente,origem,observacoes,enviado_sga,visualizacoes_proposta,status_icons,created_at,updated_at,chassi,renavam,ano_fabricacao,ano_modelo,cor,combustivel,cidade_circulacao,estado_circulacao,dia_vencimento",
-          order: "created_at.desc",
-          offset: String(page * PAGE_SIZE),
-          limit: String(PAGE_SIZE),
-        });
-        if (dataLimite) params.set("created_at", `gte.${dataLimite}`);
-        if (companyId) params.set("company_id", `eq.${companyId}`);
+      // Primeira página
+      const p0 = new URLSearchParams({ select: fields, order: "created_at.desc", offset: "0", limit: String(PAGE_SIZE) });
+      if (dataLimite) p0.set("created_at", `gte.${dataLimite}`);
+      if (companyId) p0.set("company_id", `eq.${companyId}`);
+      const r0 = await fetch(`${url}/rest/v1/negociacoes?${p0}`, { headers });
+      const d0 = await r0.json();
+      if (!Array.isArray(d0)) { setNegociacoes([]); setTotalCount(0); setLoading(false); return; }
 
-        const resp = await fetch(`${url}/rest/v1/negociacoes?${params}`, {
-          headers: {
-            apikey,
-            Authorization: `Bearer ${token || apikey}`,
-          },
-        });
-        const data = await resp.json();
-        if (!Array.isArray(data) || data.length === 0) break;
-        allData = allData.concat(data);
-        if (data.length < PAGE_SIZE) break;
+      let allData = [...d0];
+
+      // Páginas seguintes em paralelo se primeira veio cheia
+      if (d0.length === PAGE_SIZE) {
+        const promises = [];
+        for (let page = 1; page < MAX_PAGES; page++) {
+          const px = new URLSearchParams({ select: fields, order: "created_at.desc", offset: String(page * PAGE_SIZE), limit: String(PAGE_SIZE) });
+          if (dataLimite) px.set("created_at", `gte.${dataLimite}`);
+          if (companyId) px.set("company_id", `eq.${companyId}`);
+          promises.push(fetch(`${url}/rest/v1/negociacoes?${px}`, { headers }).then(r => r.json()));
+        }
+        const results = await Promise.all(promises);
+        for (const data of results) {
+          if (Array.isArray(data) && data.length > 0) allData = allData.concat(data);
+        }
       }
 
       console.log("[useNegociacoes]", allData.length, "negociações, periodo:", periodo);
