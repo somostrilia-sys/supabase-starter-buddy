@@ -451,16 +451,19 @@ export default function CotacaoTab({ deal }: Props) {
         updated_at: new Date().toISOString(),
       } as any).eq("id", deal.id);
 
-      // Auto-transição: em_contato → em_negociacao
-      if (deal.stage === "em_contato") {
-        await supabase.from("negociacoes").update({ stage: "em_negociacao" } as any).eq("id", deal.id);
-        await supabase.from("pipeline_transicoes").insert({
-          negociacao_id: deal.id,
-          stage_anterior: "em_contato",
-          stage_novo: "em_negociacao",
-          motivo: `Cotação enviada via ${tipo}`,
-          automatica: true,
-        } as any);
+      // Auto-transição: novo_lead ou em_contato → em_negociacao
+      if (deal.stage === "novo_lead" || deal.stage === "em_contato" || deal.stage === "em_negociacao") {
+        if (deal.stage !== "em_negociacao") {
+          await (supabase as any).from("negociacoes").update({ stage: "em_negociacao", updated_at: new Date().toISOString() }).eq("id", deal.id);
+          await (supabase as any).from("pipeline_transicoes").insert({
+            negociacao_id: deal.id,
+            stage_anterior: deal.stage,
+            stage_novo: "em_negociacao",
+            motivo: `Cotação enviada via ${tipo} — auto-transição`,
+            automatica: true,
+          });
+          toast.info("Card movido para Em Negociação");
+        }
       }
 
       const linkPlanos = `${window.location.origin}/planos/${cotId}`;
@@ -497,16 +500,6 @@ export default function CotacaoTab({ deal }: Props) {
       return;
     }
     toast.success(`Cotação enviada via ${tipo}!`);
-
-    // Auto-transição: novo_lead ou em_contato → em_negociacao
-    if (deal.stage === "novo_lead" || deal.stage === "em_contato") {
-      await (supabase as any).from("negociacoes").update({ stage: "em_negociacao", updated_at: new Date().toISOString() }).eq("id", deal.id);
-      await (supabase as any).from("pipeline_transicoes").insert({
-        negociacao_id: deal.id, stage_anterior: deal.stage, stage_novo: "em_negociacao",
-        motivo: `Cotação enviada via ${tipo} — auto-transição`, automatica: true,
-      });
-      toast.info("Card movido para Em Negociação automaticamente");
-    }
   };
 
   const lbl = "text-sm font-semibold";
