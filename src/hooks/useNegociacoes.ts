@@ -62,7 +62,7 @@ export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro 
       const fields = "id,codigo,lead_nome,cpf_cnpj,telefone,email,veiculo_modelo,veiculo_placa,plano,valor_plano,stage,consultor,cooperativa,regional,gerente,origem,observacoes,enviado_sga,visualizacoes_proposta,status_icons,created_at,updated_at,chassi,renavam,ano_fabricacao,ano_modelo,cor,combustivel,cidade_circulacao,estado_circulacao,dia_vencimento";
       const headers = { apikey, Authorization: `Bearer ${token || apikey}` };
 
-      // Primeira página
+      // Primeira página rápida — mostra imediatamente
       const p0 = new URLSearchParams({ select: fields, order: "created_at.desc", offset: "0", limit: String(PAGE_SIZE) });
       if (dataLimite) p0.set("created_at", `gte.${dataLimite}`);
       if (companyId) p0.set("company_id", `eq.${companyId}`);
@@ -70,9 +70,14 @@ export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro 
       const d0 = await r0.json();
       if (!Array.isArray(d0)) { setNegociacoes([]); setTotalCount(0); setLoading(false); return; }
 
+      // Mostrar primeira página instantaneamente
+      setNegociacoes(d0 as Negociacao[]);
+      setTotalCount(d0.length);
+      setLoading(false);
+
       let allData = [...d0];
 
-      // Páginas seguintes em paralelo se primeira veio cheia
+      // Carregar o resto em background (sem loading spinner)
       if (d0.length === PAGE_SIZE) {
         const promises = [];
         for (let page = 1; page < MAX_PAGES; page++) {
@@ -85,6 +90,10 @@ export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro 
         for (const data of results) {
           if (Array.isArray(data) && data.length > 0) allData = allData.concat(data);
         }
+        // Atualizar silenciosamente com todos os dados
+        setNegociacoes(allData as Negociacao[]);
+        setTotalCount(allData.length);
+        return; // skip the final set below
       }
 
       console.log("[useNegociacoes]", allData.length, "negociações, periodo:", periodo);
