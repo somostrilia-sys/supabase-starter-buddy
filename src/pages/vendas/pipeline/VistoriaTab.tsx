@@ -355,6 +355,27 @@ export default function VistoriaTab({ deal }: Props) {
                 }}>
                   <Copy className="h-3.5 w-3.5 mr-1" />Copiar Link
                 </Button>
+                {status === "reprovada" && (
+                  <Button size="sm" variant="outline" className="rounded-none border-amber-400 text-amber-600 hover:bg-amber-50" onClick={async () => {
+                    if (!vistoriaId) return;
+                    toast.info("Reanalisando vistoria com critérios revisados...");
+                    try {
+                      const res = await callEdge("gia-vistoria-ai-analise", { vistoria_id: vistoriaId, recurso: true });
+                      if (res.sucesso) {
+                        if (res.aprovada) {
+                          setStatus("aprovada");
+                          toast.success("Vistoria APROVADA após recurso!");
+                        } else {
+                          toast.error(`Mantida como reprovada. Score: ${res.score}/100. ${res.motivo || ""}`);
+                        }
+                      } else {
+                        toast.error(res.error || "Erro na reanálise");
+                      }
+                    } catch { toast.error("Erro ao recorrer"); }
+                  }}>
+                    <RotateCcw className="h-3.5 w-3.5 mr-1" />Recorrer (IA reanalisar)
+                  </Button>
+                )}
                 {status === "reprovada" && isAdmin && (
                   <Button size="sm" className="rounded-none bg-blue-600 hover:bg-blue-700 text-white" onClick={handleAprovar}>
                     <CheckCircle className="h-3.5 w-3.5 mr-1" />Aprovar (Exceção)
