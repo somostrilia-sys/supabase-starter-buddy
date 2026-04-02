@@ -12,6 +12,7 @@ import {
   PenTool, Mail, MessageSquare, FileText, CheckCircle, Clock,
   Eye, Send, AlertTriangle, Copy, ExternalLink, RotateCcw,
 } from "lucide-react";
+import ExcecaoButton from "@/components/ExcecaoButton";
 
 type AssinaturaStatus = "pendente" | "enviado" | "visualizado" | "assinado" | "expirado";
 
@@ -278,13 +279,19 @@ export default function AssinaturaTab({ deal }: Props) {
           </div>
         )}
         {status !== "assinado" && enviado && (
-          <div className="flex gap-2 pt-1">
+          <div className="flex gap-2 pt-1 flex-wrap">
             <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => { setStatus("enviado"); toast.info("Lembrete reenviado!"); }}>
               <RotateCcw className="h-3.5 w-3.5 mr-1" />Reenviar Lembrete
             </Button>
             <Button size="sm" variant="ghost" className="rounded-none text-xs text-success border border-green-200" onClick={handleSimularAssinatura}>
               <PenTool className="h-3.5 w-3.5 mr-1" />Simular Assinatura (demo)
             </Button>
+            <ExcecaoButton
+              negociacaoId={deal.id}
+              tipoDefault="outro"
+              label="Solicitar Exceção (Contrato)"
+              onSuccess={() => toast.success("Exceção solicitada!")}
+            />
           </div>
         )}
         {status === "assinado" && (
