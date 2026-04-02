@@ -213,21 +213,7 @@ export default function Pipeline() {
     }
   }
 
-  // Supabase leads query with busca + RBAC scope
-  const { data: leadsData } = useQuery({
-    queryKey: ["leads", busca, leadScope],
-    queryFn: async () => {
-      let query = supabase.from("negociacoes").select("*").order("created_at", { ascending: false });
-      if (busca.placa) query = query.eq("placa", busca.placa.toUpperCase().replace(/\s/g, '') as any);
-      if (busca.nome && busca.nome.length >= 3) query = query.ilike("nome", `%${busca.nome}%` as any);
-      if (busca.codigo) query = query.eq("codigo_negociacao", busca.codigo as any);
-      if (leadScope.usuario_id) query = query.eq("usuario_id", leadScope.usuario_id as any);
-      if (leadScope.unidade_id) query = query.eq("unidade_id", leadScope.unidade_id as any);
-      const { data, error } = await query;
-      if (error) return [];
-      return data || [];
-    },
-  });
+  // leadsData removido — usar apenas useNegociacoes com RLS
 
   const updateLeadStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -307,38 +293,7 @@ export default function Pipeline() {
     updated_at: n.updated_at,
   }));
 
-  // Map leads data (tabela antiga)
-  const leadsAsDeal: PipelineDeal[] = (leadsData || []).map(l => ({
-    id: l.id,
-    codigo: (l as any).codigo_negociacao || `NEG-${new Date(l.created_at).getFullYear()}-${l.id.slice(-3).toUpperCase()}`,
-    lead_nome: l.nome,
-    cpf_cnpj: l.cpf || "",
-    telefone: l.telefone,
-    email: l.email || "",
-    veiculo_modelo: l.veiculo_interesse || "",
-    veiculo_placa: "",
-    plano: l.plano_interesse || "",
-    valor_plano: 0,
-    stage: (l.status as PipelineStage) || "novo_lead",
-    consultor: l.consultor_nome || "",
-    cooperativa: "",
-    regional: "",
-    gerente: "",
-    origem: "Manual",
-    observacoes: l.observacoes || "",
-    enviado_sga: false,
-    visualizacoes_proposta: 0,
-    status_icons: { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false },
-    cidade_circulacao: "",
-    estado_circulacao: "",
-    created_at: l.created_at,
-    updated_at: l.updated_at,
-  }));
-
-  // Prioridade: negociacoes (nova tabela) > leads (tabela antiga)
-  const dealsToShow: PipelineDeal[] = negociacoesAsDeal.length > 0
-    ? negociacoesAsDeal
-    : leadsAsDeal;
+  const dealsToShow: PipelineDeal[] = negociacoesAsDeal;
 
   // --- Cash sound: detectar novos deals em "concluido" ---
   const prevDealsRef = useRef<PipelineDeal[]>([]);
