@@ -83,6 +83,32 @@ const planosConfigDefault: PlanoConfig[] = [
   },
 ];
 
+// ─── FIPE API ───
+const FIPE_BASE = "https://parallelum.com.br/fipe/api/v1";
+const FIPE_TIPO_MAP: Record<string, string> = { "Automóvel": "carros", "Motocicleta": "motos", "Caminhão": "caminhoes" };
+
+async function fipeMarcas(tipo: string) {
+  const t = FIPE_TIPO_MAP[tipo] || "carros";
+  const resp = await fetch(`${FIPE_BASE}/${t}/marcas`);
+  return resp.json() as Promise<{ codigo: string; nome: string }[]>;
+}
+async function fipeModelos(tipo: string, marcaCod: string) {
+  const t = FIPE_TIPO_MAP[tipo] || "carros";
+  const resp = await fetch(`${FIPE_BASE}/${t}/marcas/${marcaCod}/modelos`);
+  const data = await resp.json();
+  return (data.modelos || []) as { codigo: number; nome: string }[];
+}
+async function fipeAnos(tipo: string, marcaCod: string, modeloCod: string) {
+  const t = FIPE_TIPO_MAP[tipo] || "carros";
+  const resp = await fetch(`${FIPE_BASE}/${t}/marcas/${marcaCod}/modelos/${modeloCod}/anos`);
+  return resp.json() as Promise<{ codigo: string; nome: string }[]>;
+}
+async function fipeValor(tipo: string, marcaCod: string, modeloCod: string, anoCod: string) {
+  const t = FIPE_TIPO_MAP[tipo] || "carros";
+  const resp = await fetch(`${FIPE_BASE}/${t}/marcas/${marcaCod}/modelos/${modeloCod}/anos/${anoCod}`);
+  return resp.json() as Promise<{ Valor: string; Marca: string; Modelo: string; AnoModelo: number; Combustivel: string; CodigoFipe: string }>;
+}
+
 // Lookup na tabela_precos real por valor FIPE
 async function buscarPrecosReais(valorFipe: number): Promise<{ plano: string; cota: number; adesao: number; rastreador: string; instalacao: number; tipo_franquia: string; valor_franquia: number }[]> {
   const { data } = await supabase.from("tabela_precos" as any)
@@ -106,6 +132,50 @@ export default function CotacaoTab({ deal }: Props) {
   const [valorFipeReal, setValorFipeReal] = useState(deal.valor_plano || 0);
   const [codFipeReal, setCodFipeReal] = useState("");
   const [modeloIdx, setModeloIdx] = useState(0);
+
+  // FIPE cascata
+  const [fipeMarcasList, setFipeMarcasList] = useState<{ codigo: string; nome: string }[]>([]);
+  const [fipeModelosList, setFipeModelosList] = useState<{ codigo: number; nome: string }[]>([]);
+  const [fipeAnosList, setFipeAnosList] = useState<{ codigo: string; nome: string }[]>([]);
+  const [fipeMarcaCod, setFipeMarcaCod] = useState("");
+  const [fipeModeloCod, setFipeModeloCod] = useState("");
+  const [fipeAnoCod, setFipeAnoCod] = useState("");
+
+  // Carregar marcas FIPE ao mudar tipo veículo
+  useEffect(() => {
+    fipeMarcas(form.tipoVeiculo).then(setFipeMarcasList).catch(() => {});
+  }, [form.tipoVeiculo]);
+
+  // Carregar modelos ao selecionar marca
+  useEffect(() => {
+    if (!fipeMarcaCod) { setFipeModelosList([]); return; }
+    fipeModelos(form.tipoVeiculo, fipeMarcaCod).then(setFipeModelosList).catch(() => {});
+  }, [fipeMarcaCod, form.tipoVeiculo]);
+
+  // Carregar anos ao selecionar modelo
+  useEffect(() => {
+    if (!fipeMarcaCod || !fipeModeloCod) { setFipeAnosList([]); return; }
+    fipeAnos(form.tipoVeiculo, fipeMarcaCod, String(fipeModeloCod)).then(setFipeAnosList).catch(() => {});
+  }, [fipeModeloCod, fipeMarcaCod, form.tipoVeiculo]);
+
+  // Buscar valor ao selecionar ano
+  useEffect(() => {
+    if (!fipeMarcaCod || !fipeModeloCod || !fipeAnoCod) return;
+    setFipeLoading(true);
+    fipeValor(form.tipoVeiculo, fipeMarcaCod, String(fipeModeloCod), fipeAnoCod).then(data => {
+      if (data.Valor) {
+        const val = parseFloat(data.Valor.replace("R$", "").replace(/\./g, "").replace(",", ".").trim());
+        setValorFipeReal(val);
+        setMarcaReal(data.Marca || "");
+        setModeloReal(data.Modelo || "");
+        setCodFipeReal(data.CodigoFipe || "");
+        setForm(f => ({ ...f, anoFab: String(data.AnoModelo), combustivel: data.Combustivel || "" }));
+        setFipeFetched(true);
+      }
+      setFipeLoading(false);
+    }).catch(() => setFipeLoading(false));
+  }, [fipeAnoCod]);
+
   // Detectar tipo do veículo
   const detectTipo = () => {
     const m = dealModelo.toLowerCase();
@@ -559,23 +629,23 @@ export default function CotacaoTab({ deal }: Props) {
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Marca (FIPE)</Label>
-            <Select value={marca} onValueChange={v => { setMarca(v); setModeloIdx(0); }}>
-              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
-              <SelectContent>{marcas.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+            <Select value={fipeMarcaCod} onValueChange={v => { setFipeMarcaCod(v); setFipeModeloCod(""); setFipeAnoCod(""); const m = fipeMarcasList.find(x => x.codigo === v); if (m) { setMarca(m.nome); setMarcaReal(m.nome); } }}>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue placeholder={marcaReal || "Selecione"} /></SelectTrigger>
+              <SelectContent className="max-h-60">{fipeMarcasList.map(m => <SelectItem key={m.codigo} value={m.codigo}>{m.nome}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Modelo (FIPE)</Label>
-            <Select value={String(modeloIdx)} onValueChange={v => setModeloIdx(Number(v))}>
-              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
-              <SelectContent>{modelos.map((m, i) => <SelectItem key={i} value={String(i)}>{m.modelo}</SelectItem>)}</SelectContent>
+            <Select value={fipeModeloCod} onValueChange={v => { setFipeModeloCod(v); setFipeAnoCod(""); const m = fipeModelosList.find(x => String(x.codigo) === v); if (m) setModeloReal(m.nome); }}>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue placeholder={modeloReal || "Selecione"} /></SelectTrigger>
+              <SelectContent className="max-h-60">{fipeModelosList.map(m => <SelectItem key={m.codigo} value={String(m.codigo)}>{m.nome}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className={lbl}>Ano Fabricação</Label>
-            <Select value={form.anoFab} onValueChange={v => set("anoFab", v)}>
-              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
-              <SelectContent>{anosDisp.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
+            <Label className={lbl}>Ano {fipeLoading && <Loader2 className="h-3 w-3 animate-spin inline ml-1" />}</Label>
+            <Select value={fipeAnoCod} onValueChange={setFipeAnoCod}>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue placeholder={form.anoFab || "Selecione"} /></SelectTrigger>
+              <SelectContent>{fipeAnosList.map(a => <SelectItem key={a.codigo} value={a.codigo}>{a.nome}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
