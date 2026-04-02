@@ -290,9 +290,16 @@ export default function Pipeline() {
     status_icons: (n.status_icons as any) || { aceita: false, pendente: true, aprovada: false, sga: false, rastreador: false, inadimplencia: false },
     cidade_circulacao: n.cidade_circulacao || "",
     estado_circulacao: n.estado_circulacao || "",
+    chassi: (n as any).chassi || "",
+    renavam: (n as any).renavam || "",
+    ano_fabricacao: (n as any).ano_fabricacao || "",
+    ano_modelo: (n as any).ano_modelo || "",
+    cor: (n as any).cor || "",
+    combustivel: (n as any).combustivel || "",
+    dia_vencimento: (n as any).dia_vencimento || "",
     created_at: n.created_at,
     updated_at: n.updated_at,
-  }));
+  } as any));
 
   const dealsToShow: PipelineDeal[] = negociacoesAsDeal;
 

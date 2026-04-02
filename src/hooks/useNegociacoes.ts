@@ -63,7 +63,7 @@ export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro 
 
       for (let page = 0; page < MAX_PAGES; page++) {
         const params = new URLSearchParams({
-          select: "*",
+          select: "id,codigo,lead_nome,cpf_cnpj,telefone,email,veiculo_modelo,veiculo_placa,plano,valor_plano,stage,consultor,cooperativa,regional,gerente,origem,observacoes,enviado_sga,visualizacoes_proposta,status_icons,created_at,updated_at,chassi,renavam,ano_fabricacao,ano_modelo,cor,combustivel,cidade_circulacao,estado_circulacao,dia_vencimento",
           order: "created_at.desc",
           offset: String(page * PAGE_SIZE),
           limit: String(PAGE_SIZE),
