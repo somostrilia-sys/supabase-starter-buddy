@@ -303,48 +303,37 @@ export default function Pipeline() {
 
   const dealsToShow: PipelineDeal[] = negociacoesAsDeal;
 
-  // --- Cash sound: detectar novos deals em "concluido" ---
-  const prevDealsRef = useRef<PipelineDeal[]>([]);
+  // --- Cash sound: SÓ toca quando IA aprova e move para concluído ---
   const cashAudioRef = useRef<HTMLAudioElement | null>(null);
+  const concluídosProcessados = useRef<Set<string>>(new Set());
+  const initialLoadDone = useRef(false);
 
-  // Inicializar audio uma vez
   useEffect(() => {
     cashAudioRef.current = new Audio("/sounds/cash.mp3");
     cashAudioRef.current.volume = 0.7;
   }, []);
 
-  // Detectar novos deals que entraram em "concluido"
+  // Marcar todos os concluídos existentes como já processados (não tocar som no load)
   useEffect(() => {
     if (dealsToShow.length === 0) return;
-    const prevIds = new Set(
-      prevDealsRef.current
-        .filter(d => d.stage === "concluido")
-        .map(d => d.id)
-    );
-    const newConcluidos = dealsToShow.filter(
-      d => d.stage === "concluido" && !prevIds.has(d.id)
-    );
-
-    // Só dispara se já havia dados anteriores (evita tocar no primeiro load)
-    if (prevDealsRef.current.length > 0 && newConcluidos.length > 0) {
-      // Tocar som de caixa registradora
-      if (cashAudioRef.current) {
-        cashAudioRef.current.currentTime = 0;
-        cashAudioRef.current.play().catch(() => {});
-      }
-
-      // Chamar edge function para concluir venda em deals que ainda não foram concluídos
-      for (const deal of newConcluidos) {
-        callEdge("gia-concluir-venda", { negociacao_id: deal.id }).then(res => {
-          if (res?.sucesso) {
-            toast.success(`Venda concluída: ${deal.lead_nome}`);
-          }
-        }).catch(() => {});
-      }
+    if (!initialLoadDone.current) {
+      dealsToShow.filter(d => d.stage === "concluido").forEach(d => concluídosProcessados.current.add(d.id));
+      initialLoadDone.current = true;
     }
-
-    prevDealsRef.current = dealsToShow;
   }, [dealsToShow]);
+
+  // Função chamada quando IA aprova e move para concluído
+  const onDealConcluido = useCallback((dealId: string, dealNome: string) => {
+    if (concluídosProcessados.current.has(dealId)) return;
+    concluídosProcessados.current.add(dealId);
+    if (cashAudioRef.current) {
+      cashAudioRef.current.currentTime = 0;
+      cashAudioRef.current.play().catch(() => {});
+    }
+    callEdge("gia-concluir-venda", { negociacao_id: dealId }).then(res => {
+      if (res?.sucesso) toast.success(`🎉 Venda concluída: ${dealNome}`);
+    }).catch(() => {});
+  }, []);
   // --- Fim cash sound ---
 
   const activeFilterCount = [fConsultor !== "all", fGerente !== "all", fCoop !== "all", fRegional !== "all", fEtapa !== "all", fOrigem !== "all", fPlano !== "all", !!fDateStart, !!fDateEnd].filter(Boolean).length;
@@ -441,7 +430,17 @@ export default function Pipeline() {
     } else {
       await updateLeadStatus.mutateAsync({ id: deal.id, status: "liberado_cadastro" });
     }
-    toast.success("Lead liberado para cadastro!");
+    toast.success("Lead liberado para cadastro! IA conferindo dados...");
+
+    // IA confere automaticamente e move para concluido se tudo OK
+    callEdge("gia-conferencia-final", { negociacao_id: deal.id }).then(res => {
+      if (res?.aprovado) {
+        onDealConcluido(deal.id, deal.lead_nome);
+        reloadNegociacoes();
+      } else if (res?.pendencias) {
+        toast.info(`Pendências: ${res.pendencias.join(", ")}`, { duration: 8000 });
+      }
+    }).catch(() => {});
   }
 
   const formNomeInvalid = formTouched.lead_nome && !form.lead_nome.trim();
