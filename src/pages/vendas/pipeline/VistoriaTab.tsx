@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import VistoriaFotoSelector from "@/components/VistoriaFotoSelector";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +49,56 @@ const tipoColorMap: Record<string, string> = {
   resultado: "bg-destructive/80 text-white",
   reenvio: "bg-warning/80 text-white",
 };
+
+// Componente que mostra fotos REAIS enviadas pelo lead
+function FotosReaisSection({ vistoriaId }: { vistoriaId: string }) {
+  const [fotos, setFotos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (supabase as any).from("vistoria_fotos").select("*").eq("vistoria_id", vistoriaId).order("created_at")
+      .then(({ data }: any) => { setFotos(data || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [vistoriaId]);
+
+  if (loading) return null;
+  if (fotos.length === 0) return null;
+
+  return (
+    <Card className="rounded-none border-2 border-green-500/30 bg-green-500/5">
+      <CardContent className="p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Camera className="h-4 w-4 text-green-500" />
+          <span className="text-sm font-bold text-green-700 dark:text-green-400">FOTOS ENVIADAS PELO ASSOCIADO</span>
+          <Badge className="bg-green-500/15 text-green-600 text-xs">{fotos.length} fotos</Badge>
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+          {fotos.map((foto: any) => {
+            const { data: urlData } = supabase.storage.from("vistoria-fotos").getPublicUrl(foto.storage_path);
+            return (
+              <div key={foto.id} className="relative aspect-square rounded-lg overflow-hidden border-2 border-green-500/20 group">
+                <img src={urlData.publicUrl} alt={foto.tipo} className="w-full h-full object-cover" />
+                <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[9px] text-center py-1 font-medium">
+                  {(foto.tipo || "").replace(/_/g, " ")}
+                </div>
+                {foto.ai_aprovada === true && (
+                  <div className="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                    <CheckCircle className="h-3 w-3 text-white" />
+                  </div>
+                )}
+                {foto.ai_aprovada === false && (
+                  <div className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                    <XCircle className="h-3 w-3 text-white" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 interface Props { deal: PipelineDeal; }
 
@@ -421,12 +471,17 @@ export default function VistoriaTab({ deal }: Props) {
         </CardContent>
       </Card>
 
-      {/* Seleção de fotos */}
-      <Card className="rounded-none border-2 border-border">
-        <CardContent className="p-5">
-          <VistoriaFotoSelector selected={selectedFotos} onChange={setSelectedFotos} tipoVeiculo={categoriaVistoria as any} />
-        </CardContent>
-      </Card>
+      {/* Fotos REAIS enviadas pelo lead */}
+      {vistoriaReal?.id && <FotosReaisSection vistoriaId={vistoriaReal.id} />}
+
+      {/* Seleção de fotos modelo (para novas vistorias) */}
+      {!vistoriaReal?.fotos_enviadas && (
+        <Card className="rounded-none border-2 border-border">
+          <CardContent className="p-5">
+            <VistoriaFotoSelector selected={selectedFotos} onChange={setSelectedFotos} tipoVeiculo={categoriaVistoria as any} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Fluxo Web info */}
       {codigoGerado && codigo && (

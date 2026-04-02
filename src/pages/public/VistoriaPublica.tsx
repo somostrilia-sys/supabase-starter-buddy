@@ -139,29 +139,41 @@ export default function VistoriaPublica() {
     if (!vistoria || fotos.size === 0) return;
     setEnviando(true);
     try {
+      // Upload fotos pro Storage + inserir na tabela vistoria_fotos
       for (const [catId, foto] of fotos) {
         const ts = foto.timestamp.replace(/[:.]/g, "-");
         const path = `${vistoria.id}/${catId}_${ts}.jpg`;
         await supabase.storage.from("vistoria-fotos").upload(path, foto.blob, { contentType: "image/jpeg", upsert: true });
+
+        // Inserir registro na tabela vistoria_fotos
+        await (supabase as any).from("vistoria_fotos").insert({
+          vistoria_id: vistoria.id,
+          tipo: catId,
+          storage_path: path,
+          latitude: foto.lat || null,
+          longitude: foto.lng || null,
+          captured_at: foto.timestamp || new Date().toISOString(),
+        });
       }
-      await supabase.from("vistorias" as any).update({
+
+      // Atualizar status da vistoria
+      await (supabase as any).from("vistorias").update({
         status: "em_aprovacao",
         fotos_enviadas: Array.from(fotos.entries()).map(([catId, f]) => ({
           categoria: catId, timestamp: f.timestamp, lat: f.lat, lng: f.lng,
         })),
         geolocalizacao: coords ? { lat: coords.lat, lng: coords.lng, timestamp: new Date().toISOString() } : null,
-      } as any).eq("id", vistoria.id);
+      }).eq("id", vistoria.id);
 
-      // Se é revistoria, disparar webhook para atualizar cadastro automaticamente
-      if (vistoria.tipo === "revistoria") {
-        try {
-          await fetch(`${import.meta.env.VITE_SUPABASE_URL || "https://dxuoppekxgvdqnytftho.supabase.co"}/functions/v1/gia-revistoria-webhook`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "" },
-            body: JSON.stringify({ vistoria_id: vistoria.id }),
-          });
-        } catch (_) { /* webhook best-effort */ }
-      }
+      // Chamar análise IA automaticamente
+      const baseUrl = import.meta.env.VITE_SUPABASE_URL || "https://dxuoppekxgvdqnytftho.supabase.co";
+      const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
+      fetch(`${baseUrl}/functions/v1/gia-vistoria-ai-analise`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": apikey, "Authorization": `Bearer ${apikey}` },
+        body: JSON.stringify({ vistoria_id: vistoria.id }),
+      }).catch(() => {}); // fire and forget — IA analisa em background
+
       setConcluido(true);
     } catch (err) {
       console.error(err);
