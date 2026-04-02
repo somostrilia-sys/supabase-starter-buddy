@@ -156,37 +156,26 @@ export default function VistoriaPublica() {
         });
       }
 
-      // Atualizar vistoria
+      // Salvar metadata na vistoria
       await (supabase as any).from("vistorias").update({
-        status: "em_aprovacao",
         fotos_enviadas: Array.from(fotos.entries()).map(([catId, f]) => ({
           categoria: catId, timestamp: f.timestamp, lat: f.lat, lng: f.lng,
         })),
         geolocalizacao: coords ? { lat: coords.lat, lng: coords.lng, timestamp: new Date().toISOString() } : null,
       }).eq("id", vistoria.id);
 
-      // Mover card direto pra liberado_cadastro (vistoria foi feita)
-      if (vistoria.negociacao_id) {
-        await (supabase as any).from("negociacoes").update({
-          stage: "liberado_cadastro",
-          updated_at: new Date().toISOString(),
-        }).eq("id", vistoria.negociacao_id);
-        await (supabase as any).from("pipeline_transicoes").insert({
-          negociacao_id: vistoria.negociacao_id,
-          stage_anterior: "aguardando_vistoria",
-          stage_novo: "liberado_cadastro",
-          motivo: "Fotos de vistoria enviadas pelo associado",
-          automatica: true,
-        });
-      }
-
-      // IA analisa em background (resultado aparece no card em Liberado)
+      // Chamar edge function que faz TUDO: salvar fotos na tabela, mover card, disparar IA
       const baseUrl = import.meta.env.VITE_SUPABASE_URL || "https://dxuoppekxgvdqnytftho.supabase.co";
       const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
-      fetch(`${baseUrl}/functions/v1/gia-vistoria-ai-analise`, {
+      await fetch(`${baseUrl}/functions/v1/gia-vistoria-concluir`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "apikey": apikey, "Authorization": `Bearer ${apikey}` },
-        body: JSON.stringify({ vistoria_id: vistoria.id }),
+        body: JSON.stringify({
+          vistoria_id: vistoria.id,
+          fotos_metadata: Array.from(fotos.entries()).map(([catId, f]) => ({
+            categoria: catId, timestamp: f.timestamp, lat: f.lat, lng: f.lng,
+          })),
+        }),
       }).catch(() => {});
 
       setConcluido(true);
