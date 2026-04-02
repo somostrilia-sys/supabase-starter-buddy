@@ -157,6 +157,7 @@ export default function VistoriaTab({ deal }: Props) {
     }
   }, [vistoriaReal]);
   const [prazo, setPrazo] = useState("7");
+  const [iaAnalisando, setIaAnalisando] = useState(false);
   const [selectedFotos, setSelectedFotos] = useState<string[]>([
     "frente","traseira","lateral_esquerda","lateral_direita","interior_painel",
     "banco_dianteiro","banco_traseiro","motor_capo","porta_malas","rodas_pneus",
@@ -402,25 +403,34 @@ export default function VistoriaTab({ deal }: Props) {
                 }}>
                   <Copy className="h-3.5 w-3.5 mr-1" />Copiar Link
                 </Button>
-                {status === "reprovada" && (
-                  <Button size="sm" variant="outline" className="rounded-none border-amber-400 text-amber-600 hover:bg-amber-50" onClick={async () => {
-                    if (!vistoriaId) return;
-                    toast.info("Reanalisando vistoria com critérios revisados...");
-                    try {
-                      const res = await callEdge("gia-vistoria-ai-analise", { vistoria_id: vistoriaId, recurso: true });
-                      if (res.sucesso) {
-                        if (res.aprovada) {
-                          setStatus("aprovada");
-                          toast.success("Vistoria APROVADA após recurso!");
+                {(status === "reprovada" || status === "em_aprovacao") && (
+                  <Button size="sm" variant="outline"
+                    className={`rounded-none ${iaAnalisando ? "border-blue-400 text-blue-500 animate-pulse" : "border-amber-400 text-amber-600 hover:bg-amber-50"}`}
+                    disabled={iaAnalisando}
+                    onClick={async () => {
+                      if (!vistoriaId) return;
+                      setIaAnalisando(true);
+                      try {
+                        const res = await callEdge("gia-vistoria-ai-analise", { vistoria_id: vistoriaId, recurso: true });
+                        if (res.sucesso) {
+                          if (res.aprovada) {
+                            setStatus("aprovada");
+                            toast.success(`✅ Vistoria APROVADA! Score: ${res.score}/100`);
+                          } else {
+                            setStatus("reprovada");
+                            toast.error(`Reprovada. Score: ${res.score}/100. ${res.motivo || ""}`, { duration: 8000 });
+                          }
                         } else {
-                          toast.error(`Mantida como reprovada. Score: ${res.score}/100. ${res.motivo || ""}`);
+                          toast.error(res.error || "Erro na reanálise");
                         }
-                      } else {
-                        toast.error(res.error || "Erro na reanálise");
-                      }
-                    } catch { toast.error("Erro ao recorrer"); }
-                  }}>
-                    <RotateCcw className="h-3.5 w-3.5 mr-1" />Recorrer (IA reanalisar)
+                      } catch { toast.error("Erro ao recorrer"); }
+                      setIaAnalisando(false);
+                    }}>
+                    {iaAnalisando ? (
+                      <><RotateCcw className="h-3.5 w-3.5 mr-1 animate-spin" />IA Analisando...</>
+                    ) : (
+                      <><RotateCcw className="h-3.5 w-3.5 mr-1" />Recorrer (IA reanalisar)</>
+                    )}
                   </Button>
                 )}
                 {status === "reprovada" && isAdmin && (
