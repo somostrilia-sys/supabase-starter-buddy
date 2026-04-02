@@ -114,7 +114,7 @@ export default function Pipeline() {
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
 
   // Hook de negociações (Supabase real)
-  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "todos");
+  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "30d");
 
   // Dados reais de cooperativas com regional vinculada
   const { data: cooperativasDb } = useQuery({
@@ -541,6 +541,9 @@ export default function Pipeline() {
               <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-[10px] h-7" onClick={() => { const t = new Date().toISOString().split("T")[0]; setFDateStart(t); setFDateEnd(t); }}>Hoje</Button>
               <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-[10px] h-7" onClick={() => { const d = new Date(); const s = new Date(d); s.setDate(d.getDate() - d.getDay()); setFDateStart(s.toISOString().split("T")[0]); setFDateEnd(d.toISOString().split("T")[0]); }}>Semana</Button>
               <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-[10px] h-7" onClick={() => { const d = new Date(); setFDateStart(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-01`); setFDateEnd(d.toISOString().split("T")[0]); }}>Mês</Button>
+              <Button size="sm" className="bg-white/20 text-white hover:bg-white/30 font-semibold" onClick={() => reloadNegociacoes()}>
+                <Search className="h-3 w-3 mr-1" />Buscar
+              </Button>
               <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={clearFilters}><X className="h-3 w-3 mr-1" />Limpar</Button>
             </div>
           </div>
@@ -578,15 +581,15 @@ export default function Pipeline() {
                           draggable={deal.stage !== "concluido" && deal.stage !== "perdido"}
                           onDragStart={e => { if (deal.stage === "concluido" || deal.stage === "perdido") { e.preventDefault(); return; } handleDragStart(e, deal.id); }}
                           onClick={() => setDetailDeal(deal)}
-                          className={`kanban-card group bg-card border border-border/60 border-l-[3px] rounded-lg cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-150 ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""} ${deal.stage === "concluido" ? "opacity-70" : ""}`}
+                          className={`kanban-card group bg-card border border-border/50 border-l-[3px] rounded-lg cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-150 ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""} ${deal.stage === "concluido" ? "opacity-70" : ""}`}
                           style={{ borderLeftColor: col.color }}
                         >
-                          <div className="p-3 space-y-1.5">
+                          <div className="p-2.5 space-y-1">
                             {/* Header: nome + código + menu */}
                             <div className="flex items-start justify-between">
                               <div className="min-w-0 flex-1">
-                                <p className="text-xs font-medium leading-snug text-foreground/90 truncate">{deal.lead_nome}</p>
-                                <span className="text-[10px] font-mono text-muted-foreground/60">{deal.codigo}</span>
+                                <p className="text-[13px] font-semibold leading-tight text-foreground truncate">{deal.lead_nome}</p>
+                                <span className="text-[9px] font-mono text-muted-foreground/50">{deal.codigo}</span>
                               </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -613,16 +616,16 @@ export default function Pipeline() {
 
                             {/* Veículo + Placa */}
                             <div className="flex items-center gap-1.5">
-                              <Car className="h-3 w-3 shrink-0 text-muted-foreground/50" />
-                              <span className="text-[10px] text-muted-foreground/80 truncate flex-1">{deal.veiculo_modelo}</span>
-                              {deal.veiculo_placa && <span className="text-[9px] font-mono bg-muted/60 text-muted-foreground px-1 py-0 rounded">{deal.veiculo_placa}</span>}
+                              <Car className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+                              <span className="text-[11px] font-medium text-foreground/70 truncate flex-1">{deal.veiculo_modelo}</span>
+                              {deal.veiculo_placa && <span className="text-[9px] font-mono font-bold bg-muted text-foreground/70 px-1.5 py-0 rounded">{deal.veiculo_placa}</span>}
                             </div>
 
                             {/* Plano + Valor */}
                             {(deal.plano || deal.valor_plano > 0) && (
                               <div className="flex items-center justify-between">
-                                {deal.plano && <span className="text-[9px] bg-primary/8 text-primary/80 px-1.5 py-0.5 rounded">{deal.plano}</span>}
-                                {deal.valor_plano > 0 && <span className="text-[10px] font-semibold text-foreground/70">R$ {deal.valor_plano.toFixed(0)}</span>}
+                                {deal.plano && <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded">{deal.plano}</span>}
+                                {deal.valor_plano > 0 && <span className="text-[11px] font-bold text-foreground">R$ {deal.valor_plano.toFixed(0)}</span>}
                               </div>
                             )}
 
@@ -640,16 +643,16 @@ export default function Pipeline() {
 
                             {/* Data + Stalled */}
                             <div className="flex items-center justify-between">
-                              <span className="text-[9px] text-muted-foreground/50">{new Date(deal.created_at).toLocaleDateString("pt-BR")}</span>
+                              <span className="text-[10px] text-muted-foreground/60">{new Date(deal.created_at).toLocaleDateString("pt-BR")}</span>
                               <StalledBadge days={days} />
                             </div>
 
                             {/* Footer: Consultor */}
-                            <div className="flex items-center gap-1.5 pt-1 border-t border-border/40 mt-0.5">
-                              <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                <span className="text-[8px] font-medium text-primary/70">{deal.consultor?.charAt(0) || "?"}</span>
+                            <div className="flex items-center gap-1.5 pt-1.5 border-t border-border/30 mt-1">
+                              <div className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                                <span className="text-[9px] font-bold text-primary">{deal.consultor?.charAt(0) || "?"}</span>
                               </div>
-                              <span className="text-[9px] text-muted-foreground/60 truncate">{deal.consultor}</span>
+                              <span className="text-[10px] font-medium text-muted-foreground truncate">{deal.consultor}</span>
                             </div>
                           </div>
                         </div>
