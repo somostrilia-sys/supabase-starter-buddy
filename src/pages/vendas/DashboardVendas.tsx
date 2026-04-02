@@ -28,15 +28,17 @@ function getDateRange(periodo: string, dataInicio: string, dataFim: string) {
   let start: Date;
   switch (periodo) {
     case "semana": start = new Date(now.getTime() - 7 * 86400000); break;
+    case "30d": start = new Date(now.getTime() - 30 * 86400000); break;
     case "trimestre": start = new Date(now.getFullYear(), now.getMonth() - 3, 1); break;
     case "ano": start = new Date(now.getFullYear(), 0, 1); break;
+    case "todos": start = new Date(2020, 0, 1); break;
     default: start = new Date(now.getFullYear(), now.getMonth(), 1);
   }
   return { start: start.toISOString(), end };
 }
 
 export default function DashboardVendas() {
-  const [periodo, setPeriodo] = useState("mes");
+  const [periodo, setPeriodo] = useState("30d");
   const [consultor, setConsultor] = useState("Todos");
   const [cooperativa, setCooperativa] = useState("Todas");
   const [dataInicio, setDataInicio] = useState("");
@@ -62,16 +64,35 @@ export default function DashboardVendas() {
     },
   });
 
-  // Negociações com filtros
-  const { data: negsData } = useQuery({
+  // Negociações com filtros (paginado pra superar limite 1000)
+  const { data: negsData, isLoading: negsLoading } = useQuery({
     queryKey: ["dash_negs", range.start, range.end, consultor, cooperativa],
     queryFn: async () => {
-      let q = supabase.from("negociacoes" as any).select("*")
-        .gte("created_at", range.start).lte("created_at", range.end);
-      if (consultor !== "Todos") q = q.eq("consultor", consultor);
-      if (cooperativa !== "Todas") q = q.ilike("cooperativa", `%${cooperativa}%`);
-      const { data } = await q;
-      return (data || []) as any[];
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const url = import.meta.env.VITE_SUPABASE_URL;
+      const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      let allData: any[] = [];
+      for (let page = 0; page < 5; page++) {
+        const params = new URLSearchParams({
+          select: "stage,consultor,cooperativa,valor_plano,origem,created_at",
+          order: "created_at.desc",
+          offset: String(page * 1000),
+          limit: "1000",
+          created_at: `gte.${range.start}`,
+        });
+        if (range.end) params.append("created_at", `lte.${range.end}`);
+        if (consultor !== "Todos") params.set("consultor", `eq.${consultor}`);
+        if (cooperativa !== "Todas") params.set("cooperativa", `ilike.%${cooperativa}%`);
+        const resp = await fetch(`${url}/rest/v1/negociacoes?${params}`, {
+          headers: { apikey, Authorization: `Bearer ${token || apikey}` },
+        });
+        const data = await resp.json();
+        if (!Array.isArray(data) || data.length === 0) break;
+        allData = allData.concat(data);
+        if (data.length < 1000) break;
+      }
+      return allData;
     },
   });
 
@@ -144,8 +165,11 @@ export default function DashboardVendas() {
             <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="semana">Esta Semana</SelectItem>
+              <SelectItem value="30d">Últimos 30 dias</SelectItem>
               <SelectItem value="mes">Este Mês</SelectItem>
               <SelectItem value="trimestre">Trimestre</SelectItem>
+              <SelectItem value="ano">Este Ano</SelectItem>
+              <SelectItem value="todos">Todos</SelectItem>
               <SelectItem value="ano">Este Ano</SelectItem>
             </SelectContent>
           </Select>
