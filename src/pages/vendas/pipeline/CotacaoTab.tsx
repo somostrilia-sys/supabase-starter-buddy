@@ -416,7 +416,21 @@ export default function CotacaoTab({ deal }: Props) {
   };
 
   const handleEnviar = async (tipo: string) => {
-    if (tipo === "PDF") { handleBaixarPdf(); return; }
+    if (tipo === "PDF") {
+      handleBaixarPdf();
+      // Auto-transição mesmo ao baixar PDF
+      const { data: negPdf } = await (supabase as any).from("negociacoes").select("stage").eq("id", deal.id).maybeSingle();
+      const stagePdf = negPdf?.stage || deal.stage;
+      if (stagePdf === "novo_lead" || stagePdf === "em_contato") {
+        await (supabase as any).from("negociacoes").update({ stage: "em_negociacao", updated_at: new Date().toISOString() }).eq("id", deal.id);
+        await (supabase as any).from("pipeline_transicoes").insert({
+          negociacao_id: deal.id, stage_anterior: stagePdf, stage_novo: "em_negociacao",
+          motivo: "Cotação PDF baixada", automatica: true,
+        });
+        toast.info("Card movido para Em Negociação");
+      }
+      return;
+    }
     if (!form.estadoCirc || !form.cidadeCirc.trim()) {
       toast.error("Preencha Estado e Cidade de Circulação antes de enviar a cotação.");
       return;
