@@ -48,31 +48,42 @@ export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const PAGE_SIZE = 1000;
-      const MAX_PAGES = periodo === "todos" ? 10 : 5;
-      let allData: any[] = [];
+      // Buscar via fetch direto pra contornar limite de 1000 do supabase-js
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const url = import.meta.env.VITE_SUPABASE_URL;
+      const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
       const dias = PERIODO_DIAS[periodo];
       const dataLimite = dias > 0 ? new Date(Date.now() - dias * 86400000).toISOString() : null;
 
+      const PAGE_SIZE = 1000;
+      const MAX_PAGES = periodo === "todos" ? 10 : 5;
+      let allData: any[] = [];
+
       for (let page = 0; page < MAX_PAGES; page++) {
-        let q = (supabase as any)
-          .from("negociacoes")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+        const params = new URLSearchParams({
+          select: "*",
+          order: "created_at.desc",
+          offset: String(page * PAGE_SIZE),
+          limit: String(PAGE_SIZE),
+        });
+        if (dataLimite) params.set("created_at", `gte.${dataLimite}`);
+        if (companyId) params.set("company_id", `eq.${companyId}`);
 
-        if (dataLimite) q = q.gte("created_at", dataLimite);
-        if (companyId) q = q.eq("company_id", companyId);
-
-        const { data, error } = await q;
-        if (error) { console.error("[useNegociacoes] Erro:", error.message); break; }
-        if (!data || data.length === 0) break;
+        const resp = await fetch(`${url}/rest/v1/negociacoes?${params}`, {
+          headers: {
+            apikey,
+            Authorization: `Bearer ${token || apikey}`,
+          },
+        });
+        const data = await resp.json();
+        if (!Array.isArray(data) || data.length === 0) break;
         allData = allData.concat(data);
-        if (data.length < PAGE_SIZE) break; // última página
+        if (data.length < PAGE_SIZE) break;
       }
 
-      console.log("[useNegociacoes]", allData.length, "negociações carregadas, periodo:", periodo);
+      console.log("[useNegociacoes]", allData.length, "negociações, periodo:", periodo);
       setNegociacoes(allData as Negociacao[]);
       setTotalCount(allData.length);
     } catch (err) {
