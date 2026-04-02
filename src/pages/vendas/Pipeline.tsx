@@ -554,14 +554,14 @@ export default function Pipeline() {
 
       {/* KANBAN VIEW */}
       {viewMode === "kanban" ? (
-        <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-thin" style={{ height: "calc(100vh - 220px)", scrollbarColor: "#6366F1 transparent" }}>
+        <div className="flex gap-3 overflow-x-scroll pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-thin" style={{ height: "calc(100vh - 220px)" }}>
           {stageColumns.map(col => {
             const colDeals = filtered.filter(d => d.stage === col.key);
             const isOver = dragOverStage === col.key;
             return (
               <div
                 key={col.key}
-                className={`flex flex-col rounded-xl overflow-hidden min-w-[260px] w-[260px] shrink-0 transition-all bg-muted/40 border border-border/50 ${isOver ? "ring-2 shadow-lg" : "shadow-sm"}`}
+                className={`flex flex-col rounded-xl overflow-hidden min-w-[280px] w-[280px] shrink-0 transition-all bg-muted/40 border border-border/50 ${isOver ? "ring-2 shadow-lg" : "shadow-sm"}`}
                 onDragOver={e => handleDragOver(e, col.key)}
                 onDragLeave={() => setDragOverStage(null)}
                 onDrop={() => handleDrop(col.key)}

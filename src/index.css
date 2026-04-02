@@ -347,24 +347,25 @@
   font-weight: 500;
 }
 
-/* Scrollbar flutuante do kanban */
+/* Scrollbar sempre visível no kanban */
+.scrollbar-thin {
+  overflow-x: scroll !important;
+  scrollbar-width: auto;
+  scrollbar-color: #6366F1 rgba(100, 100, 100, 0.15);
+}
 .scrollbar-thin::-webkit-scrollbar {
-  height: 10px;
+  height: 14px;
+  display: block !important;
 }
 .scrollbar-thin::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 8px;
+  background: rgba(100, 100, 100, 0.15);
+  border-radius: 7px;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.5);
-  border-radius: 8px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
+  background: #6366F1;
+  border-radius: 7px;
+  min-width: 60px;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.8);
-}
-.scrollbar-thin {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(99, 102, 241, 0.5) transparent;
+  background: #4F46E5;
 }
