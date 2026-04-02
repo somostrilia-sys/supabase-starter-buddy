@@ -45,9 +45,12 @@ function AIAdvisorSection() {
     setAiLoading(true);
     setAiError("");
     try {
+      // Buscar usuario_id real da tabela usuarios
+      const { data: usuario } = await (supabase as any).from("usuarios").select("id").eq("auth_id", profile.user_id).maybeSingle();
+      const consultorId = usuario?.id || profile.id;
       const res = await callEdge("gia-conselheiro-ia", {
         modo: "agenda",
-        consultor_id: profile.id,
+        consultor_id: consultorId,
       });
       if (res.sucesso === false) {
         setAiError(res.error || "Erro ao consultar IA");
@@ -365,10 +368,10 @@ export default function Atividades() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("pipeline_transicoes")
-        .select("*, negociacoes(lead_nome, veiculo_placa, consultor)")
+        .select("*")
         .order("created_at", { ascending: false })
         .limit(100);
-      if (error) throw error;
+      if (error) { console.error("Transicoes error:", error); return []; }
       return data || [];
     },
   });
