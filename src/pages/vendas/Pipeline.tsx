@@ -547,6 +547,11 @@ export default function Pipeline() {
         </CardContent>
       </Card>
 
+      {/* DEBUG - remover depois */}
+      {negociacoesLoading && <div className="bg-yellow-100 text-yellow-800 p-2 text-xs rounded">Carregando negociações...</div>}
+      {!negociacoesLoading && negociacoes.length === 0 && <div className="bg-red-100 text-red-800 p-2 text-xs rounded">Hook retornou 0 negociações. Periodo: {periodo}. Verifique console (F12).</div>}
+      {!negociacoesLoading && negociacoes.length > 0 && <div className="bg-green-100 text-green-800 p-2 text-xs rounded">{negociacoes.length} negociações carregadas. Filtradas: {filtered.length}</div>}
+
       {/* KANBAN VIEW */}
       {viewMode === "kanban" ? (
         <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0" style={{ height: "calc(100vh - 220px)" }}>
