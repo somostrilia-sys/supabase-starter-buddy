@@ -563,7 +563,7 @@ export default function Pipeline() {
       {viewMode === "kanban" ? (
         <div className="relative w-full max-w-full">
           <div className="flex gap-3 overflow-x-scroll overflow-y-hidden pb-5 scrollbar-thin" style={{ height: "calc(100vh - 280px)" }}>
-          {[...stageColumns, { key: "perdido" as PipelineStage, label: "Perdido / Arquivado", color: "#EF4444", bg: "bg-muted/20", dot: "bg-red-500" }].map(col => {
+          {stageColumns.filter(col => col.key !== "perdido").map(col => {
             const colDeals = filtered.filter(d => d.stage === col.key);
             const isOver = dragOverStage === col.key;
             return (
