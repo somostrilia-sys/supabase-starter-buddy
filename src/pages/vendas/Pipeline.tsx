@@ -539,15 +539,15 @@ export default function Pipeline() {
             </div>
           </div>
           {/* Botões de ação - sempre visíveis */}
-          <div className="flex items-center gap-2 pt-2 border-t border-white/10 mt-2">
-            <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-xs h-8" onClick={() => { const t = new Date().toISOString().split("T")[0]; setFDateStart(t); setFDateEnd(t); }}>Hoje</Button>
-            <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-xs h-8" onClick={() => { const d = new Date(); const s = new Date(d); s.setDate(d.getDate() - d.getDay()); setFDateStart(s.toISOString().split("T")[0]); setFDateEnd(d.toISOString().split("T")[0]); }}>Semana</Button>
-            <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-xs h-8" onClick={() => { const d = new Date(); setFDateStart(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-01`); setFDateEnd(d.toISOString().split("T")[0]); }}>Mês</Button>
+          <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-white/20 mt-3">
+            <Button size="sm" className="bg-white/20 hover:bg-white/30 text-white font-semibold text-xs h-9 px-4" onClick={() => { const t = new Date().toISOString().split("T")[0]; setFDateStart(t); setFDateEnd(t); }}>📅 Hoje</Button>
+            <Button size="sm" className="bg-white/20 hover:bg-white/30 text-white font-semibold text-xs h-9 px-4" onClick={() => { const d = new Date(); const s = new Date(d); s.setDate(d.getDate() - d.getDay()); setFDateStart(s.toISOString().split("T")[0]); setFDateEnd(d.toISOString().split("T")[0]); }}>📅 Semana</Button>
+            <Button size="sm" className="bg-white/20 hover:bg-white/30 text-white font-semibold text-xs h-9 px-4" onClick={() => { const d = new Date(); setFDateStart(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-01`); setFDateEnd(d.toISOString().split("T")[0]); }}>📅 Mês</Button>
             <div className="flex-1" />
-            <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white font-bold text-xs h-8 px-6" onClick={() => reloadNegociacoes()}>
-              <Search className="h-3.5 w-3.5 mr-1.5" />Filtrar
+            <Button size="sm" className="bg-[#22C55E] hover:bg-[#16A34A] text-white font-bold text-sm h-9 px-8 shadow-lg" onClick={() => reloadNegociacoes()}>
+              <Search className="h-4 w-4 mr-2" />FILTRAR
             </Button>
-            <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-xs h-8" onClick={clearFilters}><X className="h-3.5 w-3.5 mr-1" />Limpar</Button>
+            <Button size="sm" className="bg-red-500/80 hover:bg-red-500 text-white font-semibold text-xs h-9 px-4" onClick={clearFilters}><X className="h-3.5 w-3.5 mr-1" />Limpar</Button>
           </div>
         </CardContent>
       </Card>
