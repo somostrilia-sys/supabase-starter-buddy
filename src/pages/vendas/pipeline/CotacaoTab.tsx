@@ -96,22 +96,31 @@ async function buscarPrecosReais(valorFipe: number): Promise<{ plano: string; co
 interface Props { deal: PipelineDeal; }
 
 export default function CotacaoTab({ deal }: Props) {
-  // Infer initial marca/modelo from deal (empty if not found in mock list)
-  const inferredMarca = marcas.find(m => {
-    const models = modelosPorMarca[m];
-    return models?.some(mod => deal.veiculo_modelo?.includes(mod.modelo.split(" ")[0]));
-  }) || "";
+  // Inferir marca do modelo do deal
+  const dealModelo = (deal.veiculo_modelo || "").toUpperCase();
+  const inferredMarca = marcas.find(m => dealModelo.includes(m.toUpperCase())) || "";
 
   const [marca, setMarca] = useState(inferredMarca);
-  const [marcaReal, setMarcaReal] = useState(""); // marca vinda da API (pode não estar na lista mock)
-  const [modeloReal, setModeloReal] = useState(""); // modelo vindo da API
-  const [valorFipeReal, setValorFipeReal] = useState(0); // valor FIPE real da API
-  const [codFipeReal, setCodFipeReal] = useState(""); // código FIPE real da API
+  const [marcaReal, setMarcaReal] = useState(inferredMarca);
+  const [modeloReal, setModeloReal] = useState(deal.veiculo_modelo || "");
+  const [valorFipeReal, setValorFipeReal] = useState(deal.valor_plano || 0);
+  const [codFipeReal, setCodFipeReal] = useState("");
   const [modeloIdx, setModeloIdx] = useState(0);
+  // Detectar tipo do veículo
+  const detectTipo = () => {
+    const m = dealModelo.toLowerCase();
+    const p = ((deal as any).plano || "").toLowerCase();
+    const motos = ["cg ", "cb ", "xre", "pcx", "nmax", "fazer", "twister", "titan", "fan ", "biz", "bros", "lander", "mt-", "yzf", "ninja", "duke", "moto"];
+    const pesados = ["scania", "volvo fh", "iveco", "man ", "daf", "sprinter", "daily", "accelo", "cargo", "worker", "constellation", "pesado", "van"];
+    if (motos.some(x => m.includes(x)) || p.includes("moto")) return "Motocicleta";
+    if (pesados.some(x => m.includes(x)) || p.includes("pesado") || p.includes("van")) return "Caminhão";
+    return "Automóvel";
+  };
+
   const [form, setForm] = useState({
-    tipoVeiculo: "Automóvel",
+    tipoVeiculo: detectTipo(),
     placa: deal.veiculo_placa || "",
-    chassi: "",
+    chassi: (deal as any).chassi || "",
     renavam: "",
     anoFab: "",
     cor: "",
