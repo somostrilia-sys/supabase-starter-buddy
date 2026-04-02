@@ -451,19 +451,19 @@ export default function CotacaoTab({ deal }: Props) {
         updated_at: new Date().toISOString(),
       } as any).eq("id", deal.id);
 
-      // Auto-transição: novo_lead ou em_contato → em_negociacao
-      if (deal.stage === "novo_lead" || deal.stage === "em_contato" || deal.stage === "em_negociacao") {
-        if (deal.stage !== "em_negociacao") {
-          await (supabase as any).from("negociacoes").update({ stage: "em_negociacao", updated_at: new Date().toISOString() }).eq("id", deal.id);
-          await (supabase as any).from("pipeline_transicoes").insert({
-            negociacao_id: deal.id,
-            stage_anterior: deal.stage,
-            stage_novo: "em_negociacao",
-            motivo: `Cotação enviada via ${tipo} — auto-transição`,
-            automatica: true,
-          });
-          toast.info("Card movido para Em Negociação");
-        }
+      // Auto-transição: buscar stage ATUAL do banco e mover se necessário
+      const { data: negAtual } = await (supabase as any).from("negociacoes").select("stage").eq("id", deal.id).maybeSingle();
+      const stageAtual = negAtual?.stage || deal.stage;
+      if (stageAtual === "novo_lead" || stageAtual === "em_contato") {
+        await (supabase as any).from("negociacoes").update({ stage: "em_negociacao", updated_at: new Date().toISOString() }).eq("id", deal.id);
+        await (supabase as any).from("pipeline_transicoes").insert({
+          negociacao_id: deal.id,
+          stage_anterior: stageAtual,
+          stage_novo: "em_negociacao",
+          motivo: `Cotação enviada via ${tipo}`,
+          automatica: true,
+        });
+        toast.info("Card movido para Em Negociação");
       }
 
       const linkPlanos = `${window.location.origin}/planos/${cotId}`;
@@ -496,7 +496,18 @@ export default function CotacaoTab({ deal }: Props) {
         return;
       }
     } else {
-      toast.error("Erro ao criar cotação");
+      // Cotação não criou mas ainda assim mover o card
+      const { data: negFallback } = await (supabase as any).from("negociacoes").select("stage").eq("id", deal.id).maybeSingle();
+      const stageFb = negFallback?.stage || deal.stage;
+      if (stageFb === "novo_lead" || stageFb === "em_contato") {
+        await (supabase as any).from("negociacoes").update({ stage: "em_negociacao", updated_at: new Date().toISOString() }).eq("id", deal.id);
+        await (supabase as any).from("pipeline_transicoes").insert({
+          negociacao_id: deal.id, stage_anterior: stageFb, stage_novo: "em_negociacao",
+          motivo: `Cotação enviada via ${tipo}`, automatica: true,
+        });
+        toast.info("Card movido para Em Negociação");
+      }
+      toast.error("Erro ao criar cotação, mas card foi movido");
       return;
     }
     toast.success(`Cotação enviada via ${tipo}!`);
