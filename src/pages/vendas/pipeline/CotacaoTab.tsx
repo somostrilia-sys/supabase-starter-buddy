@@ -178,11 +178,11 @@ export default function CotacaoTab({ deal }: Props) {
 
   // Carregar dados completos da negociação do banco
   useEffect(() => {
-    if (!deal.id || deal.id.startsWith("p")) return;
-    (supabase as any).from("negociacoes").select("*").eq("id", deal.id).single()
-      .then(({ data }: any) => {
-        if (!data) return;
-        const n = data;
+    if (!deal?.id || deal.id.startsWith("p")) return;
+    (supabase as any).from("negociacoes").select("*").eq("id", deal.id).maybeSingle()
+      .then((res: any) => {
+        const n = res?.data;
+        if (!n) return;
         setForm(prev => ({
           ...prev,
           placa: n.veiculo_placa || prev.placa,
@@ -195,7 +195,7 @@ export default function CotacaoTab({ deal }: Props) {
           cidadeCirc: n.cidade_circulacao || prev.cidadeCirc,
         }));
         if (n.valor_plano && n.valor_plano > 0) setValorFipeReal(n.valor_plano);
-      });
+      }).catch(() => {});
   }, [deal.id]);
 
   // Detectar tipo do veículo
