@@ -88,6 +88,8 @@ export default function Pipeline() {
   const [fDateStart, setFDateStart] = useState("");
   const [fDateEnd, setFDateEnd] = useState("");
   const [fDateType, setFDateType] = useState("created_at");
+  const [fOrigem, setFOrigem] = useState("all");
+  const [fPlano, setFPlano] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
 
   // List view
@@ -137,6 +139,7 @@ export default function Pipeline() {
     },
   });
   const consultoresReais = [...new Set((usuariosReais || []).map((u: any) => u.nome).filter(Boolean))];
+  const gerentesReais = [...new Set((usuariosReais || []).filter((u: any) => u.funcao === 'Administrador de Cooperativas' || u.funcao === 'Administrador Master').map((u: any) => u.nome).filter(Boolean))];
 
   // Carregar planos reais do banco
   const { data: planosDb } = useQuery({
@@ -376,7 +379,10 @@ export default function Pipeline() {
   }, [dealsToShow]);
   // --- Fim cash sound ---
 
-  const activeFilterCount = [fConsultor !== "all", fGerente !== "all", fCoop !== "all", fRegional !== "all", fEtapa !== "all", !!fDateStart, !!fDateEnd].filter(Boolean).length;
+  const activeFilterCount = [fConsultor !== "all", fGerente !== "all", fCoop !== "all", fRegional !== "all", fEtapa !== "all", fOrigem !== "all", fPlano !== "all", !!fDateStart, !!fDateEnd].filter(Boolean).length;
+
+  // Origens únicas reais
+  const origensReais = useMemo(() => [...new Set(dealsToShow.map(d => d.origem).filter(Boolean))].sort(), [dealsToShow]);
 
   const filtered = useMemo(() => {
     return dealsToShow.filter(d => {
@@ -385,12 +391,14 @@ export default function Pipeline() {
       if (fCoop !== "all" && d.cooperativa !== fCoop) return false;
       if (fRegional !== "all" && d.regional !== fRegional) return false;
       if (fEtapa !== "all" && d.stage !== fEtapa) return false;
+      if (fOrigem !== "all" && d.origem !== fOrigem) return false;
+      if (fPlano !== "all" && d.plano !== fPlano) return false;
       const dateField = fDateType === "created_at" ? d.created_at : d.updated_at;
       if (fDateStart && dateField < fDateStart) return false;
       if (fDateEnd && dateField > fDateEnd + "T23:59:59") return false;
       return true;
     });
-  }, [dealsToShow, fConsultor, fGerente, fCoop, fRegional, fEtapa, fDateStart, fDateEnd, fDateType]);
+  }, [dealsToShow, fConsultor, fGerente, fCoop, fRegional, fEtapa, fOrigem, fPlano, fDateStart, fDateEnd, fDateType]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -407,7 +415,7 @@ export default function Pipeline() {
   const totalPages = Math.ceil(sorted.length / perPage);
 
   function clearFilters() {
-    setFConsultor("all"); setFGerente("all"); setFCoop("all"); setFRegional("all"); setFEtapa("all"); setFDateStart(""); setFDateEnd("");
+    setFConsultor("all"); setFGerente("all"); setFCoop("all"); setFRegional("all"); setFEtapa("all"); setFOrigem("all"); setFPlano("all"); setFDateStart(""); setFDateEnd("");
   }
 
   function toggleSort(key: SortKey) {
@@ -535,7 +543,17 @@ export default function Pipeline() {
             </div>
             <div className="space-y-1"><Label className="text-xs">Gerente</Label>
               <Select value={fGerente} onValueChange={setFGerente}><SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">Todos</SelectItem>{gerentes.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="all">Todos</SelectItem>{gerentesReais.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1"><Label className="text-xs">Origem</Label>
+              <Select value={fOrigem} onValueChange={setFOrigem}><SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="all">Todas</SelectItem>{origensReais.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1"><Label className="text-xs">Plano</Label>
+              <Select value={fPlano} onValueChange={setFPlano}><SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="all">Todos</SelectItem>{planosLista.filter(Boolean).map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1"><Label className="text-xs">Data Início</Label><Input type="date" className="h-8 text-xs bg-white/10 border-white/20 text-white" value={fDateStart} onChange={e => setFDateStart(e.target.value)} /></div>
@@ -545,7 +563,10 @@ export default function Pipeline() {
                 <SelectContent><SelectItem value="created_at">Data Criação</SelectItem><SelectItem value="updated_at">Última Movimentação</SelectItem></SelectContent>
               </Select>
             </div>
-            <div className="flex items-end gap-2">
+            <div className="flex items-end gap-2 flex-wrap">
+              <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-[10px] h-7" onClick={() => { const t = new Date().toISOString().split("T")[0]; setFDateStart(t); setFDateEnd(t); }}>Hoje</Button>
+              <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-[10px] h-7" onClick={() => { const d = new Date(); const s = new Date(d); s.setDate(d.getDate() - d.getDay()); setFDateStart(s.toISOString().split("T")[0]); setFDateEnd(d.toISOString().split("T")[0]); }}>Semana</Button>
+              <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-[10px] h-7" onClick={() => { const d = new Date(); setFDateStart(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-01`); setFDateEnd(d.toISOString().split("T")[0]); }}>Mês</Button>
               <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={clearFilters}><X className="h-3 w-3 mr-1" />Limpar</Button>
             </div>
           </div>
