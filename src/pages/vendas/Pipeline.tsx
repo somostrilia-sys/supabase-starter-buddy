@@ -114,7 +114,7 @@ export default function Pipeline() {
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
 
   // Hook de negociações (Supabase real)
-  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes } = useNegociacoes();
+  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "30d");
 
   // Dados reais de cooperativas com regional vinculada
   const { data: cooperativasDb } = useQuery({
@@ -507,9 +507,23 @@ export default function Pipeline() {
       {/* Filtros — card único azul, sempre visível */}
       <Card className="bg-[#2c4a86] border-[#2c4a86] text-white [&_label]:text-white/80">
         <CardContent className="p-4 space-y-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Filter className="h-4 w-4 text-white/70" />
-            <span className="text-sm font-semibold text-white/90">Filtros</span>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-white/70" />
+              <span className="text-sm font-semibold text-white/90">Filtros</span>
+              <Badge className="bg-white/15 text-white text-[10px]">{totalCount.toLocaleString()} cotações</Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-white/60">Período:</span>
+              {(["7d","30d","90d","180d","365d","todos"] as const).map(p => (
+                <Button key={p} size="sm" variant="ghost"
+                  className={`h-6 px-2 text-[10px] ${periodo === p ? "bg-white/20 text-white font-bold" : "text-white/50 hover:text-white hover:bg-white/10"}`}
+                  onClick={() => setPeriodo(p)}
+                >
+                  {p === "todos" ? "Todos" : p === "7d" ? "7 dias" : p === "30d" ? "30 dias" : p === "90d" ? "3 meses" : p === "180d" ? "6 meses" : "1 ano"}
+                </Button>
+              ))}
+            </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             <div className="space-y-1"><Label className="text-xs">Placa</Label>

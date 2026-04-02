@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Negociacao {
@@ -25,29 +25,55 @@ export interface Negociacao {
   status_icons: Record<string, boolean>;
   created_at: string;
   updated_at: string;
+  [key: string]: any;
 }
 
-export function useNegociacoes(companyId?: string) {
+export type PeriodoFiltro = "7d" | "30d" | "90d" | "180d" | "365d" | "todos";
+
+const PERIODO_DIAS: Record<PeriodoFiltro, number> = {
+  "7d": 7,
+  "30d": 30,
+  "90d": 90,
+  "180d": 180,
+  "365d": 365,
+  "todos": 0,
+};
+
+export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro = "30d") {
   const [negociacoes, setNegociacoes] = useState<Negociacao[]>([]);
   const [loading, setLoading] = useState(true);
+  const [periodo, setPeriodo] = useState<PeriodoFiltro>(periodoPadrao);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     let q = (supabase as any)
       .from("negociacoes")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200);
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false });
+
+    // Filtro por período
+    const dias = PERIODO_DIAS[periodo];
+    if (dias > 0) {
+      const dataLimite = new Date();
+      dataLimite.setDate(dataLimite.getDate() - dias);
+      q = q.gte("created_at", dataLimite.toISOString());
+    }
+
     if (companyId) q = q.eq("company_id", companyId);
-    const { data } = await q;
+
+    // Limite maior para cobrir o período
+    q = q.limit(periodo === "todos" ? 5000 : 2000);
+
+    const { data, count } = await q;
     setNegociacoes((data as Negociacao[]) || []);
+    setTotalCount(count || 0);
     setLoading(false);
-  };
+  }, [companyId, periodo]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [companyId]);
+  }, [load]);
 
   const create = async (neg: Partial<Negociacao>) => {
     const { data, error } = await (supabase as any)
@@ -73,5 +99,5 @@ export function useNegociacoes(companyId?: string) {
     return { error };
   };
 
-  return { negociacoes, loading, reload: load, create, update };
+  return { negociacoes, loading, reload: load, create, update, periodo, setPeriodo, totalCount };
 }
