@@ -297,6 +297,8 @@ export default function Pipeline() {
     cor: (n as any).cor || "",
     combustivel: (n as any).combustivel || "",
     dia_vencimento: (n as any).dia_vencimento || "",
+    vistoria_status: (n as any).vistoria_status || "",
+    vistoria_motivo: (n as any).vistoria_motivo || "",
     created_at: n.created_at,
     updated_at: n.updated_at,
   } as any));
@@ -632,6 +634,18 @@ export default function Pipeline() {
                               <div className="flex items-center justify-between">
                                 {deal.plano && <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded">{deal.plano}</span>}
                                 {deal.valor_plano > 0 && <span className="text-[11px] font-bold text-black dark:text-white">R$ {deal.valor_plano.toFixed(0)}</span>}
+                              </div>
+                            )}
+
+                            {/* Vistoria reprovada alert */}
+                            {(deal as any).vistoria_status === "reprovada" && (
+                              <div className="bg-red-500/10 border border-red-500/30 rounded px-2 py-1">
+                                <span className="text-[9px] font-bold text-red-500">⚠ Vistoria Reprovada</span>
+                              </div>
+                            )}
+                            {(deal as any).vistoria_status === "aprovada" && (
+                              <div className="bg-green-500/10 border border-green-500/30 rounded px-2 py-0.5">
+                                <span className="text-[9px] font-bold text-green-500">✓ Vistoria Aprovada</span>
                               </div>
                             )}
 
