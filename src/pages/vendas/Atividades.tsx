@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +38,7 @@ function AIAdvisorSection() {
   const [aiData, setAiData] = useState<any>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [autoLoaded, setAutoLoaded] = useState(false);
 
   const fetchAI = async () => {
     if (!profile?.id) return;
@@ -58,6 +59,14 @@ function AIAdvisorSection() {
     }
     setAiLoading(false);
   };
+
+  // Auto-carregar IA na primeira vez
+  useEffect(() => {
+    if (profile?.id && !autoLoaded && !aiData) {
+      setAutoLoaded(true);
+      fetchAI();
+    }
+  }, [profile?.id]);
 
   if (!showAdvisor) {
     return (
