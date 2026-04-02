@@ -457,7 +457,7 @@ export default function VistoriaTab({ deal }: Props) {
                   await gerarLaudoVistoria({
                     dataImpressao: new Date().toLocaleString("pt-BR"),
                     contratante: "OBJETIVO AUTO BENEFÍCIOS",
-                    logoUrl: "https://objetivoauto.com.br/wp-content/uploads/2025/11/IMG_1299.png",
+                    logoUrl: `${window.location.origin}/logo-objetivo.png`,
                     configuracao: categoriaVistoria === "automovel" ? "Carro" : categoriaVistoria === "moto" ? "Moto" : "Caminhão",
                     solicitante: d.cooperativa || deal.cooperativa || "Objetivo Auto Benefícios",
                     vistoriador: d.consultor || deal.consultor || "Sistema",
