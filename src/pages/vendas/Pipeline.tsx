@@ -150,8 +150,9 @@ export default function Pipeline() {
     },
   });
 
-  const todasCooperativas = cooperativasDb && cooperativasDb.length > 0 ? cooperativasDb.map((c: any) => c.nome) : cooperativas;
-  // Consultor/gestor vê só suas cooperativas, admin vê todas
+  // Cooperativas reais extraídas das negociações carregadas (garante match perfeito)
+  const cooperativasReaisNeg = useMemo(() => [...new Set(negociacoes.map(n => n.cooperativa).filter(Boolean))].sort(), [negociacoes]);
+  const todasCooperativas = cooperativasReaisNeg.length > 0 ? cooperativasReaisNeg : (cooperativasDb && cooperativasDb.length > 0 ? cooperativasDb.map((c: any) => c.nome) : cooperativas);
   const cooperativasLista = isAdmin || minhasCooperativas.length === 0
     ? todasCooperativas
     : todasCooperativas.filter(c => minhasCooperativas.some((mc: string) => c.toLowerCase().includes(mc.toLowerCase()) || mc.toLowerCase().includes(c.toLowerCase())));
@@ -344,12 +345,18 @@ export default function Pipeline() {
   // Origens únicas reais
   const origensReais = useMemo(() => [...new Set(dealsToShow.map(d => d.origem).filter(Boolean))].sort(), [dealsToShow]);
 
+  // Normaliza texto pra comparação (lowercase, remove espaços extras)
+  const norm = (s: string) => (s || "").toLowerCase().replace(/\s+/g, " ").trim();
+
   const filtered = useMemo(() => {
+    const nCoop = norm(fCoop);
+    const nConsultor = norm(fConsultor);
+    const nRegional = norm(fRegional);
     return dealsToShow.filter(d => {
-      if (fConsultor !== "all" && d.consultor !== fConsultor) return false;
+      if (fConsultor !== "all" && norm(d.consultor) !== nConsultor) return false;
       if (fGerente !== "all" && d.gerente !== fGerente) return false;
-      if (fCoop !== "all" && d.cooperativa !== fCoop) return false;
-      if (fRegional !== "all" && d.regional !== fRegional) return false;
+      if (fCoop !== "all" && !norm(d.cooperativa).includes(nCoop) && !nCoop.includes(norm(d.cooperativa))) return false;
+      if (fRegional !== "all" && norm(d.regional) !== nRegional) return false;
       if (fEtapa !== "all" && d.stage !== fEtapa) return false;
       if (fOrigem !== "all" && d.origem !== fOrigem) return false;
       if (fPlano !== "all" && d.plano !== fPlano) return false;
@@ -554,14 +561,15 @@ export default function Pipeline() {
 
       {/* KANBAN VIEW */}
       {viewMode === "kanban" ? (
-        <div className="flex gap-3 overflow-x-scroll pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-thin" style={{ height: "calc(100vh - 220px)" }}>
-          {stageColumns.map(col => {
+        <div className="relative w-full max-w-full">
+          <div className="flex gap-3 overflow-x-scroll overflow-y-hidden pb-5 scrollbar-thin" style={{ height: "calc(100vh - 280px)" }}>
+          {[...stageColumns, { key: "perdido" as PipelineStage, label: "Perdido / Arquivado", color: "#EF4444", bg: "bg-muted/20", dot: "bg-red-500" }].map(col => {
             const colDeals = filtered.filter(d => d.stage === col.key);
             const isOver = dragOverStage === col.key;
             return (
               <div
                 key={col.key}
-                className={`flex flex-col rounded-xl overflow-hidden min-w-[280px] w-[280px] shrink-0 transition-all bg-muted/40 border border-border/50 ${isOver ? "ring-2 shadow-lg" : "shadow-sm"}`}
+                className={`flex flex-col rounded-xl overflow-hidden min-w-[300px] w-[300px] shrink-0 transition-all bg-muted/40 border border-border/50 ${isOver ? "ring-2 shadow-lg" : "shadow-sm"}`}
                 onDragOver={e => handleDragOver(e, col.key)}
                 onDragLeave={() => setDragOverStage(null)}
                 onDrop={() => handleDrop(col.key)}
@@ -670,6 +678,7 @@ export default function Pipeline() {
               </div>
             );
           })}
+          </div>
         </div>
       ) : (
         /* LIST VIEW */
