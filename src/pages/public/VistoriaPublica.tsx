@@ -156,7 +156,7 @@ export default function VistoriaPublica() {
         });
       }
 
-      // Atualizar status da vistoria
+      // Atualizar vistoria
       await (supabase as any).from("vistorias").update({
         status: "em_aprovacao",
         fotos_enviadas: Array.from(fotos.entries()).map(([catId, f]) => ({
@@ -165,14 +165,29 @@ export default function VistoriaPublica() {
         geolocalizacao: coords ? { lat: coords.lat, lng: coords.lng, timestamp: new Date().toISOString() } : null,
       }).eq("id", vistoria.id);
 
-      // Chamar análise IA automaticamente
+      // Mover card direto pra liberado_cadastro (vistoria foi feita)
+      if (vistoria.negociacao_id) {
+        await (supabase as any).from("negociacoes").update({
+          stage: "liberado_cadastro",
+          updated_at: new Date().toISOString(),
+        }).eq("id", vistoria.negociacao_id);
+        await (supabase as any).from("pipeline_transicoes").insert({
+          negociacao_id: vistoria.negociacao_id,
+          stage_anterior: "aguardando_vistoria",
+          stage_novo: "liberado_cadastro",
+          motivo: "Fotos de vistoria enviadas pelo associado",
+          automatica: true,
+        });
+      }
+
+      // IA analisa em background (resultado aparece no card em Liberado)
       const baseUrl = import.meta.env.VITE_SUPABASE_URL || "https://dxuoppekxgvdqnytftho.supabase.co";
       const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
       fetch(`${baseUrl}/functions/v1/gia-vistoria-ai-analise`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "apikey": apikey, "Authorization": `Bearer ${apikey}` },
         body: JSON.stringify({ vistoria_id: vistoria.id }),
-      }).catch(() => {}); // fire and forget — IA analisa em background
+      }).catch(() => {});
 
       setConcluido(true);
     } catch (err) {

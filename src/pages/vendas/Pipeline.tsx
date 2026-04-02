@@ -637,15 +637,15 @@ export default function Pipeline() {
                               </div>
                             )}
 
-                            {/* Vistoria reprovada alert */}
-                            {(deal as any).vistoria_status === "reprovada" && (
+                            {/* Vistoria status — só mostra em Liberado p/ Cadastro */}
+                            {deal.stage === "liberado_cadastro" && (deal as any).vistoria_status === "reprovada" && (
                               <div className="bg-red-500/10 border border-red-500/30 rounded px-2 py-1">
                                 <span className="text-[9px] font-bold text-red-500">⚠ Vistoria Reprovada</span>
                               </div>
                             )}
-                            {(deal as any).vistoria_status === "aprovada" && (
+                            {deal.stage === "liberado_cadastro" && (deal as any).vistoria_status === "aprovada" && (
                               <div className="bg-green-500/10 border border-green-500/30 rounded px-2 py-0.5">
-                                <span className="text-[9px] font-bold text-green-500">✓ Vistoria Aprovada</span>
+                                <span className="text-[9px] font-bold text-green-500">✓ Vistoria OK</span>
                               </div>
                             )}
 
