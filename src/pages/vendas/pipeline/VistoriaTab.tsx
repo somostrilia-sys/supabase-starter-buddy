@@ -151,19 +151,16 @@ export default function VistoriaTab({ deal }: Props) {
   const StIcon = st.icon;
 
   const handleSolicitar = async () => {
-    // Validar TODOS os dados obrigatórios antes de solicitar vistoria
+    // Buscar dados FRESCOS do banco (não do deal em memória que pode estar desatualizado)
+    const { data: negAtual } = await supabase.from("negociacoes" as any).select("lead_nome,cpf_cnpj,telefone,email,veiculo_placa,veiculo_modelo").eq("id", deal.id).maybeSingle();
+    const d = (negAtual || deal) as any;
+
     const faltando: string[] = [];
-    // Associado
-    if (!deal.lead_nome?.trim()) faltando.push("Nome do Lead (Associado)");
-    if (!deal.cpf_cnpj?.trim()) faltando.push("CPF/CNPJ (Associado)");
-    if (!deal.telefone?.trim()) faltando.push("Telefone (Associado)");
-    if (!deal.email?.trim()) faltando.push("E-mail (Associado)");
-    // Veículo
-    if (!deal.veiculo_placa?.trim()) faltando.push("Placa do Veículo");
-    if (!deal.veiculo_modelo?.trim()) faltando.push("Modelo do Veículo");
-    // Circulação
-    if (!deal.cidade_circulacao?.trim()) faltando.push("Cidade de Circulação");
-    if (!deal.estado_circulacao?.trim()) faltando.push("Estado de Circulação");
+    if (!d.lead_nome?.trim()) faltando.push("Nome do Lead (Associado)");
+    if (!d.telefone?.trim()) faltando.push("Telefone (Associado)");
+    if (!d.email?.trim()) faltando.push("E-mail (Associado)");
+    if (!d.veiculo_placa?.trim()) faltando.push("Placa do Veículo");
+    if (!d.veiculo_modelo?.trim()) faltando.push("Modelo do Veículo");
 
     if (faltando.length > 0) {
       toast.error(`Complete os dados antes de solicitar vistoria:\n• ${faltando.join("\n• ")}`, { duration: 8000 });
@@ -181,8 +178,8 @@ export default function VistoriaTab({ deal }: Props) {
         token_publico: token,
         status: "pendente",
         tentativa: 1,
-        placa: deal.veiculo_placa,
-        modelo: deal.veiculo_modelo,
+        placa: d.veiculo_placa || deal.veiculo_placa,
+        modelo: d.veiculo_modelo || deal.veiculo_modelo,
         fotos_solicitadas: selectedFotos,
       } as any)
       .select()
@@ -225,13 +222,13 @@ export default function VistoriaTab({ deal }: Props) {
     toast.success("Vistoria criada! Link copiado. Enviando SMS e e-mail...", { duration: 5000 });
 
     // Enviar SMS + Email via ClickSend
-    const msgTexto = `Olá ${deal.lead_nome}! Segue o link para envio das fotos da vistoria do seu veículo ${deal.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização, e envie todas as 14 fotos solicitadas.\n\nObjetivo Auto Benefícios`;
+    const msgTexto = `Olá ${d.lead_nome || deal.lead_nome}! Segue o link para envio das fotos da vistoria do seu veículo ${d.veiculo_placa || deal.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização, e envie todas as 14 fotos solicitadas.\n\nObjetivo Auto Benefícios`;
     callEdge("gia-enviar-notificacao", {
       tipo: "ambos",
-      telefone: deal.telefone,
-      email: deal.email,
-      nome: deal.lead_nome,
-      assunto: `Vistoria Veicular - ${deal.veiculo_placa}`,
+      telefone: d.telefone || deal.telefone,
+      email: d.email || deal.email,
+      nome: d.lead_nome || deal.lead_nome,
+      assunto: `Vistoria Veicular - ${d.veiculo_placa || deal.veiculo_placa}`,
       mensagem: msgTexto,
     }).then(res => {
       if (res.sms?.sucesso) toast.success("SMS enviado ao associado!");
@@ -240,7 +237,7 @@ export default function VistoriaTab({ deal }: Props) {
     }).catch(() => {});
 
     // Abrir WhatsApp também
-    const tel = (deal.telefone || "").replace(/\D/g, "");
+    const tel = (d.telefone || deal.telefone || "").replace(/\D/g, "");
     if (tel) {
       const msg = encodeURIComponent(msgTexto);
       window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
