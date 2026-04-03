@@ -1363,24 +1363,27 @@ export default function CotacaoTab({ deal }: Props) {
           const diaVenc = parseInt(form.diaVencimento) || diaPadrao;
           const vencimentoForaFaixa = diaVenc !== diaPadrao;
           const precisaAnalise = maiorDesconto > 5 || vencimentoForaFaixa;
+          const mostrarLiberacao = precisaAnalise || cotacaoEnviada;
 
-          if (!precisaAnalise) return null;
+          if (!mostrarLiberacao) return null;
 
           return (
             <div className="p-3 border-2 border-[#1A3A5C]/30 rounded bg-[#1A3A5C]/3 space-y-2">
               <div className="flex items-center gap-2">
                 <BrainCircuit className="h-5 w-5 text-[#1A3A5C]" />
-                <span className="text-sm font-bold text-[#1A3A5C]">Análise IA Necessária</span>
+                <span className="text-sm font-bold text-[#1A3A5C]">{precisaAnalise ? "Análise IA Necessária" : "Pedir Liberação"}</span>
               </div>
               <div className="flex flex-wrap gap-1">
                 {maiorDesconto > 5 && <Badge className="rounded-none bg-amber-100 text-amber-700 text-[10px]">Desconto {maiorDesconto.toFixed(1)}%</Badge>}
                 {vencimentoForaFaixa && <Badge className="rounded-none bg-blue-100 text-blue-700 text-[10px]">Vencimento dia {diaVenc} (padrão: {diaPadrao})</Badge>}
+                {cotacaoEnviada && !precisaAnalise && <Badge className="rounded-none bg-gray-100 text-gray-700 text-[10px]">Cotação já enviada — alterar desconto</Badge>}
               </div>
               <PedirLiberacaoButton
                 negociacaoId={deal.id}
                 onSuccess={(res) => {
                   if (res?.aprovado) {
-                    toast.success("Liberação aprovada! Desconto/vencimento liberados.");
+                    setCotacaoEnviada(false); // Desbloquear desconto após aprovação
+                    toast.success("Liberação aprovada! Desconto liberado.");
                     if (maiorDesconto > 5) setDescontoIaResult({ aprovado: true, desconto_maximo: maiorDesconto, justificativa: res.justificativa || "Aprovado pela IA", necessita_diretor: false });
                   }
                 }}
