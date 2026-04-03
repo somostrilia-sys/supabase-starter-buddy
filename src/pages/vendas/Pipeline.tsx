@@ -304,6 +304,9 @@ export default function Pipeline() {
     cache_precos: (n as any).cache_precos || null,
     cotacao_id: (n as any).cotacao_id || null,
     proposta_concorrente_url: (n as any).proposta_concorrente_url || null,
+    desconto_aprovado_por: (n as any).desconto_aprovado_por || null,
+    desconto_ia_aprovado: (n as any).desconto_ia_aprovado || false,
+    desconto_percentual: (n as any).desconto_percentual || 0,
     created_at: n.created_at,
     updated_at: n.updated_at,
   } as any));

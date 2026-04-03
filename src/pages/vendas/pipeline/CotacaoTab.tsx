@@ -500,8 +500,9 @@ export default function CotacaoTab({ deal }: Props) {
   const valorFipe = valorFipeReal;
   const codFipe = codFipeReal;
 
-  // Desconto: livre em cards novos, bloqueado após cotação enviada (precisa IA >5%)
-  const descontoBloqueado = cotacaoEnviada && !descontoIaResult?.aprovado;
+  // Desconto: livre em cards novos, bloqueado após cotação enviada (precisa IA >5% ou diretor)
+  const descontoAprovadoPorDiretor = !!(deal as any).desconto_aprovado_por || !!(deal as any).desconto_ia_aprovado;
+  const descontoBloqueado = cotacaoEnviada && !descontoIaResult?.aprovado && !descontoAprovadoPorDiretor;
 
   const set = (field: string, value: string | boolean) => setForm(prev => ({ ...prev, [field]: value }));
 

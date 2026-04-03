@@ -113,10 +113,21 @@ export default function ExcecaoAprovacao() {
     }
 
     if (acao === "aprovado" && excecao.negociacao_id) {
-      await (supabase as any).from("negociacoes").update({ excecao_pendente: false, updated_at: new Date().toISOString() }).eq("id", excecao.negociacao_id);
+      const updateNeg: any = {
+        excecao_pendente: false,
+        updated_at: new Date().toISOString(),
+        desconto_aprovado_por: diretorNome,
+      };
+      // Se é exceção de desconto, aplicar o desconto na negociação
+      if (excecao.desconto_solicitado > 0) {
+        updateNeg.desconto_percentual = excecao.desconto_solicitado;
+        updateNeg.desconto_ia_aprovado = true;
+        updateNeg.desconto_ia_analise = { aprovado_por_diretor: diretorNome, desconto: excecao.desconto_solicitado, data: new Date().toISOString() };
+      }
+      await (supabase as any).from("negociacoes").update(updateNeg).eq("id", excecao.negociacao_id);
       await (supabase as any).from("pipeline_transicoes").insert({
         negociacao_id: excecao.negociacao_id, stage_anterior: "excecao_pendente", stage_novo: "em_negociacao",
-        motivo: `Exceção "${excecao.tipo}" aprovada por ${diretorNome}`, automatica: false,
+        motivo: `Exceção "${excecao.tipo}" aprovada por ${diretorNome}${excecao.desconto_solicitado > 0 ? ` — desconto ${excecao.desconto_solicitado}% aplicado` : ""}`, automatica: false,
       });
     }
     setResultado(acao);
