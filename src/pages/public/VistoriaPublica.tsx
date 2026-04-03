@@ -200,7 +200,7 @@ export default function VistoriaPublica() {
             categoria: catId, timestamp: f.timestamp, lat: f.lat, lng: f.lng,
           })),
         }),
-      }).catch(() => {});
+      }).catch((err) => console.error("Erro ao concluir vistoria:", err));
 
       setConcluido(true);
     } catch (err) {

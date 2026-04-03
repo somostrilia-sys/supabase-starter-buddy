@@ -130,7 +130,7 @@ export default function VistoriaTab({ deal }: Props) {
     }
   };
 
-  // Buscar vistoria real do banco
+  // Buscar vistoria real do banco (cache 2min)
   const { data: vistoriaReal } = useQuery({
     queryKey: ["vistoria_real", deal.id],
     queryFn: async () => {
@@ -142,10 +142,11 @@ export default function VistoriaTab({ deal }: Props) {
         .limit(1)
         .maybeSingle();
       return data as any;
-    }
+    },
+    staleTime: 2 * 60 * 1000,
   });
 
-  // Buscar timeline real do pipeline_transicoes
+  // Buscar timeline (cache 2min, limit 20)
   const { data: timelineReal } = useQuery({
     queryKey: ["vistoria_timeline", deal.id],
     queryFn: async () => {
@@ -153,9 +154,11 @@ export default function VistoriaTab({ deal }: Props) {
         .from("pipeline_transicoes" as any)
         .select("*")
         .eq("negociacao_id", deal.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(20);
       return (data || []) as any[];
-    }
+    },
+    staleTime: 2 * 60 * 1000,
   });
 
   const timeline: TimelineEvent[] = (timelineReal && timelineReal.length > 0)
@@ -493,18 +496,27 @@ export default function VistoriaTab({ deal }: Props) {
                   />
                 )}
                 <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={async () => {
-                  // Buscar fotos reais do banco
+                  // Buscar fotos reais do banco com signed URLs (fallback se bucket privado)
                   const { data: fotosReais } = await (supabase as any).from("vistoria_fotos").select("*").eq("vistoria_id", vistoriaId).order("created_at");
-                  const fotosLaudo = (fotosReais || []).map((f: any) => {
+                  const fotosLaudo = await Promise.all((fotosReais || []).map(async (f: any) => {
                     const { data: urlData } = supabase.storage.from("vistoria-fotos").getPublicUrl(f.storage_path);
+                    let url = urlData.publicUrl;
+                    // Testar se URL funciona, senão usar signed URL
+                    try {
+                      const test = await fetch(url, { method: "HEAD" });
+                      if (!test.ok) throw new Error("not public");
+                    } catch {
+                      const { data: signed } = await supabase.storage.from("vistoria-fotos").createSignedUrl(f.storage_path, 600);
+                      if (signed?.signedUrl) url = signed.signedUrl;
+                    }
                     return {
                       titulo: (f.tipo || "").replace(/_/g, " "),
-                      url: urlData.publicUrl,
-                      lat: f.latitude || "",
-                      lng: f.longitude || "",
+                      url,
+                      lat: f.latitude ? String(f.latitude) : "",
+                      lng: f.longitude ? String(f.longitude) : "",
                       data: f.captured_at ? new Date(f.captured_at).toLocaleString("pt-BR") : new Date(f.created_at).toLocaleString("pt-BR"),
                     };
-                  });
+                  }));
 
                   // Buscar dados atualizados do banco
                   const { data: negAtual } = await (supabase as any).from("negociacoes").select("*").eq("id", deal.id).maybeSingle();
