@@ -432,15 +432,15 @@ export default function CotacaoTab({ deal }: Props) {
           valorReal: Number(p?.cota || 0),
           adesao: Number(p?.adesao || 0),
           rastreador: p?.rastreador || "Não",
+          instalacao: Number(p?.instalacao || 0),
         };
       })
-    : planosConfigDefault.map(p => ({ ...p, valorReal: 0, adesao: 400, rastreador: "Não" }));
+    : planosConfigDefault.map(p => ({ ...p, valorReal: 0, adesao: 400, rastreador: "Não", instalacao: 0 }));
   // Usar valor FIPE real da API
   const valorFipe = valorFipeReal;
   const codFipe = codFipeReal;
 
-  // 1.2 — Desconto bloqueado: cotação enviada E IA não aprovou
-  const descontoBloqueado = cotacaoEnviada && !descontoIaResult?.aprovado;
+  // Desconto é livre para consultor/gestor. Análise IA obrigatória apenas >5%.
 
   const set = (field: string, value: string | boolean) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -469,6 +469,7 @@ export default function CotacaoTab({ deal }: Props) {
         adesaoOriginal: descontoAdesao ? (precoPlano ? Number(precoPlano.adesao) : 400) : undefined,
         participacao: precoPlano ? `${precoPlano.tipo_franquia} ${precoPlano.valor_franquia}` : "5% FIPE",
         rastreador: precoPlano?.rastreador || "Não",
+        instalacao: precoPlano ? Number(precoPlano.instalacao || 0) : 0,
       },
       coberturas: coberturasPlano.map((c: any) => ({ nome: c.cobertura, inclusa: c.inclusa, tipo: c.tipo, detalhe: c.detalhe })),
       consultor: { nome: deal.consultor || "Consultor", telefone: "", email: "" },
@@ -991,18 +992,14 @@ export default function CotacaoTab({ deal }: Props) {
                 </CardHeader>
                 <CardContent className="px-4 pb-4 space-y-2">
                   <div className="text-2xl font-bold text-[#1A3A5C]">{formatCurrency(mensal)}<span className="text-xs font-normal text-muted-foreground">/mês</span></div>
-                  {/* 1.5 — Rastreador obrigatório */}
+                  {/* Adesão */}
+                  <div className="text-xs text-muted-foreground">Adesão: <span className="font-semibold text-[#1A3A5C]">{formatCurrency((p as any).adesao || 0)}</span></div>
+                  {/* Rastreador obrigatório — valor de instalação */}
                   {(p as any).rastreador && (p as any).rastreador !== "Não" && (p as any).rastreador !== "" && (
-                    <div className="space-y-1 p-1.5 rounded border border-amber-300 bg-amber-50">
+                    <div className="space-y-0.5 p-1.5 rounded border border-amber-300 bg-amber-50">
                       <Badge className="rounded-none bg-amber-100 text-amber-700 text-[10px]">Rastreador Obrigatório</Badge>
-                      <p className="text-[10px] text-amber-700">Modelo: {(p as any).rastreador}</p>
-                      {(() => {
-                        const precoPlano = precosReais.find((pr: any) => (pr.plano_normalizado || pr.plano) === p.nome);
-                        const instalacao = precoPlano ? Number(precoPlano.instalacao || 0) : 0;
-                        return instalacao > 0 ? (
-                          <p className="text-[10px] font-semibold text-amber-800">Instalação: {formatCurrency(instalacao)}</p>
-                        ) : null;
-                      })()}
+                      <p className="text-[10px] text-amber-700">{(p as any).rastreador}</p>
+                      <p className="text-[10px] font-semibold text-amber-800">Instalação: {formatCurrency((p as any).instalacao || 0)}</p>
                     </div>
                   )}
                   <ul className="space-y-1">
@@ -1018,31 +1015,34 @@ export default function CotacaoTab({ deal }: Props) {
           })}
         </div>
 
-        <div className="flex items-center gap-3 pt-1">
+        <div className="flex items-center gap-3 pt-1 flex-wrap">
           <span className="text-sm text-muted-foreground">Plano selecionado:</span>
           <Badge className="rounded-none bg-[#1A3A5C] text-white">{planoSelecionado}</Badge>
-          <span className="text-sm font-semibold">
-            {formatCurrency(Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0)))}/mês
-          </span>
+          {(() => {
+            const pl = planosConfig.find(p => p.nome === planoSelecionado);
+            const mensalVal = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : Math.round(valorFipe * (pl?.percentual || 0));
+            const adesaoVal = (pl as any)?.adesao || 0;
+            return (
+              <>
+                <span className="text-sm font-semibold">{formatCurrency(mensalVal)}/mês</span>
+                <span className="text-xs text-muted-foreground">|</span>
+                <span className="text-sm text-muted-foreground">Adesão: <strong>{formatCurrency(adesaoVal)}</strong></span>
+              </>
+            );
+          })()}
         </div>
 
         {/* Campos de desconto para a cotação */}
         <div className="space-y-3 pt-2 p-3 border rounded bg-muted/20">
-          {cotacaoEnviada && (
-            <div className="flex items-center gap-2 p-2 rounded border border-amber-300 bg-amber-50">
-              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-              <p className="text-xs text-amber-700 font-medium">Cotação já enviada ao cliente. Desconto só pode ser alterado via análise IA (&gt;5%) ou exceção ao diretor.</p>
-            </div>
-          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Desconto Mensalidade (valor final)</Label>
-              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60 cursor-not-allowed" : ""}`} type="number" placeholder="Deixe vazio = sem desconto" value={descontoMensal} disabled={descontoBloqueado} onChange={e => { setDescontoMensal(e.target.value); setDescontoIaResult(null); }} />
+              <Input className="rounded-none border border-gray-300" type="number" placeholder="Deixe vazio = sem desconto" value={descontoMensal} onChange={e => { setDescontoMensal(e.target.value); setDescontoIaResult(null); }} />
               <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Desconto Adesão (valor final)</Label>
-              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60 cursor-not-allowed" : ""}`} type="number" placeholder="Deixe vazio = sem desconto" value={descontoAdesao} disabled={descontoBloqueado} onChange={e => { setDescontoAdesao(e.target.value); setDescontoIaResult(null); }} />
+              <Input className="rounded-none border border-gray-300" type="number" placeholder="Deixe vazio = sem desconto" value={descontoAdesao} onChange={e => { setDescontoAdesao(e.target.value); setDescontoIaResult(null); }} />
               <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
             </div>
           </div>

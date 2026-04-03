@@ -18,6 +18,7 @@ interface DadosCotacao {
     adesaoOriginal?: number;
     participacao: string;
     rastreador: string;
+    instalacao?: number;
   };
   coberturas: { nome: string; inclusa: boolean; tipo: string; detalhe?: string }[];
   consultor: { nome: string; telefone: string; email: string };
@@ -204,6 +205,7 @@ export async function gerarPdfCotacao(dados: DadosCotacao) {
       ["Mensalidade:", { content: "", styles: { halign: "right" as const } }],
       ["Adesão:", { content: "", styles: { halign: "right" as const } }],
       ["Rastreador obrigatório:", { content: dados.plano.rastreador || "Não", styles: { halign: "right" as const } }],
+      ...(dados.plano.instalacao && dados.plano.instalacao > 0 ? [["Instalação rastreador:", { content: fmtBRL(dados.plano.instalacao), styles: { halign: "right" as const, fontStyle: "bold" as const } }]] : []),
     ],
     theme: "grid",
     margin: { left: m, right: m },
