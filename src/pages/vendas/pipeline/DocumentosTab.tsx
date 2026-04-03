@@ -71,21 +71,23 @@ export default function DocumentosTab({ negociacaoId, onCnhExtraida, onCrlvExtra
 
   async function fetchDocumentos() {
     setLoading(true);
-    const { data } = await supabase
-      .from("documentos_ocr")
-      .select("*")
-      .eq("negociacao_id", negociacaoId)
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("documentos_ocr")
+        .select("*")
+        .eq("negociacao_id", negociacaoId)
+        .order("created_at", { ascending: false });
 
-    if (data) {
-      const cnhDoc = data.find((d: any) => d.tipo === "cnh") || null;
-      const crlvDoc = data.find((d: any) => d.tipo === "crlv") || null;
-      setCnh(cnhDoc);
-      setCrlv(crlvDoc);
-      // Disparar auto-fill se já tem dados
-      if (cnhDoc?.dados_extraidos) onCnhExtraida?.(cnhDoc.dados_extraidos);
-      if (crlvDoc?.dados_extraidos) onCrlvExtraida?.(crlvDoc.dados_extraidos);
-    }
+      if (error) { console.error("Erro ao buscar documentos:", error); }
+      if (data) {
+        const cnhDoc = data.find((d: any) => d.tipo === "cnh") || null;
+        const crlvDoc = data.find((d: any) => d.tipo === "crlv") || null;
+        setCnh(cnhDoc);
+        setCrlv(crlvDoc);
+        if (cnhDoc?.dados_extraidos && Object.keys(cnhDoc.dados_extraidos).length > 0) onCnhExtraida?.(cnhDoc.dados_extraidos);
+        if (crlvDoc?.dados_extraidos && Object.keys(crlvDoc.dados_extraidos).length > 0) onCrlvExtraida?.(crlvDoc.dados_extraidos);
+      }
+    } catch (err) { console.error("Erro fetchDocumentos:", err); }
     setLoading(false);
   }
 
