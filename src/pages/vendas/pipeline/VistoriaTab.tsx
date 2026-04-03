@@ -384,27 +384,22 @@ export default function VistoriaTab({ deal }: Props) {
                 if (!cod) { toast.error("Nenhuma vistoria encontrada. Solicite uma vistoria primeiro."); return; }
                 const { data: negF } = await (supabase as any).from("negociacoes").select("telefone,email,lead_nome,veiculo_placa").eq("id", deal.id).maybeSingle();
                 const d = negF || deal;
-                if (!d.telefone && !d.email) { toast.error("Telefone e e-mail não cadastrados. Preencha na aba Associado."); return; }
+                if (!d.email) { toast.error("E-mail não cadastrado. Preencha na aba Associado."); return; }
                 const link = `${window.location.origin}/vistoria/${cod}`;
-                const msgSms = `Vistoria ${d.veiculo_placa}: ${link} - Abra no celular e envie as fotos. Objetivo Auto`;
                 const msgEmail = `Olá ${d.lead_nome}! Segue o link para envio das fotos da vistoria do veículo ${d.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização, e envie todas as fotos solicitadas.\n\nObjetivo Auto Benefícios`;
-                toast.info("Enviando SMS + E-mail...");
+                toast.info("Enviando e-mail...");
                 callEdge("gia-enviar-notificacao", {
-                  tipo: "ambos",
-                  telefone: d.telefone,
+                  tipo: "email",
                   email: d.email,
                   nome: d.lead_nome,
                   assunto: `Vistoria Veicular - ${d.veiculo_placa}`,
                   mensagem: msgEmail,
-                  mensagem_sms: msgSms,
                 }).then(res => {
-                  if (res.sms?.sucesso) toast.success("SMS enviado!");
-                  else toast.error(`SMS falhou: ${res.sms?.detalhes || "sem telefone"}`);
                   if (res.email?.sucesso) toast.success("E-mail enviado!");
                   else toast.error(`E-mail falhou: ${res.email?.detalhes || "sem email"}`);
                 }).catch(() => toast.error("Erro no envio."));
               }}>
-                <Mail className="h-3.5 w-3.5 mr-1" />Enviar SMS + E-mail
+                <Mail className="h-3.5 w-3.5 mr-1" />Enviar E-mail
               </Button>
               <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={async () => {
                 let cod = codigo;

@@ -129,19 +129,20 @@ export default function AssinaturaTab({ deal }: Props) {
         toast.error(result.error || "Erro ao gerar contrato");
       } else {
         if (result.link_assinatura) setLinkAssinatura(result.link_assinatura);
-        toast.success("Contrato enviado para assinatura via SMS + E-mail!");
+        toast.success("Contrato enviado para assinatura via e-mail!");
 
-        // Notificar associado via SMS + Email (ClickSend)
+        // Notificar associado via Email
         const linkAss = result.link_assinatura || "";
-        const msgNotif = `Olá ${deal.lead_nome}! Seu contrato de proteção veicular está pronto para assinatura.\n\n${linkAss ? `Assine aqui: ${linkAss}\n\n` : ""}Você receberá um código SMS para confirmar a assinatura.\n\nObjetivo Auto Benefícios`;
-        callEdge("gia-enviar-notificacao", {
-          tipo: "ambos",
-          telefone: deal.telefone,
-          email: deal.email,
-          nome: deal.lead_nome,
-          assunto: `Contrato para Assinatura - ${deal.veiculo_placa}`,
-          mensagem: msgNotif,
-        }).catch((e) => { console.error("Erro ao enviar notificação:", e); });
+        const msgNotif = `Olá ${deal.lead_nome}! Seu contrato de proteção veicular está pronto para assinatura.\n\n${linkAss ? `Assine aqui: ${linkAss}\n\n` : ""}Objetivo Auto Benefícios`;
+        if (deal.email) {
+          callEdge("gia-enviar-notificacao", {
+            tipo: "email",
+            email: deal.email,
+            nome: deal.lead_nome,
+            assunto: `Contrato para Assinatura - ${deal.veiculo_placa}`,
+            mensagem: msgNotif,
+          }).catch((e) => { console.error("Erro ao enviar notificação:", e); });
+        }
       }
     };
     reader.readAsDataURL(pdfBlob);
@@ -286,7 +287,7 @@ export default function AssinaturaTab({ deal }: Props) {
             <FileText className="h-3.5 w-3.5 mr-1" />Baixar Contrato PDF
           </Button>
           <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white" onClick={() => handleEnviar("ambos")} disabled={gerando}>
-            <Send className="h-3.5 w-3.5 mr-1" />{gerando ? "Gerando..." : "Enviar SMS + E-mail"}
+            <Send className="h-3.5 w-3.5 mr-1" />{gerando ? "Gerando..." : "Enviar E-mail"}
           </Button>
           <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => {
             if (linkAssinatura) {

@@ -483,22 +483,22 @@ export default function CotacaoTab({ deal }: Props) {
       const { data: negFresh } = await (supabase as any).from("negociacoes").select("telefone,email,lead_nome,veiculo_placa").eq("id", deal.id).maybeSingle();
       const df = negFresh || deal;
 
-      // Enviar SMS + Email via ClickSend (sempre, independente do tipo)
-      callEdge("gia-enviar-notificacao", {
-        tipo: "ambos",
-        telefone: df.telefone,
-        email: df.email,
-        nome: df.lead_nome,
-        assunto: `Sua Cotação de Proteção Veicular - ${df.veiculo_placa || deal.veiculo_placa}`,
-        mensagem: msgCotacao,
-      }).then(res => {
-        if (res.sms?.sucesso) toast.success("SMS enviado ao associado!");
-        if (res.email?.sucesso) toast.success("E-mail enviado ao associado!");
-      }).catch((e) => { console.error("Erro ao enviar notificação:", e); toast.error("Erro ao enviar notificação da cotação"); });
+      // Enviar Email via Mailjet
+      if (df.email) {
+        callEdge("gia-enviar-notificacao", {
+          tipo: "email",
+          email: df.email,
+          nome: df.lead_nome,
+          assunto: `Sua Cotação de Proteção Veicular - ${df.veiculo_placa || deal.veiculo_placa}`,
+          mensagem: msgCotacao,
+        }).then(res => {
+          if (res.email?.sucesso) toast.success("E-mail enviado ao associado!");
+        }).catch((e) => { console.error("Erro ao enviar notificação:", e); });
+      }
 
       if (tipo === "Link") {
         navigator.clipboard.writeText(linkPlanos);
-        toast.success("Link copiado! SMS e e-mail enviados ao cliente.", { duration: 5000 });
+        toast.success("Link copiado! E-mail enviado ao cliente.", { duration: 5000 });
         return;
       }
 
@@ -506,7 +506,7 @@ export default function CotacaoTab({ deal }: Props) {
         const tel = (df.telefone || "").replace(/\D/g, "");
         const msg = encodeURIComponent(msgCotacao);
         window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
-        toast.success("WhatsApp aberto + SMS e e-mail enviados!");
+        toast.success("WhatsApp aberto + e-mail enviado!");
         return;
       }
     } else {

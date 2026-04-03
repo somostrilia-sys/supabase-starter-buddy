@@ -121,7 +121,6 @@ export default function VistoriasVendas() {
                 <div className="flex gap-2 mt-2">
                   <Button variant="outline" className="flex-1 gap-1.5 text-xs"><MessageCircle className="h-4 w-4 text-success" />WhatsApp</Button>
                   <Button variant="outline" className="flex-1 gap-1.5 text-xs"><Mail className="h-4 w-4 text-blue-600" />Email</Button>
-                  <Button variant="outline" className="flex-1 gap-1.5 text-xs"><Smartphone className="h-4 w-4 text-purple-600" />SMS</Button>
                 </div>
               </div>
               <Button className="w-full bg-primary hover:bg-primary/90 text-white" onClick={() => setModalOpen(false)}>Enviar Link</Button>
