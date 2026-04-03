@@ -174,6 +174,7 @@ export default function CotacaoTab({ deal }: Props) {
   const [fipeFetched, setFipeFetched] = useState(false);
   const [descontoMensal, setDescontoMensal] = useState("");
   const [descontoAdesao, setDescontoAdesao] = useState("");
+  const [valorInstalacaoEdit, setValorInstalacaoEdit] = useState("");
   const [descontoIaLoading, setDescontoIaLoading] = useState(false);
   const [descontoIaResult, setDescontoIaResult] = useState<{
     aprovado: boolean;
@@ -375,6 +376,8 @@ export default function CotacaoTab({ deal }: Props) {
   const [dadosReaisCarregados, setDadosReaisCarregados] = React.useState(false);
   React.useEffect(() => {
     if (dadosReaisCarregados) return;
+    // Esperar cache de cotação terminar antes de buscar placa
+    if (!precosCarregadosDaCotacao) return;
     // Pular busca se já tem preços da cotação
     if (precosReais.length > 0 && fipeFetched) { setDadosReaisCarregados(true); return; }
     const placa = (deal.veiculo_placa || "").replace(/[^A-Z0-9]/gi, "");
@@ -430,12 +433,12 @@ export default function CotacaoTab({ deal }: Props) {
           percentual: 0,
           coberturas: [] as string[],
           valorReal: Number(p?.cota || 0),
-          adesao: Number(p?.adesao || 0),
+          adesao: Number(p?.adesao || 0) || 400,
           rastreador: p?.rastreador || "Não",
-          instalacao: Number(p?.instalacao || 0),
+          instalacao: Number(p?.instalacao || 0) || 100,
         };
       })
-    : planosConfigDefault.map(p => ({ ...p, valorReal: 0, adesao: 400, rastreador: "Não", instalacao: 0 }));
+    : planosConfigDefault.map(p => ({ ...p, valorReal: 0, adesao: 400, rastreador: "Não", instalacao: 100 }));
   // Usar valor FIPE real da API
   const valorFipe = valorFipeReal;
   const codFipe = codFipeReal;
@@ -982,12 +985,15 @@ export default function CotacaoTab({ deal }: Props) {
                   <div className="text-2xl font-bold text-[#1A3A5C]">{formatCurrency(mensal)}<span className="text-xs font-normal text-muted-foreground">/mês</span></div>
                   {/* Adesão */}
                   <div className="text-xs text-muted-foreground">Adesão: <span className="font-semibold text-[#1A3A5C]">{formatCurrency((p as any).adesao || 0)}</span></div>
-                  {/* Rastreador obrigatório — valor de instalação */}
+                  {/* Rastreador obrigatório — valor de instalação editável */}
                   {(p as any).rastreador && (p as any).rastreador !== "Não" && (p as any).rastreador !== "" && (
                     <div className="space-y-0.5 p-1.5 rounded border border-amber-300 bg-amber-50">
                       <Badge className="rounded-none bg-amber-100 text-amber-700 text-[10px]">Rastreador Obrigatório</Badge>
                       <p className="text-[10px] text-amber-700">{(p as any).rastreador}</p>
-                      <p className="text-[10px] font-semibold text-amber-800">Instalação: {formatCurrency((p as any).instalacao || 0)}</p>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-amber-800">Instalação: R$</span>
+                        <input type="number" className="w-16 text-[10px] border border-amber-300 rounded px-1 py-0.5 bg-white" value={valorInstalacaoEdit || String((p as any).instalacao || 100)} onChange={e => setValorInstalacaoEdit(e.target.value)} />
+                      </div>
                     </div>
                   )}
                   <ul className="space-y-1">
