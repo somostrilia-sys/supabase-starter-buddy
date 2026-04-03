@@ -38,7 +38,12 @@ export default function ExcecaoAprovacao() {
 
   useEffect(() => {
     if (!token) return;
-    (supabase as any).from("excecoes_aprovacao").select("*").eq("token_aprovacao", token).maybeSingle()
+    // Buscar por token_aprovacao OU negociacao_id (o link pode usar qualquer um)
+    (supabase as any).from("excecoes_aprovacao").select("*")
+      .or(`token_aprovacao.eq.${token},negociacao_id.eq.${token}`)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
       .then(({ data, error: err }: any) => {
         if (err || !data) { setError("Exceção não encontrada ou link inválido."); setLoading(false); return; }
         setExcecao(data);
