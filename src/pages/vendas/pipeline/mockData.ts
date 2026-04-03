@@ -66,6 +66,4 @@ export const cooperativas: string[] = [];
 export const regionais: string[] = [];
 export const planos = ["Básico", "Completo", "Objetivo", "Premium", "Objetivo (Leves)", "PESADOS"];
 
-const day = 86400000;
-
-export const mockDeals: PipelineDeal[] = [];
+// No mock data — all deal data comes from Supabase negociacoes table

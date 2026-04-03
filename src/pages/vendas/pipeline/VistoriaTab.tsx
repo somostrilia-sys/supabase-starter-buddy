@@ -285,7 +285,7 @@ export default function VistoriaTab({ deal }: Props) {
       if (res.sms?.sucesso) toast.success("SMS enviado ao associado!");
       if (res.email?.sucesso) toast.success("E-mail enviado ao associado!");
       if (!res.sms?.sucesso && !res.email?.sucesso) toast.info("Envio automático indisponível. Use os botões abaixo.");
-    }).catch(() => {});
+    }).catch((e) => { console.error("Erro ao enviar notificação:", e); toast.error("Erro ao enviar notificação"); });
 
     // Abrir WhatsApp também
     const tel = (d.telefone || deal.telefone || "").replace(/\D/g, "");

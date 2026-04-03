@@ -89,7 +89,7 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
             toast.success(`Cotação automática gerada! Plano: R$ ${res.valor_plano?.toFixed(2).replace(".", ",")}`);
           }
         })
-        .catch(() => {});
+        .catch((e) => { console.error("Erro na cotação automática:", e); toast.error("Erro ao gerar cotação automática"); });
     }
     onUpdate?.();
   }, [deal.id, deal.cidade_circulacao, deal.origem, onUpdate]);
@@ -389,7 +389,7 @@ function VeiculoTabInline({ deal }: { deal: PipelineDeal }) {
       callEdge("gia-buscar-placa", { acao: "placa", placa }).then(res => {
         if (res.sucesso && res.resultado) setVeiculo(res.resultado);
         setLoading(false);
-      }).catch(() => setLoading(false));
+      }).catch((e) => { console.error("Erro ao buscar placa:", e); setLoading(false); });
     }
   }, [deal.veiculo_placa]);
 

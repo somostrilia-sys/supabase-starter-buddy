@@ -15,25 +15,17 @@ import { gerarPdfCotacao } from "@/lib/gerarPdfCotacao";
 import { MessageSquare, Mail, Link2, CreditCard, CheckCircle, Shield, ShieldCheck, ShieldPlus, Search, Loader2, Car, AlertTriangle, BrainCircuit } from "lucide-react";
 import ExcecaoButton from "@/components/ExcecaoButton";
 
-/* Marcas comuns para seleção manual */
-const marcas = [
-  "Chevrolet", "Fiat", "Ford", "Honda", "Hyundai", "Jeep", "Nissan", "Renault", "Toyota", "Volkswagen",
-  "BMW", "Mercedes-Benz", "Audi", "Mitsubishi", "Kia", "Peugeot", "Citroën", "Land Rover", "Volvo",
-  "Yamaha", "Suzuki", "Kawasaki", "Triumph", "Harley-Davidson", "Royal Enfield",
-  "Scania", "Iveco", "MAN", "DAF", "Agrale",
-];
-const modelosPorMarca: Record<string, { modelo: string; codFipe: string; valorFipe: number }[]> = {};
+/* ─── Marcas estáticas (fallback para select manual quando API não retorna) ─── */
+const marcas = ["Chevrolet", "Hyundai", "Honda", "Toyota", "Volkswagen", "Fiat", "Jeep", "Nissan", "Renault", "Ford"];
 
-/* ─── Mock plate → vehicle mapping for FIPE auto-lookup ─── */
-const placaVeiculoMap: Record<string, { marca: string; modeloIdx: number; ano: string; cor: string; combustivel: string; chassi: string }> = {
-  "ABC-1D23": { marca: "Honda", modeloIdx: 0, ano: "2022", cor: "Prata", combustivel: "Flex", chassi: "9BWZZZ377VT004251" },
-  "DEF-2G34": { marca: "Volkswagen", modeloIdx: 0, ano: "2023", cor: "Branco", combustivel: "Flex", chassi: "9BWAB45U5KT123456" },
-  "GHI-3J45": { marca: "Fiat", modeloIdx: 0, ano: "2024", cor: "Vermelho", combustivel: "Flex", chassi: "9BD195227L0123456" },
-  "JKL-4M56": { marca: "Toyota", modeloIdx: 0, ano: "2023", cor: "Preto", combustivel: "Flex", chassi: "9BR53ZEC5L1234567" },
-  "MNO-5P67": { marca: "Hyundai", modeloIdx: 0, ano: "2024", cor: "Cinza", combustivel: "Flex", chassi: "9BHBG51DBLP123456" },
-  "QRS-6T78": { marca: "Chevrolet", modeloIdx: 1, ano: "2024", cor: "Azul", combustivel: "Flex", chassi: "9BGKS48B0LG123456" },
-  "UVW-7X89": { marca: "Jeep", modeloIdx: 0, ano: "2024", cor: "Branco", combustivel: "Flex", chassi: "9BFBXXLCALM123456" },
-  "YZA-8B01": { marca: "Honda", modeloIdx: 1, ano: "2023", cor: "Prata", combustivel: "Flex", chassi: "93HRV850LLH123456" },
+/* ─── Lookup de placa na tabela veiculos do Supabase ─── */
+const lookupPlaca = async (placa: string) => {
+  const { data } = await supabase
+    .from("veiculos")
+    .select("*, associados:associado_id(nome, cpf)")
+    .eq("placa", placa.toUpperCase())
+    .maybeSingle();
+  return data;
 };
 
 const cores = ["Branco", "Prata", "Preto", "Cinza", "Vermelho", "Azul", "Marrom"];
@@ -353,14 +345,11 @@ export default function CotacaoTab({ deal }: Props) {
         } else {
           setFipeLoading(false);
         }
-      }).catch(() => setFipeLoading(false));
+      }).catch((e) => { console.error("Erro ao buscar placa:", e); setFipeLoading(false); });
     }
   }, [deal.veiculo_placa, dadosReaisCarregados]);
 
-  const modelos = modelosPorMarca[marca] || [];
-  const modeloAtual = modelos[modeloIdx] || modelos[0];
-
-  // planosConfig: usa preços reais se tiver, senão fallback mock
+  // planosConfig: usa preços reais se tiver, senão fallback default
   // Agrupa por plano_normalizado para evitar duplicatas
   const planosConfig = precosReais.length > 0
     ? [...new Set(precosReais.map((p: any) => p.plano_normalizado || p.plano))].map(planoNorm => {
@@ -377,9 +366,9 @@ export default function CotacaoTab({ deal }: Props) {
         };
       })
     : planosConfigDefault.map(p => ({ ...p, valorReal: 0, adesao: 400, rastreador: "Não" }));
-  // Usar valor FIPE real da API se disponível, senão do mock
-  const valorFipe = valorFipeReal > 0 ? valorFipeReal : (modeloAtual?.valorFipe || 0);
-  const codFipe = codFipeReal || (modeloAtual?.codFipe || "");
+  // Usar valor FIPE real da API
+  const valorFipe = valorFipeReal;
+  const codFipe = codFipeReal;
 
   const set = (field: string, value: string | boolean) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -393,7 +382,7 @@ export default function CotacaoTab({ deal }: Props) {
       validade: 7,
       cliente: {
         nome: deal.lead_nome,
-        veiculo: `${marca} ${modeloAtual?.modelo || deal.veiculo_modelo}`,
+        veiculo: `${marca} ${modeloReal || deal.veiculo_modelo}`,
         placa: form.placa,
         codFipe: codFipe,
         valorFipe,
@@ -494,7 +483,7 @@ export default function CotacaoTab({ deal }: Props) {
       }).then(res => {
         if (res.sms?.sucesso) toast.success("SMS enviado ao associado!");
         if (res.email?.sucesso) toast.success("E-mail enviado ao associado!");
-      }).catch(() => {});
+      }).catch((e) => { console.error("Erro ao enviar notificação:", e); toast.error("Erro ao enviar notificação da cotação"); });
 
       if (tipo === "Link") {
         navigator.clipboard.writeText(linkPlanos);
@@ -574,25 +563,38 @@ export default function CotacaoTab({ deal }: Props) {
         toast.success(`${marcaNome} ${r.modelo} ${r.anoFabricacao}/${r.anoModelo} — ${formatCurrency(vFipe)}`);
         return;
       }
-    } catch { /* fallback to mock */ }
+    } catch { /* API error */ }
 
-    // Fallback: mock
-    const veiculo = placaVeiculoMap[placa];
-    if (!veiculo) {
+    // Fallback: buscar na tabela veiculos do Supabase
+    const veiculoDb = await lookupPlaca(placa);
+    if (veiculoDb) {
+      setMarcaReal(veiculoDb.marca || "");
+      setModeloReal(veiculoDb.modelo || "");
+      const matchMarca = marcas.find(m => (veiculoDb.marca || "").toUpperCase().includes(m.toUpperCase()));
+      if (matchMarca) setMarca(matchMarca);
+      setForm(prev => ({
+        ...prev,
+        anoFab: veiculoDb.ano ? String(veiculoDb.ano) : prev.anoFab,
+        cor: veiculoDb.cor || prev.cor,
+        combustivel: veiculoDb.combustivel || prev.combustivel,
+        chassi: veiculoDb.chassi || prev.chassi,
+        renavam: veiculoDb.renavam || prev.renavam,
+      }));
+      const vFipe = veiculoDb.valor_fipe || 0;
+      if (vFipe > 0) {
+        setValorFipeReal(vFipe);
+        setCodFipeReal(veiculoDb.cod_fipe || "");
+        await carregarPrecos(vFipe);
+        await carregarCoberturas(planoSelecionado);
+      }
       setFipeLoading(false);
-      toast.error("Placa não encontrada. Selecione marca/modelo manualmente.");
+      setFipeFetched(true);
+      toast.success(`${veiculoDb.marca || ""} ${veiculoDb.modelo || ""} — ${formatCurrency(vFipe)}`);
       return;
     }
-    setMarca(veiculo.marca);
-    setModeloIdx(veiculo.modeloIdx);
-    setForm(prev => ({ ...prev, anoFab: veiculo.ano, cor: veiculo.cor, combustivel: veiculo.combustivel, chassi: veiculo.chassi }));
-    const modelo = modelosPorMarca[veiculo.marca]?.[veiculo.modeloIdx];
-    const vFipe = modelo?.valorFipe || 0;
-    if (vFipe > 0) { await carregarPrecos(vFipe); await carregarCoberturas(planoSelecionado); }
 
     setFipeLoading(false);
-    setFipeFetched(true);
-    toast.success(`FIPE: ${veiculo.marca} ${modelo?.modelo || ""} — ${formatCurrency(vFipe)}`);
+    toast.error("Placa não encontrada. Selecione marca/modelo manualmente.");
   }, [planoSelecionado, deal.regional]);
 
   const handlePlacaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -613,7 +615,7 @@ export default function CotacaoTab({ deal }: Props) {
           <CheckCircle className="h-5 w-5 text-success shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-success">Dados FIPE preenchidos automaticamente</p>
-            <p className="text-xs text-success">{marca} {modeloAtual?.modelo} — {formatCurrency(valorFipe)} — Ref. Março/2026</p>
+            <p className="text-xs text-success">{marca} {modeloReal || deal.veiculo_modelo} — {formatCurrency(valorFipe)} — Ref. Março/2026</p>
           </div>
           <Badge className="bg-success text-white text-[10px]">Tabela FIPE</Badge>
         </div>
@@ -784,7 +786,7 @@ export default function CotacaoTab({ deal }: Props) {
             negociacao_id: deal.id,
             placa: form.placa,
             marca: marca,
-            modelo: modeloAtual?.modelo || deal.veiculo_modelo,
+            modelo: modeloReal || deal.veiculo_modelo,
             ano: parseInt(form.anoFab) || null,
             valor_fipe: valorFipe,
             cor: form.cor,

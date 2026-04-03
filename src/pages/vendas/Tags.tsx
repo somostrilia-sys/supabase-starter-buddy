@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, ChevronDown, ChevronRight, Tag as TagIcon } from "lucide-react";
+import { Plus, Edit, Trash2, ChevronDown, ChevronRight, Tag as TagIcon, Loader2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const presetColors = [
   "#EF4444","#F97316","#F59E0B","#EAB308","#22C55E","#14B8A6",
@@ -27,10 +30,98 @@ const defaultTags: TagItem[] = [
 ];
 
 export default function Tags() {
-  const [tags, setTags] = useState<TagItem[]>(defaultTags);
+  const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingTag, setEditingTag] = useState<TagItem | null>(null);
   const [newTag, setNewTag] = useState({ nome: "", cor: "#3B82F6", grupo: "Geral" });
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(["Status","Prioridade","Ação","Origem","Sistema"]));
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(["Status","Prioridade","Ação","Origem","Sistema","Geral"]));
+
+  // Fetch tags from Supabase
+  const { data: tags = [], isLoading } = useQuery<TagItem[]>({
+    queryKey: ["vendas-tags"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tags")
+        .select("id, nome, cor, grupo")
+        .order("nome");
+      if (error) throw error;
+      return (data || []).map(t => ({
+        id: t.id,
+        nome: t.nome,
+        cor: t.cor,
+        grupo: t.grupo || "Geral",
+      }));
+    },
+  });
+
+  // Seed default tags if table is empty
+  const seedMutation = useMutation({
+    mutationFn: async () => {
+      const inserts = defaultTags.map(t => ({
+        nome: t.nome,
+        cor: t.cor,
+        grupo: t.grupo,
+      }));
+      const { error } = await supabase.from("tags").insert(inserts);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendas-tags"] });
+    },
+  });
+
+  useEffect(() => {
+    if (!isLoading && tags.length === 0) {
+      seedMutation.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, tags.length]);
+
+  // Create tag
+  const createMutation = useMutation({
+    mutationFn: async (tag: { nome: string; cor: string; grupo: string }) => {
+      const { error } = await supabase.from("tags").insert({
+        nome: tag.nome,
+        cor: tag.cor,
+        grupo: tag.grupo,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendas-tags"] });
+      toast.success("Tag criada com sucesso");
+    },
+    onError: () => toast.error("Erro ao criar tag"),
+  });
+
+  // Update tag
+  const updateMutation = useMutation({
+    mutationFn: async (tag: TagItem) => {
+      const { error } = await supabase
+        .from("tags")
+        .update({ nome: tag.nome, cor: tag.cor, grupo: tag.grupo })
+        .eq("id", tag.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendas-tags"] });
+      toast.success("Tag atualizada");
+    },
+    onError: () => toast.error("Erro ao atualizar tag"),
+  });
+
+  // Delete tag
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("tags").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendas-tags"] });
+      toast.success("Tag removida");
+    },
+    onError: () => toast.error("Erro ao remover tag"),
+  });
 
   const grupos = [...new Set(tags.map(t => t.grupo))];
 
@@ -42,15 +133,34 @@ export default function Tags() {
     });
   }
 
-  function addTag() {
-    if (!newTag.nome.trim()) return;
-    setTags(prev => [...prev, { id: `t${Date.now()}`, ...newTag }]);
+  function handleSave() {
+    if (editingTag) {
+      updateMutation.mutate({ ...editingTag, nome: newTag.nome, cor: newTag.cor, grupo: newTag.grupo });
+      setEditingTag(null);
+    } else {
+      if (!newTag.nome.trim()) return;
+      createMutation.mutate(newTag);
+    }
     setNewTag({ nome: "", cor: "#3B82F6", grupo: "Geral" });
     setModalOpen(false);
   }
 
+  function openEdit(tag: TagItem) {
+    setEditingTag(tag);
+    setNewTag({ nome: tag.nome, cor: tag.cor, grupo: tag.grupo });
+    setModalOpen(true);
+  }
+
   function removeTag(id: string) {
-    setTags(prev => prev.filter(t => t.id !== id));
+    deleteMutation.mutate(id);
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
@@ -60,10 +170,16 @@ export default function Tags() {
           <h1 className="text-2xl font-bold tracking-tight">Tags</h1>
           <p className="text-sm text-muted-foreground">{tags.length} tags em {grupos.length} grupos</p>
         </div>
-        <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <Dialog open={modalOpen} onOpenChange={(open) => {
+          setModalOpen(open);
+          if (!open) {
+            setEditingTag(null);
+            setNewTag({ nome: "", cor: "#3B82F6", grupo: "Geral" });
+          }
+        }}>
           <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" /> Nova Tag</Button></DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Criar Nova Tag</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingTag ? "Editar Tag" : "Criar Nova Tag"}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="space-y-1"><Label className="text-xs">Nome</Label>
                 <Input value={newTag.nome} onChange={e => setNewTag({...newTag, nome: e.target.value})} className="h-9 text-xs" placeholder="Nome da tag" />
@@ -94,7 +210,9 @@ export default function Tags() {
                   </span>
                 </div>
               </div>
-              <Button className="w-full" onClick={addTag} disabled={!newTag.nome.trim()}>Criar Tag</Button>
+              <Button className="w-full" onClick={handleSave} disabled={!newTag.nome.trim()}>
+                {editingTag ? "Salvar Alterações" : "Criar Tag"}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -123,7 +241,7 @@ export default function Tags() {
                         <span className="w-2.5 h-2.5 rounded-full" style={{backgroundColor: tag.cor}} />
                         <span className="text-xs font-medium">{tag.nome}</span>
                         <div className="hidden group-hover:flex items-center gap-0.5 ml-1">
-                          <button className="p-0.5 rounded hover:bg-muted"><Edit className="h-3 w-3 text-muted-foreground" /></button>
+                          <button className="p-0.5 rounded hover:bg-muted" onClick={() => openEdit(tag)}><Edit className="h-3 w-3 text-muted-foreground" /></button>
                           <button className="p-0.5 rounded hover:bg-destructive/20" onClick={() => removeTag(tag.id)}><Trash2 className="h-3 w-3 text-destructive" /></button>
                         </div>
                       </div>

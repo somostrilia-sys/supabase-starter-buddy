@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,7 +11,7 @@ import { supabase, callEdge } from "@/integrations/supabase/client";
 import { gerarContratoPdf } from "@/lib/gerarContratoPdf";
 import {
   PenTool, Mail, MessageSquare, FileText, CheckCircle, Clock,
-  Eye, Send, AlertTriangle, Copy, ExternalLink, RotateCcw,
+  Eye, Send, AlertTriangle, Copy, ExternalLink, RotateCcw, Loader2,
 } from "lucide-react";
 import ExcecaoButton from "@/components/ExcecaoButton";
 
@@ -24,33 +25,18 @@ const statusConfig: Record<AssinaturaStatus, { label: string; color: string; ico
   expirado: { label: "Expirado", color: "bg-destructive/8 text-destructive border-red-300", icon: AlertTriangle },
 };
 
-interface MockDocumento {
+interface Documento {
   id: string;
-  nome: string;
-  tipo: string;
-  geradoEm: string;
+  nome?: string;
+  tipo?: string;
+  created_at: string;
 }
-
-const mockDocumentos: MockDocumento[] = [
-  { id: "doc-1", nome: "Proposta de Adesão — Plano Completo", tipo: "Proposta", geradoEm: "05/03/2026 10:00" },
-  { id: "doc-2", nome: "Contrato de Proteção Veicular", tipo: "Contrato", geradoEm: "05/03/2026 10:05" },
-  { id: "doc-3", nome: "Termo de Adesão ao Regulamento", tipo: "Termo", geradoEm: "05/03/2026 10:05" },
-];
 
 interface TimelineEvent {
   data: string;
   descricao: string;
   tipo: "criacao" | "envio" | "visualizacao" | "assinatura" | "expiracao" | "reenvio";
 }
-
-const mockTimeline: TimelineEvent[] = [
-  { data: "05/03/2026 10:10", descricao: "Documento de proposta selecionado para assinatura via Autentic", tipo: "criacao" },
-  { data: "05/03/2026 10:12", descricao: "Envelope enviado ao cliente via e-mail (carlos.silva@email.com)", tipo: "envio" },
-  { data: "05/03/2026 10:13", descricao: "Link de assinatura enviado via WhatsApp (11) 98000-0000", tipo: "envio" },
-  { data: "05/03/2026 14:20", descricao: "Documento visualizado pelo signatário", tipo: "visualizacao" },
-  { data: "06/03/2026 09:00", descricao: "Lembrete automático enviado por e-mail", tipo: "reenvio" },
-  { data: "07/03/2026 08:45", descricao: "Aguardando assinatura — 2 dias restantes", tipo: "visualizacao" },
-];
 
 const tipoIcons: Record<string, React.ElementType> = {
   criacao: FileText, envio: Send, visualizacao: Eye,
@@ -65,13 +51,56 @@ const tipoCores: Record<string, string> = {
 interface Props { deal: PipelineDeal; }
 
 export default function AssinaturaTab({ deal }: Props) {
-  const [status, setStatus] = useState<AssinaturaStatus>("visualizado");
-  const [docSelecionado, setDocSelecionado] = useState("doc-1");
-  const [enviado, setEnviado] = useState(true);
+  const [status, setStatus] = useState<AssinaturaStatus>("pendente");
+  const [docSelecionado, setDocSelecionado] = useState("");
+  const [enviado, setEnviado] = useState(false);
+
+  // Query real documents for this deal
+  const { data: documentos, isLoading: docsLoading } = useQuery({
+    queryKey: ["assinatura-docs", deal.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contratos")
+        .select("*")
+        .eq("associado_id", (deal as any).associado_id || deal.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []).map((c: any) => ({
+        id: c.id,
+        nome: c.tipo === "contrato" ? "Contrato de Proteção Veicular" : c.tipo === "proposta" ? "Proposta de Adesão" : c.tipo === "termo" ? "Termo de Adesão ao Regulamento" : (c.tipo || "Documento"),
+        tipo: c.tipo || "Contrato",
+        created_at: c.created_at,
+      })) as Documento[];
+    },
+  });
+
+  // Query real timeline from pipeline_transicoes
+  const { data: timeline, isLoading: timelineLoading } = useQuery({
+    queryKey: ["assinatura-timeline", deal.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pipeline_transicoes")
+        .select("*")
+        .eq("negociacao_id", deal.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []).map((t: any) => ({
+        data: new Date(t.created_at).toLocaleString("pt-BR"),
+        descricao: t.motivo || `${t.stage_anterior} → ${t.stage_novo}`,
+        tipo: (t.automatica ? "criacao" : "envio") as TimelineEvent["tipo"],
+      })) as TimelineEvent[];
+    },
+  });
+
+  // Auto-select first document when loaded
+  const docs = documentos || [];
+  if (docs.length > 0 && !docSelecionado) {
+    setDocSelecionado(docs[0].id);
+  }
 
   const st = statusConfig[status];
   const StIcon = st.icon;
-  const doc = mockDocumentos.find(d => d.id === docSelecionado)!;
+  const doc = docs.find(d => d.id === docSelecionado) || docs[0];
 
   const [linkAssinatura, setLinkAssinatura] = useState<string | null>(null);
   const [gerando, setGerando] = useState(false);
@@ -112,7 +141,7 @@ export default function AssinaturaTab({ deal }: Props) {
           nome: deal.lead_nome,
           assunto: `Contrato para Assinatura - ${deal.veiculo_placa}`,
           mensagem: msgNotif,
-        }).catch(() => {});
+        }).catch((e) => { console.error("Erro ao enviar notificação:", e); });
       }
     };
     reader.readAsDataURL(pdfBlob);
@@ -201,13 +230,18 @@ export default function AssinaturaTab({ deal }: Props) {
       {/* Documento selecionado */}
       <fieldset className="space-y-3">
         <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">DOCUMENTO PARA ASSINATURA</legend>
+        {docsLoading ? (
+          <div className="flex items-center gap-2 py-4 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Carregando documentos...</div>
+        ) : docs.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4">Nenhum documento encontrado para esta negociação.</p>
+        ) : (
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label className={lbl}>Documento</Label>
             <Select value={docSelecionado} onValueChange={setDocSelecionado}>
               <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {mockDocumentos.map(d => (
+                {docs.map(d => (
                   <SelectItem key={d.id} value={d.id}>
                     <span className="flex items-center gap-2">
                       <FileText className="h-3.5 w-3.5" />{d.nome}
@@ -220,11 +254,12 @@ export default function AssinaturaTab({ deal }: Props) {
           <div className="space-y-1">
             <Label className={lbl}>Tipo</Label>
             <div className="flex items-center h-10">
-              <Badge variant="outline" className="rounded-none border border-gray-300">{doc.tipo}</Badge>
-              <span className="text-xs text-muted-foreground ml-2">Gerado em {doc.geradoEm}</span>
+              <Badge variant="outline" className="rounded-none border border-gray-300">{doc?.tipo || "—"}</Badge>
+              <span className="text-xs text-muted-foreground ml-2">{doc?.created_at ? `Gerado em ${new Date(doc.created_at).toLocaleString("pt-BR")}` : ""}</span>
             </div>
           </div>
         </div>
+        )}
 
         {/* Pré-visualização */}
         <Card className="rounded-none bg-muted/30 border-dashed">
@@ -232,7 +267,7 @@ export default function AssinaturaTab({ deal }: Props) {
             <div className="flex items-center gap-3">
               <FileText className="h-8 w-8 text-muted-foreground" />
               <div>
-                <p className="text-sm font-semibold">{doc.nome}</p>
+                <p className="text-sm font-semibold">{doc?.nome || "Documento"}</p>
                 <p className="text-xs text-muted-foreground">PDF • 2 páginas • 145 KB</p>
               </div>
             </div>
@@ -310,11 +345,16 @@ export default function AssinaturaTab({ deal }: Props) {
       {/* Timeline */}
       <fieldset className="space-y-3">
         <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">HISTÓRICO DA ASSINATURA</legend>
+        {timelineLoading ? (
+          <div className="flex items-center gap-2 py-4 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Carregando histórico...</div>
+        ) : (!timeline || timeline.length === 0) ? (
+          <p className="text-sm text-muted-foreground py-4">Nenhum evento registrado ainda.</p>
+        ) : (
         <div className="relative pl-6 space-y-0">
-          {mockTimeline.map((ev, i) => {
+          {timeline.map((ev, i) => {
             const Icon = tipoIcons[ev.tipo] || Clock;
             const iconColor = tipoCores[ev.tipo] || "bg-gray-400 text-white";
-            const isLast = i === mockTimeline.length - 1;
+            const isLast = i === timeline.length - 1;
             return (
               <div key={i} className="relative pb-4">
                 {!isLast && <div className="absolute left-[-14px] top-6 bottom-0 w-px bg-border" />}
@@ -329,6 +369,7 @@ export default function AssinaturaTab({ deal }: Props) {
             );
           })}
         </div>
+        )}
       </fieldset>
     </div>
   );

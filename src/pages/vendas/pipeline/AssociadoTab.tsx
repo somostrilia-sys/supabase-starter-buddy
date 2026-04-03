@@ -152,7 +152,7 @@ export default function AssociadoTab({ deal, dadosCnh }: Props) {
             }));
           }
         })
-        .catch(() => {});
+        .catch((e) => { console.error("Erro ao buscar CEP:", e); });
     }
   };
 
@@ -186,7 +186,7 @@ export default function AssociadoTab({ deal, dadosCnh }: Props) {
               toast.success(`Cotação automática gerada! Plano: R$ ${res.valor_plano?.toFixed(2).replace(".", ",")}`);
             }
           })
-          .catch(() => {});
+          .catch((e) => { console.error("Erro na cotação automática:", e); toast.error("Erro ao gerar cotação automática"); });
       }
     }
   };

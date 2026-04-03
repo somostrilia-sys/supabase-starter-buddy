@@ -319,9 +319,31 @@ export default function Pipeline() {
   // Marcar todos os concluídos existentes como já processados (não tocar som no load)
   useEffect(() => {
     if (dealsToShow.length === 0) return;
-    if (!initialLoadDone.current) {
-      dealsToShow.filter(d => d.stage === "concluido").forEach(d => concluídosProcessados.current.add(d.id));
-      initialLoadDone.current = true;
+    const prevIds = new Set(
+      prevDealsRef.current
+        .filter(d => d.stage === "concluido")
+        .map(d => d.id)
+    );
+    const newConcluidos = dealsToShow.filter(
+      d => d.stage === "concluido" && !prevIds.has(d.id)
+    );
+
+    // Só dispara se já havia dados anteriores (evita tocar no primeiro load)
+    if (prevDealsRef.current.length > 0 && newConcluidos.length > 0) {
+      // Tocar som de caixa registradora
+      if (cashAudioRef.current) {
+        cashAudioRef.current.currentTime = 0;
+        cashAudioRef.current.play().catch((e) => { console.error("Erro ao tocar som:", e); });
+      }
+
+      // Chamar edge function para concluir venda em deals que ainda não foram concluídos
+      for (const deal of newConcluidos) {
+        callEdge("gia-concluir-venda", { negociacao_id: deal.id }).then(res => {
+          if (res?.sucesso) {
+            toast.success(`Venda concluída: ${deal.lead_nome}`);
+          }
+        }).catch((e) => { console.error("Erro ao concluir venda:", e); toast.error("Erro ao concluir venda"); });
+      }
     }
   }, [dealsToShow]);
 
@@ -846,7 +868,7 @@ export default function Pipeline() {
                           else setPlanosPermitidos([]);
                         });
                     }
-                  }).catch(() => {});
+                  }).catch((e) => { console.error("Erro ao buscar placa:", e); toast.error("Erro ao buscar dados da placa"); });
                 }
               }} placeholder="ABC-1D23" /></div>
               <div className="space-y-1.5"><Label>Modelo do Veículo</Label><Input value={form.modelo} onChange={e => setForm({ ...form, modelo: e.target.value })} placeholder="Preenchido pela placa" /></div>
