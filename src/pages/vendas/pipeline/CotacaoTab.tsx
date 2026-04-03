@@ -14,6 +14,7 @@ import { supabase, callEdge } from "@/integrations/supabase/client";
 import { gerarPdfCotacao } from "@/lib/gerarPdfCotacao";
 import { MessageSquare, Mail, Link2, CreditCard, CheckCircle, Shield, ShieldCheck, ShieldPlus, Search, Loader2, Car, AlertTriangle, BrainCircuit } from "lucide-react";
 import ExcecaoButton from "@/components/ExcecaoButton";
+import PedirLiberacaoButton from "@/components/PedirLiberacaoButton";
 
 /* ─── Marcas estáticas (fallback para select manual quando API não retorna) ─── */
 const marcas = ["Chevrolet", "Hyundai", "Honda", "Toyota", "Volkswagen", "Fiat", "Jeep", "Nissan", "Renault", "Ford"];
@@ -158,7 +159,7 @@ export default function CotacaoTab({ deal }: Props) {
     numMotor: "",
     estadoCirc: d.estado_circulacao || "",
     cidadeCirc: d.cidade_circulacao || "",
-    diaVencimento: d.dia_vencimento ? String(d.dia_vencimento) : (() => { const dt = new Date().getDate(); if (dt >= 26 || dt <= 5) return "1"; if (dt >= 6 && dt <= 15) return "10"; return "20"; })(),
+    diaVencimento: d.dia_vencimento ? String(d.dia_vencimento) : String(new Date().getDate()),
     veiculoTrabalho: false,
     taxi: false,
     chassiRemarcado: false,
@@ -180,6 +181,32 @@ export default function CotacaoTab({ deal }: Props) {
     justificativa: string;
     necessita_diretor: boolean;
   } | null>(null);
+  // 1.2 — Flag: cotação já enviada (bloqueia desconto sem IA)
+  // Verifica por: 1) registro na tabela cotacoes, 2) stage além de em_negociacao, 3) cotacao_id preenchido
+  const [cotacaoEnviada, setCotacaoEnviada] = useState(false);
+  React.useEffect(() => {
+    if (!deal.id || deal.id.startsWith("p")) return;
+    // Check 1: stage avançado indica cotação já enviada
+    const stagesPosCotacao = ["aguardando_vistoria", "vistoria_aprovada", "em_contratacao", "liberado_cadastro", "concluido"];
+    if (stagesPosCotacao.includes(deal.stage)) {
+      setCotacaoEnviada(true);
+      return;
+    }
+    // Check 2: cotacao_id preenchido no deal
+    if ((deal as any).cotacao_id) {
+      setCotacaoEnviada(true);
+      return;
+    }
+    // Check 3: registro na tabela cotacoes
+    supabase.from("cotacoes" as any).select("id").eq("negociacao_id", deal.id).limit(1).maybeSingle()
+      .then(({ data }: any) => { if (data) setCotacaoEnviada(true); });
+  }, [deal.id, deal.stage]);
+
+  // 1.1 — Upload de proposta concorrente (foto/PDF)
+  const [concorrenteFile, setConcorrenteFile] = useState<File | null>(null);
+  const [concorrenteUploading, setConcorrenteUploading] = useState(false);
+  const concorrenteInputRef = React.useRef<HTMLInputElement>(null);
+
   const [propostaConcorrenteUrl, setPropostaConcorrenteUrl] = useState("");
   const [analiseConcorrenteLoading, setAnaliseConcorrenteLoading] = useState(false);
   const [analiseConcorrente, setAnaliseConcorrente] = useState<{
@@ -311,10 +338,45 @@ export default function CotacaoTab({ deal }: Props) {
     }
   };
 
+  // Carregar preços da cotação existente (cache imediato sem depender da API de placa)
+  const [precosCarregadosDaCotacao, setPrecosCarregadosDaCotacao] = React.useState(false);
+  React.useEffect(() => {
+    if (precosCarregadosDaCotacao) return;
+    const cotId = (deal as any).cotacao_id;
+
+    const processarPlanos = (data: any) => {
+      if (data?.todos_planos && Array.isArray(data.todos_planos) && data.todos_planos.length > 0) {
+        const planosCotacao = data.todos_planos.map((p: any) => ({
+          plano: p.nome, plano_normalizado: p.nome,
+          cota: p.valor_mensal || 0, adesao: p.adesao || 0,
+          rastreador: p.rastreador || "Não", instalacao: p.instalacao || 0,
+          tipo_franquia: p.tipo_franquia || "", valor_franquia: p.franquia || 0,
+        }));
+        setPrecosReais(planosCotacao);
+        if (data.plano_selecionado) setPlanoSelecionado(data.plano_selecionado);
+        if (data.todos_planos[0]?.valor_fipe) setValorFipeReal(data.todos_planos[0].valor_fipe);
+        setFipeFetched(true);
+      }
+      setPrecosCarregadosDaCotacao(true);
+    };
+
+    if (cotId) {
+      supabase.from("cotacoes" as any).select("todos_planos, plano_selecionado").eq("id", cotId).maybeSingle()
+        .then(({ data }: any) => processarPlanos(data));
+    } else if (deal.id && !deal.id.startsWith("p")) {
+      supabase.from("cotacoes" as any).select("todos_planos, plano_selecionado").eq("negociacao_id", deal.id).order("created_at", { ascending: false }).limit(1).maybeSingle()
+        .then(({ data }: any) => processarPlanos(data));
+    } else {
+      setPrecosCarregadosDaCotacao(true);
+    }
+  }, [deal.id]);
+
   // Auto-carregar dados reais do veículo ao montar
   const [dadosReaisCarregados, setDadosReaisCarregados] = React.useState(false);
   React.useEffect(() => {
     if (dadosReaisCarregados) return;
+    // Pular busca se já tem preços da cotação
+    if (precosReais.length > 0 && fipeFetched) { setDadosReaisCarregados(true); return; }
     const placa = (deal.veiculo_placa || "").replace(/[^A-Z0-9]/gi, "");
     if (placa.length >= 7) {
       setFipeLoading(true);
@@ -376,6 +438,9 @@ export default function CotacaoTab({ deal }: Props) {
   // Usar valor FIPE real da API
   const valorFipe = valorFipeReal;
   const codFipe = codFipeReal;
+
+  // 1.2 — Desconto bloqueado: cotação enviada E IA não aprovou
+  const descontoBloqueado = cotacaoEnviada && !descontoIaResult?.aprovado;
 
   const set = (field: string, value: string | boolean) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -736,16 +801,56 @@ export default function CotacaoTab({ deal }: Props) {
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className={lbl}>Dia Vencimento</Label>
-            <Select value={form.diaVencimento} onValueChange={v => set("diaVencimento", v)}>
-              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Dia 1 (fechamento entre 26 e 05)</SelectItem>
-                <SelectItem value="10">Dia 10 (fechamento entre 06 e 15)</SelectItem>
-                <SelectItem value="20">Dia 20 (fechamento entre 16 e 25)</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-[10px] text-muted-foreground">Calculado automaticamente pela data de fechamento</p>
+            <Label className={lbl}>Dia Vencimento (1-31)</Label>
+            <Input
+              className="rounded-none border border-gray-300"
+              type="number"
+              min={1}
+              max={31}
+              value={form.diaVencimento}
+              onChange={e => {
+                const v = Math.min(31, Math.max(1, parseInt(e.target.value) || 1));
+                set("diaVencimento", String(v));
+              }}
+            />
+            {(() => {
+              const hoje = new Date();
+              const diaContratacao = hoje.getDate();
+              const diaVenc = parseInt(form.diaVencimento) || diaContratacao;
+              const diffDias = diaVenc >= diaContratacao
+                ? diaVenc - diaContratacao
+                : (new Date(hoje.getFullYear(), hoje.getMonth() + 1, diaVenc).getTime() - hoje.getTime()) / 86400000;
+              const diasAteVenc = Math.round(Math.abs(diffDias));
+              const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
+              const mensalidade = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
+              const proporcional = diasAteVenc > 0 && diaVenc !== diaContratacao ? Math.round((mensalidade / 30) * diasAteVenc * 100) / 100 : mensalidade;
+              const bloqueio40 = diasAteVenc > 40;
+
+              if (diaVenc === diaContratacao) return <p className="text-[10px] text-muted-foreground">Vencimento no dia da contratação — sem proporcional</p>;
+
+              return (
+                <div className="space-y-1">
+                  {bloqueio40 ? (
+                    <div className="flex items-center gap-1.5 p-1.5 rounded border border-destructive bg-destructive/5">
+                      <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                      <p className="text-[10px] text-destructive font-medium">Vencimento acima de 40 dias ({diasAteVenc}d) — bloqueado automaticamente</p>
+                    </div>
+                  ) : diasAteVenc > 0 ? (
+                    <div className="p-2 rounded border border-blue-200 bg-blue-50 space-y-0.5">
+                      {(() => {
+                        const mesVenc = diaVenc >= diaContratacao ? hoje.getMonth() : hoje.getMonth() + 1;
+                        const dataVenc = new Date(hoje.getFullYear(), mesVenc, diaVenc);
+                        return <p className="text-[10px] font-semibold text-blue-800">1ª mensalidade proporcional: {formatCurrency(proporcional)} ({diasAteVenc} dias) no dia {dataVenc.toLocaleDateString("pt-BR")}</p>;
+                      })()}
+                      <p className="text-[10px] text-blue-700">Meses seguintes: {formatCurrency(mensalidade)}</p>
+                      {diasAteVenc > 0 && diasAteVenc <= 40 && (
+                        <p className="text-[10px] text-amber-600">Vencimento diferente — sujeito a análise IA</p>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -814,6 +919,23 @@ export default function CotacaoTab({ deal }: Props) {
       <fieldset className="space-y-4">
         <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">PLANOS E ENVIO</legend>
 
+        {/* Loading skeleton enquanto planos carregam */}
+        {!fipeFetched && fipeLoading && (
+          <div className="grid grid-cols-3 gap-3">
+            {[1, 2, 3].map(i => (
+              <Card key={i} className="rounded-none border-2 border-border">
+                <CardContent className="p-4 space-y-3">
+                  <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+                  <div className="h-8 w-32 bg-muted animate-pulse rounded" />
+                  <div className="space-y-1">
+                    {[1, 2, 3].map(j => <div key={j} className="h-3 w-full bg-muted animate-pulse rounded" />)}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
         {veiculoAceito === false && (
           <Card className="rounded-none border-2 border-destructive bg-destructive/5 mb-3">
             <CardContent className="p-4 flex items-center gap-3">
@@ -869,6 +991,20 @@ export default function CotacaoTab({ deal }: Props) {
                 </CardHeader>
                 <CardContent className="px-4 pb-4 space-y-2">
                   <div className="text-2xl font-bold text-[#1A3A5C]">{formatCurrency(mensal)}<span className="text-xs font-normal text-muted-foreground">/mês</span></div>
+                  {/* 1.5 — Rastreador obrigatório */}
+                  {(p as any).rastreador && (p as any).rastreador !== "Não" && (p as any).rastreador !== "" && (
+                    <div className="space-y-1 p-1.5 rounded border border-amber-300 bg-amber-50">
+                      <Badge className="rounded-none bg-amber-100 text-amber-700 text-[10px]">Rastreador Obrigatório</Badge>
+                      <p className="text-[10px] text-amber-700">Modelo: {(p as any).rastreador}</p>
+                      {(() => {
+                        const precoPlano = precosReais.find((pr: any) => (pr.plano_normalizado || pr.plano) === p.nome);
+                        const instalacao = precoPlano ? Number(precoPlano.instalacao || 0) : 0;
+                        return instalacao > 0 ? (
+                          <p className="text-[10px] font-semibold text-amber-800">Instalação: {formatCurrency(instalacao)}</p>
+                        ) : null;
+                      })()}
+                    </div>
+                  )}
                   <ul className="space-y-1">
                     {p.coberturas.map(c => (
                       <li key={c} className="text-[11px] text-muted-foreground flex items-start gap-1">
@@ -892,15 +1028,21 @@ export default function CotacaoTab({ deal }: Props) {
 
         {/* Campos de desconto para a cotação */}
         <div className="space-y-3 pt-2 p-3 border rounded bg-muted/20">
+          {cotacaoEnviada && (
+            <div className="flex items-center gap-2 p-2 rounded border border-amber-300 bg-amber-50">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+              <p className="text-xs text-amber-700 font-medium">Cotação já enviada ao cliente. Desconto só pode ser alterado via análise IA (&gt;5%) ou exceção ao diretor.</p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Desconto Mensalidade (valor final)</Label>
-              <Input className="rounded-none border border-gray-300" type="number" placeholder="Deixe vazio = sem desconto" value={descontoMensal} onChange={e => { setDescontoMensal(e.target.value); setDescontoIaResult(null); }} />
+              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60 cursor-not-allowed" : ""}`} type="number" placeholder="Deixe vazio = sem desconto" value={descontoMensal} disabled={descontoBloqueado} onChange={e => { setDescontoMensal(e.target.value); setDescontoIaResult(null); }} />
               <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Desconto Adesão (valor final)</Label>
-              <Input className="rounded-none border border-gray-300" type="number" placeholder="Deixe vazio = sem desconto" value={descontoAdesao} onChange={e => { setDescontoAdesao(e.target.value); setDescontoIaResult(null); }} />
+              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60 cursor-not-allowed" : ""}`} type="number" placeholder="Deixe vazio = sem desconto" value={descontoAdesao} disabled={descontoBloqueado} onChange={e => { setDescontoAdesao(e.target.value); setDescontoIaResult(null); }} />
               <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
             </div>
           </div>
@@ -927,8 +1069,45 @@ export default function CotacaoTab({ deal }: Props) {
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs font-semibold">URL proposta concorrente (opcional)</Label>
-                  <Input className="rounded-none border border-gray-300" type="url" placeholder="https://..." value={propostaConcorrenteUrl} onChange={e => { setPropostaConcorrenteUrl(e.target.value); setAnaliseConcorrente(null); }} />
+                  <Label className="text-xs font-semibold">Proposta concorrente (URL, foto ou PDF)</Label>
+                  <div className="flex gap-2">
+                    <Input className="rounded-none border border-gray-300 flex-1" type="url" placeholder="https://..." value={propostaConcorrenteUrl} onChange={e => { setPropostaConcorrenteUrl(e.target.value); setAnaliseConcorrente(null); }} />
+                    <Button size="sm" variant="outline" className="rounded-none border-gray-300 shrink-0" onClick={() => concorrenteInputRef.current?.click()} disabled={concorrenteUploading}>
+                      {concorrenteUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+                      {concorrenteUploading ? "Enviando..." : "Upload"}
+                    </Button>
+                    <input
+                      ref={concorrenteInputRef}
+                      type="file"
+                      accept="image/*,application/pdf"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 10 * 1024 * 1024) { toast.error("Arquivo máximo 10MB"); return; }
+                        setConcorrenteUploading(true);
+                        const ext = file.name.split(".").pop() || "jpg";
+                        const path = `propostas-concorrente/${deal.id}/${Date.now()}.${ext}`;
+                        const { error } = await supabase.storage.from("propostas-concorrente").upload(path, file, { contentType: file.type, upsert: true });
+                        if (error) {
+                          // Tentar no bucket geral se não existir
+                          const { error: err2 } = await supabase.storage.from("vistoria-fotos").upload(path, file, { contentType: file.type, upsert: true });
+                          if (err2) { toast.error("Erro no upload: " + err2.message); setConcorrenteUploading(false); return; }
+                          const { data: pubUrl } = supabase.storage.from("vistoria-fotos").getPublicUrl(path);
+                          setPropostaConcorrenteUrl(pubUrl.publicUrl);
+                        } else {
+                          const { data: pubUrl } = supabase.storage.from("propostas-concorrente").getPublicUrl(path);
+                          setPropostaConcorrenteUrl(pubUrl.publicUrl);
+                        }
+                        setConcorrenteFile(file);
+                        setConcorrenteUploading(false);
+                        setAnaliseConcorrente(null);
+                        toast.success("Proposta concorrente enviada!");
+                        e.target.value = "";
+                      }}
+                    />
+                  </div>
+                  {concorrenteFile && <p className="text-[10px] text-success">Arquivo: {concorrenteFile.name}</p>}
                   {propostaConcorrenteUrl && (
                     <Button
                       size="sm"
@@ -1102,6 +1281,46 @@ export default function CotacaoTab({ deal }: Props) {
             );
           })()}
         </div>
+
+        {/* 1.3 + 1.6 — Análise IA unificada + Pedir Liberação na cotação */}
+        {(() => {
+          const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
+          const mensalOriginal = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
+          const adesaoOriginal = precoPlano ? Number(precoPlano.adesao) : 400;
+          const descMensalPct = descontoMensal && mensalOriginal > 0 ? ((mensalOriginal - Number(descontoMensal)) / mensalOriginal) * 100 : 0;
+          const descAdesaoPct = descontoAdesao && adesaoOriginal > 0 ? ((adesaoOriginal - Number(descontoAdesao)) / adesaoOriginal) * 100 : 0;
+          const maiorDesconto = Math.max(descMensalPct, descAdesaoPct);
+          const diaVenc = parseInt(form.diaVencimento) || new Date().getDate();
+          const diaContratacao = new Date().getDate();
+          const vencimentoDiferente = diaVenc !== diaContratacao;
+          const diasAteVenc = Math.abs(diaVenc >= diaContratacao ? diaVenc - diaContratacao : (30 - diaContratacao + diaVenc));
+          const bloqueio40 = diasAteVenc > 40;
+          const precisaAnalise = maiorDesconto > 5 || (vencimentoDiferente && diasAteVenc <= 40 && !bloqueio40);
+
+          if (!precisaAnalise) return null;
+
+          return (
+            <div className="p-3 border-2 border-[#1A3A5C]/30 rounded bg-[#1A3A5C]/3 space-y-2">
+              <div className="flex items-center gap-2">
+                <BrainCircuit className="h-5 w-5 text-[#1A3A5C]" />
+                <span className="text-sm font-bold text-[#1A3A5C]">Análise IA Necessária</span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {maiorDesconto > 5 && <Badge className="rounded-none bg-amber-100 text-amber-700 text-[10px]">Desconto {maiorDesconto.toFixed(1)}%</Badge>}
+                {vencimentoDiferente && diasAteVenc <= 40 && <Badge className="rounded-none bg-blue-100 text-blue-700 text-[10px]">Vencimento dia {diaVenc} (+{diasAteVenc}d)</Badge>}
+              </div>
+              <PedirLiberacaoButton
+                negociacaoId={deal.id}
+                onSuccess={(res) => {
+                  if (res?.aprovado) {
+                    toast.success("Liberação aprovada! Desconto/vencimento liberados.");
+                    if (maiorDesconto > 5) setDescontoIaResult({ aprovado: true, desconto_maximo: maiorDesconto, justificativa: res.justificativa || "Aprovado pela IA", necessita_diretor: false });
+                  }
+                }}
+              />
+            </div>
+          );
+        })()}
 
         <div className="flex flex-wrap gap-2 pt-2">
           <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => handleEnviar("PDF")}>

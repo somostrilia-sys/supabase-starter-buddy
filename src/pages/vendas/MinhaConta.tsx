@@ -324,10 +324,51 @@ export default function MinhaConta() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  // 5.2 — Forma de comissionamento
+  const [comissaoTipo, setComissaoTipo] = useState<"percentual" | "fixo">("percentual");
+  const [comissaoPercentual, setComissaoPercentual] = useState("15");
+  const [comissaoValorFixo, setComissaoValorFixo] = useState("0");
+  const [salvandoComissao, setSalvandoComissao] = useState(false);
+
+  // Carregar config de comissão do usuário
+  useEffect(() => {
+    if (!profile?.id) return;
+    supabase.from("usuarios" as any)
+      .select("comissao_tipo, comissao_percentual, comissao_valor_fixo")
+      .eq("id", profile.id)
+      .maybeSingle()
+      .then(({ data }: any) => {
+        if (data) {
+          setComissaoTipo(data.comissao_tipo || "percentual");
+          setComissaoPercentual(String(data.comissao_percentual || 15));
+          setComissaoValorFixo(String(data.comissao_valor_fixo || 0));
+        }
+      });
+  }, [profile?.id]);
+
+  async function handleSalvarComissao() {
+    if (!profile?.id) return;
+    setSalvandoComissao(true);
+    await supabase.from("usuarios" as any).update({
+      comissao_tipo: comissaoTipo,
+      comissao_percentual: parseFloat(comissaoPercentual) || 15,
+      comissao_valor_fixo: parseFloat(comissaoValorFixo) || 0,
+    } as any).eq("id", profile.id);
+    toast({ title: "Configuração de comissão salva!" });
+    setSalvandoComissao(false);
+  }
+
   const mesAtual = new Date().toISOString().slice(0, 7);
-  const totalRecebido = mockComissoes.filter(c => c.status === "pago").reduce((s, c) => s + c.valorRecebido, 0);
-  const totalPendente = mockComissoes.filter(c => c.status === "pendente" || c.status === "processando").reduce((s, c) => s + c.valorRecebido, 0);
-  const comissoesMes = mockComissoes.filter(c => c.data.startsWith(mesAtual) && c.status === "pago").reduce((s, c) => s + c.valorRecebido, 0);
+  // Usar dados reais se disponível, senão mock
+  const comissoesFinal = comissoesReais.length > 0 ? comissoesReais.map((c: any) => ({
+    id: c.id, data: (c.created_at || "").slice(0, 10), associado: c.associado_nome || c.negociacao_id || "",
+    negociacao: c.negociacao_codigo || c.negociacao_id || "", valorAdesao: Number(c.valor_adesao || 0),
+    percentual: Number(c.percentual || 15), valorRecebido: Number(c.valor_calculado || 0),
+    status: (c.pago ? "pago" : c.processando ? "processando" : "pendente") as ComissaoStatus,
+  })) : mockComissoes;
+  const totalRecebido = comissoesFinal.filter(c => c.status === "pago").reduce((s, c) => s + c.valorRecebido, 0);
+  const totalPendente = comissoesFinal.filter(c => c.status === "pendente" || c.status === "processando").reduce((s, c) => s + c.valorRecebido, 0);
+  const comissoesMes = comissoesFinal.filter(c => c.data.startsWith(mesAtual) && c.status === "pago").reduce((s, c) => s + c.valorRecebido, 0);
 
   return (
     <div className="space-y-6">
@@ -529,6 +570,49 @@ export default function MinhaConta() {
             <Button onClick={handleSaveProfile} disabled={savingProfile} className="min-w-[200px]">
               {savingProfile ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
               Salvar Perfil
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ═══════════ Forma de Comissionamento ═══════════ */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-500/10">
+              <DollarSign className="h-5 w-5 text-emerald-600" />
+            </div>
+            Forma de Comissionamento
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="comissaoTipo" checked={comissaoTipo === "percentual"} onChange={() => setComissaoTipo("percentual")} className="accent-emerald-600" />
+              <span className="text-sm font-medium">% sobre adesão</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="comissaoTipo" checked={comissaoTipo === "fixo"} onChange={() => setComissaoTipo("fixo")} className="accent-emerald-600" />
+              <span className="text-sm font-medium">Valor fixo por contrato</span>
+            </label>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {comissaoTipo === "percentual" ? (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Percentual (%)</Label>
+                <Input type="number" min={0} max={100} value={comissaoPercentual} onChange={e => setComissaoPercentual(e.target.value)} />
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Valor Fixo (R$)</Label>
+                <Input type="number" min={0} value={comissaoValorFixo} onChange={e => setComissaoValorFixo(e.target.value)} />
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handleSalvarComissao} disabled={salvandoComissao} size="sm">
+              {salvandoComissao ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+              Salvar Comissão
             </Button>
           </div>
         </CardContent>

@@ -237,16 +237,10 @@ export async function gerarLaudoVistoria(dados: DadosLaudo) {
     let fotoY = y + 12;
     let fotoCount = 0;
 
-    // Preload all images
-    const imageDataArray: (string | null)[] = [];
-    for (const foto of dados.fotos) {
-      if (foto.url) {
-        const imgData = await loadImage(foto.url);
-        imageDataArray.push(imgData);
-      } else {
-        imageDataArray.push(null);
-      }
-    }
+    // 3.1 — Preload all images in parallel with reduced quality
+    const imageDataArray: (string | null)[] = await Promise.all(
+      dados.fotos.map(foto => foto.url ? loadImage(foto.url) : Promise.resolve(null))
+    );
 
     for (let i = 0; i < dados.fotos.length; i++) {
       const foto = dados.fotos[i];

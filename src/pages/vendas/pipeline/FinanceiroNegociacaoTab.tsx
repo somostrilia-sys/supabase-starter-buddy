@@ -45,11 +45,30 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
   const [formaPgto, setFormaPgto] = useState("pix");
   const [configEmpresa, setConfigEmpresa] = useState<any>(null);
   const [faturas, setFaturas] = useState<Fatura[]>([]);
+  // 5.1 — Comissão do consultor
+  const [configComissao, setConfigComissao] = useState<{ tipo: string; percentual: number; valor_fixo: number } | null>(null);
 
   useEffect(() => {
     supabase.from("config_empresa" as any).select("*").limit(1).maybeSingle()
       .then(({ data }) => setConfigEmpresa(data));
-  }, []);
+    // 5.1 — Buscar config de comissão do consultor
+    if (deal.consultor) {
+      supabase.from("usuarios" as any)
+        .select("comissao_tipo, comissao_percentual, comissao_valor_fixo")
+        .eq("nome", deal.consultor)
+        .limit(1)
+        .maybeSingle()
+        .then(({ data }: any) => {
+          if (data) {
+            setConfigComissao({
+              tipo: data.comissao_tipo || "percentual",
+              percentual: Number(data.comissao_percentual || 15),
+              valor_fixo: Number(data.comissao_valor_fixo || 0),
+            });
+          }
+        });
+    }
+  }, [deal.consultor]);
 
   // Buscar faturas reais da negociação
   useEffect(() => {
@@ -77,12 +96,14 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
 
   return (
     <div className="space-y-5">
-      {/* Cards resumo — sem mensalidade */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* 5.1 — Cards resumo com Comissão e Mensalidade */}
+      <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
         {[
           { label: "Taxa de Adesão", valor: taxaAdesao, sub: "", color: "#1A3A5C", icon: FileText },
           { label: "Total Pago", valor: totalPago, sub: "", color: "#16a34a", icon: CreditCard },
           { label: "Pendente", valor: totalPendente, sub: "", color: "#dc2626", icon: Receipt },
+          { label: "Mensalidade", valor: deal.valor_plano || 0, sub: deal.plano || "", color: "#7c3aed", icon: Banknote },
+          { label: "Comissão", valor: configComissao ? (configComissao.tipo === "percentual" ? (taxaAdesao * configComissao.percentual / 100) : configComissao.valor_fixo) : (taxaAdesao * 0.15), sub: configComissao ? (configComissao.tipo === "percentual" ? `${configComissao.percentual}%` : "fixo") : "15%", color: "#059669", icon: DollarSign },
         ].map(c => (
           <Card key={c.label} className="rounded-none border-t-2" style={{ borderTopColor: c.color }}>
             <CardContent className="p-4 space-y-1">
@@ -195,12 +216,12 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
             </div>
             <div className="text-center p-3 rounded bg-emerald-50 dark:bg-emerald-950/20 border border-success/20 dark:border-emerald-800">
               <p className="text-[10px] text-muted-foreground uppercase">Comissão Consultor</p>
-              <p className="text-lg font-bold text-success dark:text-emerald-400">{fmt(taxaAdesao * 0.15)}</p>
-              <p className="text-[10px] text-emerald-600">15% — {deal.consultor}</p>
+              <p className="text-lg font-bold text-success dark:text-emerald-400">{fmt(configComissao ? (configComissao.tipo === "percentual" ? taxaAdesao * configComissao.percentual / 100 : configComissao.valor_fixo) : taxaAdesao * 0.15)}</p>
+              <p className="text-[10px] text-emerald-600">{configComissao ? (configComissao.tipo === "percentual" ? `${configComissao.percentual}%` : `Fixo ${fmt(configComissao.valor_fixo)}`) : "15%"} — {deal.consultor}</p>
             </div>
             <div className="text-center p-3 rounded bg-background border">
               <p className="text-[10px] text-muted-foreground uppercase">Líquido Associação</p>
-              <p className="text-lg font-bold text-[#1A3A5C]">{fmt(taxaAdesao * 0.85)}</p>
+              <p className="text-lg font-bold text-[#1A3A5C]">{fmt(taxaAdesao - (configComissao ? (configComissao.tipo === "percentual" ? taxaAdesao * configComissao.percentual / 100 : configComissao.valor_fixo) : taxaAdesao * 0.15))}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">

@@ -50,19 +50,34 @@ const tipoColorMap: Record<string, string> = {
   reenvio: "bg-warning/80 text-white",
 };
 
-// Componente que mostra fotos REAIS enviadas pelo lead
+// 2.4 — Componente com cache React Query + thumbnails + lazy loading
 function FotosReaisSection({ vistoriaId }: { vistoriaId: string }) {
-  const [fotos, setFotos] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: fotos, isLoading } = useQuery({
+    queryKey: ["vistoria_fotos", vistoriaId],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("vistoria_fotos").select("*").eq("vistoria_id", vistoriaId).order("created_at");
+      // Pré-gerar URLs públicas e cachear
+      return (data || []).map((foto: any) => {
+        const { data: urlData } = supabase.storage.from("vistoria-fotos").getPublicUrl(foto.storage_path);
+        const thumbUrl = urlData.publicUrl + "?width=200&height=200";
+        return { ...foto, publicUrl: urlData.publicUrl, thumbUrl };
+      });
+    },
+    staleTime: 5 * 60 * 1000, // 5 min cache
+  });
 
-  useEffect(() => {
-    (supabase as any).from("vistoria_fotos").select("*").eq("vistoria_id", vistoriaId).order("created_at")
-      .then(({ data }: any) => { setFotos(data || []); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [vistoriaId]);
-
-  if (loading) return null;
-  if (fotos.length === 0) return null;
+  if (isLoading) return (
+    <Card className="rounded-none border-2 border-green-500/30 bg-green-500/5">
+      <CardContent className="p-5">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="aspect-square rounded-lg bg-muted animate-pulse" />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+  if (!fotos || fotos.length === 0) return null;
 
   return (
     <Card className="rounded-none border-2 border-green-500/30 bg-green-500/5">
@@ -73,27 +88,24 @@ function FotosReaisSection({ vistoriaId }: { vistoriaId: string }) {
           <Badge className="bg-green-500/15 text-green-600 text-xs">{fotos.length} fotos</Badge>
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-          {fotos.map((foto: any) => {
-            const { data: urlData } = supabase.storage.from("vistoria-fotos").getPublicUrl(foto.storage_path);
-            return (
-              <div key={foto.id} className="relative aspect-square rounded-lg overflow-hidden border-2 border-green-500/20 group">
-                <img src={urlData.publicUrl} alt={foto.tipo} className="w-full h-full object-cover" />
-                <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[9px] text-center py-1 font-medium">
-                  {(foto.tipo || "").replace(/_/g, " ")}
-                </div>
-                {foto.ai_aprovada === true && (
-                  <div className="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                    <CheckCircle className="h-3 w-3 text-white" />
-                  </div>
-                )}
-                {foto.ai_aprovada === false && (
-                  <div className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                    <XCircle className="h-3 w-3 text-white" />
-                  </div>
-                )}
+          {fotos.map((foto: any) => (
+            <div key={foto.id} className="relative aspect-square rounded-lg overflow-hidden border-2 border-green-500/20 group">
+              <img src={foto.thumbUrl} alt={foto.tipo} className="w-full h-full object-cover" loading="lazy" />
+              <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[9px] text-center py-1 font-medium">
+                {(foto.tipo || "").replace(/_/g, " ")}
               </div>
-            );
-          })}
+              {foto.ai_aprovada === true && (
+                <div className="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                  <CheckCircle className="h-3 w-3 text-white" />
+                </div>
+              )}
+              {foto.ai_aprovada === false && (
+                <div className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                  <XCircle className="h-3 w-3 text-white" />
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>
@@ -104,6 +116,19 @@ interface Props { deal: PipelineDeal; }
 
 export default function VistoriaTab({ deal }: Props) {
   const { isAdmin } = usePermission();
+
+  // 2.1 — Mover card para aguardando_vistoria
+  const moveToAguardandoVistoria = async () => {
+    const { data: negAtual } = await supabase.from("negociacoes" as any).select("stage").eq("id", deal.id).maybeSingle();
+    const stageAtual = (negAtual as any)?.stage || deal.stage;
+    if (["em_negociacao", "novo_lead", "em_contato"].includes(stageAtual)) {
+      await supabase.from("negociacoes").update({ stage: "aguardando_vistoria", updated_at: new Date().toISOString() } as any).eq("id", deal.id);
+      await supabase.from("pipeline_transicoes").insert({
+        negociacao_id: deal.id, stage_anterior: stageAtual, stage_novo: "aguardando_vistoria",
+        motivo: "Vistoria enviada ao cliente", automatica: true,
+      } as any);
+    }
+  };
 
   // Buscar vistoria real do banco
   const { data: vistoriaReal } = useQuery({
@@ -364,6 +389,7 @@ export default function VistoriaTab({ deal }: Props) {
                 const link = `${window.location.origin}/vistoria/${cod}`;
                 const msg = encodeURIComponent(`Olá ${d.lead_nome}! Segue o link para envio das fotos da vistoria do veículo ${d.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização, e envie as fotos.`);
                 window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
+                await moveToAguardandoVistoria();
                 toast.success("WhatsApp aberto!");
               }}>
                 <MessageSquare className="h-3.5 w-3.5 mr-1" />Enviar WhatsApp
@@ -398,6 +424,7 @@ export default function VistoriaTab({ deal }: Props) {
                   if (res.email?.sucesso) toast.success("E-mail enviado!");
                   else toast.error(`E-mail falhou: ${res.email?.detalhes || "sem email"}`);
                 }).catch(() => toast.error("Erro no envio."));
+                await moveToAguardandoVistoria();
               }}>
                 <Mail className="h-3.5 w-3.5 mr-1" />Enviar E-mail
               </Button>
@@ -417,6 +444,7 @@ export default function VistoriaTab({ deal }: Props) {
                 if (!cod) { toast.error("Nenhuma vistoria encontrada."); return; }
                 const link = `${window.location.origin}/vistoria/${cod}`;
                 navigator.clipboard.writeText(link);
+                await moveToAguardandoVistoria();
                 toast.success("Link copiado!");
               }}>
                 <Copy className="h-3.5 w-3.5 mr-1" />Copiar Link

@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { AlertTriangle, Send } from "lucide-react";
+import { AlertTriangle, Send, Copy } from "lucide-react";
 
 interface Props {
   negociacaoId: string;
@@ -136,6 +136,18 @@ export default function ExcecaoButton({
           </div>
           <DialogFooter>
             <Button variant="outline" className="rounded-none" onClick={() => setOpen(false)} disabled={enviando}>Cancelar</Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-none border-gray-300"
+              onClick={() => {
+                const link = `${window.location.origin}/excecao/${negociacaoId}`;
+                navigator.clipboard.writeText(link);
+                toast.success("Link copiado!");
+              }}
+            >
+              <Copy className="h-3.5 w-3.5 mr-1" />Copiar Link
+            </Button>
             <Button
               onClick={handleEnviar}
               disabled={enviando || !tipo || !motivo.trim()}

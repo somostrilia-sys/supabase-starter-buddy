@@ -57,6 +57,19 @@ export default function VistoriaPublica() {
   const [concluido, setConcluido] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // 2.2 — Detectar se tem câmera disponível (bloquear galeria no desktop)
+  const [temCamera, setTemCamera] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!navigator.mediaDevices?.enumerateDevices) { setTemCamera(false); return; }
+    navigator.mediaDevices.enumerateDevices().then(devices => {
+      setTemCamera(devices.some(d => d.kind === "videoinput"));
+    }).catch(() => setTemCamera(false));
+  }, []);
+
+  // 2.3 — Progresso de upload
+  const [uploadProgresso, setUploadProgresso] = useState(0);
+  const [fotoAtual, setFotoAtual] = useState("");
+
   // Fetch vistoria
   useEffect(() => {
     if (!token) return;
@@ -134,26 +147,37 @@ export default function VistoriaPublica() {
     e.target.value = "";
   };
 
-  // Upload all
+  // Upload all — 2.3: com barra de progresso + batches paralelos
   const enviarFotos = async () => {
     if (!vistoria || fotos.size === 0) return;
     setEnviando(true);
+    setUploadProgresso(0);
+    setFotoAtual("");
     try {
-      // Upload fotos pro Storage + inserir na tabela vistoria_fotos
-      for (const [catId, foto] of fotos) {
-        const ts = foto.timestamp.replace(/[:.]/g, "-");
-        const path = `${vistoria.id}/${catId}_${ts}.jpg`;
-        await supabase.storage.from("vistoria-fotos").upload(path, foto.blob, { contentType: "image/jpeg", upsert: true });
+      const fotosArray = Array.from(fotos.entries());
+      let enviadas = 0;
 
-        // Inserir registro na tabela vistoria_fotos
-        await (supabase as any).from("vistoria_fotos").insert({
-          vistoria_id: vistoria.id,
-          tipo: catId,
-          storage_path: path,
-          latitude: foto.lat || null,
-          longitude: foto.lng || null,
-          captured_at: foto.timestamp || new Date().toISOString(),
-        });
+      // Upload em batches de 3 fotos paralelas
+      const BATCH_SIZE = 3;
+      for (let i = 0; i < fotosArray.length; i += BATCH_SIZE) {
+        const batch = fotosArray.slice(i, i + BATCH_SIZE);
+        setFotoAtual(batch.map(([catId]) => CATEGORIAS.find(c => c.id === catId)?.label || catId).join(", "));
+
+        await Promise.all(batch.map(async ([catId, foto]) => {
+          const ts = foto.timestamp.replace(/[:.]/g, "-");
+          const path = `${vistoria.id}/${catId}_${ts}.jpg`;
+          await supabase.storage.from("vistoria-fotos").upload(path, foto.blob, { contentType: "image/jpeg", upsert: true });
+          await (supabase as any).from("vistoria_fotos").insert({
+            vistoria_id: vistoria.id,
+            tipo: catId,
+            storage_path: path,
+            latitude: foto.lat || null,
+            longitude: foto.lng || null,
+            captured_at: foto.timestamp || new Date().toISOString(),
+          });
+          enviadas++;
+          setUploadProgresso(enviadas);
+        }));
       }
 
       // Salvar metadata na vistoria
@@ -265,6 +289,14 @@ export default function VistoriaPublica() {
         </div>
       )}
 
+      {/* 2.2 — Aviso desktop sem câmera */}
+      {temCamera === false && (
+        <div className="bg-amber-500 text-white text-center text-xs py-3 px-4">
+          <AlertTriangle className="w-3 h-3 inline mr-1" />
+          Câmera não detectada. Use seu celular para tirar as fotos da vistoria.
+        </div>
+      )}
+
       {/* Grid de fotos */}
       <div className="max-w-lg mx-auto px-3 py-4">
         <div className="grid grid-cols-2 gap-3">
@@ -309,7 +341,7 @@ export default function VistoriaPublica() {
                       accept="image/*"
                       capture="environment"
                       onChange={(e) => handleFile(cat.id, e)}
-                      disabled={!coords}
+                      disabled={!coords || temCamera === false}
                       className="hidden"
                     />
                   </label>
@@ -321,19 +353,34 @@ export default function VistoriaPublica() {
 
         {/* Botão enviar */}
         <div className="mt-6 space-y-3">
-          <button
-            onClick={enviarFotos}
-            disabled={fotosTiradas === 0 || enviando || !coords}
-            className={`w-full py-4 rounded-xl font-bold text-white text-base transition-all ${
-              fotosTiradas >= totalFotos
-                ? "bg-green-500 hover:bg-green-600 shadow-lg"
-                : fotosTiradas > 0
-                ? "bg-[#1A3A5C] hover:bg-[#15304D]"
-                : "bg-gray-300 cursor-not-allowed"
-            }`}
-          >
-            {enviando ? "Enviando..." : fotosTiradas >= totalFotos ? `Enviar ${fotosTiradas} fotos` : fotosTiradas > 0 ? `Enviar ${fotosTiradas}/${totalFotos} fotos` : "Tire as fotos para enviar"}
-          </button>
+          {/* 2.3 — Overlay de progresso durante upload */}
+          {enviando && (
+            <div className="p-4 rounded-xl bg-[#1A3A5C] text-white space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold">Enviando foto {uploadProgresso}/{fotosTiradas}...</span>
+                <span className="text-xs">{Math.round((uploadProgresso / fotosTiradas) * 100)}%</span>
+              </div>
+              <div className="bg-white/20 rounded-full h-3">
+                <div className="bg-green-400 h-3 rounded-full transition-all" style={{ width: `${(uploadProgresso / fotosTiradas) * 100}%` }} />
+              </div>
+              {fotoAtual && <p className="text-[10px] text-white/70">{fotoAtual}</p>}
+            </div>
+          )}
+          {!enviando && (
+            <button
+              onClick={enviarFotos}
+              disabled={fotosTiradas === 0 || enviando || !coords || temCamera === false}
+              className={`w-full py-4 rounded-xl font-bold text-white text-base transition-all ${
+                fotosTiradas >= totalFotos
+                  ? "bg-green-500 hover:bg-green-600 shadow-lg"
+                  : fotosTiradas > 0
+                  ? "bg-[#1A3A5C] hover:bg-[#15304D]"
+                  : "bg-gray-300 cursor-not-allowed"
+              }`}
+            >
+              {fotosTiradas >= totalFotos ? `Enviar ${fotosTiradas} fotos` : fotosTiradas > 0 ? `Enviar ${fotosTiradas}/${totalFotos} fotos` : "Tire as fotos para enviar"}
+            </button>
+          )}
           {fotosTiradas > 0 && fotosTiradas < totalFotos && (
             <p className="text-xs text-center text-gray-500">Faltam {totalFotos - fotosTiradas} fotos. Você pode enviar parcial.</p>
           )}
