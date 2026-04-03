@@ -36,40 +36,53 @@ export default function ExcecaoAprovacao() {
   const [processando, setProcessando] = useState(false);
   const [resultado, setResultado] = useState<string | null>(null);
 
+  // Buscar dados auxiliares da negociação
+  const carregarDadosNegociacao = (negId: string) => {
+    (supabase as any).from("negociacoes").select("*").eq("id", negId).maybeSingle()
+      .then(({ data: n }: any) => {
+        if (n) setNeg(n);
+        (supabase as any).from("cotacoes").select("*").eq("negociacao_id", negId).order("created_at", { ascending: false }).limit(1).maybeSingle()
+          .then(({ data: c }: any) => { if (c) setCotacao(c); });
+        if (n?.vistoria_id) {
+          (supabase as any).from("vistoria_fotos").select("*").eq("vistoria_id", n.vistoria_id).order("created_at")
+            .then(({ data: f }: any) => {
+              if (f) setFotos(f.map((foto: any) => {
+                const { data: u } = supabase.storage.from("vistoria-fotos").getPublicUrl(foto.storage_path);
+                return { ...foto, url: u.publicUrl };
+              }));
+            });
+        }
+        setLoading(false);
+      });
+  };
+
   useEffect(() => {
     if (!token) return;
-    // Buscar por token_aprovacao OU negociacao_id (o link pode usar qualquer um)
+    // 1. Buscar exceção por token_aprovacao ou negociacao_id
     (supabase as any).from("excecoes_aprovacao").select("*")
       .or(`token_aprovacao.eq.${token},negociacao_id.eq.${token}`)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle()
       .then(({ data, error: err }: any) => {
-        if (err || !data) { setError("Exceção não encontrada ou link inválido."); setLoading(false); return; }
-        setExcecao(data);
-        if (data.status !== "pendente") { setResultado(data.status); }
-
-        // Buscar negociação completa
-        if (data.negociacao_id) {
-          (supabase as any).from("negociacoes").select("*").eq("id", data.negociacao_id).maybeSingle()
-            .then(({ data: n }: any) => {
-              if (n) setNeg(n);
-              // Buscar cotação
-              (supabase as any).from("cotacoes").select("*").eq("negociacao_id", data.negociacao_id).order("created_at", { ascending: false }).limit(1).maybeSingle()
-                .then(({ data: c }: any) => { if (c) setCotacao(c); });
-              // Buscar fotos vistoria
-              if (n?.vistoria_id) {
-                (supabase as any).from("vistoria_fotos").select("*").eq("vistoria_id", n.vistoria_id).order("created_at")
-                  .then(({ data: f }: any) => {
-                    if (f) setFotos(f.map((foto: any) => {
-                      const { data: u } = supabase.storage.from("vistoria-fotos").getPublicUrl(foto.storage_path);
-                      return { ...foto, url: u.publicUrl };
-                    }));
-                  });
+        if (data) {
+          setExcecao(data);
+          if (data.status !== "pendente") { setResultado(data.status); }
+          carregarDadosNegociacao(data.negociacao_id);
+        } else {
+          // 2. Sem exceção — tentar como negociacao_id direto (link genérico)
+          (supabase as any).from("negociacoes").select("id").eq("id", token).maybeSingle()
+            .then(({ data: negCheck }: any) => {
+              if (negCheck) {
+                // Criar exceção genérica para este link funcionar
+                setExcecao({ id: null, negociacao_id: token, tipo: "outro", motivo: "Liberação solicitada via link", status: "pendente", created_at: new Date().toISOString() });
+                carregarDadosNegociacao(token);
+              } else {
+                setError("Exceção não encontrada ou link inválido.");
+                setLoading(false);
               }
-              setLoading(false);
             });
-        } else { setLoading(false); }
+        }
       });
   }, [token]);
 
@@ -84,9 +97,20 @@ export default function ExcecaoAprovacao() {
   const handleAcao = async (acao: "aprovado" | "rejeitado") => {
     if (!excecao) return;
     setProcessando(true);
-    await (supabase as any).from("excecoes_aprovacao").update({
-      status: acao, diretor_nome: diretorNome, comentario: comentario || null, resolvido_em: new Date().toISOString(),
-    }).eq("id", excecao.id);
+
+    if (excecao.id) {
+      // Exceção existente — atualizar
+      await (supabase as any).from("excecoes_aprovacao").update({
+        status: acao, diretor_nome: diretorNome, comentario: comentario || null, resolvido_em: new Date().toISOString(),
+      }).eq("id", excecao.id);
+    } else {
+      // Exceção criada via link genérico — inserir no banco
+      await (supabase as any).from("excecoes_aprovacao").insert({
+        negociacao_id: excecao.negociacao_id, tipo: excecao.tipo, motivo: excecao.motivo,
+        status: acao, diretor_nome: diretorNome, comentario: comentario || null, resolvido_em: new Date().toISOString(),
+        token_aprovacao: token,
+      });
+    }
 
     if (acao === "aprovado" && excecao.negociacao_id) {
       await (supabase as any).from("negociacoes").update({ excecao_pendente: false, updated_at: new Date().toISOString() }).eq("id", excecao.negociacao_id);

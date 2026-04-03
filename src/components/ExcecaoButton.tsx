@@ -78,7 +78,16 @@ export default function ExcecaoButton({
               ))}
             </div>
             <p className="text-xs text-gray-500">O card ficará bloqueado até um diretor aprovar ou rejeitar.</p>
-            <Button onClick={() => setOpen(false)} size="sm" className="rounded-none">Fechar</Button>
+            <div className="flex gap-2 justify-center">
+              <Button size="sm" variant="outline" className="rounded-none border-gray-300" onClick={() => {
+                const link = `${window.location.origin}/excecao/${negociacaoId}`;
+                navigator.clipboard.writeText(link);
+                toast.success("Link copiado!");
+              }}>
+                <Copy className="h-3.5 w-3.5 mr-1" />Copiar Link p/ Diretor
+              </Button>
+              <Button onClick={() => setOpen(false)} size="sm" className="rounded-none">Fechar</Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -136,18 +145,6 @@ export default function ExcecaoButton({
           </div>
           <DialogFooter>
             <Button variant="outline" className="rounded-none" onClick={() => setOpen(false)} disabled={enviando}>Cancelar</Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="rounded-none border-gray-300"
-              onClick={() => {
-                const link = `${window.location.origin}/excecao/${negociacaoId}`;
-                navigator.clipboard.writeText(link);
-                toast.success("Link copiado!");
-              }}
-            >
-              <Copy className="h-3.5 w-3.5 mr-1" />Copiar Link
-            </Button>
             <Button
               onClick={handleEnviar}
               disabled={enviando || !tipo || !motivo.trim()}
