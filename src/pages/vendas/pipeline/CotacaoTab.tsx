@@ -498,7 +498,8 @@ export default function CotacaoTab({ deal }: Props) {
   const valorFipe = valorFipeReal;
   const codFipe = codFipeReal;
 
-  // Desconto é livre para consultor/gestor. Análise IA obrigatória apenas >5%.
+  // Desconto: livre em cards novos, bloqueado após cotação enviada (precisa IA >5%)
+  const descontoBloqueado = cotacaoEnviada && !descontoIaResult?.aprovado;
 
   const set = (field: string, value: string | boolean) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -1095,15 +1096,21 @@ export default function CotacaoTab({ deal }: Props) {
 
         {/* Campos de desconto para a cotação */}
         <div className="space-y-3 pt-2 p-3 border rounded bg-muted/20">
+          {descontoBloqueado && (
+            <div className="flex items-center gap-2 p-2 rounded border border-amber-300 bg-amber-50">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+              <p className="text-xs text-amber-700 font-medium">Cotação já enviada. Use "Pedir Liberação" abaixo para alterar desconto.</p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Desconto Mensalidade (valor final)</Label>
-              <Input className="rounded-none border border-gray-300" type="number" placeholder="Deixe vazio = sem desconto" value={descontoMensal} onChange={e => { setDescontoMensal(e.target.value); setDescontoIaResult(null); }} />
+              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60" : ""}`} type="number" placeholder="Deixe vazio = sem desconto" value={descontoMensal} disabled={descontoBloqueado} onChange={e => { setDescontoMensal(e.target.value); setDescontoIaResult(null); }} />
               <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Desconto Adesão (valor final)</Label>
-              <Input className="rounded-none border border-gray-300" type="number" placeholder="Deixe vazio = sem desconto" value={descontoAdesao} onChange={e => { setDescontoAdesao(e.target.value); setDescontoIaResult(null); }} />
+              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60" : ""}`} type="number" placeholder="Deixe vazio = sem desconto" value={descontoAdesao} disabled={descontoBloqueado} onChange={e => { setDescontoAdesao(e.target.value); setDescontoIaResult(null); }} />
               <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
             </div>
           </div>

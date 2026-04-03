@@ -300,6 +300,10 @@ export default function Pipeline() {
     dia_vencimento: (n as any).dia_vencimento || "",
     vistoria_status: (n as any).vistoria_status || "",
     vistoria_motivo: (n as any).vistoria_motivo || "",
+    cache_fipe: (n as any).cache_fipe || null,
+    cache_precos: (n as any).cache_precos || null,
+    cotacao_id: (n as any).cotacao_id || null,
+    proposta_concorrente_url: (n as any).proposta_concorrente_url || null,
     created_at: n.created_at,
     updated_at: n.updated_at,
   } as any));
