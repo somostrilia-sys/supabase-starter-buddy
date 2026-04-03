@@ -479,13 +479,17 @@ export default function CotacaoTab({ deal }: Props) {
       const linkPlanos = `${window.location.origin}/planos/${cotId}`;
       const msgCotacao = `Olá ${deal.lead_nome}! Segue sua cotação de proteção veicular para o veículo ${deal.veiculo_placa}:\n\n${linkPlanos}\n\nCompare os planos e escolha o melhor para você!\n\nObjetivo Auto Benefícios`;
 
+      // Buscar dados FRESCOS do banco (telefone/email podem ter sido atualizados após cadastro inicial)
+      const { data: negFresh } = await (supabase as any).from("negociacoes").select("telefone,email,lead_nome,veiculo_placa").eq("id", deal.id).maybeSingle();
+      const df = negFresh || deal;
+
       // Enviar SMS + Email via ClickSend (sempre, independente do tipo)
       callEdge("gia-enviar-notificacao", {
         tipo: "ambos",
-        telefone: deal.telefone,
-        email: deal.email,
-        nome: deal.lead_nome,
-        assunto: `Sua Cotação de Proteção Veicular - ${deal.veiculo_placa}`,
+        telefone: df.telefone,
+        email: df.email,
+        nome: df.lead_nome,
+        assunto: `Sua Cotação de Proteção Veicular - ${df.veiculo_placa || deal.veiculo_placa}`,
         mensagem: msgCotacao,
       }).then(res => {
         if (res.sms?.sucesso) toast.success("SMS enviado ao associado!");
@@ -499,7 +503,7 @@ export default function CotacaoTab({ deal }: Props) {
       }
 
       if (tipo === "WhatsApp") {
-        const tel = (deal.telefone || "").replace(/\D/g, "");
+        const tel = (df.telefone || "").replace(/\D/g, "");
         const msg = encodeURIComponent(msgCotacao);
         window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
         toast.success("WhatsApp aberto + SMS e e-mail enviados!");

@@ -201,7 +201,7 @@ export default function VistoriaTab({ deal }: Props) {
   const st = statusConfig[status];
   const StIcon = st.icon;
 
-  const handleSolicitar = async () => {
+  const handleSolicitar = async (): Promise<string | null> => {
     // Buscar dados FRESCOS do banco (não do deal em memória que pode estar desatualizado)
     const { data: negAtual } = await supabase.from("negociacoes" as any).select("lead_nome,cpf_cnpj,telefone,email,veiculo_placa,veiculo_modelo").eq("id", deal.id).maybeSingle();
     const d = (negAtual || deal) as any;
@@ -215,7 +215,7 @@ export default function VistoriaTab({ deal }: Props) {
 
     if (faltando.length > 0) {
       toast.error(`Complete os dados antes de solicitar vistoria:\n• ${faltando.join("\n• ")}`, { duration: 8000 });
-      return;
+      return null;
     }
 
     // Gerar token único
@@ -239,7 +239,7 @@ export default function VistoriaTab({ deal }: Props) {
     if (error) {
       console.error("Erro ao criar vistoria:", error);
       toast.error("Erro ao criar vistoria: " + error.message);
-      return;
+      return null;
     }
 
     // Registrar transição no pipeline
@@ -270,29 +270,10 @@ export default function VistoriaTab({ deal }: Props) {
     // Copiar link automaticamente
     const link = `${window.location.origin}/vistoria/${token}`;
     navigator.clipboard.writeText(link);
-    toast.success("Vistoria criada! Link copiado. Enviando SMS e e-mail...", { duration: 5000 });
+    toast.success("Vistoria criada! Link copiado. Use os botões para enviar ao cliente.", { duration: 5000 });
 
-    // Enviar SMS + Email via ClickSend
-    const msgTexto = `Olá ${d.lead_nome || deal.lead_nome}! Segue o link para envio das fotos da vistoria do seu veículo ${d.veiculo_placa || deal.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização, e envie todas as 14 fotos solicitadas.\n\nObjetivo Auto Benefícios`;
-    callEdge("gia-enviar-notificacao", {
-      tipo: "ambos",
-      telefone: d.telefone || deal.telefone,
-      email: d.email || deal.email,
-      nome: d.lead_nome || deal.lead_nome,
-      assunto: `Vistoria Veicular - ${d.veiculo_placa || deal.veiculo_placa}`,
-      mensagem: msgTexto,
-    }).then(res => {
-      if (res.sms?.sucesso) toast.success("SMS enviado ao associado!");
-      if (res.email?.sucesso) toast.success("E-mail enviado ao associado!");
-      if (!res.sms?.sucesso && !res.email?.sucesso) toast.info("Envio automático indisponível. Use os botões abaixo.");
-    }).catch((e) => { console.error("Erro ao enviar notificação:", e); toast.error("Erro ao enviar notificação"); });
-
-    // Abrir WhatsApp também
-    const tel = (d.telefone || deal.telefone || "").replace(/\D/g, "");
-    if (tel) {
-      const msg = encodeURIComponent(msgTexto);
-      window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
-    }
+    // Não envia SMS/email/WhatsApp automaticamente — cada botão faz sua parte
+    return token;
   };
 
   const handleCopiar = () => {
@@ -363,11 +344,16 @@ export default function VistoriaTab({ deal }: Props) {
           {/* Ações — botões SEMPRE visíveis */}
           <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t-2 border-[#747474]">
               <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={async () => {
-                if (!codigoGerado) await handleSolicitar();
-                const cod = codigo || vistoriaId;
+                let cod = codigo;
+                if (!codigoGerado) {
+                  const token = await handleSolicitar();
+                  if (!token) return;
+                  cod = token;
+                }
                 const { data: negF } = await (supabase as any).from("negociacoes").select("telefone,lead_nome,veiculo_placa").eq("id", deal.id).maybeSingle();
                 const d = negF || deal;
                 const tel = (d.telefone || "").replace(/\D/g, "");
+                if (!tel) { toast.error("Telefone não cadastrado. Preencha na aba Associado."); return; }
                 const link = `${window.location.origin}/vistoria/${cod}`;
                 const msg = encodeURIComponent(`Olá ${d.lead_nome}! Segue o link para envio das fotos da vistoria do veículo ${d.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização, e envie as fotos.`);
                 window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
@@ -376,10 +362,15 @@ export default function VistoriaTab({ deal }: Props) {
                 <MessageSquare className="h-3.5 w-3.5 mr-1" />Enviar WhatsApp
               </Button>
               <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white" onClick={async () => {
-                if (!codigoGerado) await handleSolicitar();
-                const cod = codigo || vistoriaId;
+                let cod = codigo;
+                if (!codigoGerado) {
+                  const token = await handleSolicitar();
+                  if (!token) return;
+                  cod = token;
+                }
                 const { data: negF } = await (supabase as any).from("negociacoes").select("telefone,email,lead_nome,veiculo_placa").eq("id", deal.id).maybeSingle();
                 const d = negF || deal;
+                if (!d.telefone && !d.email) { toast.error("Telefone e e-mail não cadastrados. Preencha na aba Associado."); return; }
                 const link = `${window.location.origin}/vistoria/${cod}`;
                 const msgTexto = `Olá ${d.lead_nome}! Segue o link para envio das fotos da vistoria do veículo ${d.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização.\n\nObjetivo Auto Benefícios`;
                 toast.info("Enviando SMS + E-mail...");
@@ -392,15 +383,20 @@ export default function VistoriaTab({ deal }: Props) {
                   mensagem: msgTexto,
                 }).then(res => {
                   if (res.sms?.sucesso) toast.success("SMS enviado!");
+                  else toast.error(`SMS falhou: ${res.sms?.detalhes || "sem telefone"}`);
                   if (res.email?.sucesso) toast.success("E-mail enviado!");
-                  if (!res.sms?.sucesso && !res.email?.sucesso) toast.error("Falha no envio.");
+                  else toast.error(`E-mail falhou: ${res.email?.detalhes || "sem email"}`);
                 }).catch(() => toast.error("Erro no envio."));
               }}>
                 <Mail className="h-3.5 w-3.5 mr-1" />Enviar SMS + E-mail
               </Button>
               <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={async () => {
-                if (!codigoGerado) await handleSolicitar();
-                const cod = codigo || vistoriaId;
+                let cod = codigo;
+                if (!codigoGerado) {
+                  const token = await handleSolicitar();
+                  if (!token) return;
+                  cod = token;
+                }
                 const link = `${window.location.origin}/vistoria/${cod}`;
                 navigator.clipboard.writeText(link);
                 toast.success("Link copiado!");
