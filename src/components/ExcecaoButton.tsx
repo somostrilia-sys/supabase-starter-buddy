@@ -146,6 +146,18 @@ export default function ExcecaoButton({
           <DialogFooter>
             <Button variant="outline" className="rounded-none" onClick={() => setOpen(false)} disabled={enviando}>Cancelar</Button>
             <Button
+              size="sm"
+              variant="outline"
+              className="rounded-none border-gray-300"
+              onClick={() => {
+                const link = `${window.location.origin}/excecao/${negociacaoId}`;
+                navigator.clipboard.writeText(link);
+                toast.success("Link copiado!");
+              }}
+            >
+              <Copy className="h-3.5 w-3.5 mr-1" />Copiar Link
+            </Button>
+            <Button
               onClick={handleEnviar}
               disabled={enviando || !tipo || !motivo.trim()}
               className="rounded-none bg-amber-600 hover:bg-amber-700 text-white"
