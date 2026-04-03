@@ -174,19 +174,7 @@ export default function CotacaoTab({ deal }: Props) {
   const [fipeFetched, setFipeFetched] = useState(false);
   const [descontoMensal, setDescontoMensal] = useState("");
   const [descontoAdesao, setDescontoAdesao] = useState("");
-
-  // Aplicar desconto aprovado pelo diretor quando preços carregam
-  React.useEffect(() => {
-    const pct = Number((deal as any).desconto_percentual || 0);
-    if (pct > 0 && (deal as any).desconto_aprovado_por && precosReais.length > 0 && !descontoMensal) {
-      const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
-      const mensalOriginal = precoPlano ? Number(precoPlano.cota) : 0;
-      if (mensalOriginal > 0) {
-        const valorComDesconto = Math.round(mensalOriginal * (1 - pct / 100));
-        setDescontoMensal(String(valorComDesconto));
-      }
-    }
-  }, [precosReais, planoSelecionado]);
+  const descontoAplicadoRef = React.useRef(false);
   const [valorInstalacaoEdit, setValorInstalacaoEdit] = useState("");
   const [descontoIaLoading, setDescontoIaLoading] = useState(false);
   const [descontoIaResult, setDescontoIaResult] = useState<{
@@ -346,6 +334,18 @@ export default function CotacaoTab({ deal }: Props) {
         resultado = filtered.length > 0 ? filtered : todos;
       }
       setPrecosReais(resultado);
+      // Aplicar desconto aprovado pelo diretor (só uma vez)
+      if (!descontoAplicadoRef.current) {
+        const pct = Number((deal as any).desconto_percentual || 0);
+        if (pct > 0 && (deal as any).desconto_aprovado_por) {
+          const precoPlano = resultado.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
+          const mensalOriginal = precoPlano ? Number(precoPlano.cota) : 0;
+          if (mensalOriginal > 0) {
+            setDescontoMensal(String(Math.round(mensalOriginal * (1 - pct / 100))));
+            descontoAplicadoRef.current = true;
+          }
+        }
+      }
       // Salvar cache de preços na negociação
       if (deal.id && !deal.id.startsWith("p")) {
         supabase.from("negociacoes").update({ cache_precos: resultado } as any).eq("id", deal.id).then(() => {});
@@ -360,10 +360,25 @@ export default function CotacaoTab({ deal }: Props) {
   React.useEffect(() => {
     if (precosCarregadosDaCotacao) return;
 
+    // Função para aplicar desconto aprovado pelo diretor
+    const aplicarDescontoDiretor = (precos: any[]) => {
+      if (descontoAplicadoRef.current) return;
+      const pct = Number((deal as any).desconto_percentual || 0);
+      if (pct > 0 && (deal as any).desconto_aprovado_por) {
+        const precoPlano = precos.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
+        const mensalOriginal = precoPlano ? Number(precoPlano.cota) : 0;
+        if (mensalOriginal > 0) {
+          setDescontoMensal(String(Math.round(mensalOriginal * (1 - pct / 100))));
+          descontoAplicadoRef.current = true;
+        }
+      }
+    };
+
     // 1. Cache de preços direto no deal (instantâneo, sem query)
     const cachePrecos = (deal as any).cache_precos;
     if (cachePrecos && Array.isArray(cachePrecos) && cachePrecos.length > 0) {
       setPrecosReais(cachePrecos);
+      aplicarDescontoDiretor(cachePrecos);
       setFipeFetched(true);
       setPrecosCarregadosDaCotacao(true);
       return;
