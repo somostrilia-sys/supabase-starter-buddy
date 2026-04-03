@@ -33,7 +33,7 @@ async function loadImage(src: string): Promise<string> {
       canvas.width = img.width;
       canvas.height = img.height;
       canvas.getContext("2d")!.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL("image/jpeg", 0.92));
+      resolve(canvas.toDataURL("image/png"));
     };
     img.onerror = () => resolve("");
     img.src = src;
