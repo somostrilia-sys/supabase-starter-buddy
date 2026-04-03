@@ -1085,7 +1085,19 @@ export default function CotacaoTab({ deal }: Props) {
                   </div>
                 </CardHeader>
                 <CardContent className="px-4 pb-4 space-y-2">
-                  <div className="text-2xl font-bold text-[#1A3A5C]">{formatCurrency(mensal)}<span className="text-xs font-normal text-muted-foreground">/mês</span></div>
+                  {(() => {
+                    const pctDesc = Number((deal as any).desconto_percentual || 0);
+                    const temDesconto = pctDesc > 0 && descontoAprovadoPorDiretor && mensal > 0;
+                    const mensalComDesconto = temDesconto ? Math.round(mensal * (1 - pctDesc / 100)) : mensal;
+                    return temDesconto ? (
+                      <div>
+                        <div className="text-sm line-through text-muted-foreground">{formatCurrency(mensal)}</div>
+                        <div className="text-2xl font-bold text-green-600">{formatCurrency(mensalComDesconto)}<span className="text-xs font-normal text-muted-foreground">/mês</span> <span className="text-xs text-green-600">-{pctDesc}%</span></div>
+                      </div>
+                    ) : (
+                      <div className="text-2xl font-bold text-[#1A3A5C]">{formatCurrency(mensal)}<span className="text-xs font-normal text-muted-foreground">/mês</span></div>
+                    );
+                  })()}
                   {/* Adesão + Instalação rastreador */}
                   <div className="text-xs text-muted-foreground">Adesão: <span className="font-semibold text-[#1A3A5C]">{formatCurrency((p as any).adesao || 400)}</span></div>
                   <div className="flex items-center gap-1 p-1.5 rounded border border-amber-300 bg-amber-50">
