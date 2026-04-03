@@ -325,25 +325,36 @@ export default function CotacaoTab({ deal }: Props) {
     if (todos && todos.length > 0) {
       // Buscar regional pela cidade/UF de circulação do veículo
       const regionalPrecos = await buscarRegionalPrecos(form.estadoCirc || "", form.cidadeCirc || "");
-
+      let resultado = todos;
       if (regionalPrecos) {
         const filtered = todos.filter((t: any) =>
           (t.regional_normalizado || "").toUpperCase() === regionalPrecos.toUpperCase()
         );
-        setPrecosReais(filtered.length > 0 ? filtered : todos);
-      } else {
-        setPrecosReais(todos);
+        resultado = filtered.length > 0 ? filtered : todos;
+      }
+      setPrecosReais(resultado);
+      // Salvar cache de preços na negociação
+      if (deal.id && !deal.id.startsWith("p")) {
+        supabase.from("negociacoes").update({ cache_precos: resultado } as any).eq("id", deal.id).then(() => {});
       }
     } else {
       setPrecosReais([]);
     }
   };
 
-  // Carregar preços da cotação existente (cache imediato sem depender da API de placa)
+  // Carregar preços — prioridade: 1) cache_precos do deal, 2) cotação salva, 3) API placa
   const [precosCarregadosDaCotacao, setPrecosCarregadosDaCotacao] = React.useState(false);
   React.useEffect(() => {
     if (precosCarregadosDaCotacao) return;
-    const cotId = (deal as any).cotacao_id;
+
+    // 1. Cache de preços direto no deal (instantâneo, sem query)
+    const cachePrecos = (deal as any).cache_precos;
+    if (cachePrecos && Array.isArray(cachePrecos) && cachePrecos.length > 0) {
+      setPrecosReais(cachePrecos);
+      setFipeFetched(true);
+      setPrecosCarregadosDaCotacao(true);
+      return;
+    }
 
     const processarPlanos = (data: any) => {
       if (data?.todos_planos && Array.isArray(data.todos_planos) && data.todos_planos.length > 0) {
@@ -361,59 +372,103 @@ export default function CotacaoTab({ deal }: Props) {
       setPrecosCarregadosDaCotacao(true);
     };
 
-    if (cotId) {
-      supabase.from("cotacoes" as any).select("todos_planos, plano_selecionado").eq("id", cotId).maybeSingle()
-        .then(({ data }: any) => processarPlanos(data));
-    } else if (deal.id && !deal.id.startsWith("p")) {
-      supabase.from("cotacoes" as any).select("todos_planos, plano_selecionado").eq("negociacao_id", deal.id).order("created_at", { ascending: false }).limit(1).maybeSingle()
-        .then(({ data }: any) => processarPlanos(data));
+    // 2. Tentar cache_precos do banco (query rápida)
+    if (deal.id && !deal.id.startsWith("p")) {
+      supabase.from("negociacoes" as any).select("cache_precos, cache_fipe, cotacao_id").eq("id", deal.id).maybeSingle()
+        .then(({ data: negData }: any) => {
+          if (negData?.cache_precos && Array.isArray(negData.cache_precos) && negData.cache_precos.length > 0) {
+            setPrecosReais(negData.cache_precos);
+            if (negData.cache_fipe?.valorFipe) setValorFipeReal(negData.cache_fipe.valorFipe);
+            setFipeFetched(true);
+            setPrecosCarregadosDaCotacao(true);
+            return;
+          }
+          // 3. Tentar cotação salva
+          const cotId = negData?.cotacao_id || (deal as any).cotacao_id;
+          if (cotId) {
+            supabase.from("cotacoes" as any).select("todos_planos, plano_selecionado").eq("id", cotId).maybeSingle()
+              .then(({ data }: any) => processarPlanos(data));
+          } else {
+            supabase.from("cotacoes" as any).select("todos_planos, plano_selecionado").eq("negociacao_id", deal.id).order("created_at", { ascending: false }).limit(1).maybeSingle()
+              .then(({ data }: any) => processarPlanos(data));
+          }
+        });
     } else {
       setPrecosCarregadosDaCotacao(true);
     }
   }, [deal.id]);
 
-  // Auto-carregar dados reais do veículo ao montar
+  // Auto-carregar dados reais do veículo — primeiro do cache, depois da API
   const [dadosReaisCarregados, setDadosReaisCarregados] = React.useState(false);
+
+  // Função que aplica dados FIPE no state (reutilizada pelo cache e API)
+  const aplicarDadosFipe = React.useCallback(async (r: any, salvarCache: boolean) => {
+    setMarcaReal(r.marca || "");
+    setModeloReal(r.modelo || "");
+    setValorFipeReal(r.valorFipe || 0);
+    setCodFipeReal(r.codFipe || "");
+    setForm(prev => ({
+      ...prev,
+      placa: deal.veiculo_placa || prev.placa,
+      chassi: r.chassi || prev.chassi || "",
+      renavam: r.renavam || prev.renavam || "",
+      anoFab: r.anoFabricacao || prev.anoFab || "",
+      cor: r.cor || prev.cor || "",
+      combustivel: r.combustivel || prev.combustivel || "",
+    }));
+    const matchMarca = marcas.find(m => (r.marca || "").toUpperCase().includes(m.toUpperCase()));
+    if (matchMarca) setMarca(matchMarca);
+    const vFipe = r.valorFipe || 0;
+    if (vFipe > 0) {
+      await carregarPrecos(vFipe);
+      carregarCoberturas(planoSelecionado);
+    }
+    verificarAceitacao(r.marca || "", r.modelo || "");
+    setFipeLoading(false);
+    setFipeFetched(true);
+    setDadosReaisCarregados(true);
+
+    // Salvar cache no banco pra próxima vez carregar instantâneo
+    if (salvarCache && deal.id && !deal.id.startsWith("p")) {
+      supabase.from("negociacoes").update({ cache_fipe: r } as any).eq("id", deal.id).then(() => {});
+    }
+  }, [deal.id, deal.veiculo_placa, planoSelecionado]);
+
   React.useEffect(() => {
     if (dadosReaisCarregados) return;
-    // Esperar cache de cotação terminar antes de buscar placa
     if (!precosCarregadosDaCotacao) return;
-    // Pular busca se já tem preços da cotação
     if (precosReais.length > 0 && fipeFetched) { setDadosReaisCarregados(true); return; }
-    const placa = (deal.veiculo_placa || "").replace(/[^A-Z0-9]/gi, "");
-    if (placa.length >= 7) {
+
+    // 1. Tentar cache salvo na negociação (instantâneo)
+    const cacheFipe = (deal as any).cache_fipe;
+    if (cacheFipe && cacheFipe.valorFipe > 0) {
+      aplicarDadosFipe(cacheFipe, false);
+      return;
+    }
+
+    // 2. Buscar do banco (pode ter sido salvo em sessão anterior)
+    if (deal.id && !deal.id.startsWith("p")) {
+      supabase.from("negociacoes" as any).select("cache_fipe").eq("id", deal.id).maybeSingle()
+        .then(({ data }: any) => {
+          if (data?.cache_fipe && data.cache_fipe.valorFipe > 0) {
+            aplicarDadosFipe(data.cache_fipe, false);
+            return;
+          }
+          // 3. Sem cache — buscar da API
+          buscarDaApi();
+        });
+      return;
+    }
+
+    buscarDaApi();
+
+    function buscarDaApi() {
+      const placa = (deal.veiculo_placa || "").replace(/[^A-Z0-9]/gi, "");
+      if (placa.length < 7) return;
       setFipeLoading(true);
       callEdge("gia-buscar-placa", { acao: "placa", placa }).then(res => {
         if (res.sucesso && res.resultado) {
-          const r = res.resultado;
-          // Guardar dados reais da API
-          setMarcaReal(r.marca || "");
-          setModeloReal(r.modelo || "");
-          setValorFipeReal(r.valorFipe || 0);
-          setCodFipeReal(r.codFipe || "");
-          // Preencher form com dados reais
-          setForm(prev => ({
-            ...prev,
-            placa: deal.veiculo_placa || prev.placa,
-            chassi: r.chassi || "",
-            renavam: r.renavam || "",
-            anoFab: r.anoFabricacao || "",
-            cor: r.cor || "",
-            combustivel: r.combustivel || "",
-          }));
-          // Setar marca no select (se encontrar no mock) ou deixar marcaReal
-          const matchMarca = marcas.find(m => (r.marca || "").toUpperCase().includes(m.toUpperCase()));
-          if (matchMarca) setMarca(matchMarca);
-
-          const vFipe = r.valorFipe || 0;
-          if (vFipe > 0) {
-            carregarPrecos(vFipe);
-            carregarCoberturas(planoSelecionado);
-          }
-          verificarAceitacao(r.marca || "", r.modelo || "");
-          setFipeLoading(false);
-          setFipeFetched(true);
-          setDadosReaisCarregados(true);
+          aplicarDadosFipe(res.resultado, true); // salvar cache
         } else {
           setFipeLoading(false);
         }
