@@ -139,7 +139,6 @@ export default function Integracoes({ onBack }: { onBack: () => void }) {
           </Card>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => handleEnviar("SMS")} className="gap-1.5"><Phone className="h-4 w-4" />Enviar SMS</Button>
             <Button onClick={() => handleEnviar("WhatsApp")} className="gap-1.5 bg-success hover:bg-success/90"><MessageSquare className="h-4 w-4" />Enviar WhatsApp</Button>
           </div>
         </TabsContent>
