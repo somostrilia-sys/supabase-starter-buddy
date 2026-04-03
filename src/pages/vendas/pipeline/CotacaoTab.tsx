@@ -1089,13 +1089,14 @@ export default function CotacaoTab({ deal }: Props) {
                     const pctDesc = Number((deal as any).desconto_percentual || 0);
                     const temDesconto = pctDesc > 0 && descontoAprovadoPorDiretor && mensal > 0;
                     const mensalComDesconto = temDesconto ? Math.round(mensal * (1 - pctDesc / 100)) : mensal;
-                    return temDesconto ? (
+                    const mensalBase = temDesconto ? mensalComDesconto : mensal;
+                    const pontualidade15 = Math.round(mensalBase * 0.85);
+                    return (
                       <div>
-                        <div className="text-sm line-through text-muted-foreground">{formatCurrency(mensal)}</div>
-                        <div className="text-2xl font-bold text-green-600">{formatCurrency(mensalComDesconto)}<span className="text-xs font-normal text-muted-foreground">/mês</span> <span className="text-xs text-green-600">-{pctDesc}%</span></div>
+                        {temDesconto && <div className="text-sm line-through text-muted-foreground">{formatCurrency(mensal)}</div>}
+                        <div className={`text-2xl font-bold ${temDesconto ? "text-green-600" : "text-[#1A3A5C]"}`}>{formatCurrency(mensalBase)}<span className="text-xs font-normal text-muted-foreground">/mês</span>{temDesconto && <span className="text-xs text-green-600 ml-1">-{pctDesc}%</span>}</div>
+                        {mensalBase > 0 && <div className="text-[10px] text-emerald-600 font-medium">15% pontualidade: {formatCurrency(pontualidade15)}/mês se pagar em dia</div>}
                       </div>
-                    ) : (
-                      <div className="text-2xl font-bold text-[#1A3A5C]">{formatCurrency(mensal)}<span className="text-xs font-normal text-muted-foreground">/mês</span></div>
                     );
                   })()}
                   {/* Adesão + Instalação rastreador */}

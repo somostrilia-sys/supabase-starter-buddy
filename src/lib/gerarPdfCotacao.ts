@@ -204,6 +204,7 @@ export async function gerarPdfCotacao(dados: DadosCotacao) {
     body: [
       ["Mensalidade:", { content: "", styles: { halign: "right" as const } }],
       ["Adesão:", { content: "", styles: { halign: "right" as const } }],
+      ["Desconto pontualidade (15%):", { content: `${fmtBRL(Math.round(dados.plano.mensal * 0.85))}/mês se pagar em dia`, styles: { halign: "right" as const, textColor: [22, 163, 74] as any } }],
       ["Rastreador obrigatório:", { content: dados.plano.rastreador || "Não", styles: { halign: "right" as const } }],
       ...(dados.plano.instalacao && dados.plano.instalacao > 0 ? [["Instalação rastreador:", { content: fmtBRL(dados.plano.instalacao), styles: { halign: "right" as const, fontStyle: "bold" as const } }]] : []),
     ],
