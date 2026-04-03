@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import RelatoriosGeraisTab from "./RelatoriosGeraisTab";
@@ -225,6 +225,10 @@ export default function RelatoriosTab() {
   const [pageAssoc, setPageAssoc] = useState(1);
   const [pageVeic, setPageVeic] = useState(1);
   const [pageBol, setPageBol] = useState(1);
+  const [selModelo, setSelModelo] = useState("todos");
+  const [selectedVeicCols, setSelectedVeicCols] = useState<string[]>(["placa", "modelo", "marca", "ano", "cor", "chassi", "status"]);
+  const [outrosData, setOutrosData] = useState<any[]>([]);
+  const [outrosLoading, setOutrosLoading] = useState(false);
 
   // Fetch regionais from Supabase (id + nome for filter lookups)
   const { data: regionaisFullData } = useQuery({
@@ -270,7 +274,7 @@ export default function RelatoriosTab() {
       const offset = (veicPageDb - 1) * VEIC_PAGE_SIZE;
       const { data, error, count } = await (supabase as any)
         .from("veiculos")
-        .select("*", { count: "exact" })
+        .select("*, associados:associado_id(nome, cpf, telefone, cooperativa_id, regional_id)", { count: "exact" })
         .range(offset, offset + VEIC_PAGE_SIZE - 1);
       if (error) throw error;
       return { rows: data || [], total: count ?? 0 };
@@ -279,6 +283,21 @@ export default function RelatoriosTab() {
   const realVeiculos: any[] = veiculosResult?.rows || [];
   const totalVeiculosCount = veiculosResult?.total || 0;
   const totalPagesVeicDb = Math.ceil(totalVeiculosCount / VEIC_PAGE_SIZE);
+
+  const modelosVeiculo = useMemo(() => {
+    const models = new Set(realVeiculos.map((v: any) => v.modelo).filter(Boolean));
+    return Array.from(models).sort() as string[];
+  }, [realVeiculos]);
+
+  const veicAllColumns = [
+    { key: "placa", label: "Placa" }, { key: "modelo", label: "Modelo" }, { key: "marca", label: "Marca" },
+    { key: "ano", label: "Ano Fab." }, { key: "cor", label: "Cor" }, { key: "chassi", label: "Chassi" },
+    { key: "status", label: "Status" }, { key: "associado_nome", label: "Associado" },
+    { key: "tipo", label: "Tipo" }, { key: "categoria", label: "Categoria" },
+    { key: "cota", label: "Cota" }, { key: "regional", label: "Regional" }, { key: "cooperativa", label: "Cooperativa" },
+  ];
+
+  const toggleVeicCol = (key: string) => setSelectedVeicCols(prev => prev.includes(key) ? prev.filter(c => c !== key) : [...prev, key]);
 
   // Fetch boletos from Supabase with server-side filters
   const [boletosLoading, setBoletosLoading] = useState(false);
@@ -436,14 +455,17 @@ export default function RelatoriosTab() {
       const vCatUpper = (v.categoria || "").toUpperCase();
       if (!selCategoria.has(vCatUpper)) return false;
     }
-    // Regional filter via associado lookup (v may have associado_id -> look up associado -> regional_id)
-    // For now, if v has regional_id directly, use it
-    if (v.regional_id && selRegional.size < regionaisLista.length) {
-      if (!selectedRegionalIds.has(v.regional_id)) return false;
+    // Modelo filter
+    if (selModelo !== "todos" && v.modelo !== selModelo) return false;
+    // Regional filter - check vehicle's own regional_id OR associated associado's regional_id
+    const vRegionalId = v.regional_id || v.associados?.regional_id;
+    if (vRegionalId && selRegional.size < regionaisLista.length) {
+      if (!selectedRegionalIds.has(vRegionalId)) return false;
     }
-    // Cooperativa filter
-    if (v.cooperativa_id && selCooperativa.size < cooperativasLista.length) {
-      if (!selectedCooperativaIds.has(v.cooperativa_id)) return false;
+    // Cooperativa filter - check vehicle's own cooperativa_id OR associated associado's cooperativa_id
+    const vCoopId = v.cooperativa_id || v.associados?.cooperativa_id;
+    if (vCoopId && selCooperativa.size < cooperativasLista.length) {
+      if (!selectedCooperativaIds.has(vCoopId)) return false;
     }
     return true;
   });
@@ -454,12 +476,10 @@ export default function RelatoriosTab() {
     label: allColumns.find(c => c.key === k)?.label || k,
   }));
 
-  const veicColumns: ExportColumn[] = [
-    { key: "placa", label: "Placa" }, { key: "modelo", label: "Modelo" },
-    { key: "ano", label: "Ano" }, { key: "tipo", label: "Tipo" },
-    { key: "categoria", label: "Categoria" }, { key: "cota", label: "Cota" },
-    { key: "nome", label: "Associado" }, { key: "cooperativa", label: "Cooperativa" },
-  ];
+  const veicColumns: ExportColumn[] = selectedVeicCols.map(k => ({
+    key: k,
+    label: veicAllColumns.find(c => c.key === k)?.label || k,
+  }));
 
   const bolColumns: ExportColumn[] = [
     { key: "nosso_numero", label: "N Boleto" }, { key: "associado_nome", label: "Associado" },
@@ -476,7 +496,13 @@ export default function RelatoriosTab() {
   const handleExportAssocPDF = () => exportPDF(filteredAssoc as Record<string, unknown>[], "associados", assocColumns, "Relatorio de Associados");
   const handlePrintAssoc = () => printData(filteredAssoc as Record<string, unknown>[], assocColumns, "Relatorio de Associados");
 
-  const veicData = () => realAssociados.map((a: any) => ({ placa: a.placa, modelo: a.modelo, ano: a.ano, tipo: a.tipo, categoria: a.categoria, cota: a.cota, nome: a.nome, cooperativa: a.cooperativa }));
+  const veicData = () => filteredVeiculos.map((v: any) => ({
+    placa: v.placa, modelo: v.modelo, marca: v.marca, ano: v.ano_fabricacao || v.ano,
+    cor: v.cor, chassi: v.chassi, status: v.status,
+    associado_nome: v.associados?.nome || "", tipo: v.tipo, categoria: v.categoria,
+    cota: v.cota, regional: regionalIdToName[v.regional_id || v.associados?.regional_id] || "",
+    cooperativa: cooperativaIdToName[v.cooperativa_id || v.associados?.cooperativa_id] || "",
+  }));
   const handleExportVeicCSV = () => exportCSV(veicData(), "veiculos", veicColumns);
   const handleExportVeicExcel = () => exportExcel(veicData(), "veiculos", veicColumns);
   const handleExportVeicPDF = () => exportPDF(veicData(), "veiculos", veicColumns, "Relatorio de Veiculos");
@@ -601,6 +627,9 @@ export default function RelatoriosTab() {
                 <div><Label className="text-xs font-semibold">Data Cadastro Até</Label><Input type="date" /></div>
                 <div><Label className="text-xs font-semibold">Ano Fabricação De</Label><Input type="number" placeholder="2020" /></div>
                 <div><Label className="text-xs font-semibold">Ano Fabricação Até</Label><Input type="number" placeholder="2025" /></div>
+                <div><Label className="text-xs font-semibold">Modelo de Veículo</Label>
+                  <Select value={selModelo} onValueChange={setSelModelo}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{modelosVeiculo.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
+                </div>
               </div>
             </div>
             <FilterSection title="Situação ATUAL do Veículo" items={situacoesVeiculo} selected={selSitVeiculo} onToggle={(item) => toggleInSet(selSitVeiculo, setSelSitVeiculo, item)} color="success" />
@@ -608,6 +637,20 @@ export default function RelatoriosTab() {
             <FilterSection title="Faixa de Cota" items={cotasVeiculo} selected={selCota} onToggle={(item) => toggleInSet(selCota, setSelCota, item)} columns={4} color="success" />
             <FilterSection title="Regional do Veículo" items={regionaisLista} selected={selRegional} onToggle={(item) => toggleInSet(selRegional, setSelRegional, item)} columns={2} color="primary" />
             <FilterSection title="Cooperativa do Veículo" items={cooperativasLista} selected={selCooperativa} onToggle={(item) => toggleInSet(selCooperativa, setSelCooperativa, item)} color="warning" />
+
+            <div className="border border-border">
+              <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider">Colunas Visíveis no Resultado</h4></div>
+              <div className="px-4 py-3 bg-card">
+                <div className="grid grid-cols-3 md:grid-cols-5 gap-x-6 gap-y-1.5">
+                  {veicAllColumns.map(c => (
+                    <label key={c.key} className="inline-flex items-center gap-2 cursor-pointer py-0.5">
+                      <Checkbox checked={selectedVeicCols.includes(c.key)} onCheckedChange={() => toggleVeicCol(c.key)} className="h-4 w-4" />
+                      <span className={`text-xs ${selectedVeicCols.includes(c.key) ? "text-primary font-medium" : "text-muted-foreground"}`}>{c.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
 
             <ReportActionBar
               busca={buscaVeic}
@@ -623,13 +666,33 @@ export default function RelatoriosTab() {
 
           <Card><CardContent className="p-0">
             <Table>
-              <TableHeader><TableRow><TableHead className="font-bold text-xs uppercase">Placa</TableHead><TableHead className="font-bold text-xs uppercase">Modelo</TableHead><TableHead className="font-bold text-xs uppercase">Marca</TableHead><TableHead className="font-bold text-xs uppercase">Ano Fab.</TableHead><TableHead className="font-bold text-xs uppercase">Cor</TableHead><TableHead className="font-bold text-xs uppercase">Chassi</TableHead><TableHead className="font-bold text-xs uppercase">Status</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow>{selectedVeicCols.map(k => <TableHead key={k} className="font-bold text-xs uppercase">{veicAllColumns.find(c => c.key === k)?.label}</TableHead>)}</TableRow></TableHeader>
               <TableBody>
-                {filteredVeiculos.map((v: any) => (
-                  <TableRow key={v.id}><TableCell className="font-mono">{v.placa}</TableCell><TableCell>{v.modelo}</TableCell><TableCell>{v.marca}</TableCell><TableCell>{v.ano_fabricacao || v.ano}</TableCell><TableCell>{v.cor}</TableCell><TableCell className="font-mono text-xs">{v.chassi}</TableCell><TableCell><Badge variant="outline">{v.status || "—"}</Badge></TableCell></TableRow>
-                ))}
+                {filteredVeiculos.map((v: any) => {
+                  const veicCellValue = (k: string) => {
+                    switch (k) {
+                      case "placa": return <span className="font-mono">{v.placa}</span>;
+                      case "modelo": return v.modelo;
+                      case "marca": return v.marca;
+                      case "ano": return v.ano_fabricacao || v.ano;
+                      case "cor": return v.cor;
+                      case "chassi": return <span className="font-mono text-xs">{v.chassi}</span>;
+                      case "status": return <Badge variant="outline">{v.status || "—"}</Badge>;
+                      case "associado_nome": return v.associados?.nome || "—";
+                      case "tipo": return v.tipo || "—";
+                      case "categoria": return v.categoria || "—";
+                      case "cota": return v.cota || "—";
+                      case "regional": return regionalIdToName[v.regional_id || v.associados?.regional_id] || "—";
+                      case "cooperativa": return cooperativaIdToName[v.cooperativa_id || v.associados?.cooperativa_id] || "—";
+                      default: return String((v as Record<string, unknown>)[k] ?? "");
+                    }
+                  };
+                  return (
+                    <TableRow key={v.id}>{selectedVeicCols.map(k => <TableCell key={k}>{veicCellValue(k)}</TableCell>)}</TableRow>
+                  );
+                })}
                 {filteredVeiculos.length === 0 && (
-                  <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Nenhum veículo encontrado</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={selectedVeicCols.length} className="text-center text-sm text-muted-foreground py-8">Nenhum veículo encontrado</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -641,6 +704,7 @@ export default function RelatoriosTab() {
               </div>
             </div>
           </CardContent></Card>
+          <p className="text-xs text-muted-foreground mt-2">Quantidade de veículos encontrados: {filteredVeiculos.length} de {totalVeiculosCount} total</p>
         </TabsContent>
 
         {/* ── BOLETOS ── */}
@@ -776,6 +840,7 @@ export default function RelatoriosTab() {
             </div>
             <Pagination page={pageBol} totalPages={totalPagesBol} onPageChange={setPageBol} />
           </CardContent></Card>
+          <p className="text-xs text-muted-foreground mt-2">Quantidade de boletos encontrados: {filteredBoletos.length} — Total: R$ {somaBoletosTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
         </TabsContent>
 
         {/* ── GERAIS ── */}
@@ -789,7 +854,7 @@ export default function RelatoriosTab() {
             {outrosRelatorios.map(r => (
               <button
                 key={r.id}
-                onClick={() => setOutroAtivo(r.id)}
+                onClick={() => { setOutroAtivo(r.id); setOutrosData([]); }}
                 className={`group flex items-center gap-5 border bg-muted/50 px-6 py-6 text-left hover:bg-muted transition-colors min-h-[100px] ${outroAtivo === r.id ? "border-primary" : "border-border"}`}
               >
                 <div className="w-14 h-14 bg-primary flex items-center justify-center shrink-0">
@@ -828,18 +893,100 @@ export default function RelatoriosTab() {
               <ReportActionBar
                 busca=""
                 setBusca={() => {}}
-                onGenerate={() => toast.success("Relatório gerado")}
-                onExportCSV={() => toast.success("CSV exportado")}
-                onExportExcel={() => toast.success("Excel exportado")}
-                onExportPDF={() => toast.success("PDF gerado")}
-                onPrint={() => { window.print(); toast.success("Enviado para impressão"); }}
+                onGenerate={async () => {
+                  setOutrosLoading(true);
+                  setOutrosData([]);
+                  try {
+                    let result: any[] = [];
+                    if (outroAtivo === "alt_veiculos") {
+                      const { data } = await (supabase as any).from("audit_log").select("*").eq("tabela", "veiculos").order("created_at", { ascending: false }).limit(200);
+                      result = data || [];
+                    } else if (outroAtivo === "alt_beneficiario") {
+                      const { data } = await (supabase as any).from("audit_log").select("*").eq("tabela", "associados").order("created_at", { ascending: false }).limit(200);
+                      result = data || [];
+                    } else if (outroAtivo === "eventos") {
+                      const { data } = await (supabase as any).from("eventos_gia").select("*").eq("status", "aberto").order("created_at", { ascending: false }).limit(200);
+                      result = data || [];
+                    } else if (outroAtivo === "usuarios") {
+                      const { data } = await (supabase as any).from("profiles").select("*").order("created_at", { ascending: false }).limit(200);
+                      result = data || [];
+                    }
+                    setOutrosData(result);
+                    toast.success(`Relatório gerado: ${result.length} registros`);
+                  } catch (err: any) {
+                    toast.error("Erro ao gerar relatório: " + (err?.message || "desconhecido"));
+                  } finally {
+                    setOutrosLoading(false);
+                  }
+                }}
+                onExportCSV={() => {
+                  if (outrosData.length === 0) { toast.error("Gere o relatório primeiro"); return; }
+                  const cols = Object.keys(outrosData[0]).map(k => ({ key: k, label: k }));
+                  exportCSV(outrosData as Record<string, unknown>[], `relatorio_${outroAtivo}`, cols);
+                  toast.success("CSV exportado");
+                }}
+                onExportExcel={() => {
+                  if (outrosData.length === 0) { toast.error("Gere o relatório primeiro"); return; }
+                  const cols = Object.keys(outrosData[0]).map(k => ({ key: k, label: k }));
+                  exportExcel(outrosData as Record<string, unknown>[], `relatorio_${outroAtivo}`, cols);
+                  toast.success("Excel exportado");
+                }}
+                onExportPDF={() => {
+                  if (outrosData.length === 0) { toast.error("Gere o relatório primeiro"); return; }
+                  const cols = Object.keys(outrosData[0]).map(k => ({ key: k, label: k }));
+                  exportPDF(outrosData as Record<string, unknown>[], `relatorio_${outroAtivo}`, cols, outrosRelatorios.find(r => r.id === outroAtivo)?.label || "Relatório");
+                  toast.success("PDF gerado");
+                }}
+                onPrint={() => {
+                  if (outrosData.length === 0) { toast.error("Gere o relatório primeiro"); return; }
+                  const cols = Object.keys(outrosData[0]).map(k => ({ key: k, label: k }));
+                  printData(outrosData as Record<string, unknown>[], cols, outrosRelatorios.find(r => r.id === outroAtivo)?.label || "Relatório");
+                  toast.success("Enviado para impressão");
+                }}
                 placeholder="Buscar..."
               />
 
-              <div className="p-8 bg-muted text-center text-muted-foreground border">
-                <BarChart3 className="h-8 w-8 mx-auto mb-2" />
-                <p className="text-sm">Aplique os filtros e clique em "Visualizar Tela"</p>
-              </div>
+              {outrosLoading && (
+                <div className="p-8 bg-muted text-center text-muted-foreground border">
+                  <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin" />
+                  <p className="text-sm">Carregando dados...</p>
+                </div>
+              )}
+
+              {!outrosLoading && outrosData.length === 0 && (
+                <div className="p-8 bg-muted text-center text-muted-foreground border">
+                  <BarChart3 className="h-8 w-8 mx-auto mb-2" />
+                  <p className="text-sm">Aplique os filtros e clique em "Visualizar Tela"</p>
+                </div>
+              )}
+
+              {!outrosLoading && outrosData.length > 0 && (
+                <Card><CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {Object.keys(outrosData[0]).slice(0, 8).map(k => (
+                          <TableHead key={k} className="font-bold text-xs uppercase">{k.replace(/_/g, " ")}</TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {outrosData.slice(0, 50).map((row: any, i: number) => (
+                        <TableRow key={row.id || i} className={i % 2 === 0 ? "bg-card" : "bg-muted/30"}>
+                          {Object.keys(outrosData[0]).slice(0, 8).map(k => (
+                            <TableCell key={k} className="text-xs">{
+                              k.includes("created_at") || k.includes("updated_at")
+                                ? (row[k] ? new Date(row[k]).toLocaleString("pt-BR") : "—")
+                                : String(row[k] ?? "—")
+                            }</TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <p className="text-xs text-muted-foreground px-4 py-3">{outrosData.length} registros encontrados</p>
+                </CardContent></Card>
+              )}
             </div>
           )}
         </TabsContent>

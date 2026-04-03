@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { registrarAuditoria } from "@/lib/auditoria";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,6 +106,84 @@ export default function AlterarAssociado() {
   }, []);
   const [ocModal, setOcModal] = useState(false);
   const [newOc, setNewOc] = useState({ tipo: "", veiculo: "", data: "", descricao: "", valor: "" });
+  const [veicModal, setVeicModal] = useState(false);
+  const [veicDetail, setVeicDetail] = useState<any>(null);
+  const [veicLoading, setVeicLoading] = useState(false);
+  const [veicSaving, setVeicSaving] = useState(false);
+  const [veicForm, setVeicForm] = useState<Record<string, string>>({});
+  const [veicFiles, setVeicFiles] = useState<{ nome: string; preview?: string; file: File }[]>([]);
+  const veicFileRef = useRef<HTMLInputElement>(null);
+
+  const openVeicDetail = async (placa: string) => {
+    setVeicModal(true);
+    setVeicLoading(true);
+    setVeicFiles([]);
+    try {
+      const { data, error } = await supabase
+        .from("veiculos")
+        .select("*, contratos(*, planos(nome))")
+        .ilike("placa", placa)
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) { toast.error("Veículo não encontrado"); setVeicModal(false); return; }
+      setVeicDetail(data);
+      setVeicForm({
+        placa: data.placa || "",
+        modelo: data.modelo || "",
+        marca: data.marca || "",
+        ano: String(data.ano || ""),
+        chassi: data.chassi || "",
+        cor: data.cor || "",
+        status: data.status || "Ativo",
+        plano: data.contratos?.[0]?.planos?.nome || "",
+      });
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao buscar veículo");
+      setVeicModal(false);
+    } finally {
+      setVeicLoading(false);
+    }
+  };
+
+  const saveVeicDetail = async () => {
+    if (!veicDetail) return;
+    setVeicSaving(true);
+    try {
+      const { error } = await supabase
+        .from("veiculos")
+        .update({
+          placa: veicForm.placa,
+          modelo: veicForm.modelo,
+          marca: veicForm.marca,
+          ano: veicForm.ano ? parseInt(veicForm.ano) : null,
+          chassi: veicForm.chassi,
+          cor: veicForm.cor,
+          status: veicForm.status,
+        })
+        .eq("id", veicDetail.id);
+      if (error) throw error;
+      toast.success("Veículo atualizado com sucesso!");
+      setVeicModal(false);
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao salvar veículo");
+    } finally {
+      setVeicSaving(false);
+    }
+  };
+
+  const handleVeicFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    const newFiles = Array.from(files).map(f => ({
+      nome: f.name,
+      preview: f.type.startsWith("image/") ? URL.createObjectURL(f) : undefined,
+      file: f,
+    }));
+    setVeicFiles(prev => [...prev, ...newFiles]);
+    toast.success(`${files.length} arquivo(s) adicionado(s)`);
+    e.target.value = "";
+  };
 
   const setF = (k: string, v: string) => setFilters(p => ({ ...p, [k]: v }));
 
@@ -643,7 +721,7 @@ export default function AlterarAssociado() {
                       <TableCell className="text-sm">{v.plano}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar"><Pencil className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar" onClick={() => openVeicDetail(v.placa)}><Pencil className="h-3.5 w-3.5" /></Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Desvincular"><X className="h-3.5 w-3.5" /></Button>
                         </div>
                       </TableCell>
@@ -845,6 +923,65 @@ export default function AlterarAssociado() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Modal Detalhes do Veículo */}
+      <Dialog open={veicModal} onOpenChange={setVeicModal}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Car className="h-5 w-5 text-primary" /> Detalhes do Veículo</DialogTitle></DialogHeader>
+          {veicLoading ? (
+            <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : veicDetail ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div><Label className="text-xs">Placa</Label><Input value={veicForm.placa || ""} onChange={e => setVeicForm(p => ({ ...p, placa: e.target.value.toUpperCase() }))} /></div>
+                <div><Label className="text-xs">Modelo</Label><Input value={veicForm.modelo || ""} onChange={e => setVeicForm(p => ({ ...p, modelo: e.target.value }))} /></div>
+                <div><Label className="text-xs">Marca</Label><Input value={veicForm.marca || ""} onChange={e => setVeicForm(p => ({ ...p, marca: e.target.value }))} /></div>
+                <div><Label className="text-xs">Ano</Label><Input value={veicForm.ano || ""} onChange={e => setVeicForm(p => ({ ...p, ano: e.target.value }))} /></div>
+                <div><Label className="text-xs">Chassi</Label><Input value={veicForm.chassi || ""} onChange={e => setVeicForm(p => ({ ...p, chassi: e.target.value.toUpperCase() }))} /></div>
+                <div><Label className="text-xs">Cor</Label><Input value={veicForm.cor || ""} onChange={e => setVeicForm(p => ({ ...p, cor: e.target.value }))} /></div>
+                <div><Label className="text-xs">Status</Label>
+                  <Select value={veicForm.status || ""} onValueChange={v => setVeicForm(p => ({ ...p, status: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{["Ativo","Inativo","Pendente","Negado"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label className="text-xs">Plano</Label><Input value={veicForm.plano || ""} disabled className="bg-muted/50" /></div>
+              </div>
+
+              {/* Upload de Arquivos */}
+              <div className="border-t pt-4">
+                <Label className="text-sm font-semibold mb-2 block">Documentos / Fotos</Label>
+                <input type="file" ref={veicFileRef} className="hidden" accept="image/*,.pdf,.doc,.docx" multiple onChange={handleVeicFileSelect} />
+                <Button variant="outline" size="sm" className="gap-1.5 mb-3" onClick={() => veicFileRef.current?.click()}>
+                  <Upload className="h-3.5 w-3.5" /> Adicionar Arquivos
+                </Button>
+                {veicFiles.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {veicFiles.map((f, i) => (
+                      <div key={i} className="border rounded-lg p-2 text-center relative">
+                        {f.preview ? (
+                          <img src={f.preview} alt={f.nome} className="w-full h-16 object-cover rounded mb-1" />
+                        ) : (
+                          <div className="w-full h-16 bg-muted flex items-center justify-center rounded mb-1"><FileText className="h-6 w-6 text-muted-foreground" /></div>
+                        )}
+                        <p className="text-[10px] truncate">{f.nome}</p>
+                        <Button variant="ghost" size="icon" className="absolute top-0 right-0 h-5 w-5" onClick={() => setVeicFiles(prev => prev.filter((_, j) => j !== i))}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVeicModal(false)}>Cancelar</Button>
+            <Button onClick={saveVeicDetail} disabled={veicSaving || veicLoading} className="gap-1.5">
+              {veicSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {veicSaving ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

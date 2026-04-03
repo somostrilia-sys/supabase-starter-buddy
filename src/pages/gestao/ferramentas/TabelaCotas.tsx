@@ -111,8 +111,16 @@ export default function TabelaCotas({ onBack }: { onBack: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleDownloadTemplate = () => {
-    const csv = generateCSV(cotas);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const header = "FIP Mínima;FIP Máxima;Cota;Taxa Multiplicativa;Regional;Categoria";
+    const exampleRows = [
+      "0;30000;1ª;1.0;Sul;Automóvel",
+      "30001;60000;2ª;1.5;Norte;Motocicleta",
+      "60001;100000;3ª;2.0;Sudeste;Pesado",
+      "100001;200000;4ª;2.5;Nordeste;Van",
+      "200001;500000;5ª;3.0;Centro-Oeste;Automóvel",
+    ];
+    const csvContent = [header, ...exampleRows].join("\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -338,7 +346,7 @@ export default function TabelaCotas({ onBack }: { onBack: () => void }) {
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
             <div className="text-xs text-muted-foreground space-y-1">
-              <p><strong>Formato do CSV:</strong> fipe_min, fipe_max, fator, taxa_admin, descricao</p>
+              <p><strong>Formato do CSV:</strong> FIP Mínima; FIP Máxima; Cota; Taxa Multiplicativa; Regional; Categoria</p>
               <p><strong>Regra:</strong> As faixas FIPE não podem ter sobreposição (ex: 0-30000, 30001-50000).</p>
               <p><strong>Integração:</strong> Ao salvar, os dados serão enviados para o backend e aplicados automaticamente na composição de mensalidades.</p>
             </div>

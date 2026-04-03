@@ -12,15 +12,17 @@ const ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyamllZ3RxZm5nZGxpd2NscHpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MTY3MzMsImV4cCI6MjA5MDI5MjczM30.yZWSOqQwWhG_OcF-uNLvvy_ZwRYd2OC_Jjr5R_9Gucw";
 const ENDPOINT = `${SUPABASE_URL}/functions/v1/cota-template`;
 
-const TEMPLATE_HEADER = "categoria,valor_inicial,valor_final,regional,fator,ativo";
+const TEMPLATE_HEADER = "categoria;valor_inicial;valor_final;regional;fator;ativo";
 const TEMPLATE_ROWS = [
-  "Automóvel,0,20000,Todas,1.00,true",
-  "Motocicleta,0,10000,Todas,0.60,true",
-  "Pesados,0,50000,Todas,1.80,true",
+  "Automóvel;0;20000;Todas;1,00;true",
+  "Motocicleta;0;10000;Todas;0,60;true",
+  "Pesados;0;50000;Todas;1,80;true",
+  "Vans;0;30000;Todas;1,20;true",
+  "Pesados Porte Pequeno;0;40000;Todas;1,50;true",
 ];
 
 function triggerDownload(content: string, filename: string) {
-  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -32,10 +34,12 @@ function triggerDownload(content: string, filename: string) {
 function parseCSVPreview(text: string): { headers: string[]; rows: string[][] } {
   const lines = text.trim().split(/\r?\n/).filter(Boolean);
   if (lines.length === 0) return { headers: [], rows: [] };
-  const headers = lines[0].split(",").map((h) => h.trim());
+  // Support both ; and , as separators
+  const sep = lines[0].includes(";") ? ";" : ",";
+  const headers = lines[0].split(sep).map((h) => h.trim());
   const rows = lines
     .slice(1, 6)
-    .map((line) => line.split(",").map((c) => c.trim()));
+    .map((line) => line.split(sep).map((c) => c.trim()));
   return { headers, rows };
 }
 
@@ -140,9 +144,9 @@ export default function ImportExportCotas() {
           </Button>
 
           <div className="mt-3 rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-            Colunas esperadas:{" "}
+            Colunas esperadas (separador <code className="font-mono text-foreground/80">;</code>):{" "}
             <code className="font-mono text-foreground/80">
-              categoria, valor_inicial, valor_final, regional, fator, ativo
+              categoria; valor_inicial; valor_final; regional; fator; ativo
             </code>
           </div>
         </CardContent>

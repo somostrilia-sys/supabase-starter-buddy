@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const categoriasOpcao = ["Automóvel", "Motocicleta", "Pesado", "Van"];
+const categoriasOpcao = ["Automóvel", "Pesados", "Motocicleta", "Vans", "Pesados Porte Pequeno"];
 const regionaisOpcao = ["Sul", "Norte", "Sudeste", "Nordeste", "Centro-Oeste"];
 const mesesRef = ["2026-03", "2026-02", "2026-01", "2025-12", "2025-11", "2025-10"];
 
@@ -38,12 +38,20 @@ export default function DistribuicaoRateioFerramenta({ onBack }: { onBack: () =>
   const [mesRef, setMesRef] = useState("");
   const [categoria, setCategoria] = useState("");
   const [regional, setRegional] = useState("");
-  const [valorBase, setValorBase] = useState("");
+  const [valoresPorCategoria, setValoresPorCategoria] = useState<Record<string, string>>(
+    Object.fromEntries(categoriasOpcao.map(c => [c, ""]))
+  );
   const [dataLimite, setDataLimite] = useState<Date | undefined>();
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState<CotaCalc[] | null>(null);
 
+  const valorBase = categoria ? valoresPorCategoria[categoria] || "" : "";
+
   const calcular = async () => {
+    if (!regional || regional === "todos") {
+      toast.error("Regional é obrigatória");
+      return;
+    }
     if (!mesRef || !categoria || !valorBase) {
       return toast.error("Preencha mês, categoria e valor base");
     }
@@ -74,7 +82,7 @@ export default function DistribuicaoRateioFerramenta({ onBack }: { onBack: () =>
   const salvar = () => {
     toast.success(`Rateio ${mesRef} gravado — Total: R$ ${total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`);
     setResultado(null);
-    setValorBase("");
+    setValoresPorCategoria(Object.fromEntries(categoriasOpcao.map(c => [c, ""])));
   };
 
   return (
@@ -128,24 +136,28 @@ export default function DistribuicaoRateioFerramenta({ onBack }: { onBack: () =>
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Regional (opcional)</Label>
+              <Label className="text-xs">Regional *</Label>
               <Select value={regional} onValueChange={setRegional}>
-                <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecione a regional" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todas">Todas</SelectItem>
                   {regionaisOpcao.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Valor Base 1ª Cota (R$) *</Label>
+              <Label className="text-xs">Valor Base 1ª Cota (R$) — {categoria || "selecione categoria"} *</Label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   value={valorBase}
-                  onChange={e => setValorBase(e.target.value)}
+                  onChange={e => {
+                    if (categoria) {
+                      setValoresPorCategoria(prev => ({ ...prev, [categoria]: e.target.value }));
+                    }
+                  }}
                   placeholder="0,00"
                   className="pl-9"
+                  disabled={!categoria}
                 />
               </div>
             </div>
@@ -168,6 +180,27 @@ export default function DistribuicaoRateioFerramenta({ onBack }: { onBack: () =>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calculator className="h-4 w-4" />}
                 Calcular Rateio
               </Button>
+            </div>
+          </div>
+
+          {/* Valor base por categoria */}
+          <div className="mt-4 border border-border rounded-lg p-4">
+            <p className="text-xs font-semibold mb-3 uppercase tracking-wide text-muted-foreground">Valor Base por Categoria</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {categoriasOpcao.map(cat => (
+                <div key={cat} className="flex items-center gap-2">
+                  <Label className="text-xs w-40 shrink-0">{cat}</Label>
+                  <div className="relative flex-1">
+                    <DollarSign className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      value={valoresPorCategoria[cat] || ""}
+                      onChange={e => setValoresPorCategoria(prev => ({ ...prev, [cat]: e.target.value }))}
+                      placeholder="0,00"
+                      className="pl-7 h-8 text-xs"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </CardContent>

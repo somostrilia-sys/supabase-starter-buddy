@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Download, FileText, BarChart3, History } from "lucide-react";
+import { Loader2, Download, FileText, BarChart3, History, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -20,6 +20,10 @@ const TIPOS_RELATORIO = [
   { value: "novos_cadastros", label: "Novos Cadastros" },
   { value: "sinistros", label: "Sinistros" },
   { value: "financeiro_mensal", label: "Financeiro Mensal" },
+  { value: "usuarios", label: "Listagem de Usuários" },
+  { value: "produtividade", label: "Produtividade" },
+  { value: "alteracao_veiculos", label: "Alteração de Veículos" },
+  { value: "sinistros_eventos", label: "Consolidado Sinistro/Eventos" },
 ];
 
 const REGIONAIS = [
@@ -92,6 +96,38 @@ const CSV_TEMPLATES: Record<string, { headers: string; rows: string[] }> = {
       "01/2025;3 - REGIONAL NORTE;640;R$ 96.000,00;R$ 3.800,00;R$ 18.500,00;R$ 73.700,00",
     ],
   },
+  usuarios: {
+    headers: "Nome;E-mail;Perfil;Status;Último Acesso",
+    rows: [
+      "Admin Sistema;admin@gia.com;admin;ATIVO;2025-03-01",
+      "Maria Operadora;maria@gia.com;operador;ATIVO;2025-02-28",
+      "João Consultor;joao@gia.com;consultor;INATIVO;2025-01-15",
+    ],
+  },
+  produtividade: {
+    headers: "Operador;Cadastros;Alterações;Vendas;Período",
+    rows: [
+      "Maria Operadora;45;120;18;01/2025",
+      "Carlos Agente;32;85;12;01/2025",
+      "Ana Consultora;28;64;9;01/2025",
+    ],
+  },
+  alteracao_veiculos: {
+    headers: "Placa;Campo Alterado;Valor Anterior;Valor Novo;Usuário;Data/Hora",
+    rows: [
+      "ABC-1234;Status;ATIVO;CANCELADO;admin@gia.com;2025-01-15 14:30",
+      "DEF-5678;Valor FIPE;R$ 45.000,00;R$ 42.000,00;maria@gia.com;2025-01-16 09:15",
+      "GHI-9012;Categoria;Passeio;Trabalho;joao@gia.com;2025-01-17 11:45",
+    ],
+  },
+  sinistros_eventos: {
+    headers: "Código;Placa;Associado;Tipo;Status;Data Abertura;Descrição",
+    rows: [
+      "SIN-2025-001;ABC-1234;João Silva;COLISÃO;EM ANÁLISE;2025-01-03;Colisão traseira na BR-101",
+      "SIN-2025-002;DEF-5678;Maria Santos;FURTO;APROVADO;2025-01-09;Furto em estacionamento",
+      "SIN-2025-003;GHI-9012;Carlos Oliveira;ROUBO;PAGO;2025-01-11;Roubo mediante ameaça",
+    ],
+  },
 };
 
 function getDefaultDates() {
@@ -140,6 +176,9 @@ export default function GerarRelatorio() {
   );
   const [loading, setLoading] = useState(false);
   const [historico, setHistorico] = useState<HistoricoItem[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewHeaders, setPreviewHeaders] = useState<string[]>([]);
+  const [previewRows, setPreviewRows] = useState<string[][]>([]);
 
   const toggleIncluir = (key: string) => {
     setIncluir(prev => {
@@ -305,27 +344,94 @@ export default function GerarRelatorio() {
             </div>
           </div>
 
-          {/* Botão */}
-          <Button
-            onClick={handleGerar}
-            disabled={loading}
-            className="w-full md:w-auto gap-2"
-            size="lg"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Gerando relatório...
-              </>
-            ) : (
-              <>
-                <Download className="h-4 w-4" />
-                Gerar Relatório
-              </>
-            )}
-          </Button>
+          {/* Botões */}
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={handleGerar}
+              disabled={loading}
+              className="w-full md:w-auto gap-2"
+              size="lg"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Gerando relatório...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  Gerar Relatório
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const template = CSV_TEMPLATES[tipo];
+                if (!template) {
+                  toast.error("Tipo de relatório sem dados para visualização");
+                  return;
+                }
+                const headers = template.headers.split(";");
+                const rows = template.rows.map(r => r.split(";"));
+                setPreviewHeaders(headers);
+                setPreviewRows(rows);
+                setShowPreview(true);
+                toast.success("Visualização carregada");
+              }}
+              className="w-full md:w-auto gap-2"
+              size="lg"
+            >
+              <Eye className="h-4 w-4" />
+              Visualizar na Tela
+            </Button>
+          </div>
         </CardContent>
       </Card>
+
+      {/* ── Visualização na Tela ── */}
+      {showPreview && previewHeaders.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Eye className="h-4 w-4 text-primary" />
+                Visualização — {tipoLabel}
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowPreview(false)} className="text-xs">
+                Fechar
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {previewHeaders.map((h, i) => (
+                      <TableHead key={i} className="text-xs">{h}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {previewRows.map((row, i) => (
+                    <TableRow key={i}>
+                      {row.map((cell, j) => (
+                        <TableCell key={j} className="text-sm">{cell}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="mt-4 pt-3 border-t border-border">
+              <p className="text-sm font-medium text-muted-foreground">
+                Quantidade de registros encontrados: {previewRows.length}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Histórico ── */}
       <Card>

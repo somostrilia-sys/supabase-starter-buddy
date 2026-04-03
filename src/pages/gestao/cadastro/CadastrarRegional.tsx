@@ -61,14 +61,42 @@ export default function CadastrarRegional() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Check for linked records before deleting
+      const { count: assocCount } = await supabase
+        .from("associados")
+        .select("id", { count: "exact", head: true })
+        .eq("regional_id", id);
+
+      const { count: veicCount } = await supabase
+        .from("veiculos")
+        .select("id", { count: "exact", head: true })
+        .eq("regional_id", id);
+
+      if ((assocCount || 0) > 0 || (veicCount || 0) > 0) {
+        // Soft delete - deactivate instead
+        toast.error(`Não é possível excluir. Existem ${assocCount || 0} associados e ${veicCount || 0} veículos vinculados a esta regional. Desativando...`);
+        const { error } = await supabase
+          .from("regionais")
+          .update({ ativo: false })
+          .eq("id", id);
+        if (error) throw error;
+        return "deactivated";
+      }
+
+      // No linked records, safe to hard delete
       const { error } = await supabase.from("regionais").delete().eq("id", id);
       if (error) throw error;
+      return "deleted";
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["regionais"] });
-      toast.success("Regional removida!");
+      if (result === "deactivated") {
+        toast.success("Regional desativada com sucesso");
+      } else {
+        toast.success("Regional removida!");
+      }
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message || "Erro ao excluir regional"),
   });
 
   const set = (f: string, v: any) => setForm(p => ({ ...p, [f]: v }));

@@ -65,6 +65,8 @@ export default function ConsultarVeiculo() {
   const [newObs, setNewObs] = useState("");
   const [cooperativasList, setCooperativasList] = useState<{id: string; nome: string}[]>([]);
   const [regionaisList, setRegionaisList] = useState<{id: string; nome: string}[]>([]);
+  const [contratoData, setContratoData] = useState<any>(null);
+  const [cotacaoData, setCotacaoData] = useState<any>(null);
 
   useEffect(() => {
     supabase.from("cooperativas").select("id, nome").eq("ativo", true).order("nome").then(({ data }) => {
@@ -113,6 +115,26 @@ export default function ConsultarVeiculo() {
 
   const selectVehicle = async (v: Veiculo) => {
     setSelected(v);
+    setContratoData(null);
+    setCotacaoData(null);
+    // Fetch contract/plan info and cotacao for the vehicle
+    const [contratoRes, cotacaoRes] = await Promise.all([
+      supabase
+        .from("contratos")
+        .select("*, planos(nome)")
+        .eq("veiculo_id", v.id)
+        .eq("status", "ativo")
+        .maybeSingle(),
+      supabase
+        .from("cotacoes")
+        .select("*")
+        .eq("veiculo_id", v.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    if (contratoRes.data) setContratoData(contratoRes.data);
+    if (cotacaoRes.data) setCotacaoData(cotacaoRes.data);
     // Load related data in parallel
     const [mensRes, sinistrosRes, docsRes] = await Promise.all([
       v.associado_id
@@ -305,6 +327,39 @@ export default function ConsultarVeiculo() {
             </div>
             <div className="flex justify-end mt-4"><Button className="gap-1.5" onClick={() => toast.success("Dados salvos!")}><Save className="h-4 w-4" />Salvar</Button></div>
           </CardContent></Card>
+
+          {/* Informações de Plano */}
+          <Card className="mt-4">
+            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><FileSignature className="h-4 w-4 text-primary" />Informações de Plano</CardTitle></CardHeader>
+            <CardContent className="p-4 pt-0">
+              {contratoData ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+                  <div><Label className="text-xs text-muted-foreground">Plano</Label><p className="text-sm font-medium">{contratoData.planos?.nome || contratoData.plano_id || "—"}</p></div>
+                  <div><Label className="text-xs text-muted-foreground">Valor Mensal</Label><p className="text-sm font-medium">R$ {contratoData.valor_mensal ? Number(contratoData.valor_mensal).toFixed(2).replace(".", ",") : "—"}</p></div>
+                  <div><Label className="text-xs text-muted-foreground">Data Início</Label><p className="text-sm font-medium">{contratoData.data_inicio ? new Date(contratoData.data_inicio).toLocaleDateString("pt-BR") : "—"}</p></div>
+                  <div><Label className="text-xs text-muted-foreground">Data Fim</Label><p className="text-sm font-medium">{contratoData.data_fim ? new Date(contratoData.data_fim).toLocaleDateString("pt-BR") : "—"}</p></div>
+                  <div><Label className="text-xs text-muted-foreground">Status</Label><p className="text-sm"><StatusBadge status={contratoData.status || "—"} /></p></div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhum contrato ativo encontrado para este veículo.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Informações de Cotação / Rateio */}
+          {cotacaoData && (
+            <Card className="mt-4">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" />Cotação / Rateio</CardTitle></CardHeader>
+              <CardContent className="p-4 pt-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div><Label className="text-xs text-muted-foreground">Valor Cotação</Label><p className="text-sm font-medium">R$ {cotacaoData.valor ? Number(cotacaoData.valor).toFixed(2).replace(".", ",") : "—"}</p></div>
+                  <div><Label className="text-xs text-muted-foreground">Cota/Rateio</Label><p className="text-sm font-medium">{cotacaoData.cota || cotacaoData.rateio || "—"}</p></div>
+                  <div><Label className="text-xs text-muted-foreground">Status</Label><p className="text-sm"><StatusBadge status={cotacaoData.status || "—"} /></p></div>
+                  <div><Label className="text-xs text-muted-foreground">Data</Label><p className="text-sm font-medium">{cotacaoData.created_at ? new Date(cotacaoData.created_at).toLocaleDateString("pt-BR") : "—"}</p></div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* TAB 2 - CONDUTORES */}

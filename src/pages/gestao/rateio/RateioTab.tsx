@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
 import {
   Calculator, Upload, Download, Save, Edit, Plus, Loader2,
   ChevronRight, ChevronLeft, CheckCircle2, AlertTriangle,
@@ -399,10 +398,18 @@ export default function RateioTab() {
 function EstruturaCotas() {
   const { faixas, loading } = useFaixasFipe();
   const categorias = useCategorias();
+  const { regionais } = useRegionais();
   const [filtroCategoria, setFiltroCategoria] = useState("Todas");
-  const [showUpload, setShowUpload] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [showEdit, setShowEdit] = useState<FaixaFipe | null>(null);
+  const [showRateioManual, setShowRateioManual] = useState(false);
+  const [rateioManual, setRateioManual] = useState({
+    associado: "",
+    valor: "",
+    mesReferencia: "",
+    regional: "",
+    categoria: "",
+  });
+  const [salvandoManual, setSalvandoManual] = useState(false);
 
   const filtered = faixas.filter(c => filtroCategoria === "Todas" || c.categoria_nome === filtroCategoria);
 
@@ -411,13 +418,31 @@ function EstruturaCotas() {
     return Array.from(names).sort();
   }, [faixas]);
 
-  const handleUpload = () => {
-    setUploading(true);
-    setTimeout(() => {
-      setUploading(false);
-      toast.success("Planilha importada com sucesso — 15 registros processados");
-      setShowUpload(false);
-    }, 1500);
+
+  const handleSalvarRateioManual = async () => {
+    if (!rateioManual.associado || !rateioManual.valor || !rateioManual.mesReferencia || !rateioManual.regional || !rateioManual.categoria) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+    setSalvandoManual(true);
+    try {
+      const { error } = await supabase.from("rateio_config").insert({
+        mes_referencia: rateioManual.mesReferencia,
+        regional_id: rateioManual.regional,
+        categoria_id: rateioManual.categoria,
+        valor_base: parseFloat(rateioManual.valor) || 0,
+        multiplicador: 1.0,
+        valor_calculado: parseFloat(rateioManual.valor) || 0,
+      });
+      if (error) throw error;
+      toast.success("Rateio manual gravado com sucesso");
+      setShowRateioManual(false);
+      setRateioManual({ associado: "", valor: "", mesReferencia: "", regional: "", categoria: "" });
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao gravar rateio manual");
+    } finally {
+      setSalvandoManual(false);
+    }
   };
 
   return (
@@ -435,11 +460,8 @@ function EstruturaCotas() {
           </Select>
         </div>
         <div className="ml-auto flex gap-2">
-          <Button variant="outline" className="gap-2 text-xs border-border" onClick={() => setShowUpload(true)}>
-            <Upload className="h-4 w-4" />Importar Planilha
-          </Button>
-          <Button className="gap-2 text-xs bg-primary hover:bg-primary/90 text-white" onClick={() => toast.success("Cota adicionada")}>
-            <Plus className="h-4 w-4" />Nova Cota
+          <Button className="gap-2 text-xs bg-primary hover:bg-primary/90 text-white" onClick={() => setShowRateioManual(true)}>
+            <Plus className="h-4 w-4" />Rateio Manual
           </Button>
         </div>
       </div>
@@ -524,32 +546,6 @@ function EstruturaCotas() {
         </CardContent>
       </Card>
 
-      {/* Upload Dialog */}
-      <Dialog open={showUpload} onOpenChange={setShowUpload}>
-        <DialogContent>
-          <DialogHeader><DialogTitle className="text-primary">Importar Planilha de Cotas</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer" onClick={handleUpload}>
-              {uploading ? (
-                <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-sm">Processando arquivo...</p>
-                  <Progress value={65} className="w-48 mx-auto" />
-                </div>
-              ) : (
-                <>
-                  <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Clique ou arraste o arquivo .xlsx / .csv</p>
-                </>
-              )}
-            </div>
-            <Button variant="outline" size="sm" className="gap-2 text-xs border-border" onClick={() => toast.info("Download do modelo iniciado")}>
-              <Download className="h-3 w-3" />Baixar Modelo de Planilha
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Edit Dialog */}
       <Dialog open={!!showEdit} onOpenChange={() => setShowEdit(null)}>
         <DialogContent>
@@ -570,6 +566,70 @@ function EstruturaCotas() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Rateio Manual Dialog */}
+      <Dialog open={showRateioManual} onOpenChange={setShowRateioManual}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="text-primary">Rateio Manual</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Associado / Veículo</Label>
+              <Input
+                value={rateioManual.associado}
+                onChange={e => setRateioManual(prev => ({ ...prev, associado: e.target.value }))}
+                placeholder="Nome do associado ou placa do veículo"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Valor (R$)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={rateioManual.valor}
+                onChange={e => setRateioManual(prev => ({ ...prev, valor: e.target.value }))}
+                placeholder="0,00"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Mês Referência</Label>
+              <Input
+                value={rateioManual.mesReferencia}
+                onChange={e => setRateioManual(prev => ({ ...prev, mesReferencia: e.target.value }))}
+                placeholder="MM/AAAA"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Regional</Label>
+              <Select value={rateioManual.regional} onValueChange={v => setRateioManual(prev => ({ ...prev, regional: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecione a regional" /></SelectTrigger>
+                <SelectContent>
+                  {regionais.map(r => <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Categoria</Label>
+              <Select value={rateioManual.categoria} onValueChange={v => setRateioManual(prev => ({ ...prev, categoria: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecione a categoria" /></SelectTrigger>
+                <SelectContent>
+                  {categorias.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRateioManual(false)} className="border-border">Cancelar</Button>
+            <Button
+              className="bg-primary hover:bg-primary/90 text-white gap-2"
+              onClick={handleSalvarRateioManual}
+              disabled={salvandoManual}
+            >
+              {salvandoManual ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -586,6 +646,19 @@ function DistribuicaoRateio() {
   const [mesRef, setMesRef] = useState("12/2025");
   const [dataLimite, setDataLimite] = useState("2025-12-15");
   const [valorBase, setValorBase] = useState("532.35");
+  const [valoresBase, setValoresBase] = useState<Record<string, string>>({});
+  const [salvando, setSalvando] = useState(false);
+
+  // Initialize valoresBase when categorias load
+  useEffect(() => {
+    if (categorias.length > 0 && Object.keys(valoresBase).length === 0) {
+      const initial: Record<string, string> = {};
+      categorias.forEach(c => {
+        initial[c.id] = valorBase;
+      });
+      setValoresBase(initial);
+    }
+  }, [categorias]);
 
   const steps = [
     "Mês Referência", "Data Limite", "Categorias e Regionais",
@@ -609,9 +682,32 @@ function DistribuicaoRateio() {
 
   const totalRateado = distribuicao.reduce((s, d) => s + d.valorRateado, 0);
 
-  const salvarRateio = () => {
-    toast.success(`Rateio gravado com sucesso para ${mesRef} — Total: R$ ${totalRateado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`);
-    setStep(0);
+  const salvarRateio = async () => {
+    if (regionais.length === 0) {
+      toast.error("Nenhuma regional encontrada. Cadastre regionais antes de distribuir rateio.");
+      return;
+    }
+    setSalvando(true);
+    try {
+      const records = regionais.map(r => ({
+        mes_referencia: mesRef,
+        regional_id: r.id,
+        categoria_id: null,
+        valor_base: vb,
+        multiplicador: 1.0,
+        valor_calculado: (r.veiculos ?? 0) * vb,
+      }));
+
+      const { error } = await supabase.from("rateio_config").insert(records);
+      if (error) throw error;
+
+      toast.success(`Rateio gravado com sucesso para ${mesRef} — Total: R$ ${totalRateado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`);
+      setStep(0);
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao gravar rateio");
+    } finally {
+      setSalvando(false);
+    }
   };
 
   const isLoading = loadingFaixas || loadingRegionais;
@@ -711,10 +807,36 @@ function DistribuicaoRateio() {
 
           {/* Step 3 - Valor Base */}
           {step === 3 && (
-            <div>
-              <Label className="text-xs">Valor Base — Primeira Cota (R$)</Label>
-              <Input value={valorBase} onChange={e => setValorBase(e.target.value)} className="w-48" />
-              <p className="text-xs text-muted-foreground mt-2">Este é o valor da cota base (fator 1.0x). As demais cotas serão calculadas multiplicando este valor pelo fator da categoria.</p>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-xs font-semibold">Valor Base Padrão — Primeira Cota (R$)</Label>
+                <Input value={valorBase} onChange={e => {
+                  setValorBase(e.target.value);
+                  // Update all categories that still have the old default
+                  const updated = { ...valoresBase };
+                  Object.keys(updated).forEach(k => { updated[k] = e.target.value; });
+                  setValoresBase(updated);
+                }} className="w-48" />
+                <p className="text-xs text-muted-foreground mt-1">Este valor sera aplicado como padrao. Ajuste por categoria abaixo se necessario.</p>
+              </div>
+              <div className="border rounded-lg border-border p-4 space-y-3">
+                <p className="text-xs font-semibold text-primary">Valor Base por Categoria</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {categorias.map(cat => (
+                    <div key={cat.id} className="flex items-center gap-3">
+                      <Label className="text-xs w-44 shrink-0">{cat.nome}</Label>
+                      <Input
+                        value={valoresBase[cat.id] ?? valorBase}
+                        onChange={e => setValoresBase(prev => ({ ...prev, [cat.id]: e.target.value }))}
+                        className="w-32"
+                        type="number"
+                        step="0.01"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">As demais cotas serao calculadas multiplicando o valor base pelo fator da categoria: <strong>Valor Cota = Valor Base x Fator</strong>.</p>
             </div>
           )}
 
@@ -811,25 +933,28 @@ function DistribuicaoRateio() {
                 <p className="text-lg font-bold text-primary">Rateio pronto para gravação</p>
                 <p className="text-sm text-muted-foreground mt-1">Mês: {mesRef} · Veículos: {totalVeiculos.toLocaleString("pt-BR")} · Total: R$ {totalRateado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
               </div>
-              <Button className="gap-2 bg-primary hover:bg-primary/90 text-white" onClick={salvarRateio}>
-                <Save className="h-4 w-4" />Gravar Rateio
-              </Button>
             </div>
           )}
+
+          {/* Navigation buttons inside card */}
+          <div className="flex justify-between pt-4">
+            {step > 0 && (
+              <Button variant="outline" onClick={() => setStep(s => s - 1)} className="gap-2">
+                <ChevronLeft className="h-4 w-4" /> Anterior
+              </Button>
+            )}
+            {step < steps.length - 1 ? (
+              <Button onClick={() => setStep(s => s + 1)} className="gap-2 ml-auto">
+                Próximo <ChevronRight className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button onClick={salvarRateio} disabled={salvando} className="gap-2 ml-auto bg-success hover:bg-success/90">
+                {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Gravar Rateio
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
-
-      {/* Navigation */}
-      <div className="flex justify-between">
-        <Button variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)} className="gap-2 border-border">
-          <ChevronLeft className="h-4 w-4" />Anterior
-        </Button>
-        {step < steps.length - 1 && (
-          <Button onClick={() => setStep(step + 1)} className="gap-2 bg-primary hover:bg-primary/90 text-white">
-            Próximo<ChevronRight className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
     </div>
   );
 }

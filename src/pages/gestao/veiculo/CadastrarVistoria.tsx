@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,9 +86,30 @@ export default function CadastrarVistoria() {
   const [acessorios, setAcessorios] = useState<string[]>([]);
   const [showAvarias, setShowAvarias] = useState(false);
   const [showAcessorios, setShowAcessorios] = useState(false);
-  const [fotos, setFotos] = useState<{ nome: string; tipo: string; data: string }[]>([]);
+  const [fotos, setFotos] = useState<{ nome: string; tipo: string; data: string; file?: File; preview?: string }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const set = (f: string, v: string) => setForm(p => ({ ...p, [f]: v }));
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    if (!form.tipoDocumento) {
+      toast.error("Selecione o tipo de documento antes de adicionar arquivos.");
+      return;
+    }
+    const newFotos = Array.from(files).map((file) => ({
+      nome: file.name,
+      tipo: form.tipoDocumento,
+      data: new Date().toLocaleDateString("pt-BR"),
+      file,
+      preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined,
+    }));
+    setFotos(f => [...f, ...newFotos]);
+    toast.success(`${files.length} arquivo(s) adicionado(s)!`);
+    // Reset input so same file can be selected again
+    e.target.value = "";
+  };
 
   const buscarVeiculo = async () => {
     if (!searchPlaca && !searchChassi) return toast.error("Informe placa ou chassi");
@@ -347,11 +368,20 @@ export default function CadastrarVistoria() {
                   </SelectContent>
                 </Select>
               </div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*,.pdf,.doc,.docx"
+                multiple
+                onChange={handleFileSelect}
+              />
               <Button className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => {
-                if (form.tipoDocumento) {
-                  setFotos(f => [...f, { nome: `img_${f.length + 1}.jpg`, tipo: form.tipoDocumento, data: new Date().toLocaleDateString("pt-BR") }]);
-                  toast.success("Imagem adicionada!");
-                } else toast.error("Selecione o tipo.");
+                if (!form.tipoDocumento) {
+                  toast.error("Selecione o tipo de documento primeiro.");
+                  return;
+                }
+                fileInputRef.current?.click();
               }}>
                 <Plus className="h-4 w-4" /> Adicionar imagens/documentos...
               </Button>
@@ -361,8 +391,12 @@ export default function CadastrarVistoria() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {fotos.map((f, i) => (
                   <Card key={i} className="overflow-hidden">
-                    <div className="aspect-video bg-muted flex items-center justify-center">
-                      <FileText className="h-8 w-8 text-muted-foreground" />
+                    <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden">
+                      {f.preview ? (
+                        <img src={f.preview} alt={f.nome} className="w-full h-full object-cover" />
+                      ) : (
+                        <FileText className="h-8 w-8 text-muted-foreground" />
+                      )}
                     </div>
                     <CardContent className="p-2">
                       <p className="text-xs font-medium truncate">{f.nome}</p>

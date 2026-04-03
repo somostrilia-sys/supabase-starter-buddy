@@ -8,9 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Filter, Clock, Car, Wallet } from "lucide-react";
+import { Download, Filter, Clock, Car, Wallet, FileSpreadsheet, FileText as FileTextIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { exportCSV, exportExcel, exportPDF, type ExportColumn } from "@/utils/exportUtils";
 
 function exportCsv(headers: string[], rows: string[][], filename: string) {
   const csv = [headers.join(","), ...rows.map(r => r.map(c => `"${c}"`).join(","))].join("\n");
@@ -39,6 +40,7 @@ export default function RelatoriosVeiculo() {
 
   const [veiculosData, setVeiculosData] = useState<any[]>([]);
   const [boletosData, setBoletosData] = useState<any[]>([]);
+  const [auditData, setAuditData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -52,13 +54,36 @@ export default function RelatoriosVeiculo() {
         .select("id, associado_nome, nosso_numero, valor, vencimento, status, data_pagamento")
         .order("vencimento", { ascending: false }).limit(200);
       setBoletosData(bols || []);
+
+      const { data: audit } = await supabase
+        .from("audit_log")
+        .select("*")
+        .eq("tabela", "veiculos")
+        .order("created_at", { ascending: false });
+      setAuditData(audit || []);
+
       setLoading(false);
     };
     fetchData();
   }, []);
 
-  const alteracoes: any[] = [];
-  const filteredAlt = alteracoes;
+  const alteracoes = auditData.map((a: any) => ({
+    placa: a.registro_id || "—",
+    modelo: "",
+    associado: "",
+    data: a.created_at ? new Date(a.created_at).toLocaleString("pt-BR") : "—",
+    campo: a.campo || a.field || "—",
+    de: a.valor_anterior || a.old_value || "—",
+    para: a.valor_novo || a.new_value || "—",
+    usuario: a.usuario || a.user_email || "—",
+  }));
+
+  const filteredAlt = alteracoes.filter((a: any) => {
+    if (cooperativa !== "todos") return false; // filter by cooperativa if needed
+    if (dataInicio && a.data < dataInicio) return false;
+    if (dataFim && a.data > dataFim) return false;
+    return true;
+  });
 
   const filteredVeic = veiculosData.filter((v: any) => {
     if (tipo !== "todos" && v.categoria_uso !== tipo) return false;
@@ -148,13 +173,47 @@ export default function RelatoriosVeiculo() {
         <TabsContent value="alteracoes">
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-muted-foreground">{filteredAlt.length} registro(s)</p>
-            <Button variant="outline" size="sm" className="gap-2" onClick={() => exportCsv(
-              ["Placa","Modelo","Associado","Data","Campo","De","Para","Usuário"],
-              filteredAlt.map(a => [a.placa, a.modelo, a.associado, a.data, a.campo, a.de, a.para, a.usuario]),
-              "relatorio_alteracoes_veiculos.csv"
-            )}>
-              <Download className="h-4 w-4" /> Exportar
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+                const cols: ExportColumn[] = [
+                  { key: "placa", label: "Placa" },
+                  { key: "campo", label: "Campo Alterado" },
+                  { key: "de", label: "Valor Anterior" },
+                  { key: "para", label: "Valor Novo" },
+                  { key: "usuario", label: "Usuário" },
+                  { key: "data", label: "Data/Hora" },
+                ];
+                exportCSV(filteredAlt, "relatorio_alteracoes_veiculos", cols);
+              }}>
+                <Download className="h-4 w-4" /> CSV
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+                const cols: ExportColumn[] = [
+                  { key: "placa", label: "Placa" },
+                  { key: "campo", label: "Campo Alterado" },
+                  { key: "de", label: "Valor Anterior" },
+                  { key: "para", label: "Valor Novo" },
+                  { key: "usuario", label: "Usuário" },
+                  { key: "data", label: "Data/Hora" },
+                ];
+                exportExcel(filteredAlt, "relatorio_alteracoes_veiculos", cols);
+              }}>
+                <FileSpreadsheet className="h-4 w-4" /> Excel
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+                const cols: ExportColumn[] = [
+                  { key: "placa", label: "Placa" },
+                  { key: "campo", label: "Campo Alterado" },
+                  { key: "de", label: "Valor Anterior" },
+                  { key: "para", label: "Valor Novo" },
+                  { key: "usuario", label: "Usuário" },
+                  { key: "data", label: "Data/Hora" },
+                ];
+                exportPDF(filteredAlt, "relatorio_alteracoes_veiculos", cols, "Relatório de Alterações de Veículos", `Período: ${dataInicio || "—"} a ${dataFim || "—"}`);
+              }}>
+                <FileTextIcon className="h-4 w-4" /> PDF
+              </Button>
+            </div>
           </div>
           <Card>
             <CardContent className="p-0 overflow-x-auto">
@@ -171,7 +230,13 @@ export default function RelatoriosVeiculo() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredAlt.slice(0, 30).map((a, i) => (
+                  {filteredAlt.length === 0 && !loading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-sm">
+                        Nenhuma alteração encontrada no audit_log para veículos.
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredAlt.slice(0, 30).map((a, i) => (
                     <TableRow key={i}>
                       <TableCell className="text-xs whitespace-nowrap">{a.data}</TableCell>
                       <TableCell className="font-mono text-xs">{a.placa}</TableCell>
