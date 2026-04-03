@@ -386,7 +386,8 @@ export default function VistoriaTab({ deal }: Props) {
                 const d = negF || deal;
                 if (!d.telefone && !d.email) { toast.error("Telefone e e-mail não cadastrados. Preencha na aba Associado."); return; }
                 const link = `${window.location.origin}/vistoria/${cod}`;
-                const msgTexto = `Olá ${d.lead_nome}! Segue o link para envio das fotos da vistoria do veículo ${d.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização.\n\nObjetivo Auto Benefícios`;
+                const msgSms = `Vistoria ${d.veiculo_placa}: ${link} - Abra no celular e envie as fotos. Objetivo Auto`;
+                const msgEmail = `Olá ${d.lead_nome}! Segue o link para envio das fotos da vistoria do veículo ${d.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização, e envie todas as fotos solicitadas.\n\nObjetivo Auto Benefícios`;
                 toast.info("Enviando SMS + E-mail...");
                 callEdge("gia-enviar-notificacao", {
                   tipo: "ambos",
@@ -394,7 +395,8 @@ export default function VistoriaTab({ deal }: Props) {
                   email: d.email,
                   nome: d.lead_nome,
                   assunto: `Vistoria Veicular - ${d.veiculo_placa}`,
-                  mensagem: msgTexto,
+                  mensagem: msgEmail,
+                  mensagem_sms: msgSms,
                 }).then(res => {
                   if (res.sms?.sucesso) toast.success("SMS enviado!");
                   else toast.error(`SMS falhou: ${res.sms?.detalhes || "sem telefone"}`);
