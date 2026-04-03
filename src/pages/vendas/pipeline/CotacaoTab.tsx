@@ -159,7 +159,7 @@ export default function CotacaoTab({ deal }: Props) {
     numMotor: "",
     estadoCirc: d.estado_circulacao || "",
     cidadeCirc: d.cidade_circulacao || "",
-    diaVencimento: d.dia_vencimento ? String(d.dia_vencimento) : String(new Date().getDate()),
+    diaVencimento: d.dia_vencimento ? String(d.dia_vencimento) : (() => { const dt = new Date().getDate(); if (dt >= 26 || dt <= 5) return "1"; if (dt >= 6 && dt <= 15) return "10"; return "20"; })(),
     veiculoTrabalho: false,
     taxi: false,
     chassiRemarcado: false,
@@ -802,53 +802,41 @@ export default function CotacaoTab({ deal }: Props) {
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className={lbl}>Dia Vencimento (1-31)</Label>
-            <Input
-              className="rounded-none border border-gray-300"
-              type="number"
-              min={1}
-              max={31}
-              value={form.diaVencimento}
-              onChange={e => {
-                const v = Math.min(31, Math.max(1, parseInt(e.target.value) || 1));
-                set("diaVencimento", String(v));
-              }}
-            />
+            <Label className={lbl}>Dia Vencimento</Label>
+            <Select value={form.diaVencimento} onValueChange={v => set("diaVencimento", v)}>
+              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Dia 1</SelectItem>
+                <SelectItem value="10">Dia 10</SelectItem>
+                <SelectItem value="20">Dia 20</SelectItem>
+              </SelectContent>
+            </Select>
             {(() => {
+              const dt = new Date().getDate();
+              // Dia padrão pela data de contratação: 26-5→dia1, 6-15→dia10, 16-25→dia20
+              const diaPadrao = (dt >= 26 || dt <= 5) ? 1 : (dt >= 6 && dt <= 15) ? 10 : 20;
+              const diaVenc = parseInt(form.diaVencimento) || diaPadrao;
+              const foraFaixa = diaVenc !== diaPadrao;
+
+              if (!foraFaixa) return <p className="text-[10px] text-muted-foreground">Dia {diaPadrao} — padrão para contratação no dia {dt}</p>;
+
+              // Calcular proporcional: dias entre o dia padrão e o dia escolhido
               const hoje = new Date();
-              const diaContratacao = hoje.getDate();
-              const diaVenc = parseInt(form.diaVencimento) || diaContratacao;
-              const diffDias = diaVenc >= diaContratacao
-                ? diaVenc - diaContratacao
-                : (new Date(hoje.getFullYear(), hoje.getMonth() + 1, diaVenc).getTime() - hoje.getTime()) / 86400000;
-              const diasAteVenc = Math.round(Math.abs(diffDias));
+              const mesAtual = hoje.getMonth();
+              const anoAtual = hoje.getFullYear();
+              // Próximo vencimento no dia escolhido
+              const proxVenc = new Date(anoAtual, diaVenc > dt ? mesAtual : mesAtual + 1, diaVenc);
+              const diasAteVenc = Math.max(1, Math.round((proxVenc.getTime() - hoje.getTime()) / 86400000));
               const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
               const mensalidade = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
-              const proporcional = diasAteVenc > 0 && diaVenc !== diaContratacao ? Math.round((mensalidade / 30) * diasAteVenc * 100) / 100 : mensalidade;
-              const bloqueio40 = diasAteVenc > 40;
-
-              if (diaVenc === diaContratacao) return <p className="text-[10px] text-muted-foreground">Vencimento no dia da contratação — sem proporcional</p>;
+              const proporcional = Math.round((mensalidade / 30) * diasAteVenc * 100) / 100;
 
               return (
-                <div className="space-y-1">
-                  {bloqueio40 ? (
-                    <div className="flex items-center gap-1.5 p-1.5 rounded border border-destructive bg-destructive/5">
-                      <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
-                      <p className="text-[10px] text-destructive font-medium">Vencimento acima de 40 dias ({diasAteVenc}d) — bloqueado automaticamente</p>
-                    </div>
-                  ) : diasAteVenc > 0 ? (
-                    <div className="p-2 rounded border border-blue-200 bg-blue-50 space-y-0.5">
-                      {(() => {
-                        const mesVenc = diaVenc >= diaContratacao ? hoje.getMonth() : hoje.getMonth() + 1;
-                        const dataVenc = new Date(hoje.getFullYear(), mesVenc, diaVenc);
-                        return <p className="text-[10px] font-semibold text-blue-800">1ª mensalidade proporcional: {formatCurrency(proporcional)} ({diasAteVenc} dias) no dia {dataVenc.toLocaleDateString("pt-BR")}</p>;
-                      })()}
-                      <p className="text-[10px] text-blue-700">Meses seguintes: {formatCurrency(mensalidade)}</p>
-                      {diasAteVenc > 0 && diasAteVenc <= 40 && (
-                        <p className="text-[10px] text-amber-600">Vencimento diferente — sujeito a análise IA</p>
-                      )}
-                    </div>
-                  ) : null}
+                <div className="p-2 rounded border border-amber-200 bg-amber-50 space-y-0.5">
+                  <p className="text-[10px] font-semibold text-amber-800">Vencimento fora da faixa padrão (dia {diaPadrao})</p>
+                  <p className="text-[10px] text-blue-800">1ª mensalidade proporcional: {formatCurrency(proporcional)} ({diasAteVenc} dias) — venc. {proxVenc.toLocaleDateString("pt-BR")}</p>
+                  <p className="text-[10px] text-blue-700">Meses seguintes: {formatCurrency(mensalidade)}</p>
+                  <p className="text-[10px] text-amber-600">Requer exceção — análise IA ou diretor</p>
                 </div>
               );
             })()}
@@ -1290,12 +1278,11 @@ export default function CotacaoTab({ deal }: Props) {
           const descMensalPct = descontoMensal && mensalOriginal > 0 ? ((mensalOriginal - Number(descontoMensal)) / mensalOriginal) * 100 : 0;
           const descAdesaoPct = descontoAdesao && adesaoOriginal > 0 ? ((adesaoOriginal - Number(descontoAdesao)) / adesaoOriginal) * 100 : 0;
           const maiorDesconto = Math.max(descMensalPct, descAdesaoPct);
-          const diaVenc = parseInt(form.diaVencimento) || new Date().getDate();
-          const diaContratacao = new Date().getDate();
-          const vencimentoDiferente = diaVenc !== diaContratacao;
-          const diasAteVenc = Math.abs(diaVenc >= diaContratacao ? diaVenc - diaContratacao : (30 - diaContratacao + diaVenc));
-          const bloqueio40 = diasAteVenc > 40;
-          const precisaAnalise = maiorDesconto > 5 || (vencimentoDiferente && diasAteVenc <= 40 && !bloqueio40);
+          const dt = new Date().getDate();
+          const diaPadrao = (dt >= 26 || dt <= 5) ? 1 : (dt >= 6 && dt <= 15) ? 10 : 20;
+          const diaVenc = parseInt(form.diaVencimento) || diaPadrao;
+          const vencimentoForaFaixa = diaVenc !== diaPadrao;
+          const precisaAnalise = maiorDesconto > 5 || vencimentoForaFaixa;
 
           if (!precisaAnalise) return null;
 
@@ -1307,7 +1294,7 @@ export default function CotacaoTab({ deal }: Props) {
               </div>
               <div className="flex flex-wrap gap-1">
                 {maiorDesconto > 5 && <Badge className="rounded-none bg-amber-100 text-amber-700 text-[10px]">Desconto {maiorDesconto.toFixed(1)}%</Badge>}
-                {vencimentoDiferente && diasAteVenc <= 40 && <Badge className="rounded-none bg-blue-100 text-blue-700 text-[10px]">Vencimento dia {diaVenc} (+{diasAteVenc}d)</Badge>}
+                {vencimentoForaFaixa && <Badge className="rounded-none bg-blue-100 text-blue-700 text-[10px]">Vencimento dia {diaVenc} (padrão: {diaPadrao})</Badge>}
               </div>
               <PedirLiberacaoButton
                 negociacaoId={deal.id}
