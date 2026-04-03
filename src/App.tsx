@@ -101,6 +101,7 @@ const App = () => (
             <Route path="/planos/:id" element={<PlanoComparativo />} />
             <Route path="/c/:slug" element={<ConsultorLanding />} />
             <Route path="/aprovacao/:token" element={<ExcecaoAprovacao />} />
+            <Route path="/excecao/:token" element={<ExcecaoAprovacao />} />
             <Route path="/" element={<D><Dashboard /></D>} />
 
             {/* Gestão - New */}

@@ -18,7 +18,7 @@ interface Props {
 const TIPOS_EXCECAO = [
   { value: "vistoria_rejeitada", label: "Vistoria Reprovada pela IA" },
   { value: "desconto_extra", label: "Desconto Extra (>15%)" },
-  { value: "veiculo_bloqueado", label: "Veículo Bloqueado" },
+  { value: "veiculo_bloqueado", label: "Veículo sem Aceitação (só diretor libera)" },
   { value: "vencimento_especial", label: "Vencimento Especial" },
   { value: "cobertura_inexistente", label: "Cobertura Inexistente" },
   { value: "outro", label: "Outro Motivo" },
