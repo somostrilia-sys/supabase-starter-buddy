@@ -1018,7 +1018,23 @@ export default function CotacaoTab({ deal }: Props) {
           </Card>
         )}
 
-        <div className="grid grid-cols-3 gap-3">
+        {/* Skeleton enquanto preços carregam */}
+        {precosReais.length === 0 && !fipeFetched && (
+          <div className="grid grid-cols-3 gap-3">
+            {[1, 2, 3].map(i => (
+              <Card key={i} className="rounded-none border-2">
+                <CardContent className="p-4 space-y-3">
+                  <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+                  <div className="h-8 w-32 bg-muted animate-pulse rounded" />
+                  <div className="h-3 w-20 bg-muted animate-pulse rounded" />
+                  <div className="space-y-1">{[1,2,3].map(j => <div key={j} className="h-3 w-full bg-muted animate-pulse rounded" />)}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        <div className="grid grid-cols-3 gap-3" style={{ display: precosReais.length === 0 && !fipeFetched ? "none" : undefined }}>
           {planosConfig.map(p => {
             const mensal = (p as any).valorReal > 0 ? (p as any).valorReal : (fipeFetched && precosReais.length === 0 ? 0 : Math.round(valorFipe * p.percentual));
             if (fipeFetched && precosReais.length === 0) return null;
