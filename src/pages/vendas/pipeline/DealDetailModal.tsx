@@ -18,6 +18,7 @@ import VistoriaTab from "./VistoriaTab";
 import AssinaturaTab from "./AssinaturaTab";
 import FinanceiroNegociacaoTab from "./FinanceiroNegociacaoTab";
 import TagsInline from "@/components/TagsInline";
+import PedirLiberacaoButton from "@/components/PedirLiberacaoButton";
 import { supabase, callEdge } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -217,7 +218,7 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
               <div className="border-t-2 border-[#747474] pt-4 space-y-3">
                 <h4 className="text-sm font-semibold">Envio para Sistemas</h4>
                 <div className="flex gap-2">
-                  <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white"><Send className="h-3.5 w-3.5 mr-1" />Enviar para Gestão</Button>
+                  <PedirLiberacaoButton negociacaoId={deal.id} consultorId={(deal as any).consultor_id} onSuccess={() => onUpdate?.()} />
                   <Button size="sm" variant="outline" className="rounded-none"><MessageSquare className="h-3.5 w-3.5 mr-1" />WhatsApp</Button>
                   <Button size="sm" variant="outline" className="rounded-none"><Mail className="h-3.5 w-3.5 mr-1" />E-mail</Button>
                 </div>

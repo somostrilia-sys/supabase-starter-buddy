@@ -181,6 +181,13 @@ export default function CotacaoTab({ deal }: Props) {
     necessita_diretor: boolean;
   } | null>(null);
   const [propostaConcorrenteUrl, setPropostaConcorrenteUrl] = useState("");
+  const [analiseConcorrenteLoading, setAnaliseConcorrenteLoading] = useState(false);
+  const [analiseConcorrente, setAnaliseConcorrente] = useState<{
+    analise: any;
+    pontos_fracos_concorrente: string[];
+    argumentos_venda: string[];
+    nota_reclame_aqui: string | null;
+  } | null>(null);
 
   // FIPE cascata effects (após form estar definido)
   useEffect(() => {
@@ -917,7 +924,107 @@ export default function CotacaoTab({ deal }: Props) {
 
                 <div className="space-y-1">
                   <Label className="text-xs font-semibold">URL proposta concorrente (opcional)</Label>
-                  <Input className="rounded-none border border-gray-300" type="url" placeholder="https://..." value={propostaConcorrenteUrl} onChange={e => setPropostaConcorrenteUrl(e.target.value)} />
+                  <Input className="rounded-none border border-gray-300" type="url" placeholder="https://..." value={propostaConcorrenteUrl} onChange={e => { setPropostaConcorrenteUrl(e.target.value); setAnaliseConcorrente(null); }} />
+                  {propostaConcorrenteUrl && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-none mt-1 border-[#1A3A5C] text-[#1A3A5C]"
+                      disabled={analiseConcorrenteLoading}
+                      onClick={async () => {
+                        setAnaliseConcorrenteLoading(true);
+                        setAnaliseConcorrente(null);
+                        try {
+                          const res = await callEdge("gia-analisar-concorrente", {
+                            negociacao_id: deal.id,
+                            image_url: propostaConcorrenteUrl,
+                          });
+                          if (res.sucesso) {
+                            setAnaliseConcorrente({
+                              analise: res.analise,
+                              pontos_fracos_concorrente: res.pontos_fracos_concorrente || [],
+                              argumentos_venda: res.argumentos_venda || [],
+                              nota_reclame_aqui: res.nota_reclame_aqui,
+                            });
+                            toast.success("Análise do concorrente concluída!");
+                          } else {
+                            toast.error(res.error || "Erro na análise");
+                          }
+                        } catch (err: any) {
+                          toast.error("Erro: " + (err?.message || ""));
+                        } finally {
+                          setAnaliseConcorrenteLoading(false);
+                        }
+                      }}
+                    >
+                      {analiseConcorrenteLoading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <BrainCircuit className="h-3.5 w-3.5 mr-1" />}
+                      {analiseConcorrenteLoading ? "Analisando concorrente..." : "Analisar Concorrente com IA"}
+                    </Button>
+                  )}
+
+                  {/* Card argumentos do concorrente */}
+                  {analiseConcorrente && (
+                    <Card className="rounded-none border-2 border-blue-300 bg-blue-50 mt-2">
+                      <CardContent className="p-3 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <BrainCircuit className="h-5 w-5 text-blue-700" />
+                          <span className="text-sm font-bold text-blue-800">
+                            {analiseConcorrente.analise?.concorrente_nome || "Concorrente"}
+                          </span>
+                          {analiseConcorrente.nota_reclame_aqui && (
+                            <Badge className="rounded-none bg-amber-100 text-amber-700 text-xs">
+                              Reclame Aqui: {analiseConcorrente.nota_reclame_aqui}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {analiseConcorrente.analise?.comparacao && (
+                          <p className="text-xs text-gray-700">{analiseConcorrente.analise.comparacao}</p>
+                        )}
+
+                        {analiseConcorrente.analise?.desconto_recomendado > 0 && (
+                          <div className="flex items-center gap-2">
+                            <Badge className="rounded-none bg-green-100 text-green-700 text-xs">
+                              Desconto recomendado: {analiseConcorrente.analise.desconto_recomendado}%
+                            </Badge>
+                          </div>
+                        )}
+
+                        {analiseConcorrente.pontos_fracos_concorrente.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-red-700 mb-1">Pontos fracos do concorrente:</p>
+                            <ul className="space-y-0.5">
+                              {analiseConcorrente.pontos_fracos_concorrente.map((p, i) => (
+                                <li key={i} className="text-xs text-red-600 flex items-start gap-1">
+                                  <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />{p}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {analiseConcorrente.argumentos_venda.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-green-700 mb-1">Argumentos de venda:</p>
+                            <ul className="space-y-0.5">
+                              {analiseConcorrente.argumentos_venda.map((a, i) => (
+                                <li key={i} className="text-xs text-green-700 flex items-start gap-1">
+                                  <CheckCircle className="h-3 w-3 mt-0.5 shrink-0" />{a}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {analiseConcorrente.analise?.frase_impacto && (
+                          <div className="p-2 bg-[#1A3A5C] text-white rounded-none">
+                            <p className="text-xs font-semibold">Use esta frase:</p>
+                            <p className="text-sm italic">"{analiseConcorrente.analise.frase_impacto}"</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
 
                 <Button

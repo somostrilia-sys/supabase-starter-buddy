@@ -265,22 +265,26 @@ export async function gerarLaudoVistoria(dados: DadosLaudo) {
         try {
           doc.addImage(imgData, "JPEG", 14, fotoY, imgW, imgH);
         } catch {
-          // Fallback: draw placeholder
-          doc.setDrawColor(200, 200, 200);
-          doc.setFillColor(245, 245, 245);
+          // Fallback: draw placeholder com erro claro
+          doc.setDrawColor(220, 80, 80);
+          doc.setFillColor(255, 240, 240);
           doc.rect(14, fotoY, imgW, imgH, "FD");
           doc.setFontSize(7);
-          doc.setTextColor(150, 150, 150);
-          doc.text("[Foto indisponível]", 14 + imgW / 2, fotoY + imgH / 2, { align: "center" });
+          doc.setTextColor(180, 50, 50);
+          doc.text("[Erro ao carregar foto]", 14 + imgW / 2, fotoY + imgH / 2 - 3, { align: "center" });
+          doc.setFontSize(6);
+          doc.text(`Tipo: ${foto.titulo}`, 14 + imgW / 2, fotoY + imgH / 2 + 3, { align: "center" });
         }
       } else {
-        // Placeholder rectangle
-        doc.setDrawColor(200, 200, 200);
-        doc.setFillColor(245, 245, 245);
+        // Placeholder com erro explícito — sem registro na tabela vistoria_fotos
+        doc.setDrawColor(220, 80, 80);
+        doc.setFillColor(255, 240, 240);
         doc.rect(14, fotoY, imgW, imgH, "FD");
         doc.setFontSize(7);
-        doc.setTextColor(150, 150, 150);
-        doc.text("[Foto]", 14 + imgW / 2, fotoY + imgH / 2, { align: "center" });
+        doc.setTextColor(180, 50, 50);
+        doc.text("[Foto não encontrada]", 14 + imgW / 2, fotoY + imgH / 2 - 3, { align: "center" });
+        doc.setFontSize(6);
+        doc.text(`Verifique upload: ${foto.titulo}`, 14 + imgW / 2, fotoY + imgH / 2 + 3, { align: "center" });
       }
 
       // Photo info on the right
