@@ -308,6 +308,7 @@ export default function Pipeline() {
 
   // --- Cash sound: SÓ toca quando IA aprova e move para concluído ---
   const cashAudioRef = useRef<HTMLAudioElement | null>(null);
+  const prevDealsRef = useRef<PipelineDeal[]>([]);
   const concluídosProcessados = useRef<Set<string>>(new Set());
   const initialLoadDone = useRef(false);
 
@@ -345,6 +346,7 @@ export default function Pipeline() {
         }).catch((e) => { console.error("Erro ao concluir venda:", e); toast.error("Erro ao concluir venda"); });
       }
     }
+    prevDealsRef.current = dealsToShow;
   }, [dealsToShow]);
 
   // Função chamada quando IA aprova e move para concluído
