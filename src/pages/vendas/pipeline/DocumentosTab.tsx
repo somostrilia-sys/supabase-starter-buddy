@@ -124,20 +124,34 @@ export default function DocumentosTab({ negociacaoId, onCnhExtraida, onCrlvExtra
     setDoc(doc as any);
     setUploading(false);
 
-    // Processar OCR automaticamente
+    // Processar OCR automaticamente (com retry)
     setProcessando(true);
-    try {
-      const result = await callEdge("gia-ocr-documento", { documento_id: doc.id });
-      if (result.sucesso) {
-        const updated = { ...doc, dados_extraidos: result.dados_extraidos, confianca: Math.round(result.confianca * 100) };
-        setDoc(updated as any);
-        onExtraida?.(result.dados_extraidos);
-        toast.success(`Dados ${tipo === "cnh" ? "do associado" : "do veículo"} preenchidos automaticamente`);
-      } else {
-        toast.error(`Erro no OCR: ${result.error}`);
+    let tentativas = 0;
+    const MAX_TENTATIVAS = 2;
+    while (tentativas < MAX_TENTATIVAS) {
+      tentativas++;
+      try {
+        const result = await callEdge("gia-ocr-documento", { documento_id: doc.id });
+        if (result.sucesso && result.dados_extraidos && Object.keys(result.dados_extraidos).length > 0) {
+          const updated = { ...doc, dados_extraidos: result.dados_extraidos, confianca: Math.round(result.confianca * 100) };
+          setDoc(updated as any);
+          onExtraida?.(result.dados_extraidos);
+          toast.success(`Dados ${tipo === "cnh" ? "do associado" : "do veículo"} preenchidos automaticamente`);
+          break;
+        } else if (tentativas < MAX_TENTATIVAS) {
+          // Retry silencioso
+          await new Promise(r => setTimeout(r, 1000));
+          continue;
+        } else {
+          toast.error(`Não foi possível ler o documento. Tente outra foto com melhor qualidade.`);
+        }
+      } catch (err: any) {
+        if (tentativas < MAX_TENTATIVAS) {
+          await new Promise(r => setTimeout(r, 1000));
+          continue;
+        }
+        toast.error(`Erro ao processar. Tente reenviar com foto mais nítida.`);
       }
-    } catch (err: any) {
-      toast.error(`Erro ao processar: ${err.message}`);
     }
     setProcessando(false);
   }

@@ -330,25 +330,27 @@ export default function Pipeline() {
         .map(d => d.id)
     );
     const newConcluidos = dealsToShow.filter(
-      d => d.stage === "concluido" && !prevIds.has(d.id)
+      d => d.stage === "concluido" && !prevIds.has(d.id) && !concluídosProcessados.current.has(d.id)
     );
 
     // Só dispara se já havia dados anteriores (evita tocar no primeiro load)
     if (prevDealsRef.current.length > 0 && newConcluidos.length > 0) {
-      // Tocar som de caixa registradora
       if (cashAudioRef.current) {
         cashAudioRef.current.currentTime = 0;
-        cashAudioRef.current.play().catch((e) => { console.error("Erro ao tocar som:", e); });
+        cashAudioRef.current.play().catch(() => {});
       }
 
-      // Chamar edge function para concluir venda em deals que ainda não foram concluídos
       for (const deal of newConcluidos) {
+        concluídosProcessados.current.add(deal.id); // Marcar como processado ANTES de chamar
         callEdge("gia-concluir-venda", { negociacao_id: deal.id }).then(res => {
-          if (res?.sucesso) {
-            toast.success(`Venda concluída: ${deal.lead_nome}`);
-          }
-        }).catch((e) => { console.error("Erro ao concluir venda:", e); toast.error("Erro ao concluir venda"); });
+          if (res?.sucesso) toast.success(`Venda concluída: ${deal.lead_nome}`);
+        }).catch(() => {});
       }
+    }
+    // Marcar concluídos existentes no primeiro load
+    if (!initialLoadDone.current && dealsToShow.length > 0) {
+      dealsToShow.filter(d => d.stage === "concluido").forEach(d => concluídosProcessados.current.add(d.id));
+      initialLoadDone.current = true;
     }
     prevDealsRef.current = dealsToShow;
   }, [dealsToShow]);
