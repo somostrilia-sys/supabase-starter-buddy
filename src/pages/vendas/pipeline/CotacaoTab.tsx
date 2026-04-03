@@ -174,6 +174,19 @@ export default function CotacaoTab({ deal }: Props) {
   const [fipeFetched, setFipeFetched] = useState(false);
   const [descontoMensal, setDescontoMensal] = useState("");
   const [descontoAdesao, setDescontoAdesao] = useState("");
+
+  // Aplicar desconto aprovado pelo diretor quando preços carregam
+  React.useEffect(() => {
+    const pct = Number((deal as any).desconto_percentual || 0);
+    if (pct > 0 && (deal as any).desconto_aprovado_por && precosReais.length > 0 && !descontoMensal) {
+      const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
+      const mensalOriginal = precoPlano ? Number(precoPlano.cota) : 0;
+      if (mensalOriginal > 0) {
+        const valorComDesconto = Math.round(mensalOriginal * (1 - pct / 100));
+        setDescontoMensal(String(valorComDesconto));
+      }
+    }
+  }, [precosReais, planoSelecionado]);
   const [valorInstalacaoEdit, setValorInstalacaoEdit] = useState("");
   const [descontoIaLoading, setDescontoIaLoading] = useState(false);
   const [descontoIaResult, setDescontoIaResult] = useState<{
@@ -851,14 +864,14 @@ export default function CotacaoTab({ deal }: Props) {
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Estado Circulação</Label>
-            <Select value={form.estadoCirc} onValueChange={v => { set("estadoCirc", v); set("cidadeCirc", ""); if (valorFipe > 0) setTimeout(() => carregarPrecos(valorFipe), 100); }}>
+            <Select value={form.estadoCirc} onValueChange={v => { set("estadoCirc", v); set("cidadeCirc", ""); if (valorFipe > 0) setTimeout(() => carregarPrecos(valorFipe, undefined, v, ""), 100); }}>
               <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
               <SelectContent>{UFS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Cidade Circulação</Label>
-            <Select value={form.cidadeCirc} onValueChange={v => { set("cidadeCirc", v); if (valorFipe > 0) setTimeout(() => carregarPrecos(valorFipe), 100); }}>
+            <Select value={form.cidadeCirc} onValueChange={v => { set("cidadeCirc", v); if (valorFipe > 0) setTimeout(() => carregarPrecos(valorFipe, undefined, form.estadoCirc, v), 100); }}>
               <SelectTrigger className="rounded-none border border-gray-300"><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>{cidades.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select>
