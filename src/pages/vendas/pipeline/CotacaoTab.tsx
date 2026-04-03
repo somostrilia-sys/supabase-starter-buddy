@@ -304,7 +304,7 @@ export default function CotacaoTab({ deal }: Props) {
   };
 
   // Buscar preços reais por valor FIPE + tipo veículo + cidade/UF circulação
-  const carregarPrecos = async (vFipe: number, tipoVeiculo?: string) => {
+  const carregarPrecos = async (vFipe: number, tipoVeiculo?: string, ufOverride?: string, cidadeOverride?: string) => {
     const tipoMap: Record<string, string> = {
       "Automóvel": "Carros e Utilitários Pequenos",
       "Motocicleta": "Motos",
@@ -324,7 +324,7 @@ export default function CotacaoTab({ deal }: Props) {
 
     if (todos && todos.length > 0) {
       // Buscar regional pela cidade/UF de circulação do veículo
-      const regionalPrecos = await buscarRegionalPrecos(form.estadoCirc || "", form.cidadeCirc || "");
+      const regionalPrecos = await buscarRegionalPrecos(ufOverride || form.estadoCirc || "", cidadeOverride || form.cidadeCirc || "");
       let resultado = todos;
       if (regionalPrecos) {
         const filtered = todos.filter((t: any) =>
@@ -420,7 +420,10 @@ export default function CotacaoTab({ deal }: Props) {
     if (matchMarca) setMarca(matchMarca);
     const vFipe = r.valorFipe || 0;
     if (vFipe > 0) {
-      await carregarPrecos(vFipe);
+      // Passar UF/cidade do deal para evitar stale closure
+      const uf = (deal as any).estado_circulacao || d.estadoCirc || "";
+      const cidade = (deal as any).cidade_circulacao || d.cidadeCirc || "";
+      await carregarPrecos(vFipe, undefined, uf, cidade);
       carregarCoberturas(planoSelecionado);
     }
     verificarAceitacao(r.marca || "", r.modelo || "");
@@ -428,7 +431,6 @@ export default function CotacaoTab({ deal }: Props) {
     setFipeFetched(true);
     setDadosReaisCarregados(true);
 
-    // Salvar cache no banco pra próxima vez carregar instantâneo
     if (salvarCache && deal.id && !deal.id.startsWith("p")) {
       supabase.from("negociacoes").update({ cache_fipe: r } as any).eq("id", deal.id).then(() => {});
     }

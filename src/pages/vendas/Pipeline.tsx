@@ -261,7 +261,7 @@ export default function Pipeline() {
       queryClient.invalidateQueries({ queryKey: ["negociacoes"] });
       setNewDealOpen(false);
       toast.success("Negociação criada com sucesso!");
-      setForm({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", anoModelo: "", anoFab: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "" });
+      setForm({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", anoModelo: "", anoFab: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "", cidadeCirc: "", estadoCirc: "", origem: "" });
       setFormTouched({ lead_nome: false, telefone: false });
     },
     onError: (e: any) => toast.error(e.message),
