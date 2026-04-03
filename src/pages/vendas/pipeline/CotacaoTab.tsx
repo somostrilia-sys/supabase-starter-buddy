@@ -1038,19 +1038,12 @@ export default function CotacaoTab({ deal }: Props) {
                 </CardHeader>
                 <CardContent className="px-4 pb-4 space-y-2">
                   <div className="text-2xl font-bold text-[#1A3A5C]">{formatCurrency(mensal)}<span className="text-xs font-normal text-muted-foreground">/mês</span></div>
-                  {/* Adesão */}
-                  <div className="text-xs text-muted-foreground">Adesão: <span className="font-semibold text-[#1A3A5C]">{formatCurrency((p as any).adesao || 0)}</span></div>
-                  {/* Rastreador obrigatório — valor de instalação editável */}
-                  {(p as any).rastreador && (p as any).rastreador !== "Não" && (p as any).rastreador !== "" && (
-                    <div className="space-y-0.5 p-1.5 rounded border border-amber-300 bg-amber-50">
-                      <Badge className="rounded-none bg-amber-100 text-amber-700 text-[10px]">Rastreador Obrigatório</Badge>
-                      <p className="text-[10px] text-amber-700">{(p as any).rastreador}</p>
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] text-amber-800">Instalação: R$</span>
-                        <input type="number" className="w-16 text-[10px] border border-amber-300 rounded px-1 py-0.5 bg-white" value={valorInstalacaoEdit || String((p as any).instalacao || 100)} onChange={e => setValorInstalacaoEdit(e.target.value)} />
-                      </div>
-                    </div>
-                  )}
+                  {/* Adesão + Instalação rastreador */}
+                  <div className="text-xs text-muted-foreground">Adesão: <span className="font-semibold text-[#1A3A5C]">{formatCurrency((p as any).adesao || 400)}</span></div>
+                  <div className="flex items-center gap-1 p-1.5 rounded border border-amber-300 bg-amber-50">
+                    <span className="text-[10px] text-amber-800 font-medium">Instalação Rastreador: R$</span>
+                    <input type="number" className="w-16 text-[10px] border border-amber-300 rounded px-1 py-0.5 bg-white font-semibold" value={valorInstalacaoEdit || String((p as any).instalacao || 100)} onChange={e => setValorInstalacaoEdit(e.target.value)} onClick={e => e.stopPropagation()} />
+                  </div>
                   <ul className="space-y-1">
                     {p.coberturas.map(c => (
                       <li key={c} className="text-[11px] text-muted-foreground flex items-start gap-1">
@@ -1070,12 +1063,15 @@ export default function CotacaoTab({ deal }: Props) {
           {(() => {
             const pl = planosConfig.find(p => p.nome === planoSelecionado);
             const mensalVal = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : Math.round(valorFipe * (pl?.percentual || 0));
-            const adesaoVal = (pl as any)?.adesao || 0;
+            const adesaoVal = (pl as any)?.adesao || 400;
+            const instVal = valorInstalacaoEdit ? Number(valorInstalacaoEdit) : ((pl as any)?.instalacao || 100);
             return (
               <>
                 <span className="text-sm font-semibold">{formatCurrency(mensalVal)}/mês</span>
                 <span className="text-xs text-muted-foreground">|</span>
                 <span className="text-sm text-muted-foreground">Adesão: <strong>{formatCurrency(adesaoVal)}</strong></span>
+                <span className="text-xs text-muted-foreground">|</span>
+                <span className="text-sm text-muted-foreground">Instalação: <strong>{formatCurrency(instVal)}</strong></span>
               </>
             );
           })()}
