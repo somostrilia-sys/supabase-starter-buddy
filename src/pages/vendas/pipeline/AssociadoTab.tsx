@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, callEdge } from "@/integrations/supabase/client";
 import { PipelineDeal } from "./mockData";
 
 const UFS = [
@@ -178,6 +178,16 @@ export default function AssociadoTab({ deal, dadosCnh }: Props) {
       toast.error("Erro ao salvar: " + error.message);
     } else {
       toast.success("Dados do associado salvos!");
+      // Auto-cotação: se cidade foi preenchida agora e deal é LuxSales VoIP
+      if (form.cidade && !deal.cidade_circulacao && deal.origem === "LuxSales VoIP") {
+        callEdge("gia-auto-cotacao", { negociacao_id: deal.id })
+          .then((res: any) => {
+            if (res.success) {
+              toast.success(`Cotação automática gerada! Plano: R$ ${res.valor_plano?.toFixed(2).replace(".", ",")}`);
+            }
+          })
+          .catch(() => {});
+      }
     }
   };
 

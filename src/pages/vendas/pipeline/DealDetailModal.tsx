@@ -81,8 +81,18 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
     if (Object.keys(update).length > 0) {
       await supabase.from("negociacoes").update(update as any).eq("id", deal.id);
     }
+    // Auto-cotação se cidade foi preenchida via CRLV e deal é LuxSales VoIP
+    if (dados.municipio && !deal.cidade_circulacao && deal.origem === "LuxSales VoIP") {
+      callEdge("gia-auto-cotacao", { negociacao_id: deal.id })
+        .then((res: any) => {
+          if (res.success) {
+            toast.success(`Cotação automática gerada! Plano: R$ ${res.valor_plano?.toFixed(2).replace(".", ",")}`);
+          }
+        })
+        .catch(() => {});
+    }
     onUpdate?.();
-  }, [deal.id, onUpdate]);
+  }, [deal.id, deal.cidade_circulacao, deal.origem, onUpdate]);
 
   async function handleArquivar() {
     if (!motivoArquivar) { toast("Selecione um motivo"); return; }

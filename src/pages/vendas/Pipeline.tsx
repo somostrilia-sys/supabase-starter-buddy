@@ -16,6 +16,7 @@ import {
   ArrowUpDown, GripVertical, Car, User, Calendar, Clock, Download,
   ChevronLeft, ChevronRight, Pencil, ArrowRight, Archive,
   CheckCircle, AlertCircle, Shield, Send, Radio, AlertTriangle, DollarSign,
+  PhoneCall, MapPin,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -621,6 +622,25 @@ export default function Pipeline() {
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>
+
+                            {/* LuxSales badge + cidade pendente */}
+                            {deal.origem === "LuxSales VoIP" && (
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <Badge className="text-[9px] px-1.5 py-0 rounded-none bg-violet-600 text-white border-violet-700">
+                                  <PhoneCall className="h-2.5 w-2.5 mr-0.5" />LuxSales
+                                </Badge>
+                                {!deal.cidade_circulacao && (
+                                  <Badge className="text-[9px] px-1.5 py-0 rounded-none bg-amber-100 text-amber-800 border-amber-300">
+                                    <MapPin className="h-2.5 w-2.5 mr-0.5" />Pendente: cidade
+                                  </Badge>
+                                )}
+                                {deal.auto_cotacao_gerada && (
+                                  <Badge className="text-[9px] px-1.5 py-0 rounded-none bg-emerald-100 text-emerald-800 border-emerald-300">
+                                    Cotacao auto
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
 
                             {/* Veículo + Placa */}
                             <div className="flex items-center gap-1.5">

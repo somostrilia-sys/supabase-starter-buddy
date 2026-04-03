@@ -32,6 +32,8 @@ export interface PipelineDeal {
   status_icons: DealStatus;
   cidade_circulacao: string;
   estado_circulacao: string;
+  auto_cotacao_gerada?: boolean;
+  lead_externo_id?: string;
   created_at: string;
   updated_at: string;
 }
