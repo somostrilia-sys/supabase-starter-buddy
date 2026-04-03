@@ -350,6 +350,13 @@ export default function VistoriaTab({ deal }: Props) {
                   if (!token) return;
                   cod = token;
                 }
+                // Fallback: se codigo vazio, buscar token do banco
+                if (!cod) {
+                  const { data: vst } = await (supabase as any).from("vistorias").select("token_publico").eq("negociacao_id", deal.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+                  cod = vst?.token_publico || "";
+                  if (cod) setCodigo(cod);
+                }
+                if (!cod) { toast.error("Nenhuma vistoria encontrada. Solicite uma vistoria primeiro."); return; }
                 const { data: negF } = await (supabase as any).from("negociacoes").select("telefone,lead_nome,veiculo_placa").eq("id", deal.id).maybeSingle();
                 const d = negF || deal;
                 const tel = (d.telefone || "").replace(/\D/g, "");
@@ -368,6 +375,13 @@ export default function VistoriaTab({ deal }: Props) {
                   if (!token) return;
                   cod = token;
                 }
+                // Fallback: se codigo vazio, buscar token do banco
+                if (!cod) {
+                  const { data: vst } = await (supabase as any).from("vistorias").select("token_publico").eq("negociacao_id", deal.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+                  cod = vst?.token_publico || "";
+                  if (cod) setCodigo(cod);
+                }
+                if (!cod) { toast.error("Nenhuma vistoria encontrada. Solicite uma vistoria primeiro."); return; }
                 const { data: negF } = await (supabase as any).from("negociacoes").select("telefone,email,lead_nome,veiculo_placa").eq("id", deal.id).maybeSingle();
                 const d = negF || deal;
                 if (!d.telefone && !d.email) { toast.error("Telefone e e-mail não cadastrados. Preencha na aba Associado."); return; }
@@ -397,6 +411,13 @@ export default function VistoriaTab({ deal }: Props) {
                   if (!token) return;
                   cod = token;
                 }
+                // Fallback: se codigo vazio, buscar token do banco
+                if (!cod) {
+                  const { data: vst } = await (supabase as any).from("vistorias").select("token_publico").eq("negociacao_id", deal.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+                  cod = vst?.token_publico || "";
+                  if (cod) setCodigo(cod);
+                }
+                if (!cod) { toast.error("Nenhuma vistoria encontrada."); return; }
                 const link = `${window.location.origin}/vistoria/${cod}`;
                 navigator.clipboard.writeText(link);
                 toast.success("Link copiado!");
