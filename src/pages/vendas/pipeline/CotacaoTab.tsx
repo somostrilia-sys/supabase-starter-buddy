@@ -187,14 +187,14 @@ export default function CotacaoTab({ deal }: Props) {
   const [cotacaoEnviada, setCotacaoEnviada] = useState(false);
   React.useEffect(() => {
     if (!deal.id || deal.id.startsWith("p")) return;
-    // Check 1: stage avançado indica cotação já enviada
-    const stagesPosCotacao = ["aguardando_vistoria", "vistoria_aprovada", "em_contratacao", "liberado_cadastro", "concluido"];
+    // Check 1: stage avançado indica cotação já enviada (em_negociacao = cotação já foi feita)
+    const stagesPosCotacao = ["em_negociacao", "aguardando_vistoria", "vistoria_aprovada", "em_contratacao", "liberado_cadastro", "concluido"];
     if (stagesPosCotacao.includes(deal.stage)) {
       setCotacaoEnviada(true);
       return;
     }
-    // Check 2: cotacao_id preenchido no deal
-    if ((deal as any).cotacao_id) {
+    // Check 2: cotacao_id ou cache_precos = cotação já existe
+    if ((deal as any).cotacao_id || (deal as any).cache_precos) {
       setCotacaoEnviada(true);
       return;
     }
