@@ -15,6 +15,7 @@ import { gerarPdfCotacao } from "@/lib/gerarPdfCotacao";
 import { MessageSquare, Mail, Link2, CreditCard, CheckCircle, Shield, ShieldCheck, ShieldPlus, Search, Loader2, Car, AlertTriangle, BrainCircuit } from "lucide-react";
 import ExcecaoButton from "@/components/ExcecaoButton";
 import PedirLiberacaoButton from "@/components/PedirLiberacaoButton";
+import OpcionaisSection, { OpcionalItem } from "@/components/OpcionaisSection";
 
 /* ─── Marcas estáticas (fallback para select manual quando API não retorna) ─── */
 const marcas = ["Chevrolet", "Hyundai", "Honda", "Toyota", "Volkswagen", "Fiat", "Jeep", "Nissan", "Renault", "Ford"];
@@ -176,6 +177,34 @@ export default function CotacaoTab({ deal }: Props) {
   const [descontoAdesao, setDescontoAdesao] = useState("");
   const descontoAplicadoRef = React.useRef(false);
   const [valorInstalacaoEdit, setValorInstalacaoEdit] = useState("");
+  const [opcionaisSelecionados, setOpcionaisSelecionados] = useState<OpcionalItem[]>([]);
+
+  // Carregar opcionais salvos
+  React.useEffect(() => {
+    if (!deal.id || deal.id.startsWith("p")) return;
+    (supabase as any).from("negociacao_opcionais").select("*, opcionais_catalogo(nome, categoria)")
+      .eq("negociacao_id", deal.id)
+      .then(({ data }: any) => {
+        if (data && data.length > 0) {
+          setOpcionaisSelecionados(data.map((d: any) => ({
+            opcional_id: d.opcional_id, nome: d.opcionais_catalogo?.nome || "", categoria: d.opcionais_catalogo?.categoria || "", valor_mensal: Number(d.valor_mensal),
+          })));
+        }
+      });
+  }, [deal.id]);
+
+  const handleOpcionaisChange = async (selected: OpcionalItem[]) => {
+    setOpcionaisSelecionados(selected);
+    if (!deal.id || deal.id.startsWith("p")) return;
+    await (supabase as any).from("negociacao_opcionais").delete().eq("negociacao_id", deal.id);
+    if (selected.length > 0) {
+      await (supabase as any).from("negociacao_opcionais").insert(
+        selected.map(s => ({ negociacao_id: deal.id, opcional_id: s.opcional_id, valor_mensal: s.valor_mensal }))
+      );
+    }
+  };
+
+  const totalOpcionais = opcionaisSelecionados.reduce((s, o) => s + o.valor_mensal, 0);
   const [descontoIaLoading, setDescontoIaLoading] = useState(false);
   const [descontoIaResult, setDescontoIaResult] = useState<{
     aprovado: boolean;
@@ -563,6 +592,7 @@ export default function CotacaoTab({ deal }: Props) {
       },
       coberturas: coberturasPlano.map((c: any) => ({ nome: c.cobertura, inclusa: c.inclusa, tipo: c.tipo, detalhe: c.detalhe })),
       consultor: { nome: deal.consultor || "Consultor", telefone: "", email: "" },
+      opcionais: opcionaisSelecionados.map(o => ({ nome: o.nome, categoria: o.categoria, valor_mensal: o.valor_mensal })),
     });
     toast.success("PDF da cotação baixado!");
   };
@@ -1133,6 +1163,7 @@ export default function CotacaoTab({ deal }: Props) {
                 <span className="text-sm text-muted-foreground">Adesão: <strong>{formatCurrency(adesaoVal)}</strong></span>
                 <span className="text-xs text-muted-foreground">|</span>
                 <span className="text-sm text-muted-foreground">Instalação: <strong>{formatCurrency(instVal)}</strong></span>
+                {totalOpcionais > 0 && <><span className="text-xs text-muted-foreground">|</span><span className="text-sm text-emerald-600">+Opcionais: <strong>{formatCurrency(totalOpcionais)}</strong></span></>}
               </>
             );
           })()}
@@ -1435,6 +1466,23 @@ export default function CotacaoTab({ deal }: Props) {
             </div>
           );
         })()}
+
+        {/* COBERTURAS OPCIONAIS */}
+        <fieldset className="space-y-3">
+          <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">COBERTURAS OPCIONAIS</legend>
+          <OpcionaisSection
+            negociacaoId={deal.id}
+            tipoVeiculo={form.tipoVeiculo}
+            selected={opcionaisSelecionados}
+            onChange={handleOpcionaisChange}
+          />
+          {totalOpcionais > 0 && (
+            <div className="flex items-center gap-2 p-2 rounded border border-emerald-300 bg-emerald-50">
+              <span className="text-sm font-semibold text-emerald-800">Total opcionais: {formatCurrency(totalOpcionais)}/mês</span>
+              <span className="text-xs text-emerald-600">({opcionaisSelecionados.length} item{opcionaisSelecionados.length > 1 ? "s" : ""})</span>
+            </div>
+          )}
+        </fieldset>
 
         <div className="flex flex-wrap gap-2 pt-2">
           <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => handleEnviar("PDF")}>

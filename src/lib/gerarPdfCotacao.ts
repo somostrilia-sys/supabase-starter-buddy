@@ -22,6 +22,7 @@ interface DadosCotacao {
   };
   coberturas: { nome: string; inclusa: boolean; tipo: string; detalhe?: string }[];
   consultor: { nome: string; telefone: string; email: string };
+  opcionais?: { nome: string; categoria: string; valor_mensal: number }[];
 }
 
 async function loadImage(src: string): Promise<string> {
@@ -207,6 +208,24 @@ export async function gerarPdfCotacao(dados: DadosCotacao) {
   });
 
   y = (doc as any).lastAutoTable.finalY + 6;
+
+  // ══════════ OPCIONAIS CONTRATADOS ══════════
+  const totalOpc = (dados.opcionais || []).reduce((s, o) => s + o.valor_mensal, 0);
+  if (dados.opcionais && dados.opcionais.length > 0) {
+    y = sectionHeader(doc, "COBERTURAS OPCIONAIS CONTRATADAS", leftX, y, pageW, azulClaro);
+    const opcRows = dados.opcionais.map(o => [o.nome, fmtBRL(o.valor_mensal) + "/mês"]);
+    opcRows.push([{ content: "TOTAL OPCIONAIS", styles: { fontStyle: "bold" as const, textColor: azul } } as any, { content: fmtBRL(totalOpc) + "/mês", styles: { fontStyle: "bold" as const, textColor: azul, halign: "right" as const } } as any]);
+    autoTable(doc, {
+      startY: y,
+      body: opcRows,
+      theme: "plain",
+      margin: { left: m, right: m },
+      styles: { fontSize: 7.5, cellPadding: { top: 2, bottom: 2, left: 4, right: 4 }, textColor: [30, 30, 30] },
+      alternateRowStyles: { fillColor: cinzaBg },
+      columnStyles: { 0: { cellWidth: pageW * 0.7 }, 1: { cellWidth: pageW * 0.3, halign: "right" as const } },
+    });
+    y = (doc as any).lastAutoTable.finalY + 6;
+  }
 
   // ══════════ RODAPÉ: CONSULTOR (esquerda) + MENSALIDADE (direita) ══════════
 

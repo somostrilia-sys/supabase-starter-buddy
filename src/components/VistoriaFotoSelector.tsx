@@ -17,7 +17,7 @@ import imgRodas from "@/assets/vistoria/rodas-pneus.jpg";
 import imgChave from "@/assets/vistoria/chave.jpg";
 import imgChassi from "@/assets/vistoria/chassi.jpg";
 import imgQuilometragem from "@/assets/vistoria/quilometragem.jpg";
-import imgParaBrisa from "@/assets/vistoria/para-brisa.svg";
+import imgParaBrisa from "@/assets/vistoria/para-brisa.jpg";
 
 // ── Imagens moto (fotos reais) ──
 import imgGuidao from "@/assets/vistoria/moto/guidao.jpg";

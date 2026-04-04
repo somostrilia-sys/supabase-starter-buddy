@@ -204,7 +204,7 @@ export default function VistoriaTab({ deal }: Props) {
   const [prazo, setPrazo] = useState("7");
   const [iaAnalisando, setIaAnalisando] = useState(false);
   const [selectedFotos, setSelectedFotos] = useState<string[]>([
-    "frente","traseira","lateral_esquerda","lateral_direita","interior_painel",
+    "frente","traseira","lateral_esquerda","lateral_direita","para_brisa","interior_painel",
     "banco_dianteiro","banco_traseiro","motor_capo","porta_malas","rodas_pneus",
     "chave","chassi","quilometragem"
   ]);
