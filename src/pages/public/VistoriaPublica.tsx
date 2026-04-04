@@ -116,20 +116,28 @@ export default function VistoriaPublica() {
       img.onload = () => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        canvas.width = img.width;
-        canvas.height = img.height;
+        // Redimensionar para max 1600px (reduz tamanho ~80%)
+        const MAX = 1600;
+        let cw = img.width, ch = img.height;
+        if (cw > MAX || ch > MAX) {
+          const ratio = Math.min(MAX / cw, MAX / ch);
+          cw = Math.round(cw * ratio);
+          ch = Math.round(ch * ratio);
+        }
+        canvas.width = cw;
+        canvas.height = ch;
         const ctx = canvas.getContext("2d")!;
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, cw, ch);
 
         // Burn timestamp + coords
         const ts = new Date().toLocaleString("pt-BR");
         const info = `${ts} | ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`;
-        const barH = Math.max(30, img.height * 0.04);
+        const barH = Math.max(30, ch * 0.04);
         ctx.fillStyle = "rgba(0,0,0,0.6)";
-        ctx.fillRect(0, img.height - barH, img.width, barH);
+        ctx.fillRect(0, ch - barH, cw, barH);
         ctx.fillStyle = "#fff";
         ctx.font = `bold ${Math.max(14, barH * 0.5)}px sans-serif`;
-        ctx.fillText(info, 10, img.height - barH * 0.3);
+        ctx.fillText(info, 10, ch - barH * 0.3);
 
         canvas.toBlob((blob) => {
           if (!blob) return;
@@ -139,7 +147,7 @@ export default function VistoriaPublica() {
             timestamp: new Date().toISOString(),
             lat: coords.lat, lng: coords.lng,
           }));
-        }, "image/jpeg", 0.85);
+        }, "image/jpeg", 0.7);
       };
       img.src = ev.target?.result as string;
     };
