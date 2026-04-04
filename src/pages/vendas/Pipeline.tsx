@@ -268,7 +268,7 @@ export default function Pipeline() {
   });
 
   // Map negociacoes (Supabase real) → PipelineDeal
-  const negociacoesAsDeal: PipelineDeal[] = negociacoes.map(n => ({
+  const negociacoesAsDeal: PipelineDeal[] = useMemo(() => negociacoes.map(n => ({
     id: n.id,
     codigo: n.codigo || `NEG-${new Date(n.created_at).getFullYear()}-${n.id.slice(-4).toUpperCase()}`,
     lead_nome: n.lead_nome,
@@ -309,7 +309,7 @@ export default function Pipeline() {
     desconto_percentual: (n as any).desconto_percentual || 0,
     created_at: n.created_at,
     updated_at: n.updated_at,
-  } as any));
+  } as any)), [negociacoes]);
 
   const dealsToShow: PipelineDeal[] = negociacoesAsDeal;
 

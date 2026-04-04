@@ -533,7 +533,7 @@ export default function CotacaoTab({ deal }: Props) {
         }
       }).catch((e) => { console.error("Erro ao buscar placa:", e); setFipeLoading(false); });
     }
-  }, [deal.veiculo_placa, dadosReaisCarregados, precosCarregadosDaCotacao]);
+  }, [deal.veiculo_placa, dadosReaisCarregados, precosCarregadosDaCotacao, aplicarDadosFipe]);
 
   // planosConfig: usa preços reais se tiver, senão fallback default
   // Agrupa por plano_normalizado para evitar duplicatas

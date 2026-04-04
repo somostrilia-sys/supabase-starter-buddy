@@ -56,6 +56,7 @@ const TODAS_CATEGORIAS: Record<string, { label: string; img: string; obs?: strin
   carroceria: { label: "Carroceria / Baú", img: imgCamCarroceria },
   eixos: { label: "Eixos / Suspensão", img: imgCamEixos },
   tacografo: { label: "Tacógrafo", img: imgCamTacografo },
+  teto: { label: "Teto", img: imgTeto },
 };
 
 // Default automóvel
