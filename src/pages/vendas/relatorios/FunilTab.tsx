@@ -15,11 +15,14 @@ const STAGES_ORDER = [
 
 export default function FunilTab({ filters }: { filters?: { cooperativa: string; consultor: string; dateStart?: Date; dateEnd?: Date } } = {}) {
   const { data, isLoading } = useQuery({
-    queryKey: ["funil-negociacoes"],
+    queryKey: ["funil-negociacoes", filters?.cooperativa, filters?.consultor, filters?.dateStart?.toISOString(), filters?.dateEnd?.toISOString()],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("negociacoes")
-        .select("id, stage");
+      let q = (supabase as any).from("negociacoes").select("id, stage, cooperativa, consultor, created_at");
+      if (filters?.cooperativa && filters.cooperativa !== "all") q = q.eq("cooperativa", filters.cooperativa);
+      if (filters?.consultor && filters.consultor !== "all") q = q.eq("consultor", filters.consultor);
+      if (filters?.dateStart) q = q.gte("created_at", filters.dateStart.toISOString());
+      if (filters?.dateEnd) q = q.lte("created_at", filters.dateEnd.toISOString());
+      const { data, error } = await q;
       if (error) throw error;
       return (data || []) as any[];
     },

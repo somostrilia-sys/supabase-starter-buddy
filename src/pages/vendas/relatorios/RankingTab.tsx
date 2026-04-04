@@ -12,12 +12,15 @@ function fmt(v: number) { return v.toLocaleString("pt-BR", { style: "currency", 
 
 export default function RankingTab({ filters }: { filters?: { cooperativa: string; consultor: string; dateStart?: Date; dateEnd?: Date } } = {}) {
   const { data: ranking, isLoading } = useQuery({
-    queryKey: ["ranking-consultores"],
+    queryKey: ["ranking-consultores", filters?.cooperativa, filters?.consultor, filters?.dateStart?.toISOString(), filters?.dateEnd?.toISOString()],
     queryFn: async () => {
       // Fetch all negociacoes with consultor info
-      const { data: negociacoes, error } = await (supabase as any)
-        .from("negociacoes")
-        .select("id, stage, consultor, valor_plano");
+      let q = (supabase as any).from("negociacoes").select("id, stage, consultor, cooperativa, valor_plano, created_at");
+      if (filters?.cooperativa && filters.cooperativa !== "all") q = q.eq("cooperativa", filters.cooperativa);
+      if (filters?.consultor && filters.consultor !== "all") q = q.eq("consultor", filters.consultor);
+      if (filters?.dateStart) q = q.gte("created_at", filters.dateStart.toISOString());
+      if (filters?.dateEnd) q = q.lte("created_at", filters.dateEnd.toISOString());
+      const { data: negociacoes, error } = await q;
       if (error) throw error;
 
       const all = (negociacoes || []) as any[];

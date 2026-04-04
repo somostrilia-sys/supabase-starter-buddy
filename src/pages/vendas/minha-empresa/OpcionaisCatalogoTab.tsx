@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -80,7 +80,7 @@ export default function OpcionaisCatalogoTab() {
   }, [opcionais]);
 
   // Expand all by default when data loads
-  useMemo(() => {
+  useEffect(() => {
     if (categorias.length > 0 && expandedCats.size === 0) {
       setExpandedCats(new Set(categorias));
     }

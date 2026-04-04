@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function MotivosTab({ filters }: { filters?: { cooperativa: string; consultor: string; dateStart?: Date; dateEnd?: Date } } = {}) {
   const { data: transicoes, isLoading } = useQuery({
-    queryKey: ["motivos-perda"],
+    queryKey: ["motivos-perda", filters?.cooperativa, filters?.consultor, filters?.dateStart?.toISOString(), filters?.dateEnd?.toISOString()],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("pipeline_transicoes")

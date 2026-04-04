@@ -18,7 +18,7 @@ interface ComissaoRow {
 
 export default function ExtratoComissoesTab({ filters }: { filters?: { cooperativa: string; consultor: string; dateStart?: Date; dateEnd?: Date } } = {}) {
   const { data: usuarios, isLoading: loadingUsuarios } = useQuery({
-    queryKey: ["extrato-usuarios"],
+    queryKey: ["extrato-usuarios", filters?.cooperativa, filters?.consultor, filters?.dateStart?.toISOString(), filters?.dateEnd?.toISOString()],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("usuarios")

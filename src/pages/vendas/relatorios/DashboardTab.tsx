@@ -31,11 +31,14 @@ const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", curren
 
 export default function DashboardTab({ filters }: { filters?: { cooperativa: string; consultor: string; dateStart?: Date; dateEnd?: Date } } = {}) {
   const { data: negociacoes, isLoading } = useQuery({
-    queryKey: ["dashboard-negociacoes"],
+    queryKey: ["dashboard-negociacoes", filters?.cooperativa, filters?.consultor, filters?.dateStart?.toISOString(), filters?.dateEnd?.toISOString()],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("negociacoes")
-        .select("id, stage, consultor, valor_plano, created_at, venda_concluida_em");
+      let q = (supabase as any).from("negociacoes").select("id, stage, consultor, cooperativa, valor_plano, created_at, venda_concluida_em");
+      if (filters?.cooperativa && filters.cooperativa !== "all") q = q.eq("cooperativa", filters.cooperativa);
+      if (filters?.consultor && filters.consultor !== "all") q = q.eq("consultor", filters.consultor);
+      if (filters?.dateStart) q = q.gte("created_at", filters.dateStart.toISOString());
+      if (filters?.dateEnd) q = q.lte("created_at", filters.dateEnd.toISOString());
+      const { data, error } = await q;
       if (error) throw error;
       return (data || []) as any[];
     },

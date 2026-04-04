@@ -55,7 +55,7 @@ export default function ResumoMetasTab({ filters }: { filters?: { cooperativa: s
   const [coop, setCoop] = useState("all");
 
   const { data: usuarios, isLoading: loadingU } = useQuery({
-    queryKey: ["metas-usuarios"],
+    queryKey: ["metas-usuarios", filters?.cooperativa, filters?.consultor, filters?.dateStart?.toISOString(), filters?.dateEnd?.toISOString()],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("usuarios")

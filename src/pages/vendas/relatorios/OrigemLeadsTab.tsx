@@ -9,7 +9,7 @@ const COLORS = ["#3B82F6", "#22C55E", "#8B5CF6", "#F59E0B", "#EF4444", "#06B6D4"
 
 export default function OrigemLeadsTab({ filters }: { filters?: { cooperativa: string; consultor: string; dateStart?: Date; dateEnd?: Date } } = {}) {
   const { data, isLoading } = useQuery({
-    queryKey: ["origem-leads"],
+    queryKey: ["origem-leads", filters?.cooperativa, filters?.consultor, filters?.dateStart?.toISOString(), filters?.dateEnd?.toISOString()],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("negociacoes")
