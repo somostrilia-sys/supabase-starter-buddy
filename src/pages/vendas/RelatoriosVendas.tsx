@@ -127,16 +127,16 @@ export default function RelatoriosVendas() {
           ))}
         </TabsList>
 
-        <TabsContent value="dashboard"><DashboardTab /></TabsContent>
-        <TabsContent value="funil"><FunilTab /></TabsContent>
-        <TabsContent value="motivos"><MotivosTab /></TabsContent>
-        <TabsContent value="ranking"><RankingTab /></TabsContent>
-        <TabsContent value="origens"><OrigemLeadsTab /></TabsContent>
+        <TabsContent value="dashboard"><DashboardTab filters={{ cooperativa: fCoop, consultor: fConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
+        <TabsContent value="funil"><FunilTab filters={{ cooperativa: fCoop, consultor: fConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
+        <TabsContent value="motivos"><MotivosTab filters={{ cooperativa: fCoop, consultor: fConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
+        <TabsContent value="ranking"><RankingTab filters={{ cooperativa: fCoop, consultor: fConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
+        <TabsContent value="origens"><OrigemLeadsTab filters={{ cooperativa: fCoop, consultor: fConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
         <TabsContent value="banco"><BancoDadosTab /></TabsContent>
         <TabsContent value="tags"><GrupoTagsTab /></TabsContent>
-        <TabsContent value="metas"><ResumoMetasTab /></TabsContent>
+        <TabsContent value="metas"><ResumoMetasTab filters={{ cooperativa: fCoop, consultor: fConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
         <TabsContent value="veiculos"><VeiculosSemCoberturaTab /></TabsContent>
-        <TabsContent value="extrato-comissoes"><ExtratoComissoesTab /></TabsContent>
+        <TabsContent value="extrato-comissoes"><ExtratoComissoesTab filters={{ cooperativa: fCoop, consultor: fConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
       </Tabs>
     </div>
   );

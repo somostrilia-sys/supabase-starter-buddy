@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export default function MotivosTab() {
+export default function MotivosTab({ filters }: { filters?: { cooperativa: string; consultor: string; dateStart?: Date; dateEnd?: Date } } = {}) {
   const { data: transicoes, isLoading } = useQuery({
     queryKey: ["motivos-perda"],
     queryFn: async () => {

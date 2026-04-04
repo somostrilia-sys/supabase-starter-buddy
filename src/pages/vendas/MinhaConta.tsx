@@ -116,6 +116,7 @@ export default function MinhaConta() {
   const [bio, setBio] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [instagramHandle, setInstagramHandle] = useState("");
+  const [fraseDestaque, setFraseDestaque] = useState("");
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingCapa, setUploadingCapa] = useState(false);
@@ -140,7 +141,7 @@ export default function MinhaConta() {
   useEffect(() => {
     if (!profile?.id) return;
     supabase.from("usuarios" as any)
-      .select("slug, foto_capa_url, fotos_trabalho, fotos_fundo, bio, whatsapp, instagram, nome")
+      .select("slug, foto_capa_url, fotos_trabalho, fotos_fundo, bio, whatsapp, instagram, nome, frase_destaque")
       .eq("id", profile.id)
       .maybeSingle()
       .then(({ data }: any) => {
@@ -152,6 +153,7 @@ export default function MinhaConta() {
           setBio(data.bio || "");
           setWhatsapp(data.whatsapp || "");
           setInstagramHandle(data.instagram || "");
+          setFraseDestaque(data.frase_destaque || "");
         } else {
           // fallback slug from profile name
           setSlug(slugify(profile.full_name || ""));
@@ -257,6 +259,7 @@ export default function MinhaConta() {
       bio,
       whatsapp,
       instagram: instagramHandle,
+      frase_destaque: fraseDestaque,
     } as any).eq("id", profile.id);
     if (error) {
       if (error.message.includes("unique") || error.message.includes("duplicate")) {
@@ -538,6 +541,20 @@ export default function MinhaConta() {
               className="min-h-[100px]"
             />
             <p className="text-[10px] text-muted-foreground text-right">{bio.length}/500</p>
+          </div>
+
+          {/* Frase de Destaque */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium flex items-center gap-1">
+              <MessageCircle className="h-3 w-3" /> Frase de Destaque na Landing Page
+            </Label>
+            <Input
+              placeholder="Ex: Proteção que você merece, com atendimento que faz a diferença"
+              value={fraseDestaque}
+              onChange={e => setFraseDestaque(e.target.value)}
+              maxLength={150}
+            />
+            <p className="text-[10px] text-muted-foreground">Aparece em destaque na sua landing page. Máximo 150 caracteres. ({fraseDestaque.length}/150)</p>
           </div>
 
           {/* WhatsApp & Instagram */}

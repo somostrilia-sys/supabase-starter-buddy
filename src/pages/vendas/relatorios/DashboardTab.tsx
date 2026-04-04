@@ -29,7 +29,7 @@ const STAGE_LABELS: Record<string, string> = {
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-export default function DashboardTab() {
+export default function DashboardTab({ filters }: { filters?: { cooperativa: string; consultor: string; dateStart?: Date; dateEnd?: Date } } = {}) {
   const { data: negociacoes, isLoading } = useQuery({
     queryKey: ["dashboard-negociacoes"],
     queryFn: async () => {

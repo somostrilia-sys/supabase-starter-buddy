@@ -16,7 +16,7 @@ interface ComissaoRow {
   totalComissoes: number;
 }
 
-export default function ExtratoComissoesTab() {
+export default function ExtratoComissoesTab({ filters }: { filters?: { cooperativa: string; consultor: string; dateStart?: Date; dateEnd?: Date } } = {}) {
   const { data: usuarios, isLoading: loadingUsuarios } = useQuery({
     queryKey: ["extrato-usuarios"],
     queryFn: async () => {

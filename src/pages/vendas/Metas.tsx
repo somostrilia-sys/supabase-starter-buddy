@@ -8,10 +8,11 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Target, TrendingUp, AlertCircle, Plus, Percent, Trophy, Loader2 } from "lucide-react";
+import { Target, TrendingUp, AlertCircle, Plus, Percent, Trophy, Loader2, Medal, Award, Crown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from "recharts";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const META_CONTRATOS_DEFAULT = 20;
 const META_FATURAMENTO_DEFAULT = 30000;
@@ -45,6 +46,15 @@ function getPeriodOptions() {
   return options;
 }
 
+function getInitials(nome: string) {
+  return nome
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("");
+}
+
 async function fetchConsultoresData(periodoKey: string) {
   // Parse period
   const [yearStr, monthStr] = periodoKey.split("-");
@@ -53,10 +63,10 @@ async function fetchConsultoresData(periodoKey: string) {
   const startOfMonth = new Date(year, month - 1, 1).toISOString();
   const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
 
-  // Fetch active consultores
+  // Fetch active consultores with photo
   const { data: usuarios, error: errUsuarios } = await (supabase as any)
     .from("usuarios")
-    .select("nome")
+    .select("nome, foto_capa_url")
     .eq("status", "ativo")
     .eq("grupo_permissao", "Consultor");
 
@@ -64,6 +74,25 @@ async function fetchConsultoresData(periodoKey: string) {
   if (!usuarios || usuarios.length === 0) return [];
 
   const nomes: string[] = usuarios.map((u: any) => u.nome);
+  const fotoMap: Record<string, string | null> = {};
+  usuarios.forEach((u: any) => {
+    fotoMap[u.nome] = u.foto_capa_url || null;
+  });
+
+  // Fetch metas from metas_consultores for this month/year
+  const { data: metasDb } = await (supabase as any)
+    .from("metas_consultores")
+    .select("consultor_nome, meta_contratos, meta_faturamento")
+    .eq("ano", year)
+    .eq("mes", month);
+
+  const metasMap: Record<string, { contratos: number; faturamento: number }> = {};
+  (metasDb || []).forEach((m: any) => {
+    metasMap[m.consultor_nome] = {
+      contratos: m.meta_contratos ?? META_CONTRATOS_DEFAULT,
+      faturamento: Number(m.meta_faturamento) || META_FATURAMENTO_DEFAULT,
+    };
+  });
 
   // Fetch all negociacoes for these consultores in the period
   const { data: negocios, error: errNeg } = await (supabase as any)
@@ -86,11 +115,14 @@ async function fetchConsultoresData(periodoKey: string) {
     const totalLeads = mine.length;
     const conversao = totalLeads > 0 ? (atualContratos / totalLeads) * 100 : 0;
 
+    const meta = metasMap[nome];
+
     return {
       nome,
-      metaContratos: META_CONTRATOS_DEFAULT,
+      fotoUrl: fotoMap[nome] || null,
+      metaContratos: meta?.contratos ?? META_CONTRATOS_DEFAULT,
       atualContratos,
-      metaFaturamento: META_FATURAMENTO_DEFAULT,
+      metaFaturamento: meta?.faturamento ?? META_FATURAMENTO_DEFAULT,
       atualFaturamento,
       conversao: Math.round(conversao * 10) / 10,
       totalLeads,
@@ -129,7 +161,17 @@ async function fetchEvolucao() {
     .eq("grupo_permissao", "Consultor");
 
   const numConsultores = usuarios?.length || 1;
-  const metaPerMonth = numConsultores * META_CONTRATOS_DEFAULT;
+
+  // Fetch all metas for these months
+  const { data: metasDb } = await (supabase as any)
+    .from("metas_consultores")
+    .select("consultor_nome, ano, mes, meta_contratos");
+
+  const metasByMonth: Record<string, number> = {};
+  (metasDb || []).forEach((m: any) => {
+    const key = `${m.ano}-${m.mes}`;
+    metasByMonth[key] = (metasByMonth[key] || 0) + (m.meta_contratos ?? META_CONTRATOS_DEFAULT);
+  });
 
   return months.map((m) => {
     const inMonth = rows.filter((r: any) => {
@@ -138,6 +180,9 @@ async function fetchEvolucao() {
     });
     const concluidos = inMonth.filter((r: any) => r.stage === "concluido");
     const faturamento = concluidos.reduce((s: number, r: any) => s + (Number(r.valor_plano) || 0), 0);
+
+    const monthKey = `${m.year}-${m.month + 1}`;
+    const metaPerMonth = metasByMonth[monthKey] || numConsultores * META_CONTRATOS_DEFAULT;
 
     return {
       mes: m.label,
@@ -148,8 +193,83 @@ async function fetchEvolucao() {
   });
 }
 
+function PodiumCard({
+  consultor,
+  place,
+}: {
+  consultor: any;
+  place: 1 | 2 | 3;
+}) {
+  const colors: Record<number, string> = {
+    1: "#FFD700",
+    2: "#C0C0C0",
+    3: "#CD7F32",
+  };
+  const heights: Record<number, string> = {
+    1: "h-52",
+    2: "h-44",
+    3: "h-40",
+  };
+  const color = colors[place];
+  const Icon = place === 1 ? Crown : place === 2 ? Medal : Award;
+  const placeLabel = place === 1 ? "1o" : place === 2 ? "2o" : "3o";
+
+  return (
+    <Card
+      className={`border-2 relative overflow-hidden flex flex-col items-center justify-end ${heights[place]}`}
+      style={{ borderColor: color }}
+    >
+      <div
+        className="absolute top-0 left-0 right-0 h-1.5"
+        style={{ backgroundColor: color }}
+      />
+      <CardContent className="p-3 flex flex-col items-center gap-1.5 w-full">
+        <Icon className="h-6 w-6" style={{ color }} />
+        {consultor.fotoUrl ? (
+          <img
+            src={consultor.fotoUrl}
+            alt={consultor.nome}
+            className="w-14 h-14 rounded-full object-cover border-2"
+            style={{ borderColor: color }}
+          />
+        ) : (
+          <div
+            className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg border-2"
+            style={{ backgroundColor: color, borderColor: color }}
+          >
+            {getInitials(consultor.nome)}
+          </div>
+        )}
+        <p className="text-sm font-bold text-foreground text-center leading-tight truncate w-full">
+          {consultor.nome}
+        </p>
+        <div className="text-center space-y-0.5">
+          <p className="text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">{consultor.atualContratos}</span> vendas
+          </p>
+          <p className="text-xs font-semibold text-success">
+            R$ {consultor.atualFaturamento.toLocaleString("pt-BR")}
+          </p>
+        </div>
+        <Badge
+          className="text-[10px] px-2 py-0"
+          style={{ backgroundColor: `${color}22`, color, borderColor: color }}
+          variant="outline"
+        >
+          {placeLabel} lugar
+        </Badge>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Metas() {
+  const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
+  const [metaConsultor, setMetaConsultor] = useState("");
+  const [metaContratos, setMetaContratos] = useState("");
+  const [metaFaturamento, setMetaFaturamento] = useState("");
+  const [saving, setSaving] = useState(false);
   const periodOptions = useMemo(() => getPeriodOptions(), []);
   const [periodo, setPeriodo] = useState(periodOptions[0]?.value || "");
 
@@ -177,13 +297,60 @@ export default function Metas() {
   const taxa = totalMeta > 0 ? (totalAtual / totalMeta) * 100 : 0;
 
   const kpis = [
-    { label: "Meta do Mês", value: `${totalMeta} contratos`, icon: Target, color: "text-primary", bg: "bg-primary/8" },
+    { label: "Meta do Mes", value: `${totalMeta} contratos`, icon: Target, color: "text-primary", bg: "bg-primary/8" },
     { label: "Atingido", value: `${totalAtual} contratos`, icon: TrendingUp, color: "text-success", bg: "bg-success/10" },
     { label: "Faltam", value: `${Math.max(totalMeta - totalAtual, 0)} contratos`, icon: AlertCircle, color: "text-destructive", bg: "bg-destructive/8" },
     { label: "% Atingimento", value: `${taxa.toFixed(1)}%`, icon: Percent, color: "text-warning", bg: "bg-warning/10" },
   ];
 
   const sorted = [...consultores].sort((a: any, b: any) => a.ranking - b.ranking);
+
+  // Podium: top 3
+  const top3 = sorted.slice(0, 3);
+  const first = top3.find((c: any) => c.ranking === 1);
+  const second = top3.find((c: any) => c.ranking === 2);
+  const third = top3.find((c: any) => c.ranking === 3);
+
+  async function handleSaveMeta() {
+    if (!metaConsultor) {
+      toast.error("Selecione um consultor");
+      return;
+    }
+    const [yearStr, monthStr] = periodo.split("-");
+    const ano = parseInt(yearStr);
+    const mes = parseInt(monthStr);
+    const contratos = metaContratos ? parseInt(metaContratos) : META_CONTRATOS_DEFAULT;
+    const faturamento = metaFaturamento ? parseFloat(metaFaturamento) : META_FATURAMENTO_DEFAULT;
+
+    setSaving(true);
+    try {
+      const { error } = await (supabase as any)
+        .from("metas_consultores")
+        .upsert(
+          {
+            consultor_nome: metaConsultor,
+            ano,
+            mes,
+            meta_contratos: contratos,
+            meta_faturamento: faturamento,
+          },
+          { onConflict: "consultor_nome,ano,mes" }
+        );
+      if (error) throw error;
+
+      toast.success("Meta salva com sucesso!");
+      setModalOpen(false);
+      setMetaConsultor("");
+      setMetaContratos("");
+      setMetaFaturamento("");
+      queryClient.invalidateQueries({ queryKey: ["metas-consultores"] });
+      queryClient.invalidateQueries({ queryKey: ["metas-evolucao"] });
+    } catch (err: any) {
+      toast.error("Erro ao salvar meta: " + (err.message || "Erro desconhecido"));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -194,7 +361,7 @@ export default function Metas() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">Metas de Vendas</h1>
-            <p className="text-sm text-muted-foreground">Performance por consultor e evolução mensal</p>
+            <p className="text-sm text-muted-foreground">Performance por consultor e evolucao mensal</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -206,7 +373,7 @@ export default function Metas() {
               ))}
             </SelectContent>
           </Select>
-          <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+          <Dialog open={modalOpen} onOpenChange={(o) => { setModalOpen(o); if (!o) { setMetaConsultor(""); setMetaContratos(""); setMetaFaturamento(""); } }}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />Nova Meta</Button>
             </DialogTrigger>
@@ -214,13 +381,17 @@ export default function Metas() {
               <DialogHeader><DialogTitle>Criar Nova Meta</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div><Label className="text-xs">Consultor</Label>
-                  <Select><SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <Select value={metaConsultor} onValueChange={setMetaConsultor}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>{consultores.map((v: any) => <SelectItem key={v.nome} value={v.nome}>{v.nome}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label className="text-xs">Meta de Contratos</Label><Input className="mt-1" type="number" placeholder="0" /></div>
-                <div><Label className="text-xs">Meta de Faturamento (R$)</Label><Input className="mt-1" type="number" placeholder="0" /></div>
-                <Button className="w-full" onClick={() => setModalOpen(false)}>Criar Meta</Button>
+                <div><Label className="text-xs">Meta de Contratos</Label><Input className="mt-1" type="number" placeholder={String(META_CONTRATOS_DEFAULT)} value={metaContratos} onChange={(e) => setMetaContratos(e.target.value)} /></div>
+                <div><Label className="text-xs">Meta de Faturamento (R$)</Label><Input className="mt-1" type="number" placeholder={String(META_FATURAMENTO_DEFAULT)} value={metaFaturamento} onChange={(e) => setMetaFaturamento(e.target.value)} /></div>
+                <p className="text-xs text-muted-foreground">Periodo: {periodOptions.find((p) => p.value === periodo)?.label || periodo}</p>
+                <Button className="w-full" onClick={handleSaveMeta} disabled={saving}>
+                  {saving ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Salvando...</> : "Criar Meta"}
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -234,6 +405,15 @@ export default function Metas() {
         </div>
       ) : (
         <>
+          {/* Podium */}
+          {top3.length > 0 && (
+            <div className="grid grid-cols-3 gap-3 items-end max-w-2xl mx-auto">
+              <div>{second && <PodiumCard consultor={second} place={2} />}</div>
+              <div>{first && <PodiumCard consultor={first} place={1} />}</div>
+              <div>{third && <PodiumCard consultor={third} place={3} />}</div>
+            </div>
+          )}
+
           {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {kpis.map(k => (
@@ -263,7 +443,7 @@ export default function Metas() {
                     <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Atual</TableHead>
                     <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-right">Meta Fat.</TableHead>
                     <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-right">Atual Fat.</TableHead>
-                    <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Conversão</TableHead>
+                    <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Conversao</TableHead>
                     <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Leads</TableHead>
                     <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em]">% Atingimento</TableHead>
                   </TableRow>
@@ -272,7 +452,7 @@ export default function Metas() {
                   {sorted.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                        Nenhum consultor encontrado para este período.
+                        Nenhum consultor encontrado para este periodo.
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -284,10 +464,21 @@ export default function Metas() {
                           <TableCell>
                             <div className="flex items-center gap-1">
                               {c.ranking <= 3 && <Trophy className={`h-4 w-4 ${c.ranking === 1 ? "text-yellow-500" : c.ranking === 2 ? "text-gray-400" : "text-warning"}`} />}
-                              <span className="font-bold text-foreground">{c.ranking}º</span>
+                              <span className="font-bold text-foreground">{c.ranking}o</span>
                             </div>
                           </TableCell>
-                          <TableCell className="font-medium">{c.nome}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {c.fotoUrl ? (
+                                <img src={c.fotoUrl} alt={c.nome} className="w-7 h-7 rounded-full object-cover" />
+                              ) : (
+                                <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                                  {getInitials(c.nome)}
+                                </div>
+                              )}
+                              <span className="font-medium">{c.nome}</span>
+                            </div>
+                          </TableCell>
                           <TableCell className="text-center">{c.metaContratos}</TableCell>
                           <TableCell className="text-center font-semibold">{c.atualContratos}</TableCell>
                           <TableCell className="text-right text-sm">R$ {c.metaFaturamento.toLocaleString()}</TableCell>
@@ -317,7 +508,7 @@ export default function Metas() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card className="border-border">
               <CardContent className="p-4">
-                <p className="text-sm font-semibold text-foreground mb-3">Evolução Meta vs Realizado</p>
+                <p className="text-sm font-semibold text-foreground mb-3">Evolucao Meta vs Realizado</p>
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={evolucao}>
                     <CartesianGrid strokeDasharray="3 3" />

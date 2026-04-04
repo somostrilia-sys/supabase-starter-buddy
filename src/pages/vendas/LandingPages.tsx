@@ -15,6 +15,7 @@ interface Consultor {
   id: string;
   nome: string;
   slug: string;
+  funcao: string | null;
   cooperativa: string | null;
   celular: string | null;
   email: string | null;
@@ -28,7 +29,7 @@ async function fetchConsultores(): Promise<Consultor[]> {
   // Fetch active usuarios with slug
   const { data: usuarios, error: userError } = await supabase
     .from("usuarios")
-    .select("id, nome, slug, cooperativa, celular, email, foto_capa_url")
+    .select("id, nome, slug, funcao, cooperativa, celular, email, foto_capa_url")
     .eq("status", "ativo")
     .not("slug", "is", null);
 
@@ -65,6 +66,7 @@ async function fetchConsultores(): Promise<Consultor[]> {
       id: u.id,
       nome: u.nome,
       slug: u.slug,
+      funcao: u.funcao || null,
       cooperativa: u.cooperativa,
       celular: u.celular,
       email: u.email,
@@ -166,6 +168,7 @@ export default function LandingPages() {
                 <TableHeader>
                   <TableRow className="bg-primary hover:bg-primary border-b-0">
                     <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Consultor</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Cargo</TableHead>
                     <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">URL</TableHead>
                     <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Leads</TableHead>
                     <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Conversões</TableHead>
@@ -178,6 +181,9 @@ export default function LandingPages() {
                   {filtered.map((c, i) => (
                     <TableRow key={c.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b-2 border-[#747474]`}>
                       <TableCell className="font-medium">{c.nome}</TableCell>
+                      <TableCell>
+                        <span className="text-xs text-muted-foreground">{c.funcao || "—"}</span>
+                      </TableCell>
                       <TableCell>
                         <span className="font-mono text-xs bg-muted/50 px-2 py-1 rounded">/c/{c.slug}</span>
                       </TableCell>
@@ -200,7 +206,7 @@ export default function LandingPages() {
                   ))}
                   {filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         {busca ? "Nenhum consultor encontrado" : "Nenhum consultor ativo com landing page"}
                       </TableCell>
                     </TableRow>
@@ -233,8 +239,11 @@ export default function LandingPages() {
                   </AvatarFallback>
                 </Avatar>
                 <h3 className="text-lg font-bold">{previewConsultor.nome}</h3>
-                <p className="text-sm text-muted-foreground">
-                  Consultor(a) — {previewConsultor.cooperativa || "Objetivo Proteção Veicular"}
+                <p className="text-sm font-medium text-primary">
+                  {previewConsultor.funcao || "Consultor(a)"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {previewConsultor.cooperativa || "Objetivo Proteção Veicular"}
                 </p>
                 <div className="flex flex-col gap-1.5 items-center text-sm text-muted-foreground">
                   {previewConsultor.celular && (

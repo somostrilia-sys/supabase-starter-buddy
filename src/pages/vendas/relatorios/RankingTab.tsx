@@ -10,7 +10,7 @@ const podiumBg = ["border-warning/30 bg-warning/50 dark:bg-amber-950/20", "borde
 
 function fmt(v: number) { return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
 
-export default function RankingTab() {
+export default function RankingTab({ filters }: { filters?: { cooperativa: string; consultor: string; dateStart?: Date; dateEnd?: Date } } = {}) {
   const { data: ranking, isLoading } = useQuery({
     queryKey: ["ranking-consultores"],
     queryFn: async () => {

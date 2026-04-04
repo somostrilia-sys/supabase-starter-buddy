@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const COLORS = ["#3B82F6", "#22C55E", "#8B5CF6", "#F59E0B", "#EF4444", "#06B6D4", "#F97316", "#EC4899", "#14B8A6", "#6366F1"];
 
-export default function OrigemLeadsTab() {
+export default function OrigemLeadsTab({ filters }: { filters?: { cooperativa: string; consultor: string; dateStart?: Date; dateEnd?: Date } } = {}) {
   const { data, isLoading } = useQuery({
     queryKey: ["origem-leads"],
     queryFn: async () => {

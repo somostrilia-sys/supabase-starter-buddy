@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DollarSign, Package, MapPin, Palette, FileText, Plug, Car, Users, Shield } from "lucide-react";
+import { DollarSign, Package, MapPin, Palette, FileText, Plug, Car, Users, Shield, ListChecks } from "lucide-react";
 import TabelasPrecosTab from "./minha-empresa/TabelasPrecosTab";
 import VeiculosAceitosTab from "./minha-empresa/VeiculosAceitosTab";
 import UsuariosTab from "./minha-empresa/UsuariosTab";
@@ -10,6 +10,7 @@ import RegionaisCooperativasTab from "./minha-empresa/RegionaisCooperativasTab";
 import PersonalizacaoTab from "./minha-empresa/PersonalizacaoTab";
 import ContratoAdesaoTab from "./minha-empresa/ContratoAdesaoTab";
 import IntegracoesTab from "./minha-empresa/IntegracoesTab";
+import OpcionaisCatalogoTab from "./minha-empresa/OpcionaisCatalogoTab";
 
 export default function MinhaEmpresa() {
   return (
@@ -29,6 +30,7 @@ export default function MinhaEmpresa() {
           <TabsTrigger value="permissoes" className="gap-2"><Shield className="h-4 w-4" /> Permissões</TabsTrigger>
           <TabsTrigger value="personalizacao" className="gap-2"><Palette className="h-4 w-4" /> Personalização</TabsTrigger>
           <TabsTrigger value="contrato" className="gap-2"><FileText className="h-4 w-4" /> Contrato de Adesão</TabsTrigger>
+          <TabsTrigger value="opcionais" className="gap-2"><ListChecks className="h-4 w-4" /> Opcionais</TabsTrigger>
           <TabsTrigger value="integracoes" className="gap-2"><Plug className="h-4 w-4" /> Integrações</TabsTrigger>
         </TabsList>
 
@@ -40,6 +42,7 @@ export default function MinhaEmpresa() {
         <TabsContent value="permissoes" className="mt-6"><GrupoPermissoes /></TabsContent>
         <TabsContent value="personalizacao" className="mt-6"><PersonalizacaoTab /></TabsContent>
         <TabsContent value="contrato" className="mt-6"><ContratoAdesaoTab /></TabsContent>
+        <TabsContent value="opcionais" className="mt-6"><OpcionaisCatalogoTab /></TabsContent>
         <TabsContent value="integracoes" className="mt-6"><IntegracoesTab /></TabsContent>
       </Tabs>
     </div>

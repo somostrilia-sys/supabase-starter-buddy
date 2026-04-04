@@ -13,7 +13,7 @@ const STAGES_ORDER = [
   { key: "concluido", label: "Concluído" },
 ];
 
-export default function FunilTab() {
+export default function FunilTab({ filters }: { filters?: { cooperativa: string; consultor: string; dateStart?: Date; dateEnd?: Date } } = {}) {
   const { data, isLoading } = useQuery({
     queryKey: ["funil-negociacoes"],
     queryFn: async () => {

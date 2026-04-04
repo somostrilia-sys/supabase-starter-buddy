@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -10,126 +10,139 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Edit, Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
-interface RegionalData {
+interface Regional {
+  id: string;
   nome: string;
-  totalUsuarios: number;
-  totalCooperativas: number;
+  estado: string | null;
+  ativo: boolean;
 }
 
-interface CooperativaData {
+interface Cooperativa {
+  id: string;
   nome: string;
-  regional: string;
-  totalConsultores: number;
-  totalNegociacoes: number;
-}
-
-async function fetchRegionaisCooperativas() {
-  // Fetch all usuarios with regional and cooperativa fields
-  const { data: usuarios, error: errUsuarios } = await (supabase as any)
-    .from("usuarios")
-    .select("regional, cooperativa, nome, status");
-
-  if (errUsuarios) throw errUsuarios;
-
-  // Fetch all negociacoes with cooperativa field
-  const { data: negociacoes, error: errNeg } = await (supabase as any)
-    .from("negociacoes")
-    .select("cooperativa, regional, consultor");
-
-  if (errNeg) throw errNeg;
-
-  const usuariosList: any[] = usuarios || [];
-  const negociacoesList: any[] = negociacoes || [];
-
-  // Extract unique regionais
-  const regionaisSet = new Set<string>();
-  usuariosList.forEach((u) => {
-    if (u.regional && u.regional.trim()) {
-      regionaisSet.add(u.regional.trim());
-    }
-  });
-
-  // Extract unique cooperativas by splitting comma-separated field
-  const cooperativasSet = new Set<string>();
-  usuariosList.forEach((u) => {
-    if (u.cooperativa) {
-      u.cooperativa.split(",").forEach((c: string) => {
-        const trimmed = c.trim();
-        if (trimmed) cooperativasSet.add(trimmed);
-      });
-    }
-  });
-
-  // Build regionais data
-  const regionais: RegionalData[] = Array.from(regionaisSet).sort().map((nome) => {
-    const usuariosNaRegional = usuariosList.filter(
-      (u) => u.regional && u.regional.trim() === nome
-    );
-    // Cooperativas in this regional: unique cooperativas from usuarios in that regional
-    const coopsNaRegional = new Set<string>();
-    usuariosNaRegional.forEach((u) => {
-      if (u.cooperativa) {
-        u.cooperativa.split(",").forEach((c: string) => {
-          const trimmed = c.trim();
-          if (trimmed) coopsNaRegional.add(trimmed);
-        });
-      }
-    });
-    return {
-      nome,
-      totalUsuarios: usuariosNaRegional.length,
-      totalCooperativas: coopsNaRegional.size,
-    };
-  });
-
-  // Build cooperativas data
-  const cooperativas: CooperativaData[] = Array.from(cooperativasSet).sort().map((nome) => {
-    // Consultores: usuarios where cooperativa field contains this cooperativa
-    const consultores = usuariosList.filter((u) => {
-      if (!u.cooperativa) return false;
-      return u.cooperativa.split(",").map((c: string) => c.trim()).includes(nome);
-    });
-
-    // Regional: get from first usuario that has this cooperativa
-    const primeiroUsuario = consultores[0];
-    const regional = primeiroUsuario?.regional?.trim() || "";
-
-    // Negociacoes for this cooperativa
-    const negsCount = negociacoesList.filter(
-      (n) => n.cooperativa && n.cooperativa.trim() === nome
-    ).length;
-
-    return {
-      nome,
-      regional,
-      totalConsultores: consultores.length,
-      totalNegociacoes: negsCount,
-    };
-  });
-
-  return { regionais, cooperativas };
+  regional_id: string | null;
+  ativa: boolean;
+  codigo_sga: string | null;
+  cpf_cnpj: string | null;
+  regionais: { id: string; nome: string } | null;
 }
 
 export default function RegionaisCooperativasTab() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["regionais-cooperativas"],
-    queryFn: fetchRegionaisCooperativas,
-  });
+  const queryClient = useQueryClient();
 
-  const regionais = data?.regionais || [];
-  const cooperativas = data?.cooperativas || [];
-
+  // ── State ──
   const [showRegionalModal, setShowRegionalModal] = useState(false);
   const [showCoopModal, setShowCoopModal] = useState(false);
+  const [editRegionalId, setEditRegionalId] = useState<string | null>(null);
+  const [editCoopId, setEditCoopId] = useState<string | null>(null);
   const [nomeRegional, setNomeRegional] = useState("");
   const [codigoSgaRegional, setCodigoSgaRegional] = useState("");
   const [nomeCoop, setNomeCoop] = useState("");
   const [cnpjCoop, setCnpjCoop] = useState("");
   const [codigoSgaCoop, setCodigoSgaCoop] = useState("");
   const [regionalCoop, setRegionalCoop] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "regional" | "cooperativa"; id: string; nome: string } | null>(null);
 
+  // ── Queries ──
+  const { data: regionais = [], isLoading: loadingRegionais } = useQuery({
+    queryKey: ["regionais-tab"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("regionais")
+        .select("id, nome, estado, ativo")
+        .order("nome");
+      if (error) throw error;
+      return (data || []) as Regional[];
+    },
+  });
+
+  const { data: cooperativas = [], isLoading: loadingCoops } = useQuery({
+    queryKey: ["cooperativas-tab"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("cooperativas")
+        .select("id, nome, regional_id, ativo, codigo_sga, cpf_cnpj, regionais(id, nome)")
+        .order("nome");
+      if (error) throw error;
+      return (data || []) as Cooperativa[];
+    },
+  });
+
+  // ── Mutations: Regional ──
+  const saveRegionalMutation = useMutation({
+    mutationFn: async (payload: { id?: string; nome: string; codigo_sga?: string }) => {
+      const row: any = { nome: payload.nome };
+      if (payload.codigo_sga) row.codigo_sga = payload.codigo_sga;
+      if (payload.id) {
+        const { error } = await (supabase as any).from("regionais").update(row).eq("id", payload.id);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("regionais").insert(row);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["regionais-tab"] });
+      queryClient.invalidateQueries({ queryKey: ["cooperativas-tab"] });
+      toast.success(editRegionalId ? "Regional atualizada!" : "Regional cadastrada!");
+      setShowRegionalModal(false);
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao salvar regional"),
+  });
+
+  const deleteRegionalMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any).from("regionais").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["regionais-tab"] });
+      queryClient.invalidateQueries({ queryKey: ["cooperativas-tab"] });
+      toast.success("Regional removida!");
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao excluir regional. Pode haver cooperativas vinculadas."),
+  });
+
+  // ── Mutations: Cooperativa ──
+  const saveCoopMutation = useMutation({
+    mutationFn: async (payload: { id?: string; nome: string; regional_id?: string; cpf_cnpj?: string; codigo_sga?: string }) => {
+      const row: any = { nome: payload.nome };
+      if (payload.regional_id) row.regional_id = payload.regional_id;
+      if (payload.cpf_cnpj) row.cpf_cnpj = payload.cpf_cnpj;
+      if (payload.codigo_sga) row.codigo_sga = payload.codigo_sga;
+      if (payload.id) {
+        const { error } = await (supabase as any).from("cooperativas").update(row).eq("id", payload.id);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("cooperativas").insert(row);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cooperativas-tab"] });
+      toast.success(editCoopId ? "Cooperativa atualizada!" : "Cooperativa cadastrada!");
+      setShowCoopModal(false);
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao salvar cooperativa"),
+  });
+
+  const deleteCoopMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any).from("cooperativas").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cooperativas-tab"] });
+      toast.success("Cooperativa removida!");
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao excluir cooperativa. Pode haver registros vinculados."),
+  });
+
+  // ── Helpers ──
   const formatCnpj = (value: string) => {
     const nums = value.replace(/\D/g, "").slice(0, 14);
     return nums.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5")
@@ -138,6 +151,72 @@ export default function RegionaisCooperativasTab() {
       .replace(/^(\d{2})(\d{3})/, "$1.$2")
       .replace(/^(\d{2})/, "$1");
   };
+
+  const openNewRegional = () => {
+    setEditRegionalId(null);
+    setNomeRegional("");
+    setCodigoSgaRegional("");
+    setShowRegionalModal(true);
+  };
+
+  const openEditRegional = (r: Regional) => {
+    setEditRegionalId(r.id);
+    setNomeRegional(r.nome);
+    setCodigoSgaRegional("");
+    setShowRegionalModal(true);
+  };
+
+  const openNewCoop = () => {
+    setEditCoopId(null);
+    setNomeCoop("");
+    setCnpjCoop("");
+    setCodigoSgaCoop("");
+    setRegionalCoop("");
+    setShowCoopModal(true);
+  };
+
+  const openEditCoop = (c: Cooperativa) => {
+    setEditCoopId(c.id);
+    setNomeCoop(c.nome);
+    setCnpjCoop(c.cpf_cnpj || "");
+    setCodigoSgaCoop(c.codigo_sga || "");
+    setRegionalCoop(c.regional_id || "");
+    setShowCoopModal(true);
+  };
+
+  const handleSaveRegional = () => {
+    if (!nomeRegional.trim()) { toast.error("Preencha o nome da regional"); return; }
+    saveRegionalMutation.mutate(
+      editRegionalId
+        ? { id: editRegionalId, nome: nomeRegional.trim(), codigo_sga: codigoSgaRegional.trim() || undefined }
+        : { nome: nomeRegional.trim(), codigo_sga: codigoSgaRegional.trim() || undefined }
+    );
+  };
+
+  const handleSaveCoop = () => {
+    if (!nomeCoop.trim()) { toast.error("Preencha o nome da cooperativa"); return; }
+    saveCoopMutation.mutate(
+      editCoopId
+        ? { id: editCoopId, nome: nomeCoop.trim(), regional_id: regionalCoop || undefined, cpf_cnpj: cnpjCoop.trim() || undefined, codigo_sga: codigoSgaCoop.trim() || undefined }
+        : { nome: nomeCoop.trim(), regional_id: regionalCoop || undefined, cpf_cnpj: cnpjCoop.trim() || undefined, codigo_sga: codigoSgaCoop.trim() || undefined }
+    );
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === "regional") {
+      deleteRegionalMutation.mutate(deleteTarget.id);
+    } else {
+      deleteCoopMutation.mutate(deleteTarget.id);
+    }
+    setDeleteTarget(null);
+  };
+
+  const isLoading = loadingRegionais || loadingCoops;
+
+  // Count cooperativas per regional
+  const coopCountByRegional = (regionalId: string) =>
+    cooperativas.filter((c) => c.regional_id === regionalId).length;
 
   if (isLoading) {
     return (
@@ -156,7 +235,7 @@ export default function RegionaisCooperativasTab() {
             <h3 className="text-lg font-semibold">Regionais</h3>
             <p className="text-sm text-muted-foreground">Gerencie as regionais da organização</p>
           </div>
-          <Button onClick={() => { setNomeRegional(""); setCodigoSgaRegional(""); setShowRegionalModal(true); }} className="gap-2">
+          <Button onClick={openNewRegional} className="gap-2">
             <Plus className="h-4 w-4" /> Nova Regional
           </Button>
         </div>
@@ -166,7 +245,7 @@ export default function RegionaisCooperativasTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
-                  <TableHead>Usuários</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Cooperativas Vinculadas</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -180,13 +259,21 @@ export default function RegionaisCooperativasTab() {
                   </TableRow>
                 ) : (
                   regionais.map((r) => (
-                    <TableRow key={r.nome}>
+                    <TableRow key={r.id}>
                       <TableCell className="font-medium">{r.nome}</TableCell>
-                      <TableCell>{r.totalUsuarios}</TableCell>
-                      <TableCell>{r.totalCooperativas}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={r.ativo ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"}>
+                          {r.ativo ? "Ativa" : "Inativa"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{coopCountByRegional(r.id)}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditRegional(r)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteTarget({ type: "regional", id: r.id, nome: r.nome })}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
@@ -204,7 +291,7 @@ export default function RegionaisCooperativasTab() {
             <h3 className="text-lg font-semibold">Cooperativas</h3>
             <p className="text-sm text-muted-foreground">Gerencie as cooperativas vinculadas às regionais</p>
           </div>
-          <Button onClick={() => { setNomeCoop(""); setCnpjCoop(""); setCodigoSgaCoop(""); setRegionalCoop(""); setShowCoopModal(true); }} className="gap-2">
+          <Button onClick={openNewCoop} className="gap-2">
             <Plus className="h-4 w-4" /> Nova Cooperativa
           </Button>
         </div>
@@ -219,28 +306,34 @@ export default function RegionaisCooperativasTab() {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Regional</TableHead>
-                  <TableHead>Consultores</TableHead>
-                  <TableHead>Negociações</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {cooperativas.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                       Nenhuma cooperativa encontrada
                     </TableCell>
                   </TableRow>
                 ) : (
                   cooperativas.map((c) => (
-                    <TableRow key={c.nome}>
+                    <TableRow key={c.id}>
                       <TableCell className="font-medium">{c.nome}</TableCell>
-                      <TableCell>{c.regional}</TableCell>
-                      <TableCell>{c.totalConsultores}</TableCell>
-                      <TableCell>{c.totalNegociacoes}</TableCell>
+                      <TableCell>{c.regionais?.nome || "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={c.ativa ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"}>
+                          {c.ativa ? "Ativa" : "Inativa"}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditCoop(c)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteTarget({ type: "cooperativa", id: c.id, nome: c.nome })}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
@@ -254,13 +347,16 @@ export default function RegionaisCooperativasTab() {
       {/* Modal Regional */}
       <Dialog open={showRegionalModal} onOpenChange={setShowRegionalModal}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Nova Regional</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editRegionalId ? "Editar Regional" : "Nova Regional"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><Label>Nome</Label><Input value={nomeRegional} onChange={e => setNomeRegional(e.target.value)} placeholder="Ex: Regional Centro-Oeste" /></div>
-            <div><Label>Código Integração SGA <span className="text-destructive">*</span></Label><Input value={codigoSgaRegional} onChange={e => setCodigoSgaRegional(e.target.value)} placeholder="Ex: SGA-CO005" /></div>
+            <div><Label>Nome *</Label><Input value={nomeRegional} onChange={e => setNomeRegional(e.target.value)} placeholder="Ex: Regional Centro-Oeste" /></div>
+            <div><Label>Código Integração SGA</Label><Input value={codigoSgaRegional} onChange={e => setCodigoSgaRegional(e.target.value)} placeholder="Ex: SGA-CO005" /></div>
             <div className="flex justify-end gap-2 pt-4 border-t-2 border-[#747474]">
               <Button variant="outline" onClick={() => setShowRegionalModal(false)}>Cancelar</Button>
-              <Button onClick={() => setShowRegionalModal(false)}>Salvar</Button>
+              <Button onClick={handleSaveRegional} disabled={saveRegionalMutation.isPending}>
+                {saveRegionalMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Salvar
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -269,9 +365,9 @@ export default function RegionaisCooperativasTab() {
       {/* Modal Cooperativa */}
       <Dialog open={showCoopModal} onOpenChange={setShowCoopModal}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Nova Cooperativa</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editCoopId ? "Editar Cooperativa" : "Nova Cooperativa"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><Label>Nome</Label><Input value={nomeCoop} onChange={e => setNomeCoop(e.target.value)} placeholder="Ex: Cooperativa Brasília" /></div>
+            <div><Label>Nome *</Label><Input value={nomeCoop} onChange={e => setNomeCoop(e.target.value)} placeholder="Ex: Cooperativa Brasília" /></div>
             <div><Label>CNPJ</Label><Input value={cnpjCoop} onChange={e => setCnpjCoop(formatCnpj(e.target.value))} placeholder="00.000.000/0000-00" /></div>
             <div><Label>Código SGA</Label><Input value={codigoSgaCoop} onChange={e => setCodigoSgaCoop(e.target.value)} placeholder="Ex: COOP-007" /></div>
             <div>
@@ -279,17 +375,39 @@ export default function RegionaisCooperativasTab() {
               <Select value={regionalCoop} onValueChange={setRegionalCoop}>
                 <SelectTrigger><SelectValue placeholder="Selecione a regional" /></SelectTrigger>
                 <SelectContent>
-                  {regionais.map(r => <SelectItem key={r.nome} value={r.nome}>{r.nome}</SelectItem>)}
+                  {regionais.map(r => <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex justify-end gap-2 pt-4 border-t-2 border-[#747474]">
               <Button variant="outline" onClick={() => setShowCoopModal(false)}>Cancelar</Button>
-              <Button onClick={() => setShowCoopModal(false)}>Salvar</Button>
+              <Button onClick={handleSaveCoop} disabled={saveCoopMutation.isPending}>
+                {saveCoopMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Salvar
+              </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir {deleteTarget?.type === "regional" ? "a regional" : "a cooperativa"}{" "}
+              <strong>{deleteTarget?.nome}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

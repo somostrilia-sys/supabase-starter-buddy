@@ -50,7 +50,7 @@ function MetaTable({ items }: { items: MetaRow[] }) {
   );
 }
 
-export default function ResumoMetasTab() {
+export default function ResumoMetasTab({ filters }: { filters?: { cooperativa: string; consultor: string; dateStart?: Date; dateEnd?: Date } } = {}) {
   const [subTab, setSubTab] = useState("bateram");
   const [coop, setCoop] = useState("all");
 
