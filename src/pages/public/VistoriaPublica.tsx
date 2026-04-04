@@ -19,21 +19,36 @@ import imgChave from "@/assets/vistoria/chave.jpg";
 import imgChassi from "@/assets/vistoria/chassi.jpg";
 import imgQuilometragem from "@/assets/vistoria/quilometragem.jpg";
 
-const CATEGORIAS = [
-  { id: "frente", label: "Frente", img: imgFrente },
-  { id: "traseira", label: "Traseira", img: imgTraseira },
-  { id: "lateral_esquerda", label: "Lateral Esquerda", img: imgLateralEsq },
-  { id: "lateral_direita", label: "Lateral Direita", img: imgLateralDir },
-  { id: "interior_painel", label: "Interior / Painel", img: imgInterior },
-  { id: "banco_dianteiro", label: "Banco Dianteiro", img: imgBancoDiant },
-  { id: "banco_traseiro", label: "Banco Traseiro", img: imgBancoTras },
-  { id: "motor_capo", label: "Motor / Capô", img: imgMotor },
-  { id: "porta_malas", label: "Porta-malas", img: imgPortaMalas },
-  { id: "rodas_pneus", label: "Rodas e Pneus", img: imgRodas },
-  { id: "chave", label: "Chave do Veículo", img: imgChave },
-  { id: "chassi", label: "Chassi", img: imgChassi, obs: "Se não encontrar no motor, pode ser do vidro" },
-  { id: "quilometragem", label: "Quilometragem", img: imgQuilometragem },
-];
+// Todas as categorias possíveis (automóvel + moto + caminhão)
+const TODAS_CATEGORIAS: Record<string, { label: string; img: string; obs?: string }> = {
+  frente: { label: "Frente", img: imgFrente },
+  traseira: { label: "Traseira", img: imgTraseira },
+  lateral_esquerda: { label: "Lateral Esquerda", img: imgLateralEsq },
+  lateral_direita: { label: "Lateral Direita", img: imgLateralDir },
+  interior_painel: { label: "Interior / Painel", img: imgInterior },
+  banco_dianteiro: { label: "Banco Dianteiro", img: imgBancoDiant },
+  banco_traseiro: { label: "Banco Traseiro", img: imgBancoTras },
+  motor_capo: { label: "Motor / Capô", img: imgMotor },
+  porta_malas: { label: "Porta-malas", img: imgPortaMalas },
+  rodas_pneus: { label: "Rodas e Pneus", img: imgRodas },
+  chave: { label: "Chave do Veículo", img: imgChave },
+  chassi: { label: "Chassi", img: imgChassi, obs: "Se não encontrar no motor, pode ser do vidro" },
+  quilometragem: { label: "Quilometragem", img: imgQuilometragem },
+  // Moto
+  guidao: { label: "Guidão", img: imgFrente },
+  painel_moto: { label: "Painel / Velocímetro", img: imgInterior },
+  carenagem: { label: "Carenagem / Tanque", img: imgLateralEsq },
+  escapamento: { label: "Escapamento", img: imgTraseira },
+  // Caminhão
+  para_brisa: { label: "Para-brisa", img: imgFrente },
+  cabine: { label: "Cabine", img: imgInterior },
+  carroceria: { label: "Carroceria / Baú", img: imgTraseira },
+  eixos: { label: "Eixos / Suspensão", img: imgRodas },
+  tacografo: { label: "Tacógrafo", img: imgQuilometragem },
+};
+
+// Default automóvel
+const CATEGORIAS_DEFAULT = ["frente","traseira","lateral_esquerda","lateral_direita","interior_painel","banco_dianteiro","banco_traseiro","motor_capo","porta_malas","rodas_pneus","chave","chassi","quilometragem"];
 
 interface FotoCapturada {
   id: string;
@@ -251,6 +266,12 @@ export default function VistoriaPublica() {
       </div>
     </div>
   );
+
+  // Categorias dinâmicas baseadas na vistoria (moto/caminhão/automóvel)
+  const categoriasIds = (vistoria?.fotos_solicitadas && Array.isArray(vistoria.fotos_solicitadas) && vistoria.fotos_solicitadas.length > 0)
+    ? vistoria.fotos_solicitadas as string[]
+    : CATEGORIAS_DEFAULT;
+  const CATEGORIAS = categoriasIds.map(id => ({ id, ...(TODAS_CATEGORIAS[id] || { label: id.replace(/_/g, " "), img: "" }) }));
 
   const fotosTiradas = fotos.size;
   const totalFotos = CATEGORIAS.length;
