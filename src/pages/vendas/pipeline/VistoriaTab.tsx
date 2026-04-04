@@ -51,19 +51,36 @@ const tipoColorMap: Record<string, string> = {
 };
 
 // 2.4 — Componente com cache React Query + thumbnails + lazy loading
+// Componente de imagem lazy — só carrega quando visível
+function LazyFoto({ src, alt, className }: { src: string; alt: string; className: string }) {
+  const [visible, setVisible] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { rootMargin: "200px" });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className={className} style={{ backgroundColor: "#e5e7eb" }}>
+      {visible && <img src={src} alt={alt} className="w-full h-full object-cover" />}
+    </div>
+  );
+}
+
 function FotosReaisSection({ vistoriaId }: { vistoriaId: string }) {
   const { data: fotos, isLoading } = useQuery({
     queryKey: ["vistoria_fotos", vistoriaId],
     queryFn: async () => {
-      const { data } = await (supabase as any).from("vistoria_fotos").select("*").eq("vistoria_id", vistoriaId).order("created_at");
-      // Pré-gerar URLs públicas e cachear
-      return (data || []).map((foto: any) => {
-        const { data: urlData } = supabase.storage.from("vistoria-fotos").getPublicUrl(foto.storage_path);
-        const thumbUrl = urlData.publicUrl + "?width=200&height=200";
-        return { ...foto, publicUrl: urlData.publicUrl, thumbUrl };
-      });
+      const { data } = await (supabase as any).from("vistoria_fotos").select("id,tipo,storage_path,ai_aprovada").eq("vistoria_id", vistoriaId).order("created_at");
+      // Gerar signed URLs (10min) — mais confiável que getPublicUrl
+      return await Promise.all((data || []).map(async (foto: any) => {
+        const { data: signed } = await supabase.storage.from("vistoria-fotos").createSignedUrl(foto.storage_path, 600);
+        return { ...foto, thumbUrl: signed?.signedUrl || "" };
+      }));
     },
-    staleTime: 5 * 60 * 1000, // 5 min cache
+    staleTime: 5 * 60 * 1000,
   });
 
   if (isLoading) return (
@@ -89,8 +106,8 @@ function FotosReaisSection({ vistoriaId }: { vistoriaId: string }) {
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
           {fotos.map((foto: any) => (
-            <div key={foto.id} className="relative aspect-square rounded-lg overflow-hidden border-2 border-green-500/20 group">
-              <img src={foto.thumbUrl} alt={foto.tipo} className="w-full h-full object-cover" loading="lazy" />
+            <div key={foto.id} className="relative aspect-square rounded-lg overflow-hidden border-2 border-green-500/20">
+              <LazyFoto src={foto.thumbUrl} alt={foto.tipo} className="w-full h-full" />
               <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[9px] text-center py-1 font-medium">
                 {(foto.tipo || "").replace(/_/g, " ")}
               </div>
