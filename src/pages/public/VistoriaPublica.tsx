@@ -18,6 +18,17 @@ import imgRodas from "@/assets/vistoria/rodas-pneus.jpg";
 import imgChave from "@/assets/vistoria/chave.jpg";
 import imgChassi from "@/assets/vistoria/chassi.jpg";
 import imgQuilometragem from "@/assets/vistoria/quilometragem.jpg";
+// Moto
+import imgMotoGuidao from "@/assets/vistoria/moto/guidao.jpg";
+import imgMotoPainel from "@/assets/vistoria/moto/painel.jpg";
+import imgMotoCarenagem from "@/assets/vistoria/moto/carenagem.jpg";
+import imgMotoEscapamento from "@/assets/vistoria/moto/escapamento.jpg";
+// Caminhão
+import imgCamParabrisa from "@/assets/vistoria/caminhao/parabrisa.jpg";
+import imgCamCabine from "@/assets/vistoria/caminhao/cabine.jpg";
+import imgCamCarroceria from "@/assets/vistoria/caminhao/carroceria.jpg";
+import imgCamEixos from "@/assets/vistoria/caminhao/eixos.jpg";
+import imgCamTacografo from "@/assets/vistoria/caminhao/tacografo.jpg";
 
 // Todas as categorias possíveis (automóvel + moto + caminhão)
 const TODAS_CATEGORIAS: Record<string, { label: string; img: string; obs?: string }> = {
@@ -34,17 +45,17 @@ const TODAS_CATEGORIAS: Record<string, { label: string; img: string; obs?: strin
   chave: { label: "Chave do Veículo", img: imgChave },
   chassi: { label: "Chassi", img: imgChassi, obs: "Se não encontrar no motor, pode ser do vidro" },
   quilometragem: { label: "Quilometragem", img: imgQuilometragem },
-  // Moto
-  guidao: { label: "Guidão", img: imgFrente },
-  painel_moto: { label: "Painel / Velocímetro", img: imgInterior },
-  carenagem: { label: "Carenagem / Tanque", img: imgLateralEsq },
-  escapamento: { label: "Escapamento", img: imgTraseira },
-  // Caminhão
-  para_brisa: { label: "Para-brisa", img: imgFrente },
-  cabine: { label: "Cabine", img: imgInterior },
-  carroceria: { label: "Carroceria / Baú", img: imgTraseira },
-  eixos: { label: "Eixos / Suspensão", img: imgRodas },
-  tacografo: { label: "Tacógrafo", img: imgQuilometragem },
+  // Moto (fotos reais de moto)
+  guidao: { label: "Guidão", img: imgMotoGuidao },
+  painel_moto: { label: "Painel / Velocímetro", img: imgMotoPainel },
+  carenagem: { label: "Carenagem / Tanque", img: imgMotoCarenagem },
+  escapamento: { label: "Escapamento", img: imgMotoEscapamento },
+  // Caminhão (fotos reais de caminhão)
+  para_brisa: { label: "Para-brisa", img: imgCamParabrisa },
+  cabine: { label: "Cabine", img: imgCamCabine },
+  carroceria: { label: "Carroceria / Baú", img: imgCamCarroceria },
+  eixos: { label: "Eixos / Suspensão", img: imgCamEixos },
+  tacografo: { label: "Tacógrafo", img: imgCamTacografo },
 };
 
 // Default automóvel

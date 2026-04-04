@@ -19,17 +19,28 @@ import imgChassi from "@/assets/vistoria/chassi.jpg";
 import imgQuilometragem from "@/assets/vistoria/quilometragem.jpg";
 import imgParaBrisa from "@/assets/vistoria/para-brisa.svg";
 
-// ── Imagens moto ──
-import imgGuidao from "@/assets/vistoria/guidao.svg";
-import imgCarenagem from "@/assets/vistoria/carenagem.svg";
-import imgEscapamento from "@/assets/vistoria/escapamento.svg";
-import imgPainelMoto from "@/assets/vistoria/painel-moto.svg";
+// ── Imagens moto (fotos reais) ──
+import imgGuidao from "@/assets/vistoria/moto/guidao.jpg";
+import imgCarenagem from "@/assets/vistoria/moto/carenagem.jpg";
+import imgEscapamento from "@/assets/vistoria/moto/escapamento.jpg";
+import imgPainelMoto from "@/assets/vistoria/moto/painel.jpg";
+import imgMotoFrente from "@/assets/vistoria/moto/frente.jpg";
+import imgMotoTraseira from "@/assets/vistoria/moto/traseira.jpg";
+import imgMotoLateral from "@/assets/vistoria/moto/lateral.jpg";
+import imgMotoMotor from "@/assets/vistoria/moto/motor.jpg";
+import imgMotoRodas from "@/assets/vistoria/moto/rodas.jpg";
 
-// ── Imagens caminhão ──
-import imgCabine from "@/assets/vistoria/cabine.svg";
-import imgCarroceria from "@/assets/vistoria/carroceria.svg";
-import imgTacografo from "@/assets/vistoria/tacografo.svg";
-import imgEixos from "@/assets/vistoria/eixos.svg";
+// ── Imagens caminhão (fotos reais) ──
+import imgCabine from "@/assets/vistoria/caminhao/cabine.jpg";
+import imgCarroceria from "@/assets/vistoria/caminhao/carroceria.jpg";
+import imgTacografo from "@/assets/vistoria/caminhao/tacografo.jpg";
+import imgEixos from "@/assets/vistoria/caminhao/eixos.jpg";
+import imgCamFrente from "@/assets/vistoria/caminhao/frente.jpg";
+import imgCamTraseira from "@/assets/vistoria/caminhao/traseira.jpg";
+import imgCamLateral from "@/assets/vistoria/caminhao/lateral.jpg";
+import imgCamMotor from "@/assets/vistoria/caminhao/motor.jpg";
+import imgCamRodas from "@/assets/vistoria/caminhao/rodas.jpg";
+import imgParaBrisaCam from "@/assets/vistoria/caminhao/parabrisa.jpg";
 
 export interface VistoriaParte {
   id: string;
@@ -58,33 +69,33 @@ const partesAutomovel: VistoriaParte[] = [
 ];
 
 const partesMoto: VistoriaParte[] = [
-  { id: "frente", label: "Frente", img: imgFrente },
-  { id: "traseira", label: "Traseira", img: imgTraseira },
-  { id: "lateral_esquerda", label: "Lateral Esquerda", img: imgLateralEsq },
-  { id: "lateral_direita", label: "Lateral Direita", img: imgLateralDir },
+  { id: "frente", label: "Frente", img: imgMotoFrente },
+  { id: "traseira", label: "Traseira", img: imgMotoTraseira },
+  { id: "lateral_esquerda", label: "Lateral Esquerda", img: imgMotoLateral },
+  { id: "lateral_direita", label: "Lateral Direita", img: imgMotoLateral },
   { id: "guidao", label: "Guidão", img: imgGuidao },
   { id: "painel_moto", label: "Painel / Velocímetro", img: imgPainelMoto },
   { id: "carenagem", label: "Carenagem / Tanque", img: imgCarenagem },
-  { id: "motor_capo", label: "Motor", img: imgMotor },
+  { id: "motor_capo", label: "Motor", img: imgMotoMotor },
   { id: "escapamento", label: "Escapamento", img: imgEscapamento },
-  { id: "rodas_pneus", label: "Rodas e Pneus", img: imgRodas },
+  { id: "rodas_pneus", label: "Rodas e Pneus", img: imgMotoRodas },
   { id: "chave", label: "Chave da Moto", img: imgChave },
   { id: "chassi", label: "Chassi", img: imgChassi, obs: "(No chassi ou no cabeçote)" },
   { id: "quilometragem", label: "Quilometragem", img: imgQuilometragem },
 ];
 
 const partesCaminhao: VistoriaParte[] = [
-  { id: "frente", label: "Frente", img: imgFrente },
-  { id: "traseira", label: "Traseira", img: imgTraseira },
-  { id: "lateral_esquerda", label: "Lateral Esquerda", img: imgLateralEsq },
-  { id: "lateral_direita", label: "Lateral Direita", img: imgLateralDir },
-  { id: "para_brisa", label: "Para-brisa", img: imgParaBrisa },
+  { id: "frente", label: "Frente", img: imgCamFrente },
+  { id: "traseira", label: "Traseira", img: imgCamTraseira },
+  { id: "lateral_esquerda", label: "Lateral Esquerda", img: imgCamLateral },
+  { id: "lateral_direita", label: "Lateral Direita", img: imgCamLateral },
+  { id: "para_brisa", label: "Para-brisa", img: imgParaBrisaCam },
   { id: "cabine", label: "Cabine", img: imgCabine },
   { id: "interior_painel", label: "Interior / Painel", img: imgInterior },
   { id: "carroceria", label: "Carroceria / Baú", img: imgCarroceria },
-  { id: "motor_capo", label: "Motor", img: imgMotor },
+  { id: "motor_capo", label: "Motor", img: imgCamMotor },
   { id: "eixos", label: "Eixos / Suspensão", img: imgEixos },
-  { id: "rodas_pneus", label: "Rodas e Pneus", img: imgRodas },
+  { id: "rodas_pneus", label: "Rodas e Pneus", img: imgCamRodas },
   { id: "tacografo", label: "Tacógrafo", img: imgTacografo },
   { id: "chave", label: "Chave do Veículo", img: imgChave },
   { id: "chassi", label: "Chassi", img: imgChassi },
