@@ -45,6 +45,14 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
   const [consultoresTransf, setConsultoresTransf] = useState<string[]>([]);
   const { isAdmin } = usePermission();
   const { profile } = useAuth();
+  const [percentualAdesao, setPercentualAdesao] = React.useState<number | null>(null);
+
+  // Buscar percentual_adesao do consultor
+  React.useEffect(() => {
+    if (!deal.consultor) return;
+    supabase.from("usuarios" as any).select("percentual_adesao").eq("nome", deal.consultor).maybeSingle()
+      .then(({ data }: any) => { if (data) setPercentualAdesao(data.percentual_adesao ?? 100); });
+  }, [deal.consultor]);
 
   // OCR auto-fill state
   const [dadosCnh, setDadosCnh] = useState<Record<string, any> | null>(null);
@@ -328,6 +336,13 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
                 <div>
                   <span className="text-[10px] text-muted-foreground">Comissão</span>
                   <p className="text-sm font-semibold text-success">R$ 0,00</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-primary" />
+                <div>
+                  <span className="text-[10px] text-muted-foreground">Adesão</span>
+                  <p className="text-sm font-semibold text-primary">{percentualAdesao != null ? `${percentualAdesao}%` : "—"}</p>
                 </div>
               </div>
             </div>

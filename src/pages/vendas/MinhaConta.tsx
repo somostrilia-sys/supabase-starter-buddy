@@ -332,12 +332,13 @@ export default function MinhaConta() {
   const [comissaoPercentual, setComissaoPercentual] = useState("15");
   const [comissaoValorFixo, setComissaoValorFixo] = useState("0");
   const [salvandoComissao, setSalvandoComissao] = useState(false);
+  const [percentualAdesao, setPercentualAdesao] = useState("100");
 
   // Carregar config de comissão do usuário
   useEffect(() => {
     if (!profile?.id) return;
     supabase.from("usuarios" as any)
-      .select("comissao_tipo, comissao_percentual, comissao_valor_fixo")
+      .select("comissao_tipo, comissao_percentual, comissao_valor_fixo, percentual_adesao")
       .eq("id", profile.id)
       .maybeSingle()
       .then(({ data }: any) => {
@@ -345,6 +346,7 @@ export default function MinhaConta() {
           setComissaoTipo(data.comissao_tipo || "percentual");
           setComissaoPercentual(String(data.comissao_percentual || 15));
           setComissaoValorFixo(String(data.comissao_valor_fixo || 0));
+          setPercentualAdesao(String(data.percentual_adesao ?? 100));
         }
       });
   }, [profile?.id]);
@@ -356,6 +358,7 @@ export default function MinhaConta() {
       comissao_tipo: comissaoTipo,
       comissao_percentual: parseFloat(comissaoPercentual) || 15,
       comissao_valor_fixo: parseFloat(comissaoValorFixo) || 0,
+      percentual_adesao: parseFloat(percentualAdesao) || 100,
     } as any).eq("id", profile.id);
     toast({ title: "Configuração de comissão salva!" });
     setSalvandoComissao(false);
@@ -625,6 +628,10 @@ export default function MinhaConta() {
                 <Input type="number" min={0} value={comissaoValorFixo} onChange={e => setComissaoValorFixo(e.target.value)} />
               </div>
             )}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Adesão % (quanto da taxa vai para você)</Label>
+              <Input type="number" min={0} max={100} step={0.01} value={percentualAdesao} onChange={e => setPercentualAdesao(e.target.value)} />
+            </div>
           </div>
           <div className="flex justify-end">
             <Button onClick={handleSalvarComissao} disabled={salvandoComissao} size="sm">

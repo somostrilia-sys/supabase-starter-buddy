@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, callEdge } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +20,7 @@ import {
   Search, Car, User, DollarSign, FileText, Clock, Eye, Pencil,
   ArrowLeft, Save, Upload, Trash2, Plus, Download, Printer,
   ChevronLeft, ChevronRight, Users, Package, ClipboardCheck,
-  AlertTriangle, FileSignature, Phone as PhoneIcon,
+  AlertTriangle, FileSignature, Phone as PhoneIcon, Calculator,
 } from "lucide-react";
 
 // ─── Types ───
@@ -67,6 +67,16 @@ export default function ConsultarVeiculo() {
   const [regionaisList, setRegionaisList] = useState<{id: string; nome: string}[]>([]);
   const [contratoData, setContratoData] = useState<any>(null);
   const [cotacaoData, setCotacaoData] = useState<any>(null);
+
+  // LAPS state
+  const [lapsProdutosDisponiveis, setLapsProdutosDisponiveis] = useState<any[]>([]);
+  const [lapsVeiculoProdutos, setLapsVeiculoProdutos] = useState<any[]>([]);
+  const [lapsSelecionados, setLapsSelecionados] = useState<Record<string, boolean>>({});
+  const [lapsCalculo, setLapsCalculo] = useState<any>(null);
+  const [lapsAjusteDesc, setLapsAjusteDesc] = useState("");
+  const [lapsAjusteValor, setLapsAjusteValor] = useState("");
+  const [lapsSaving, setLapsSaving] = useState(false);
+  const [lapsLoading, setLapsLoading] = useState(false);
 
   useEffect(() => {
     supabase.from("cooperativas").select("id, nome").eq("ativo", true).order("nome").then(({ data }) => {
@@ -126,6 +136,105 @@ export default function ConsultarVeiculo() {
   };
 
   const limpar = () => { setFilters({ placa:"",chassi:"",idExterno:"",proprietario:"",idVeiculo:"",sitVeiculo:"Todos",sitAssociado:"Todos",cooperativa:"Todos",regional:"Todos" }); setResults([]); setSearched(false); };
+
+  const carregarLaps = async (veiculo: Veiculo) => {
+    setLapsLoading(true);
+    try {
+      // Buscar regional_id do associado
+      const { data: assocData } = veiculo.associado_id
+        ? await supabase.from("associados").select("regional_id").eq("id", veiculo.associado_id).maybeSingle()
+        : { data: null };
+      const regionalId = assocData?.regional_id;
+
+      // Buscar produtos disponíveis para a regional (via produto_regras)
+      let produtosQuery = supabase.from("produtos_gia").select("*").eq("ativo", true).order("nome");
+      const { data: todosProdutos } = await produtosQuery;
+
+      let produtosRegional = todosProdutos || [];
+      if (regionalId) {
+        const { data: regras } = await (supabase as any).from("produto_regras").select("produto_id").eq("regional_id", regionalId);
+        if (regras && regras.length > 0) {
+          const idsPermitidos = new Set(regras.map((r: any) => r.produto_id));
+          produtosRegional = produtosRegional.filter((p: any) => idsPermitidos.has(p.id));
+        }
+      }
+      setLapsProdutosDisponiveis(produtosRegional);
+
+      // Buscar produtos atuais do veículo
+      const { data: veicProd } = await (supabase as any).from("veiculo_produtos").select("*").eq("veiculo_id", veiculo.id);
+      setLapsVeiculoProdutos(veicProd || []);
+
+      // Marcar selecionados
+      const sel: Record<string, boolean> = {};
+      (veicProd || []).forEach((vp: any) => { sel[vp.produto_id] = true; });
+      setLapsSelecionados(sel);
+
+      // Carregar ajuste avulso existente
+      const existingAjuste = (veicProd || []).find((vp: any) => vp.tipo === "ajuste_avulso");
+      if (existingAjuste) {
+        setLapsAjusteDesc(existingAjuste.descricao || "");
+        setLapsAjusteValor(String(existingAjuste.valor || ""));
+      } else {
+        setLapsAjusteDesc("");
+        setLapsAjusteValor("");
+      }
+
+      // Calcular mensalidade
+      await calcularMensalidadeLaps(veiculo, sel);
+    } catch (err: any) {
+      toast.error("Erro ao carregar LAPS: " + err.message);
+    }
+    setLapsLoading(false);
+  };
+
+  const calcularMensalidadeLaps = async (veiculo: Veiculo, selecionados: Record<string, boolean>) => {
+    try {
+      const produtoIds = Object.entries(selecionados).filter(([, v]) => v).map(([k]) => k);
+      const ajusteNum = parseFloat(lapsAjusteValor) || 0;
+      const res = await callEdge("gia-calculo-mensalidade", {
+        veiculo_id: veiculo.id,
+        produto_ids: produtoIds,
+        ajuste_avulso: ajusteNum,
+      });
+      setLapsCalculo(res);
+    } catch {
+      // fallback: cálculo local simples
+      const produtoIds = Object.entries(selecionados).filter(([, v]) => v).map(([k]) => k);
+      const subtotal = lapsProdutosDisponiveis.filter(p => produtoIds.includes(p.id)).reduce((s, p) => s + (p.valor || 0), 0);
+      const ajusteNum = parseFloat(lapsAjusteValor) || 0;
+      setLapsCalculo({ subtotal_produtos: subtotal, taxa_administrativa: 0, rateio: 0, ajuste_avulso: ajusteNum, total_mensalidade: subtotal + ajusteNum });
+    }
+  };
+
+  const salvarLaps = async () => {
+    if (!selected) return;
+    setLapsSaving(true);
+    try {
+      // Deletar produtos antigos
+      await (supabase as any).from("veiculo_produtos").delete().eq("veiculo_id", selected.id);
+      // Inserir novos
+      const produtoIds = Object.entries(lapsSelecionados).filter(([, v]) => v).map(([k]) => k);
+      const inserts = produtoIds.map(pid => {
+        const prod = lapsProdutosDisponiveis.find(p => p.id === pid);
+        return { veiculo_id: selected.id, produto_id: pid, valor: prod?.valor || 0, ativo: true };
+      });
+      // Adicionar ajuste avulso se houver
+      const ajusteNum = parseFloat(lapsAjusteValor) || 0;
+      if (ajusteNum !== 0 || lapsAjusteDesc.trim()) {
+        inserts.push({ veiculo_id: selected.id, produto_id: null as any, valor: ajusteNum, ativo: true, tipo: "ajuste_avulso", descricao: lapsAjusteDesc.trim() } as any);
+      }
+      if (inserts.length > 0) {
+        const { error } = await (supabase as any).from("veiculo_produtos").insert(inserts);
+        if (error) throw error;
+      }
+      toast.success("Composição do plano salva com sucesso!");
+      // Recarregar
+      await carregarLaps(selected);
+    } catch (err: any) {
+      toast.error("Erro ao salvar: " + err.message);
+    }
+    setLapsSaving(false);
+  };
 
   const selectVehicle = async (v: Veiculo) => {
     setSelected(v);
@@ -306,6 +415,7 @@ export default function ConsultarVeiculo() {
         <ScrollArea className="w-full">
           <TabsList className="inline-flex w-auto">
             <TabsTrigger value="dados" className="text-xs gap-1"><Car className="h-3 w-3" />Dados</TabsTrigger>
+            <TabsTrigger value="laps" className="text-xs gap-1" onClick={() => { if (lapsProdutosDisponiveis.length === 0) carregarLaps(sel); }}><Calculator className="h-3 w-3" />LAPS</TabsTrigger>
             <TabsTrigger value="condutores" className="text-xs gap-1"><Users className="h-3 w-3" />Condutores</TabsTrigger>
             <TabsTrigger value="financeiro" className="text-xs gap-1"><DollarSign className="h-3 w-3" />Financeiro</TabsTrigger>
             <TabsTrigger value="agregados" className="text-xs gap-1"><Package className="h-3 w-3" />Agregados</TabsTrigger>
@@ -380,6 +490,128 @@ export default function ConsultarVeiculo() {
                 </div>
               </CardContent>
             </Card>
+          )}
+        </TabsContent>
+
+        {/* TAB LAPS - COMPOSIÇÃO DO PLANO */}
+        <TabsContent value="laps" className="mt-4 space-y-4">
+          {lapsLoading ? (
+            <Card><CardContent className="p-8 text-center text-muted-foreground">Carregando produtos...</CardContent></Card>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* LEFT - Produtos Disponíveis */}
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Package className="h-4 w-4 text-primary" />Produtos Disponíveis</CardTitle></CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    {lapsProdutosDisponiveis.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-4">Nenhum produto disponível para esta regional.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                        {lapsProdutosDisponiveis.map(p => (
+                          <div key={p.id} className="flex items-center gap-3 p-2 rounded-md border hover:bg-accent/50 transition-colors">
+                            <Checkbox
+                              checked={!!lapsSelecionados[p.id]}
+                              onCheckedChange={(checked) => {
+                                const novo = { ...lapsSelecionados, [p.id]: !!checked };
+                                setLapsSelecionados(novo);
+                                calcularMensalidadeLaps(sel, novo);
+                              }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{p.nome}</p>
+                              {p.descricao && <p className="text-xs text-muted-foreground truncate">{p.descricao}</p>}
+                            </div>
+                            <span className="text-sm font-mono font-medium text-primary whitespace-nowrap">
+                              R$ {(p.valor || 0).toFixed(2).replace(".", ",")}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* RIGHT - Produtos do Plano */}
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><ClipboardCheck className="h-4 w-4 text-primary" />Produtos do Plano</CardTitle></CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    {Object.entries(lapsSelecionados).filter(([, v]) => v).length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-4">Nenhum produto selecionado.</p>
+                    ) : (
+                      <Table>
+                        <TableHeader><TableRow><TableHead>Produto</TableHead><TableHead className="text-right">Valor</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                          {lapsProdutosDisponiveis.filter(p => lapsSelecionados[p.id]).map(p => (
+                            <TableRow key={p.id}>
+                              <TableCell className="text-sm">{p.nome}</TableCell>
+                              <TableCell className="text-sm text-right font-mono">R$ {(p.valor || 0).toFixed(2).replace(".", ",")}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                    <div className="mt-3 pt-3 border-t text-right">
+                      <span className="text-sm text-muted-foreground">Subtotal: </span>
+                      <span className="text-sm font-bold font-mono">
+                        R$ {lapsProdutosDisponiveis.filter(p => lapsSelecionados[p.id]).reduce((s, p) => s + (p.valor || 0), 0).toFixed(2).replace(".", ",")}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Resumo de cálculo */}
+              <Card>
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Subtotal Produtos</Label>
+                      <p className="text-sm font-mono font-medium">R$ {(lapsCalculo?.subtotal_produtos ?? 0).toFixed(2).replace(".", ",")}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Taxa Administrativa (FIPE)</Label>
+                      <p className="text-sm font-mono font-medium">R$ {(lapsCalculo?.taxa_administrativa ?? 0).toFixed(2).replace(".", ",")}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Rateio</Label>
+                      <p className="text-sm font-mono font-medium">R$ {(lapsCalculo?.rateio ?? 0).toFixed(2).replace(".", ",")}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Ajuste Avulso - Descrição</Label>
+                      <Input
+                        value={lapsAjusteDesc}
+                        onChange={e => setLapsAjusteDesc(e.target.value)}
+                        placeholder="Ex: Desconto fidelidade"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Valor (negativo=desconto)</Label>
+                      <Input
+                        value={lapsAjusteValor}
+                        onChange={e => setLapsAjusteValor(e.target.value)}
+                        onBlur={() => calcularMensalidadeLaps(sel, lapsSelecionados)}
+                        placeholder="0,00"
+                        className="text-sm font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Mensalidade</p>
+                      <p className="text-2xl font-bold text-primary font-mono">
+                        R$ {(lapsCalculo?.total_mensalidade ?? 0).toFixed(2).replace(".", ",")}
+                      </p>
+                    </div>
+                    <Button className="gap-1.5" onClick={salvarLaps} disabled={lapsSaving}>
+                      <Save className="h-4 w-4" />{lapsSaving ? "Salvando..." : "Salvar Composição"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
           )}
         </TabsContent>
 
@@ -523,10 +755,22 @@ export default function ConsultarVeiculo() {
 
         {/* TAB 6 - DOCUMENTOS */}
         <TabsContent value="documentos" className="mt-4 space-y-4">
-          <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+          <label className="block border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
             <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">Arraste arquivos ou clique para selecionar</p>
-          </div>
+            <p className="text-sm font-medium">Clique para enviar documento</p>
+            <p className="text-xs text-muted-foreground">PDF, imagem ou documento</p>
+            <input type="file" className="hidden" accept="image/*,.pdf,.doc,.docx" onChange={async (e) => {
+              const file = e.target.files?.[0]; if (!file) return;
+              const ext = file.name.split(".").pop() || "pdf";
+              const path = `veiculos/${sel.id}/${Date.now()}.${ext}`;
+              const { error } = await supabase.storage.from("documentos").upload(path, file, { contentType: file.type, upsert: true });
+              if (error) { toast.error("Erro: " + error.message); return; }
+              await (supabase as any).from("vehicle_documents").insert({ vehicle_id: sel.id, nome_arquivo: file.name, tipo: ext.toUpperCase(), storage_path: path });
+              toast.success("Documento enviado!");
+              setSelected(prev => prev ? { ...prev, documentos: [...prev.documentos, { nome: file.name, tipo: ext.toUpperCase(), data: new Date().toLocaleDateString("pt-BR") }] } : prev);
+              e.target.value = "";
+            }} />
+          </label>
           <Card><CardContent className="p-0">
             <Table>
               <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Tipo</TableHead><TableHead>Data</TableHead><TableHead>Ações</TableHead></TableRow></TableHeader>
