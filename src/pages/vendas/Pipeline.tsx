@@ -395,9 +395,20 @@ export default function Pipeline() {
       const dateField = fDateType === "created_at" ? d.created_at : d.updated_at;
       if (fDateStart && dateField < fDateStart) return false;
       if (fDateEnd && dateField > fDateEnd + "T23:59:59") return false;
+      // Busca por placa, nome ou código
+      if (busca.placa) {
+        const q = busca.placa.toUpperCase().replace(/[^A-Z0-9]/g, "");
+        if (!d.veiculo_placa.toUpperCase().replace(/[^A-Z0-9]/g, "").includes(q)) return false;
+      }
+      if (busca.nome && busca.nome.length >= 2) {
+        if (!d.lead_nome.toLowerCase().includes(busca.nome.toLowerCase())) return false;
+      }
+      if (busca.codigo) {
+        if (!(d.codigo || "").toLowerCase().includes(busca.codigo.toLowerCase())) return false;
+      }
       return true;
     });
-  }, [dealsToShow, fConsultor, fGerente, fCoop, fRegional, fEtapa, fOrigem, fPlano, fDateStart, fDateEnd, fDateType]);
+  }, [dealsToShow, fConsultor, fGerente, fCoop, fRegional, fEtapa, fOrigem, fPlano, fDateStart, fDateEnd, fDateType, busca]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];

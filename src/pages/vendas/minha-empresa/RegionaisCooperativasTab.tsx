@@ -65,7 +65,7 @@ export default function RegionaisCooperativasTab() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("cooperativas")
-        .select("id, nome, regional_id, ativo, codigo_sga, cpf_cnpj, regionais(id, nome)")
+        .select("id, nome, regional_id, ativa, codigo_sga, cpf_cnpj, regionais(id, nome)")
         .order("nome");
       if (error) throw error;
       return (data || []) as Cooperativa[];
