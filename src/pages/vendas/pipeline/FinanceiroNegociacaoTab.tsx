@@ -45,16 +45,16 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
   const [formaPgto, setFormaPgto] = useState("pix");
   const [configEmpresa, setConfigEmpresa] = useState<any>(null);
   const [faturas, setFaturas] = useState<Fatura[]>([]);
-  // 5.1 — Comissão do consultor
+  // 5.1 — Comissão do consultor + Adesão %
   const [configComissao, setConfigComissao] = useState<{ tipo: string; percentual: number; valor_fixo: number } | null>(null);
+  const [percentualAdesao, setPercentualAdesao] = useState<number>(100);
 
   useEffect(() => {
     supabase.from("config_empresa" as any).select("*").limit(1).maybeSingle()
       .then(({ data }) => setConfigEmpresa(data));
-    // 5.1 — Buscar config de comissão do consultor
     if (deal.consultor) {
       supabase.from("usuarios" as any)
-        .select("comissao_tipo, comissao_percentual, comissao_valor_fixo")
+        .select("comissao_tipo, comissao_percentual, comissao_valor_fixo, percentual_adesao")
         .eq("nome", deal.consultor)
         .limit(1)
         .maybeSingle()
@@ -65,6 +65,7 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
               percentual: Number(data.comissao_percentual || 15),
               valor_fixo: Number(data.comissao_valor_fixo || 0),
             });
+            setPercentualAdesao(Number(data.percentual_adesao ?? 100));
           }
         });
     }
@@ -207,26 +208,36 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
 
       {/* Split de Pagamento */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">SPLIT DE PAGAMENTO (COMISSÃO)</legend>
+        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">SPLIT DE PAGAMENTO (ADESÃO + COMISSÃO)</legend>
         <div className="p-4 rounded border bg-muted/30 space-y-2">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-3 rounded bg-background border">
               <p className="text-[10px] text-muted-foreground uppercase">Valor Total Adesão</p>
               <p className="text-lg font-bold text-[#1A3A5C]">{fmt(taxaAdesao)}</p>
             </div>
+            <div className="text-center p-3 rounded bg-blue-50 dark:bg-blue-950/20 border border-blue-200">
+              <p className="text-[10px] text-muted-foreground uppercase">Repasse Consultor ({percentualAdesao}%)</p>
+              <p className="text-lg font-bold text-blue-600">{fmt(taxaAdesao * percentualAdesao / 100)}</p>
+              <p className="text-[10px] text-blue-500">Adesão: {percentualAdesao}% → {deal.consultor}</p>
+            </div>
             <div className="text-center p-3 rounded bg-emerald-50 dark:bg-emerald-950/20 border border-success/20 dark:border-emerald-800">
-              <p className="text-[10px] text-muted-foreground uppercase">Comissão Consultor</p>
+              <p className="text-[10px] text-muted-foreground uppercase">Comissão Mensal</p>
               <p className="text-lg font-bold text-success dark:text-emerald-400">{fmt(configComissao ? (configComissao.tipo === "percentual" ? taxaAdesao * configComissao.percentual / 100 : configComissao.valor_fixo) : taxaAdesao * 0.15)}</p>
               <p className="text-[10px] text-emerald-600">{configComissao ? (configComissao.tipo === "percentual" ? `${configComissao.percentual}%` : `Fixo ${fmt(configComissao.valor_fixo)}`) : "15%"} — {deal.consultor}</p>
             </div>
             <div className="text-center p-3 rounded bg-background border">
               <p className="text-[10px] text-muted-foreground uppercase">Líquido Associação</p>
-              <p className="text-lg font-bold text-[#1A3A5C]">{fmt(taxaAdesao - (configComissao ? (configComissao.tipo === "percentual" ? taxaAdesao * configComissao.percentual / 100 : configComissao.valor_fixo) : taxaAdesao * 0.15))}</p>
+              <p className="text-lg font-bold text-[#1A3A5C]">{fmt(taxaAdesao * (100 - percentualAdesao) / 100)}</p>
+              <p className="text-[10px] text-muted-foreground">{100 - percentualAdesao}% retido</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <span className="inline-block w-2 h-2 rounded-full bg-blue-500" />
+            Adesão: {percentualAdesao}% consultor / {100 - percentualAdesao}% associação
+          </div>
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
-            Split automático via gateway — executado na confirmação do pagamento
+            Comissão mensal: aplicada sobre mensalidade recorrente
           </div>
         </div>
       </fieldset>
