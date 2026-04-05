@@ -88,17 +88,31 @@ export default function ConsultarVeiculo() {
     if (filters.chassi) query = query.ilike("chassi", `%${filters.chassi}%`);
     if (filters.proprietario) query = query.ilike("associados.nome", `%${filters.proprietario}%`);
     const { data } = await query;
+    // Buscar condutores e observações em paralelo para cada veículo
+    const veiculoIds = (data ?? []).map((v: any) => v.id);
+    const [condutoresRes, obsRes] = await Promise.all([
+      veiculoIds.length > 0 ? (supabase as any).from("condutores").select("*").in("veiculo_id", veiculoIds) : { data: [] },
+      veiculoIds.length > 0 ? (supabase as any).from("observacoes_veiculo").select("*").in("veiculo_id", veiculoIds).order("created_at", { ascending: false }) : { data: [] },
+    ]);
+    const condutoresByVeiculo: Record<string, any[]> = {};
+    (condutoresRes.data || []).forEach((c: any) => { if (!condutoresByVeiculo[c.veiculo_id]) condutoresByVeiculo[c.veiculo_id] = []; condutoresByVeiculo[c.veiculo_id].push(c); });
+    const obsByVeiculo: Record<string, any[]> = {};
+    (obsRes.data || []).forEach((o: any) => { if (!obsByVeiculo[o.veiculo_id]) obsByVeiculo[o.veiculo_id] = []; obsByVeiculo[o.veiculo_id].push(o); });
+
     const mapped: Veiculo[] = (data ?? []).map((v: any) => ({
       id: v.id, nome: v.associados?.nome ?? "—", placa: v.placa ?? "", chassi: v.chassi ?? "",
       idExterno: v.renavam ?? "", modelo: v.modelo ?? "", marca: v.marca ?? "",
       anoFab: v.ano ?? 0, anoMod: v.ano ?? 0, cor: v.cor ?? "",
-      valorFipe: v.valor_fipe ?? 0, cota: "", combustivel: "", km: 0,
+      valorFipe: v.valor_fipe ?? 0, cota: "", combustivel: v.combustivel ?? "", km: v.quilometragem ?? 0,
       regional: v.associados?.regionais?.nome ?? "", cooperativa: v.associados?.cooperativas?.nome ?? "", tipoAdesao: "",
-      dataCadastro: v.created_at?.split("T")[0] ?? "", dataContrato: "", diaVenc: 0,
+      dataCadastro: v.created_at?.split("T")[0] ?? "", dataContrato: "", diaVenc: v.dia_vencimento ?? 0,
       sitVeiculo: v.status ?? "Ativo", sitAssociado: v.associados?.status ?? "",
       associado_id: v.associado_id,
-      condutores: [], lancamentos: [], agregados: [], vistorias: [],
-      documentos: [], observacoes: [], fornecedores: [], contratos: [],
+      condutores: (condutoresByVeiculo[v.id] || []).map((c: any) => ({ nome: c.nome, cpf: c.cpf || "", cnh: c.cnh || "", dataNasc: c.data_nascimento || "", situacao: c.situacao || "Ativo" })),
+      lancamentos: [], agregados: [], vistorias: [],
+      documentos: [],
+      observacoes: (obsByVeiculo[v.id] || []).map((o: any) => ({ data: new Date(o.created_at).toLocaleDateString("pt-BR"), descricao: o.texto, usuario: o.usuario_nome || "" })),
+      fornecedores: [], contratos: [],
     }));
     let r = mapped;
     if (filters.sitVeiculo !== "Todos") r = r.filter(v => v.sitVeiculo === filters.sitVeiculo);
@@ -325,7 +339,14 @@ export default function ConsultarVeiculo() {
               <div><Label className="text-xs">Dia Vencimento</Label><Input defaultValue={String(sel.diaVenc)} /></div>
               <div><Label className="text-xs">Data Reativação</Label><Input type="date" /></div>
             </div>
-            <div className="flex justify-end mt-4"><Button className="gap-1.5" onClick={() => toast.success("Dados salvos!")}><Save className="h-4 w-4" />Salvar</Button></div>
+            <div className="flex justify-end mt-4"><Button className="gap-1.5" onClick={async () => {
+              const { error } = await supabase.from("veiculos").update({
+                placa: sel.placa, chassi: sel.chassi, modelo: sel.modelo, marca: sel.marca,
+                cor: sel.cor, updated_at: new Date().toISOString(),
+              } as any).eq("id", sel.id);
+              if (error) toast.error("Erro: " + error.message);
+              else toast.success("Dados salvos no banco!");
+            }}><Save className="h-4 w-4" />Salvar</Button></div>
           </CardContent></Card>
 
           {/* Informações de Plano */}
@@ -386,12 +407,25 @@ export default function ConsultarVeiculo() {
             <DialogContent>
               <DialogHeader><DialogTitle>Adicionar Condutor</DialogTitle></DialogHeader>
               <div className="space-y-3">
-                <div><Label>Nome</Label><Input /></div>
-                <div><Label>CPF</Label><Input placeholder="000.000.000-00" /></div>
-                <div><Label>CNH</Label><Input /></div>
-                <div><Label>Data Nascimento</Label><Input type="date" /></div>
+                <div><Label>Nome</Label><Input data-condutor-field /></div>
+                <div><Label>CPF</Label><Input data-condutor-field placeholder="000.000.000-00" /></div>
+                <div><Label>CNH</Label><Input data-condutor-field /></div>
+                <div><Label>Data Nascimento</Label><Input data-condutor-field type="date" /></div>
               </div>
-              <DialogFooter><Button variant="outline" onClick={() => setCondutorModal(false)}>Cancelar</Button><Button onClick={() => { toast.success("Condutor adicionado!"); setCondutorModal(false); }}>Salvar</Button></DialogFooter>
+              <DialogFooter><Button variant="outline" onClick={() => setCondutorModal(false)}>Cancelar</Button><Button onClick={async () => {
+                const inputs = document.querySelectorAll<HTMLInputElement>("[data-condutor-field]");
+                const nome = inputs[0]?.value || "";
+                const cpf = inputs[1]?.value || "";
+                const cnh = inputs[2]?.value || "";
+                const dataNasc = inputs[3]?.value || "";
+                if (!nome.trim()) { toast.error("Nome é obrigatório"); return; }
+                const { error } = await (supabase as any).from("condutores").insert({ veiculo_id: sel.id, nome, cpf, cnh, data_nascimento: dataNasc || null });
+                if (error) { toast.error("Erro: " + error.message); return; }
+                toast.success("Condutor salvo no banco!");
+                setCondutorModal(false);
+                // Atualizar lista
+                setSelected(prev => prev ? { ...prev, condutores: [...prev.condutores, { nome, cpf, cnh, dataNasc, situacao: "Ativo" }] } : prev);
+              }}>Salvar</Button></DialogFooter>
             </DialogContent>
           </Dialog>
         </TabsContent>
@@ -521,7 +555,14 @@ export default function ConsultarVeiculo() {
           <Card><CardContent className="p-4">
             <div className="flex gap-2 mb-4">
               <Textarea value={newObs} onChange={e => setNewObs(e.target.value)} placeholder="Nova observação..." rows={2} className="flex-1" />
-              <Button className="self-end" onClick={() => { if (newObs.trim()) { toast.success("Observação adicionada!"); setNewObs(""); } }}>Salvar</Button>
+              <Button className="self-end" onClick={async () => {
+                if (!newObs.trim()) return;
+                const { error } = await (supabase as any).from("observacoes_veiculo").insert({ veiculo_id: sel.id, texto: newObs.trim(), usuario_nome: "Gestor" });
+                if (error) { toast.error("Erro: " + error.message); return; }
+                toast.success("Observação salva no banco!");
+                setSelected(prev => prev ? { ...prev, observacoes: [{ data: new Date().toLocaleDateString("pt-BR"), descricao: newObs.trim(), usuario: "Gestor" }, ...prev.observacoes] } : prev);
+                setNewObs("");
+              }}>Salvar</Button>
             </div>
             <Table>
               <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Descrição</TableHead><TableHead>Usuário</TableHead></TableRow></TableHeader>
