@@ -1,15 +1,16 @@
-import { ReactNode } from "react";
+import { ReactNode, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useBrand } from "@/hooks/useBrand";
+import { useUsuario } from "@/hooks/useUsuario";
 import {
   Shield, Users, Car, MapPin, Building2, AlertTriangle, FileText,
   ClipboardCheck, Package, UserCog, SlidersHorizontal,
   DollarSign, Wallet, Receipt, ArrowLeftRight, BarChart3,
   Target, Kanban, Contact, Activity, CalendarDays, Crosshair,
-  Tag, FileSpreadsheet, Upload, UsersRound, Building,
+  Tag, Upload, UsersRound, Building, UserCircle,
   LayoutDashboard, LogOut, ChevronLeft, Globe,
 } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -34,59 +35,62 @@ const financeiroItems = [
   { title: "Relatórios", url: "/financeiro/relatorios", icon: BarChart3 },
 ];
 
-const vendasItems = [
-  { title: "Dashboard", url: "/vendas/dashboard", icon: LayoutDashboard },
-  { title: "Pipeline", url: "/vendas/pipeline", icon: Kanban },
-  { title: "Contatos", url: "/vendas/contatos", icon: Contact },
-  { title: "Atividades", url: "/vendas/atividades", icon: Activity },
-  
-  { title: "Metas", url: "/vendas/metas", icon: Crosshair },
-  { title: "Vistorias", url: "/vendas/vistorias", icon: ClipboardCheck },
-  { title: "Landing Pages", url: "/vendas/landing-pages", icon: Globe },
-  { title: "Tags", url: "/vendas/tags", icon: Tag },
-  { title: "Formulários", url: "/vendas/formularios", icon: FileSpreadsheet },
-  { title: "Importar Leads", url: "/vendas/importar", icon: Upload },
-  { title: "Afiliados", url: "/vendas/afiliados", icon: UsersRound },
-  { title: "Relatórios", url: "/vendas/relatorios", icon: BarChart3 },
-  { title: "Minha Empresa", url: "/vendas/minha-empresa", icon: Building },
-];
-
-const moduleConfigs = [
-  {
-    prefix: ["/gestao", "/associados", "/veiculos", "/regionais", "/cooperativas", "/sinistros", "/documentacao", "/vistorias", "/produtos", "/usuarios", "/parametros"],
-    label: "Gestão",
-    icon: Shield,
-    items: gestaoItems,
-  },
-  {
-    prefix: ["/financeiro"],
-    label: "Financeiro",
-    icon: DollarSign,
-    items: financeiroItems,
-  },
-  {
-    prefix: ["/vendas"],
-    label: "Vendas",
-    icon: Target,
-    items: vendasItems,
-  },
-];
-
-function getActiveModule(pathname: string) {
-  for (const mod of moduleConfigs) {
-    if (mod.prefix.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
-      return mod;
-    }
-  }
-  return null;
+function getVendasItems(perms: { canViewTags: boolean; canImportLeads: boolean; canViewMinhaEmpresa: boolean }) {
+  const items = [
+    { title: "Dashboard", url: "/vendas/dashboard", icon: LayoutDashboard },
+    { title: "Pipeline", url: "/vendas/pipeline", icon: Kanban },
+    { title: "Contatos", url: "/vendas/contatos", icon: Contact },
+    { title: "Atividades", url: "/vendas/atividades", icon: Activity },
+    { title: "Metas", url: "/vendas/metas", icon: Crosshair },
+    { title: "Vistorias", url: "/vendas/vistorias", icon: ClipboardCheck },
+    { title: "Landing Pages", url: "/vendas/landing-pages", icon: Globe },
+  ];
+  if (perms.canViewTags) items.push({ title: "Tags", url: "/vendas/tags", icon: Tag });
+  if (perms.canImportLeads) items.push({ title: "Importar Leads", url: "/vendas/importar", icon: Upload });
+  items.push({ title: "Afiliados", url: "/vendas/afiliados", icon: UsersRound });
+  items.push({ title: "Relatórios", url: "/vendas/relatorios", icon: BarChart3 });
+  if (perms.canViewMinhaEmpresa) items.push({ title: "Minha Empresa", url: "/vendas/minha-empresa", icon: Building });
+  items.push({ title: "Minha Conta", url: "/vendas/minha-conta", icon: UserCircle });
+  return items;
 }
+
 
 export function ModuleLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut, user } = useAuth();
   const { brand } = useBrand();
-  const activeMod = getActiveModule(location.pathname);
+  const { canViewTags, canImportLeads, canViewMinhaEmpresa } = useUsuario();
+
+  const moduleConfigs_ = useMemo(() => [
+    {
+      prefix: ["/gestao", "/associados", "/veiculos", "/regionais", "/cooperativas", "/sinistros", "/documentacao", "/vistorias", "/produtos", "/usuarios", "/parametros"],
+      label: "Gestão",
+      icon: Shield,
+      items: gestaoItems,
+    },
+    {
+      prefix: ["/financeiro"],
+      label: "Financeiro",
+      icon: DollarSign,
+      items: financeiroItems,
+    },
+    {
+      prefix: ["/vendas"],
+      label: "Vendas",
+      icon: Target,
+      items: getVendasItems({ canViewTags, canImportLeads, canViewMinhaEmpresa }),
+    },
+  ], [canViewTags, canImportLeads, canViewMinhaEmpresa]);
+
+  const activeMod = (() => {
+    for (const mod of moduleConfigs_) {
+      if (mod.prefix.some((p) => location.pathname === p || location.pathname.startsWith(p + "/"))) {
+        return mod;
+      }
+    }
+    return null;
+  })();
 
   if (!activeMod) return <>{children}</>;
 

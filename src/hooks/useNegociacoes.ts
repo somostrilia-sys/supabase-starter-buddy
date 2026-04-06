@@ -39,7 +39,7 @@ const PERIODO_DIAS: Record<PeriodoFiltro, number> = {
   "todos": 0,
 };
 
-export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro = "30d") {
+export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro = "30d", scope?: { consultor?: string; cooperativas?: string[] }) {
   const [negociacoes, setNegociacoes] = useState<Negociacao[]>([]);
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState<PeriodoFiltro>(periodoPadrao);
@@ -66,6 +66,8 @@ export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro 
       const p0 = new URLSearchParams({ select: fields, order: "created_at.desc", offset: "0", limit: String(PAGE_SIZE) });
       if (dataLimite) p0.set("created_at", `gte.${dataLimite}`);
       if (companyId) p0.set("company_id", `eq.${companyId}`);
+      if (scope?.consultor) p0.set("consultor", `eq.${scope.consultor}`);
+      if (scope?.cooperativas && scope.cooperativas.length > 0) p0.set("cooperativa", `in.(${scope.cooperativas.join(",")})`);
       const r0 = await fetch(`${url}/rest/v1/negociacoes?${p0}`, { headers });
       const d0 = await r0.json();
       if (!Array.isArray(d0)) { setNegociacoes([]); setTotalCount(0); setLoading(false); return; }
@@ -84,6 +86,8 @@ export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro 
           const px = new URLSearchParams({ select: fields, order: "created_at.desc", offset: String(page * PAGE_SIZE), limit: String(PAGE_SIZE) });
           if (dataLimite) px.set("created_at", `gte.${dataLimite}`);
           if (companyId) px.set("company_id", `eq.${companyId}`);
+          if (scope?.consultor) px.set("consultor", `eq.${scope.consultor}`);
+          if (scope?.cooperativas && scope.cooperativas.length > 0) px.set("cooperativa", `in.(${scope.cooperativas.join(",")})`);
           promises.push(fetch(`${url}/rest/v1/negociacoes?${px}`, { headers }).then(r => r.json()));
         }
         const results = await Promise.all(promises);
@@ -103,7 +107,7 @@ export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro 
       console.error("[useNegociacoes] Exception:", err);
     }
     setLoading(false);
-  }, [companyId, periodo]);
+  }, [companyId, periodo, scope?.consultor, scope?.cooperativas?.join(",")]);
 
   useEffect(() => {
     load();

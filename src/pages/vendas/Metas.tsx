@@ -4,19 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Target, TrendingUp, AlertCircle, Plus, Percent, Trophy, Loader2, Medal, Award, Crown } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Target, TrendingUp, AlertCircle, Plus, Percent, Trophy, Loader2, Medal, Settings2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from "recharts";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useUsuario } from "@/hooks/useUsuario";
 import { toast } from "sonner";
 
 const META_CONTRATOS_DEFAULT = 20;
 const META_FATURAMENTO_DEFAULT = 30000;
-
 const MONTH_LABELS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 function getLastNMonths(n: number) {
@@ -24,12 +24,7 @@ function getLastNMonths(n: number) {
   const months: { year: number; month: number; label: string; key: string }[] = [];
   for (let i = n - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push({
-      year: d.getFullYear(),
-      month: d.getMonth(),
-      label: MONTH_LABELS[d.getMonth()],
-      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
-    });
+    months.push({ year: d.getFullYear(), month: d.getMonth(), label: MONTH_LABELS[d.getMonth()], key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` });
   }
   return months;
 }
@@ -39,90 +34,80 @@ function getPeriodOptions() {
   const options: { value: string; label: string }[] = [];
   for (let i = 0; i < 6; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const lbl = `${MONTH_LABELS[d.getMonth()]} ${d.getFullYear()}`;
-    options.push({ value: val, label: lbl });
+    options.push({ value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, label: `${MONTH_LABELS[d.getMonth()]} ${d.getFullYear()}` });
   }
   return options;
 }
 
-function getInitials(nome: string) {
-  return nome
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase())
-    .join("");
+function initials(name: string) {
+  return name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 }
 
+const medalColors = ["text-yellow-400", "text-slate-300", "text-amber-600"];
+const medalBg = ["bg-yellow-400/20 border-yellow-400/40", "bg-slate-300/20 border-slate-300/40", "bg-amber-600/20 border-amber-600/40"];
+
 async function fetchConsultoresData(periodoKey: string) {
-  // Parse period
   const [yearStr, monthStr] = periodoKey.split("-");
   const year = parseInt(yearStr);
   const month = parseInt(monthStr);
   const startOfMonth = new Date(year, month - 1, 1).toISOString();
   const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
 
-  // Fetch active consultores with photo
-  const { data: usuarios, error: errUsuarios } = await (supabase as any)
+  const { data: usuarios } = await (supabase as any)
     .from("usuarios")
-    .select("nome, foto_capa_url")
-    .eq("status", "ativo")
-    .eq("grupo_permissao", "Consultor");
+    .select("id, nome, cooperativa, contexto_ia")
+    .eq("ativo", true);
 
-  if (errUsuarios) throw errUsuarios;
-  if (!usuarios || usuarios.length === 0) return [];
+  if (!usuarios || usuarios.length === 0) return { consultores: [], cooperativas: [] };
+
+  // Get metas_config for this month
+  const { data: metasConfig } = await (supabase as any)
+    .from("metas_config")
+    .select("*")
+    .eq("mes_referencia", periodoKey);
+
+  const configs = metasConfig || [];
+  const metaGeral = configs.find((m: any) => m.tipo === "geral");
 
   const nomes: string[] = usuarios.map((u: any) => u.nome);
-  const fotoMap: Record<string, string | null> = {};
-  usuarios.forEach((u: any) => {
-    fotoMap[u.nome] = u.foto_capa_url || null;
-  });
 
-  // Fetch metas from metas_consultores for this month/year
-  const { data: metasDb } = await (supabase as any)
-    .from("metas_consultores")
-    .select("consultor_nome, meta_contratos, meta_faturamento")
-    .eq("ano", year)
-    .eq("mes", month);
-
-  const metasMap: Record<string, { contratos: number; faturamento: number }> = {};
-  (metasDb || []).forEach((m: any) => {
-    metasMap[m.consultor_nome] = {
-      contratos: m.meta_contratos ?? META_CONTRATOS_DEFAULT,
-      faturamento: Number(m.meta_faturamento) || META_FATURAMENTO_DEFAULT,
-    };
-  });
-
-  // Fetch all negociacoes for these consultores in the period
-  const { data: negocios, error: errNeg } = await (supabase as any)
+  const { data: negocios } = await (supabase as any)
     .from("negociacoes")
-    .select("consultor, valor_plano, stage, created_at")
+    .select("consultor, valor_plano, stage, created_at, cooperativa")
     .in("consultor", nomes)
     .gte("created_at", startOfMonth)
     .lte("created_at", endOfMonth);
 
-  if (errNeg) throw errNeg;
-
   const rows: any[] = negocios || [];
 
-  // Build per-consultor stats
-  const consultores = nomes.map((nome) => {
-    const mine = rows.filter((r: any) => r.consultor === nome);
+  // Extract unique cooperativas
+  const allCoops = new Set<string>();
+  usuarios.forEach((u: any) => {
+    if (u.cooperativa) u.cooperativa.split(",").forEach((c: string) => { if (c.trim()) allCoops.add(c.trim()); });
+  });
+  rows.forEach((r: any) => { if (r.cooperativa) allCoops.add(r.cooperativa); });
+
+  const consultores = usuarios.map((u: any) => {
+    const mine = rows.filter((r: any) => r.consultor === u.nome);
     const concluidos = mine.filter((r: any) => r.stage === "concluido");
     const atualContratos = concluidos.length;
     const atualFaturamento = concluidos.reduce((s: number, r: any) => s + (Number(r.valor_plano) || 0), 0);
     const totalLeads = mine.length;
     const conversao = totalLeads > 0 ? (atualContratos / totalLeads) * 100 : 0;
 
-    const meta = metasMap[nome];
+    // Resolve meta individual: individual > geral > default
+    // (cooperativa meta is collective for the branch, not per-consultant)
+    const metaIndividual = configs.find((m: any) => m.tipo === "individual" && m.usuario_id === u.id);
+    const meta = metaIndividual || metaGeral;
 
     return {
-      nome,
-      fotoUrl: fotoMap[nome] || null,
-      metaContratos: meta?.contratos ?? META_CONTRATOS_DEFAULT,
+      id: u.id,
+      nome: u.nome,
+      cooperativa: u.cooperativa || "",
+      contexto_ia: u.contexto_ia,
+      metaContratos: meta ? Number(meta.meta_contratos) : META_CONTRATOS_DEFAULT,
       atualContratos,
-      metaFaturamento: meta?.faturamento ?? META_FATURAMENTO_DEFAULT,
+      metaFaturamento: meta ? Number(meta.meta_faturamento) : META_FATURAMENTO_DEFAULT,
       atualFaturamento,
       conversao: Math.round(conversao * 10) / 10,
       totalLeads,
@@ -130,11 +115,10 @@ async function fetchConsultoresData(periodoKey: string) {
     };
   });
 
-  // Sort by atualContratos descending and assign ranking
-  consultores.sort((a, b) => b.atualContratos - a.atualContratos);
+  consultores.sort((a, b) => b.atualContratos - a.atualContratos || b.atualFaturamento - a.atualFaturamento);
   consultores.forEach((c, i) => (c.ranking = i + 1));
 
-  return consultores;
+  return { consultores, cooperativas: Array.from(allCoops).sort() };
 }
 
 async function fetchEvolucao() {
@@ -143,35 +127,13 @@ async function fetchEvolucao() {
   const endMonth = months[months.length - 1];
   const endDate = new Date(endMonth.year, endMonth.month + 1, 0, 23, 59, 59, 999).toISOString();
 
-  const { data: negocios, error } = await (supabase as any)
+  const { data: negocios } = await (supabase as any)
     .from("negociacoes")
     .select("consultor, valor_plano, stage, created_at")
     .gte("created_at", startDate)
     .lte("created_at", endDate);
 
-  if (error) throw error;
-
   const rows: any[] = negocios || [];
-
-  // Count active consultores for meta calculation
-  const { data: usuarios } = await (supabase as any)
-    .from("usuarios")
-    .select("nome")
-    .eq("status", "ativo")
-    .eq("grupo_permissao", "Consultor");
-
-  const numConsultores = usuarios?.length || 1;
-
-  // Fetch all metas for these months
-  const { data: metasDb } = await (supabase as any)
-    .from("metas_consultores")
-    .select("consultor_nome, ano, mes, meta_contratos");
-
-  const metasByMonth: Record<string, number> = {};
-  (metasDb || []).forEach((m: any) => {
-    const key = `${m.ano}-${m.mes}`;
-    metasByMonth[key] = (metasByMonth[key] || 0) + (m.meta_contratos ?? META_CONTRATOS_DEFAULT);
-  });
 
   return months.map((m) => {
     const inMonth = rows.filter((r: any) => {
@@ -180,221 +142,157 @@ async function fetchEvolucao() {
     });
     const concluidos = inMonth.filter((r: any) => r.stage === "concluido");
     const faturamento = concluidos.reduce((s: number, r: any) => s + (Number(r.valor_plano) || 0), 0);
-
-    const monthKey = `${m.year}-${m.month + 1}`;
-    const metaPerMonth = metasByMonth[monthKey] || numConsultores * META_CONTRATOS_DEFAULT;
-
-    return {
-      mes: m.label,
-      meta: metaPerMonth,
-      realizado: concluidos.length,
-      faturamento,
-    };
+    return { mes: m.label, realizado: concluidos.length, faturamento };
   });
-}
-
-function PodiumCard({
-  consultor,
-  place,
-}: {
-  consultor: any;
-  place: 1 | 2 | 3;
-}) {
-  const colors: Record<number, string> = {
-    1: "#FFD700",
-    2: "#C0C0C0",
-    3: "#CD7F32",
-  };
-  const heights: Record<number, string> = {
-    1: "h-52",
-    2: "h-44",
-    3: "h-40",
-  };
-  const color = colors[place];
-  const Icon = place === 1 ? Crown : place === 2 ? Medal : Award;
-  const placeLabel = place === 1 ? "1o" : place === 2 ? "2o" : "3o";
-
-  return (
-    <Card
-      className={`border-2 relative overflow-hidden flex flex-col items-center justify-end ${heights[place]}`}
-      style={{ borderColor: color }}
-    >
-      <div
-        className="absolute top-0 left-0 right-0 h-1.5"
-        style={{ backgroundColor: color }}
-      />
-      <CardContent className="p-3 flex flex-col items-center gap-1.5 w-full">
-        <Icon className="h-6 w-6" style={{ color }} />
-        {consultor.fotoUrl ? (
-          <img
-            src={consultor.fotoUrl}
-            alt={consultor.nome}
-            className="w-14 h-14 rounded-full object-cover border-2"
-            style={{ borderColor: color }}
-          />
-        ) : (
-          <div
-            className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg border-2"
-            style={{ backgroundColor: color, borderColor: color }}
-          >
-            {getInitials(consultor.nome)}
-          </div>
-        )}
-        <p className="text-sm font-bold text-foreground text-center leading-tight truncate w-full">
-          {consultor.nome}
-        </p>
-        <div className="text-center space-y-0.5">
-          <p className="text-xs text-muted-foreground">
-            <span className="font-semibold text-foreground">{consultor.atualContratos}</span> vendas
-          </p>
-          <p className="text-xs font-semibold text-success">
-            R$ {consultor.atualFaturamento.toLocaleString("pt-BR")}
-          </p>
-        </div>
-        <Badge
-          className="text-[10px] px-2 py-0"
-          style={{ backgroundColor: `${color}22`, color, borderColor: color }}
-          variant="outline"
-        >
-          {placeLabel} lugar
-        </Badge>
-      </CardContent>
-    </Card>
-  );
 }
 
 export default function Metas() {
   const queryClient = useQueryClient();
+  const { usuario, isConsultor, isGestor, isDiretor, canConfigMetas, cooperativas: minhasCoops } = useUsuario();
   const [modalOpen, setModalOpen] = useState(false);
-  const [metaConsultor, setMetaConsultor] = useState("");
-  const [metaContratos, setMetaContratos] = useState("");
-  const [metaFaturamento, setMetaFaturamento] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [filterCoop, setFilterCoop] = useState("all");
   const periodOptions = useMemo(() => getPeriodOptions(), []);
   const [periodo, setPeriodo] = useState(periodOptions[0]?.value || "");
 
-  const {
-    data: consultores = [],
-    isLoading: loadingConsultores,
-  } = useQuery({
+  // Config meta form
+  const [cfgTipo, setCfgTipo] = useState<"individual" | "cooperativa" | "geral">("individual");
+  const [cfgUsuarioId, setCfgUsuarioId] = useState("");
+  const [cfgCooperativa, setCfgCooperativa] = useState("");
+  const [cfgContratos, setCfgContratos] = useState("20");
+  const [cfgFaturamento, setCfgFaturamento] = useState("30000");
+
+  const { data: result, isLoading: loadingConsultores } = useQuery({
     queryKey: ["metas-consultores", periodo],
     queryFn: () => fetchConsultoresData(periodo),
     enabled: !!periodo,
   });
 
-  const {
-    data: evolucao = [],
-    isLoading: loadingEvolucao,
-  } = useQuery({
+  const consultores = result?.consultores || [];
+  const todasCoops = result?.cooperativas || [];
+
+  const { data: evolucao = [], isLoading: loadingEvolucao } = useQuery({
     queryKey: ["metas-evolucao"],
     queryFn: fetchEvolucao,
   });
 
+  const saveMeta = useMutation({
+    mutationFn: async () => {
+      const payload: any = {
+        mes_referencia: periodo,
+        tipo: cfgTipo,
+        meta_contratos: parseInt(cfgContratos) || META_CONTRATOS_DEFAULT,
+        meta_faturamento: parseFloat(cfgFaturamento) || META_FATURAMENTO_DEFAULT,
+        configurado_por: usuario?.id,
+      };
+      if (cfgTipo === "individual") payload.usuario_id = cfgUsuarioId || null;
+      if (cfgTipo === "cooperativa") payload.cooperativa = cfgCooperativa || null;
+
+      const { error } = await (supabase as any).from("metas_config").upsert(payload, { onConflict: "mes_referencia,tipo,usuario_id,cooperativa" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Meta salva!");
+      setModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["metas-consultores"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const isLoading = loadingConsultores || loadingEvolucao;
 
-  const totalMeta = consultores.reduce((s: number, v: any) => s + v.metaContratos, 0);
-  const totalAtual = consultores.reduce((s: number, v: any) => s + v.atualContratos, 0);
+  // Filter by cooperativa
+  const filtered = useMemo(() => {
+    let list = consultores;
+    if (filterCoop !== "all") {
+      list = list.filter((c: any) => c.cooperativa && c.cooperativa.includes(filterCoop));
+    }
+    // Gestor: by default filter to their coops
+    if (isGestor && filterCoop === "all" && minhasCoops.length > 0) {
+      // Show all by default, let them filter
+    }
+    return list;
+  }, [consultores, filterCoop, isGestor, minhasCoops]);
+
+  // Consultores that this user can configure metas for
+  const configurableConsultores = useMemo(() => {
+    if (isDiretor) return consultores;
+    if (isGestor && minhasCoops.length > 0) {
+      return consultores.filter((c: any) => minhasCoops.some(coop => c.cooperativa?.includes(coop)));
+    }
+    return [];
+  }, [consultores, isDiretor, isGestor, minhasCoops]);
+
+  const configurableCoops = useMemo(() => {
+    if (isDiretor) return todasCoops;
+    if (isGestor) return minhasCoops;
+    return [];
+  }, [todasCoops, isDiretor, isGestor, minhasCoops]);
+
+  // Check if there's a collective branch meta for the selected cooperativa
+  const metaColetiva = useMemo(() => {
+    if (filterCoop === "all") return null;
+    const configs = result?.consultores ? [] : [];
+    // We need to fetch from the query — let's check metas_config directly
+    return null; // Will be handled via separate query
+  }, [filterCoop]);
+
+  const { data: metaFilialData } = useQuery({
+    queryKey: ["meta-filial", periodo, filterCoop],
+    queryFn: async () => {
+      if (filterCoop === "all") return null;
+      const { data } = await (supabase as any).from("metas_config").select("*")
+        .eq("mes_referencia", periodo).eq("tipo", "cooperativa").eq("cooperativa", filterCoop).maybeSingle();
+      return data;
+    },
+    enabled: filterCoop !== "all",
+  });
+
+  const totalAtual = filtered.reduce((s: number, v: any) => s + v.atualContratos, 0);
+  const totalFatAtual = filtered.reduce((s: number, v: any) => s + v.atualFaturamento, 0);
+
+  // If filtering by cooperativa and there's a collective meta, use that; otherwise sum individual
+  const totalMeta = metaFilialData ? Number(metaFilialData.meta_contratos) : filtered.reduce((s: number, v: any) => s + v.metaContratos, 0);
+  const totalFatMeta = metaFilialData ? Number(metaFilialData.meta_faturamento) : filtered.reduce((s: number, v: any) => s + v.metaFaturamento, 0);
   const taxa = totalMeta > 0 ? (totalAtual / totalMeta) * 100 : 0;
 
+  const kpiLabel = filterCoop !== "all" && metaFilialData ? `Meta Filial ${filterCoop}` : "Meta do Mes";
   const kpis = [
-    { label: "Meta do Mes", value: `${totalMeta} contratos`, icon: Target, color: "text-primary", bg: "bg-primary/8" },
-    { label: "Atingido", value: `${totalAtual} contratos`, icon: TrendingUp, color: "text-success", bg: "bg-success/10" },
-    { label: "Faltam", value: `${Math.max(totalMeta - totalAtual, 0)} contratos`, icon: AlertCircle, color: "text-destructive", bg: "bg-destructive/8" },
-    { label: "% Atingimento", value: `${taxa.toFixed(1)}%`, icon: Percent, color: "text-warning", bg: "bg-warning/10" },
+    { label: kpiLabel, value: `${totalMeta} contratos`, icon: Target, color: "text-primary", bg: "bg-primary/8" },
+    { label: "Atingido", value: `${totalAtual} contratos`, icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+    { label: "Faltam", value: `${Math.max(totalMeta - totalAtual, 0)} contratos`, icon: AlertCircle, color: "text-red-400", bg: "bg-red-500/8" },
+    { label: "% Atingimento", value: `${taxa.toFixed(1)}%`, icon: Percent, color: "text-amber-400", bg: "bg-amber-500/10" },
   ];
 
-  const sorted = [...consultores].sort((a: any, b: any) => a.ranking - b.ranking);
-
-  // Podium: top 3
-  const top3 = sorted.slice(0, 3);
-  const first = top3.find((c: any) => c.ranking === 1);
-  const second = top3.find((c: any) => c.ranking === 2);
-  const third = top3.find((c: any) => c.ranking === 3);
-
-  async function handleSaveMeta() {
-    if (!metaConsultor) {
-      toast.error("Selecione um consultor");
-      return;
-    }
-    const [yearStr, monthStr] = periodo.split("-");
-    const ano = parseInt(yearStr);
-    const mes = parseInt(monthStr);
-    const contratos = metaContratos ? parseInt(metaContratos) : META_CONTRATOS_DEFAULT;
-    const faturamento = metaFaturamento ? parseFloat(metaFaturamento) : META_FATURAMENTO_DEFAULT;
-
-    setSaving(true);
-    try {
-      const { error } = await (supabase as any)
-        .from("metas_consultores")
-        .upsert(
-          {
-            consultor_nome: metaConsultor,
-            ano,
-            mes,
-            meta_contratos: contratos,
-            meta_faturamento: faturamento,
-          },
-          { onConflict: "consultor_nome,ano,mes" }
-        );
-      if (error) throw error;
-
-      toast.success("Meta salva com sucesso!");
-      setModalOpen(false);
-      setMetaConsultor("");
-      setMetaContratos("");
-      setMetaFaturamento("");
-      queryClient.invalidateQueries({ queryKey: ["metas-consultores"] });
-      queryClient.invalidateQueries({ queryKey: ["metas-evolucao"] });
-    } catch (err: any) {
-      toast.error("Erro ao salvar meta: " + (err.message || "Erro desconhecido"));
-    } finally {
-      setSaving(false);
-    }
-  }
+  // Top 3 podium (from full national ranking, not filtered)
+  const top3 = consultores.slice(0, 3);
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
-            <Target className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Metas de Vendas</h1>
-            <p className="text-sm text-muted-foreground">Performance por consultor e evolucao mensal</p>
-          </div>
+        <div>
+          <h1 className="text-xl font-bold">Metas de Vendas</h1>
+          <p className="text-sm text-muted-foreground">Performance por consultor e evolucao mensal</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Select value={periodo} onValueChange={setPeriodo}>
             <SelectTrigger className="w-36 border-border"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {periodOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
+              {periodOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Dialog open={modalOpen} onOpenChange={(o) => { setModalOpen(o); if (!o) { setMetaConsultor(""); setMetaContratos(""); setMetaFaturamento(""); } }}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />Nova Meta</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Criar Nova Meta</DialogTitle></DialogHeader>
-              <div className="space-y-3">
-                <div><Label className="text-xs">Consultor</Label>
-                  <Select value={metaConsultor} onValueChange={setMetaConsultor}>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>{consultores.map((v: any) => <SelectItem key={v.nome} value={v.nome}>{v.nome}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div><Label className="text-xs">Meta de Contratos</Label><Input className="mt-1" type="number" placeholder={String(META_CONTRATOS_DEFAULT)} value={metaContratos} onChange={(e) => setMetaContratos(e.target.value)} /></div>
-                <div><Label className="text-xs">Meta de Faturamento (R$)</Label><Input className="mt-1" type="number" placeholder={String(META_FATURAMENTO_DEFAULT)} value={metaFaturamento} onChange={(e) => setMetaFaturamento(e.target.value)} /></div>
-                <p className="text-xs text-muted-foreground">Periodo: {periodOptions.find((p) => p.value === periodo)?.label || periodo}</p>
-                <Button className="w-full" onClick={handleSaveMeta} disabled={saving}>
-                  {saving ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Salvando...</> : "Criar Meta"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Select value={filterCoop} onValueChange={setFilterCoop}>
+            <SelectTrigger className="w-44 border-border"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Brasil (Nacional)</SelectItem>
+              {todasCoops.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {canConfigMetas && (
+            <Button size="sm" className="gap-1.5" onClick={() => setModalOpen(true)}>
+              <Settings2 className="h-4 w-4" />Configurar Metas
+            </Button>
+          )}
         </div>
       </div>
 
@@ -405,17 +303,73 @@ export default function Metas() {
         </div>
       ) : (
         <>
-          {/* Podium */}
-          {top3.length > 0 && (
-            <div className="grid grid-cols-3 gap-3 items-end max-w-2xl mx-auto">
-              <div>{second && <PodiumCard consultor={second} place={2} />}</div>
-              <div>{first && <PodiumCard consultor={first} place={1} />}</div>
-              <div>{third && <PodiumCard consultor={third} place={3} />}</div>
-            </div>
+          {/* Podium Top 3 */}
+          {top3.length >= 3 && (
+            <Card className="border-border overflow-hidden bg-gradient-to-br from-[#0F1729] via-[#1A2744] to-[#0F1729]">
+              <CardContent className="p-6 pb-8">
+                <div className="text-center mb-6">
+                  <div className="inline-flex items-center gap-2 bg-amber-400/10 border border-amber-400/20 rounded-full px-4 py-1.5">
+                    <Trophy className="h-4 w-4 text-amber-400" />
+                    <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">Ranking Nacional</span>
+                  </div>
+                </div>
+                <div className="flex justify-center items-end gap-3 sm:gap-6">
+                  {/* 2o lugar */}
+                  <div className="flex flex-col items-center">
+                    <div className="relative mb-3">
+                      <div className="w-[72px] h-[72px] rounded-full bg-gradient-to-br from-slate-300/30 to-slate-400/10 border-2 border-slate-300/40 flex items-center justify-center shadow-lg shadow-slate-400/10">
+                        <span className="text-lg font-bold text-slate-300">{initials(top3[1].nome)}</span>
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-gradient-to-br from-slate-200 to-slate-400 flex items-center justify-center shadow-md">
+                        <span className="text-[11px] font-black text-slate-800">2</span>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-t from-slate-500/20 to-slate-400/5 border border-slate-400/20 rounded-t-xl w-28 pt-4 pb-3 px-2 text-center">
+                      <p className="text-xs font-bold text-white truncate">{top3[1].nome.split(" ").slice(0, 2).join(" ")}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{top3[1].atualContratos} vendas</p>
+                      <p className="text-[11px] font-bold text-emerald-400">R$ {top3[1].atualFaturamento.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  {/* 1o lugar */}
+                  <div className="flex flex-col items-center -mt-4">
+                    <div className="relative mb-3">
+                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-300/40 to-amber-500/20 border-[3px] border-yellow-400/50 flex items-center justify-center shadow-xl shadow-yellow-500/20 ring-4 ring-yellow-400/10">
+                        <span className="text-2xl font-bold text-yellow-300">{initials(top3[0].nome)}</span>
+                      </div>
+                      <div className="absolute -top-2 -right-1 w-9 h-9 rounded-full bg-gradient-to-br from-yellow-300 to-amber-500 flex items-center justify-center shadow-lg shadow-yellow-500/30">
+                        <span className="text-sm font-black text-amber-900">1</span>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-t from-yellow-500/20 to-amber-400/5 border border-yellow-400/30 rounded-t-xl w-32 pt-5 pb-4 px-2 text-center">
+                      <p className="text-sm font-bold text-white truncate">{top3[0].nome.split(" ").slice(0, 2).join(" ")}</p>
+                      <p className="text-xs text-amber-300/80 mt-0.5">{top3[0].atualContratos} vendas</p>
+                      <p className="text-sm font-bold text-emerald-400">R$ {top3[0].atualFaturamento.toLocaleString()}</p>
+                      <Badge className="mt-1.5 bg-yellow-400/15 text-yellow-300 border-yellow-400/30 text-[9px]">Campeao</Badge>
+                    </div>
+                  </div>
+                  {/* 3o lugar */}
+                  <div className="flex flex-col items-center mt-2">
+                    <div className="relative mb-3">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-600/30 to-amber-700/10 border-2 border-amber-600/40 flex items-center justify-center shadow-lg shadow-amber-600/10">
+                        <span className="text-base font-bold text-amber-500">{initials(top3[2].nome)}</span>
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center shadow-md">
+                        <span className="text-[10px] font-black text-amber-200">3</span>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-t from-amber-700/15 to-amber-600/5 border border-amber-600/20 rounded-t-xl w-24 pt-3 pb-2.5 px-2 text-center">
+                      <p className="text-[11px] font-bold text-white truncate">{top3[2].nome.split(" ").slice(0, 2).join(" ")}</p>
+                      <p className="text-[10px] text-amber-400/70 mt-0.5">{top3[2].atualContratos} vendas</p>
+                      <p className="text-[11px] font-bold text-emerald-400">R$ {top3[2].atualFaturamento.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {kpis.map(k => (
               <Card key={k.label} className="border-border">
                 <CardContent className="p-4 flex items-center gap-3">
@@ -424,7 +378,7 @@ export default function Metas() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">{k.label}</p>
-                    <p className="text-lg font-bold text-foreground">{k.value}</p>
+                    <p className="text-lg font-bold">{k.value}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -437,7 +391,7 @@ export default function Metas() {
               <Table className="min-w-[800px]">
                 <TableHeader>
                   <TableRow className="bg-muted/60 hover:bg-muted/60 border-b-2 border-[#747474]">
-                    <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em]">#</TableHead>
+                    <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] w-16">#</TableHead>
                     <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em]">Consultor</TableHead>
                     <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Meta Contr.</TableHead>
                     <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Atual</TableHead>
@@ -449,50 +403,49 @@ export default function Metas() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sorted.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                        Nenhum consultor encontrado para este periodo.
-                      </TableCell>
-                    </TableRow>
+                  {filtered.length === 0 ? (
+                    <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Nenhum consultor encontrado.</TableCell></TableRow>
                   ) : (
-                    sorted.map((c: any) => {
-                      const pctContratos = c.metaContratos > 0 ? (c.atualContratos / c.metaContratos) * 100 : 0;
-                      const barColor = pctContratos >= 80 ? "bg-success/80" : pctContratos >= 50 ? "bg-warning/80" : "bg-destructive/80";
+                    filtered.map((c: any) => {
+                      const pct = c.metaContratos > 0 ? (c.atualContratos / c.metaContratos) * 100 : 0;
+                      const barColor = pct >= 80 ? "bg-emerald-500/80" : pct >= 50 ? "bg-amber-500/80" : "bg-red-500/80";
+                      const isMe = usuario?.nome === c.nome;
                       return (
-                        <TableRow key={c.nome} className="hover:bg-muted/30 transition-colors border-b-2 border-[#747474]">
+                        <TableRow key={c.nome} className={`hover:bg-muted/30 transition-colors border-b border-[#747474]/20 ${isMe ? "bg-primary/5" : ""}`}>
                           <TableCell>
                             <div className="flex items-center gap-1">
-                              {c.ranking <= 3 && <Trophy className={`h-4 w-4 ${c.ranking === 1 ? "text-yellow-500" : c.ranking === 2 ? "text-gray-400" : "text-warning"}`} />}
-                              <span className="font-bold text-foreground">{c.ranking}o</span>
+                              {c.ranking <= 3 && <Medal className={`h-4 w-4 ${medalColors[c.ranking - 1]}`} />}
+                              <span className="font-bold">{c.ranking}o</span>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              {c.fotoUrl ? (
-                                <img src={c.fotoUrl} alt={c.nome} className="w-7 h-7 rounded-full object-cover" />
-                              ) : (
-                                <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                                  {getInitials(c.nome)}
-                                </div>
-                              )}
-                              <span className="font-medium">{c.nome}</span>
+                              <Avatar className="h-7 w-7">
+                                <AvatarFallback className="text-[10px] font-bold bg-white/5">{initials(c.nome)}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className={`text-sm font-medium ${isMe ? "text-primary" : ""}`}>{c.nome}</p>
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell className="text-center">{c.metaContratos}</TableCell>
                           <TableCell className="text-center font-semibold">{c.atualContratos}</TableCell>
                           <TableCell className="text-right text-sm">R$ {c.metaFaturamento.toLocaleString()}</TableCell>
-                          <TableCell className="text-right font-semibold text-success">R$ {c.atualFaturamento.toLocaleString()}</TableCell>
-                          <TableCell className="text-center"><Badge className={c.conversao >= 30 ? "bg-success/10 text-success" : c.conversao >= 20 ? "bg-warning/10 text-warning" : "bg-destructive/8 text-destructive"}>{c.conversao}%</Badge></TableCell>
+                          <TableCell className="text-right font-semibold text-emerald-400">R$ {c.atualFaturamento.toLocaleString()}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge className={c.conversao >= 30 ? "bg-emerald-500/10 text-emerald-400" : c.conversao >= 20 ? "bg-amber-500/10 text-amber-400" : "bg-red-500/8 text-red-400"}>
+                              {c.conversao}%
+                            </Badge>
+                          </TableCell>
                           <TableCell className="text-center text-sm">{c.totalLeads}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <div className="w-20">
                                 <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
-                                  <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(pctContratos, 100)}%` }} />
+                                  <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
                                 </div>
                               </div>
-                              <span className="text-xs font-semibold">{pctContratos.toFixed(0)}%</span>
+                              <span className="text-xs font-semibold">{pct.toFixed(0)}%</span>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -508,7 +461,7 @@ export default function Metas() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card className="border-border">
               <CardContent className="p-4">
-                <p className="text-sm font-semibold text-foreground mb-3">Evolucao Meta vs Realizado</p>
+                <p className="text-sm font-semibold mb-3">Evolucao Realizado</p>
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={evolucao}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -516,16 +469,14 @@ export default function Metas() {
                     <YAxis tick={{ fontSize: 11 }} />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="meta" fill="hsl(var(--muted-foreground) / 0.35)" name="Meta" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="realizado" fill="hsl(var(--primary))" name="Realizado" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="realizado" fill="hsl(var(--primary))" name="Contratos" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-
             <Card className="border-border">
               <CardContent className="p-4">
-                <p className="text-sm font-semibold text-foreground mb-3">Faturamento Mensal</p>
+                <p className="text-sm font-semibold mb-3">Faturamento Mensal</p>
                 <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={evolucao}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -533,7 +484,7 @@ export default function Metas() {
                     <YAxis tick={{ fontSize: 11 }} />
                     <Tooltip formatter={(v: number) => `R$ ${v.toLocaleString()}`} />
                     <Legend />
-                    <Line type="monotone" dataKey="faturamento" stroke="hsl(var(--accent))" strokeWidth={2} name="Faturamento" />
+                    <Line type="monotone" dataKey="faturamento" stroke="hsl(152, 50%, 55%)" strokeWidth={2} name="Faturamento" />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -541,6 +492,66 @@ export default function Metas() {
           </div>
         </>
       )}
+
+      {/* Config Meta Dialog */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Configurar Meta — {periodOptions.find(p => p.value === periodo)?.label}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs">Tipo de Meta</Label>
+              <Select value={cfgTipo} onValueChange={(v: any) => setCfgTipo(v)}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="individual">Individual (consultor)</SelectItem>
+                  {configurableCoops.length > 0 && <SelectItem value="cooperativa">Coletiva da Filial</SelectItem>}
+                  {isDiretor && <SelectItem value="geral">Geral (todas as filiais)</SelectItem>}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {cfgTipo === "individual" && (
+              <div>
+                <Label className="text-xs">Consultor</Label>
+                <Select value={cfgUsuarioId} onValueChange={setCfgUsuarioId}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {configurableConsultores.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {cfgTipo === "cooperativa" && (
+              <div>
+                <Label className="text-xs">Cooperativa</Label>
+                <Select value={cfgCooperativa} onValueChange={setCfgCooperativa}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {configurableCoops.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Meta Contratos</Label>
+                <Input className="mt-1" type="number" value={cfgContratos} onChange={e => setCfgContratos(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Meta Faturamento (R$)</Label>
+                <Input className="mt-1" type="number" value={cfgFaturamento} onChange={e => setCfgFaturamento(e.target.value)} />
+              </div>
+            </div>
+
+            <Button className="w-full" onClick={() => saveMeta.mutate()} disabled={saveMeta.isPending}>
+              {saveMeta.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Salvar Meta
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -51,7 +51,7 @@ export default function ExcecaoButton({
     });
     if (result.sucesso) {
       setResultado(result);
-      toast.success(`Exceção enviada! SMS para ${result.sms_enviados} diretor(es).`);
+      toast.success(`Exceção enviada para ${result.sms_enviados || result.diretores_notificados?.length || 0} diretor(es)!`);
       onSuccess?.(result);
     } else {
       toast.error(result.error || "Erro ao solicitar exceção");
@@ -70,7 +70,7 @@ export default function ExcecaoButton({
             <div className="text-4xl">📩</div>
             <h3 className="text-lg font-bold text-amber-800">Exceção Solicitada!</h3>
             <p className="text-sm text-gray-600">
-              SMS enviado para {resultado.sms_enviados} diretor(es):
+              Link enviado para {resultado.sms_enviados || resultado.diretores_notificados?.length || 0} diretor(es):
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
               {resultado.diretores_notificados?.map((nome: string, i: number) => (
@@ -136,8 +136,8 @@ export default function ExcecaoButton({
             <div className="bg-gray-50 rounded-none p-3 text-xs text-gray-600">
               <p className="font-semibold mb-1">O que acontece:</p>
               <ul className="space-y-0.5">
-                <li>1. SMS enviado para Lissandra, Carlos Alberto e Rafael</li>
-                <li>2. Diretor recebe link para aprovar/rejeitar</li>
+                <li>1. Link de aprovação gerado para os diretores</li>
+                <li>2. Diretor acessa o link para aprovar/rejeitar</li>
                 <li>3. Card fica bloqueado até decisão</li>
                 <li>4. Se aprovado, ação aplicada automaticamente</li>
               </ul>
@@ -163,7 +163,7 @@ export default function ExcecaoButton({
               className="rounded-none bg-amber-600 hover:bg-amber-700 text-white"
             >
               <Send className="h-3.5 w-3.5 mr-1" />
-              {enviando ? "Enviando SMS..." : "Enviar para Diretores"}
+              {enviando ? "Enviando..." : "Enviar para Diretores"}
             </Button>
           </DialogFooter>
         </DialogContent>

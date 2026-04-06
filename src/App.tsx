@@ -53,7 +53,6 @@ import FinanceiroVendas from "./pages/vendas/Financeiro";
 import FerramentasVendas from "./pages/vendas/FerramentasVendas";
 import Metas from "./pages/vendas/Metas";
 import Tags from "./pages/vendas/Tags";
-import Formularios from "./pages/vendas/Formularios";
 import ImportarLeads from "./pages/vendas/ImportarLeads";
 import MinhaEmpresa from "./pages/vendas/MinhaEmpresa";
 import MinhaConta from "./pages/vendas/MinhaConta";
@@ -136,7 +135,6 @@ const App = () => (
             <Route path="/vendas/calendario" element={<M><Calendario /></M>} />
             <Route path="/vendas/metas" element={<M><Metas /></M>} />
             <Route path="/vendas/tags" element={<M><Tags /></M>} />
-            <Route path="/vendas/formularios" element={<M><Formularios /></M>} />
             <Route path="/vendas/importar" element={<M><ImportarLeads /></M>} />
             <Route path="/vendas/afiliados" element={<M><Afiliados /></M>} />
             <Route path="/vendas/vistorias" element={<M><VistoriasVendas /></M>} />

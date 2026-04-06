@@ -19,6 +19,7 @@ const MOTIVOS_LIBERACAO = [
   { value: "desconto", label: "Desconto" },
   { value: "vencimento", label: "Data de Vencimento" },
   { value: "vistoria_negada", label: "Vistoria Negada" },
+  { value: "veiculo_bloqueado", label: "Veículo Não Aceito" },
 ];
 
 interface AnaliseResult {
@@ -67,19 +68,20 @@ export default function PedirLiberacaoButton({ negociacaoId, consultorId, onSucc
     setAnalisando(true);
 
     const pedidos: any = {};
-    if (motivo === "desconto" || motivo === "vencimento" || motivo === "vistoria_negada") {
-      if (motivo === "desconto") {
-        pedidos.desconto = {
-          percentual: parseFloat(descontoPercentual) || 0,
-          proposta_concorrente_url: propostaConcorrenteUrl || undefined,
-        };
-      }
-      if (motivo === "vencimento") {
-        pedidos.vencimento = { dia_solicitado: parseInt(diaSolicitado) || 0 };
-      }
-      if (motivo === "vistoria_negada") {
-        pedidos.vistoria = { reanalisar: true };
-      }
+    if (motivo === "desconto") {
+      pedidos.desconto = {
+        percentual: parseFloat(descontoPercentual) || 0,
+        proposta_concorrente_url: propostaConcorrenteUrl || undefined,
+      };
+    }
+    if (motivo === "vencimento") {
+      pedidos.vencimento = { dia_solicitado: parseInt(diaSolicitado) || 0 };
+    }
+    if (motivo === "vistoria_negada") {
+      pedidos.vistoria = { reanalisar: true };
+    }
+    if (motivo === "veiculo_bloqueado") {
+      pedidos.veiculo = { liberar: true };
     }
 
     try {

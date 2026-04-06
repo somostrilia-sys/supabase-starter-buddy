@@ -89,26 +89,22 @@ function buildPage3HTML(dados: DadosCotacao): string {
   const validadeDate = (() => { const d = new Date(); d.setDate(d.getDate() + dados.validade); return d.toLocaleDateString("pt-BR"); })();
   const price = fmtBRLParts(mensalFinal);
 
-  // Build benefícios HTML
+  // Build benefícios HTML — usar coberturas REAIS do banco
   const coberturas = dados.coberturas.filter(c => c.inclusa);
-  const defaultBeneficios = [
-    "Colisão / Incêndio Pós Colisão", "Perda Total", "Roubo / Furto",
-    "Danos a Terceiros R$ 150 mil", "Vidros Completos", "Retrovisor",
-    "Assistência 24 Horas", "Guincho Ilimitado", "Chaveiro 24 Horas",
-    "Recarga de Bateria", "Pane Seca", "Substituição de Pneus", "Clube de Desconto — Clube PRO",
-  ];
   const beneficiosNomes = coberturas.length > 0
-    ? coberturas.map(c => c.nome).filter(n => n.length > 0)
-    : defaultBeneficios;
+    ? coberturas.map(c => ({ nome: c.nome, detalhe: c.detalhe })).filter(n => n.nome.length > 0)
+    : [{ nome: "Coberturas conforme plano selecionado", detalhe: undefined as string | undefined }];
 
-  const beneficiosHTML = beneficiosNomes.map(nome => {
-    const meta = getBenefMeta(nome);
-    const isClube = nome.toLowerCase().includes("clube");
+  const beneficiosHTML = beneficiosNomes.map(item => {
+    const meta = getBenefMeta(item.nome);
+    const isClube = item.nome.toLowerCase().includes("clube");
+    // Usar detalhe do banco (real) ao invés de desc hardcoded
+    const descricao = item.detalhe || "";
     return `<div class="benefit-item ${isClube ? "benefit-full " : ""}${meta.cat}">
       <div class="benefit-icon ${meta.ico}">${meta.emoji}</div>
       <div class="benefit-text-wrap">
-        <div class="benefit-name">${nome}</div>
-        ${meta.desc ? `<div class="benefit-desc">${meta.desc}</div>` : ""}
+        <div class="benefit-name">${item.nome}</div>
+        ${descricao ? `<div class="benefit-desc">${descricao}</div>` : ""}
       </div>
     </div>`;
   }).join("\n");
@@ -171,7 +167,7 @@ function buildPage3HTML(dados: DadosCotacao): string {
     .data-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.08)}
     .data-row:last-child{border-bottom:none}
     .data-label{font-size:9.5px;color:#5a94c4;text-transform:uppercase;font-weight:600;letter-spacing:0.8px}
-    .data-value{font-size:12.5px;color:#e0ecf5;font-weight:500;text-align:right}
+    .data-value{font-size:12.5px;color:#ffffff;font-weight:500;text-align:right}
     .benefits-section{margin-bottom:20px}
     .benefits-section-inner{background:linear-gradient(135deg,#0d2b5e 0%,#14376e 100%);border-radius:16px;padding:20px 22px;box-shadow:0 4px 25px rgba(13,43,94,0.35)}
     .benefits-title{display:flex;align-items:center;gap:12px;margin-bottom:14px}

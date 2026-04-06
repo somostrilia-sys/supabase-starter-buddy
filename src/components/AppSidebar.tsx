@@ -1,14 +1,15 @@
 import {
   Shield, Users, Car, MapPin, Building2, AlertTriangle, FileText,
   ClipboardCheck, Package, UserCog, SlidersHorizontal, LogOut,
-  ChevronDown, LayoutDashboard, DollarSign, Target, CalendarDays,
+  ChevronDown, LayoutDashboard, DollarSign, Target,
   BarChart3, Receipt, ArrowLeftRight, Wallet, Kanban, Contact, Building,
-  Activity, UsersRound, Tag, FileSpreadsheet, Upload, Crosshair, UserCircle, ArrowRightLeft,
+  Activity, UsersRound, Tag, Upload, Crosshair, UserCircle, ArrowRightLeft, Globe,
 } from "lucide-react";
 import { useBrand } from "@/hooks/useBrand";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useUsuario } from "@/hooks/useUsuario";
 import {
   Sidebar,
   SidebarContent,
@@ -45,24 +46,26 @@ const financeiroItems = [
   { title: "Relatórios", url: "/financeiro/relatorios", icon: BarChart3 },
 ];
 
-const vendasItems = [
-  { title: "Pipeline", url: "/vendas/pipeline", icon: Kanban },
-  { title: "Negociações", url: "/vendas/negociacoes", icon: Target },
-  { title: "Contatos", url: "/vendas/contatos", icon: Contact },
-  { title: "Atividades", url: "/vendas/atividades", icon: Activity },
-  
-  { title: "Metas", url: "/vendas/metas", icon: Crosshair },
-  { title: "Tags", url: "/vendas/tags", icon: Tag },
-  { title: "Formulários", url: "/vendas/formularios", icon: FileSpreadsheet },
-  { title: "Importar Leads", url: "/vendas/importar", icon: Upload },
-  { title: "Afiliados", url: "/vendas/afiliados", icon: UsersRound },
-  { title: "Relatórios", url: "/vendas/relatorios", icon: BarChart3 },
-  { title: "Financeiro", url: "/vendas/financeiro", icon: DollarSign },
-  { title: "Ferramentas", url: "/vendas/ferramentas", icon: FileSpreadsheet },
-  { title: "Minha Empresa", url: "/vendas/minha-empresa", icon: Building },
-  { title: "Minha Conta", url: "/vendas/minha-conta", icon: UserCircle },
-  { title: "Comissões", url: "/vendas/comissoes", icon: ArrowRightLeft },
-];
+function getVendasItems(perms: { canViewTags: boolean; canImportLeads: boolean; canViewMinhaEmpresa: boolean }) {
+  const items = [
+    { title: "Pipeline", url: "/vendas/pipeline", icon: Kanban },
+    { title: "Negociações", url: "/vendas/negociacoes", icon: Target },
+    { title: "Contatos", url: "/vendas/contatos", icon: Contact },
+    { title: "Atividades", url: "/vendas/atividades", icon: Activity },
+    { title: "Metas", url: "/vendas/metas", icon: Crosshair },
+    { title: "Vistorias", url: "/vendas/vistorias", icon: ClipboardCheck },
+    { title: "Landing Pages", url: "/vendas/landing-pages", icon: Globe },
+  ];
+  if (perms.canViewTags) items.push({ title: "Tags", url: "/vendas/tags", icon: Tag });
+  if (perms.canImportLeads) items.push({ title: "Importar Leads", url: "/vendas/importar", icon: Upload });
+  items.push({ title: "Afiliados", url: "/vendas/afiliados", icon: UsersRound });
+  items.push({ title: "Relatórios", url: "/vendas/relatorios", icon: BarChart3 });
+  items.push({ title: "Financeiro", url: "/vendas/financeiro", icon: DollarSign });
+  items.push({ title: "Comissões", url: "/vendas/comissoes", icon: ArrowRightLeft });
+  if (perms.canViewMinhaEmpresa) items.push({ title: "Minha Empresa", url: "/vendas/minha-empresa", icon: Building });
+  items.push({ title: "Minha Conta", url: "/vendas/minha-conta", icon: UserCircle });
+  return items;
+}
 
 interface ModuleGroupProps {
   label: string;
@@ -132,6 +135,8 @@ export function AppSidebar() {
   const { signOut, user } = useAuth();
   const location = useLocation();
   const { brand } = useBrand();
+  const { canViewTags, canImportLeads, canViewMinhaEmpresa } = useUsuario();
+  const vendasItems = getVendasItems({ canViewTags, canImportLeads, canViewMinhaEmpresa });
 
   return (
     <Sidebar collapsible="icon">

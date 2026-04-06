@@ -56,7 +56,7 @@ function normalizeCheck(items: string[], target: string): boolean {
   });
 }
 
-interface Plano { nome: string; valor_mensal?: number; adesao?: number; rastreador?: string | boolean; franquia?: string; valor_fipe?: number; coberturas?: string[]; assistencias?: string[]; [k: string]: unknown; }
+interface Plano { nome: string; valor_mensal?: number; adesao?: number; rastreador?: string | boolean; franquia?: string; valor_fipe?: number; coberturas?: string[]; assistencias?: string[]; detalhes_coberturas?: Record<string, string>; [k: string]: unknown; }
 interface Negociacao { lead_nome?: string; veiculo_modelo?: string; veiculo_placa?: string; consultor?: string; telefone?: string; email?: string; [k: string]: unknown; }
 
 export default function PlanoComparativo() {
@@ -91,24 +91,30 @@ export default function PlanoComparativo() {
         }
       }
 
-      // Buscar coberturas de cada plano do banco
-      const nomesPlanos = [...new Set(todosPlanos.map(p => p.nome))];
-      if (nomesPlanos.length > 0) {
-        const { data: cobData } = await supabase.from("coberturas_plano" as any)
-          .select("*").in("plano", nomesPlanos);
-        if (cobData && (cobData as any[]).length > 0) {
-          const cobMap: Record<string, { coberturas: string[]; assistencias: string[] }> = {};
-          (cobData as any[]).forEach(c => {
-            if (!cobMap[c.plano]) cobMap[c.plano] = { coberturas: [], assistencias: [] };
-            if (c.tipo === "cobertura") cobMap[c.plano].coberturas.push(c.cobertura);
-            else cobMap[c.plano].assistencias.push(c.cobertura);
-          });
-          todosPlanos.forEach(p => {
-            if (cobMap[p.nome]) {
-              p.coberturas = cobMap[p.nome].coberturas;
-              p.assistencias = cobMap[p.nome].assistencias;
-            }
-          });
+      // Usar coberturas do snapshot se disponíveis, senão buscar do banco
+      const temSnapshot = todosPlanos.some(p => p.coberturas && p.coberturas.length > 0);
+      if (!temSnapshot) {
+        const nomesPlanos = [...new Set(todosPlanos.map(p => p.nome))];
+        if (nomesPlanos.length > 0) {
+          const { data: cobData } = await supabase.from("coberturas_plano" as any)
+            .select("*").in("plano", nomesPlanos);
+          if (cobData && (cobData as any[]).length > 0) {
+            const cobMap: Record<string, { coberturas: string[]; assistencias: string[]; detalhes: Record<string, string> }> = {};
+            (cobData as any[]).forEach(c => {
+              if (!cobMap[c.plano]) cobMap[c.plano] = { coberturas: [], assistencias: [], detalhes: {} };
+              const nome = c.cobertura;
+              if (c.tipo === "cobertura") cobMap[c.plano].coberturas.push(nome);
+              else cobMap[c.plano].assistencias.push(nome);
+              if (c.detalhe) cobMap[c.plano].detalhes[nome] = c.detalhe;
+            });
+            todosPlanos.forEach(p => {
+              if (cobMap[p.nome]) {
+                p.coberturas = cobMap[p.nome].coberturas;
+                p.assistencias = cobMap[p.nome].assistencias;
+                p.detalhes_coberturas = cobMap[p.nome].detalhes;
+              }
+            });
+          }
         }
       }
 
@@ -308,11 +314,14 @@ export default function PlanoComparativo() {
                       {planos.map((p, i) => {
                         const has = normalizeCheck(p.coberturas || [], cob);
                         const detail = matchCoberturaDetail(p.coberturas || [], cob);
+                        // Also check detalhes_coberturas from snapshot
+                        const snapshotDetail = p.detalhes_coberturas ? Object.entries(p.detalhes_coberturas).find(([k]) => k.toLowerCase().includes(cob.split("/")[0].toLowerCase()))?.[1] : undefined;
+                        const finalDetail = snapshotDetail || (detail && detail !== "✓" ? detail : "");
                         return (
                           <td key={i} className="text-center px-3 py-2 border-t border-gray-100">
                             {has ? (
-                              detail && detail !== "✓" ? (
-                                <span className="text-sm font-semibold text-[#003572]">{detail}</span>
+                              finalDetail ? (
+                                <span className="text-sm font-semibold text-[#003572]">{finalDetail}</span>
                               ) : (
                                 <CheckCircle className="w-5 h-5 text-[#2ecc71] mx-auto" />
                               )

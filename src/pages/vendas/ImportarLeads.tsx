@@ -6,10 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertTriangle, ArrowRight, X,
+  Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertTriangle, ArrowRight, X, Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useUsuario } from "@/hooks/useUsuario";
+import { useQuery } from "@tanstack/react-query";
 import * as XLSX from "xlsx";
 
 // Fields in negociacoes that we can map to
@@ -33,6 +35,7 @@ interface ImportRecord {
 }
 
 export default function ImportarLeads() {
+  const { usuario, isGestor, isDiretor, cooperativas: minhasCoops } = useUsuario();
   const [step, setStep] = useState<"upload" | "mapping" | "importing" | "done">("upload");
   const [progress, setProgress] = useState(0);
   const [fileName, setFileName] = useState("");
@@ -42,6 +45,38 @@ export default function ImportarLeads() {
   const [importHistory, setImportHistory] = useState<ImportRecord[]>([]);
   const [importedCount, setImportedCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [distribuicao, setDistribuicao] = useState<"manual" | "igual">("manual");
+  const [consultorSelecionado, setConsultorSelecionado] = useState("");
+  const [coopSelecionada, setCoopSelecionada] = useState("");
+
+  // Fetch consultores for distribution
+  const { data: consultoresDisponiveis = [] } = useQuery({
+    queryKey: ["import-consultores", coopSelecionada],
+    queryFn: async () => {
+      let q = (supabase as any).from("usuarios").select("id, nome, cooperativa").eq("ativo", true);
+      if (isGestor && !isDiretor && minhasCoops.length > 0) {
+        // Filter to gestors coops
+        q = q.or(minhasCoops.map(c => `cooperativa.ilike.%${c}%`).join(","));
+      }
+      if (coopSelecionada && coopSelecionada !== "all") {
+        q = q.ilike("cooperativa", `%${coopSelecionada}%`);
+      }
+      const { data } = await q.order("nome");
+      return (data || []) as { id: string; nome: string; cooperativa: string }[];
+    },
+  });
+
+  const { data: todasCoops = [] } = useQuery({
+    queryKey: ["import-coops"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("usuarios").select("cooperativa").eq("ativo", true).not("cooperativa", "is", null);
+      const set = new Set<string>();
+      (data || []).forEach((u: any) => { if (u.cooperativa) u.cooperativa.split(",").forEach((c: string) => { if (c.trim()) set.add(c.trim()); }); });
+      return Array.from(set).sort();
+    },
+  });
+
+  const coopsDisponiveis = isDiretor ? todasCoops : minhasCoops;
 
   const resetState = () => {
     setStep("upload");
@@ -150,6 +185,9 @@ export default function ImportarLeads() {
     setStep("importing");
     setProgress(0);
 
+    const consultoresRR = consultoresDisponiveis.map((c: any) => c.nome);
+    let rrIndex = 0;
+
     const records = validRows.map(row => {
       const obj: Record<string, any> = { stage: "novo_lead", origem: "Importacao CSV" };
       Object.entries(mapping).forEach(([colIdx, field]) => {
@@ -162,6 +200,13 @@ export default function ImportarLeads() {
           obj[field] = val;
         }
       });
+      // Apply distribution
+      if (distribuicao === "manual" && consultorSelecionado) {
+        obj.consultor = consultorSelecionado;
+      } else if (distribuicao === "igual" && consultoresRR.length > 0) {
+        obj.consultor = consultoresRR[rrIndex % consultoresRR.length];
+        rrIndex++;
+      }
       return obj;
     });
 
@@ -353,6 +398,49 @@ export default function ImportarLeads() {
                 </tbody>
               </table>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Distribution */}
+        <Card className="border border-border/50">
+          <CardHeader className="pb-3"><CardTitle className="text-sm flex items-center gap-2"><Users className="h-4 w-4" />Distribuicao dos Leads</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {isDiretor && (
+              <div>
+                <Label className="text-xs">Cooperativa</Label>
+                <Select value={coopSelecionada} onValueChange={setCoopSelecionada}>
+                  <SelectTrigger className="h-8 text-xs mt-1"><SelectValue placeholder="Todas" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    {coopsDisponiveis.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div>
+              <Label className="text-xs">Modo de distribuicao</Label>
+              <Select value={distribuicao} onValueChange={(v: any) => setDistribuicao(v)}>
+                <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="manual">Atribuir a um consultor</SelectItem>
+                  <SelectItem value="igual">Distribuir igualmente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {distribuicao === "manual" && (
+              <div>
+                <Label className="text-xs">Consultor</Label>
+                <Select value={consultorSelecionado} onValueChange={setConsultorSelecionado}>
+                  <SelectTrigger className="h-8 text-xs mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {consultoresDisponiveis.map((c: any) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {distribuicao === "igual" && (
+              <p className="text-xs text-muted-foreground">Os leads serao distribuidos igualmente entre {consultoresDisponiveis.length} consultores{coopSelecionada && coopSelecionada !== "all" ? ` da ${coopSelecionada}` : ""}.</p>
+            )}
           </CardContent>
         </Card>
 

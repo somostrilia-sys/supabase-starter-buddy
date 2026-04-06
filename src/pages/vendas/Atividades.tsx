@@ -37,6 +37,11 @@ import {
   Eye,
   Calendar,
   Bell,
+  ClipboardCheck,
+  FileWarning,
+  Users,
+  BarChart3,
+  ShieldCheck,
 } from "lucide-react";
 
 /* ─── Constantes ──────────────────────────────────────────── */
@@ -114,28 +119,50 @@ function AIAdvisorSection() {
   }
 
   const hasData = !!aiData;
+  const contextoIA = aiData?.contexto_ia || "comercial";
+  const nomeUsuario = aiData?.nome_usuario;
   const nextAction = aiData?.proxima_melhor_acao;
-  const analise = aiData?.analise_pipeline;
+  const analise = aiData?.analise_pipeline || aiData?.analise_cadastro || aiData?.analise_equipe;
   const agenda: any[] = aiData?.agenda_sugerida || [];
 
+  // Config por contexto
+  const ctxConfig: Record<string, { icon: any; gradient: string; label: string; subtitle: string; analyLabel: string; analyIcon: any }> = {
+    comercial: { icon: TrendingUp, gradient: "from-[#1A3A5C] to-[#0F2847]", label: "Conselheiro de IA", subtitle: "Analise inteligente do seu pipeline em tempo real", analyLabel: "Analise do Pipeline", analyIcon: TrendingUp },
+    cadastro: { icon: ClipboardCheck, gradient: "from-[#1A4A3C] to-[#0F3027]", label: "Conselheiro de Cadastro", subtitle: "Conferencia de cadastros e qualidade de dados", analyLabel: "Pendencias de Cadastro", analyIcon: FileWarning },
+    diretoria: { icon: BarChart3, gradient: "from-[#3A1A5C] to-[#280F47]", label: "Visao Diretoria", subtitle: "Performance da equipe e decisoes pendentes", analyLabel: "Visao da Equipe", analyIcon: Users },
+    administrativo: { icon: ShieldCheck, gradient: "from-[#3A1A5C] to-[#280F47]", label: "Painel Administrativo", subtitle: "Conferencias, excecoes e gestao operacional", analyLabel: "Visao Administrativa", analyIcon: ShieldCheck },
+    gestor_comercial: { icon: Users, gradient: "from-[#1A3A5C] to-[#0F2847]", label: "Conselheiro Gestor", subtitle: "Performance e gestao da sua equipe comercial", analyLabel: "Equipe Comercial", analyIcon: Users },
+  };
+  const ctx = ctxConfig[contextoIA] || ctxConfig.comercial;
+  const CtxIcon = ctx.icon;
+  const AnalyIcon = ctx.analyIcon;
+
+  // Saudação personalizada
+  const saudacao = nomeUsuario
+    ? contextoIA === "cadastro" ? `Ola ${nomeUsuario.split(" ")[0]}, aqui esta sua conferencia de cadastros de hoje`
+    : contextoIA === "diretoria" || contextoIA === "administrativo" ? `Ola ${nomeUsuario.split(" ")[0]}, aqui esta o panorama da equipe`
+    : contextoIA === "gestor_comercial" ? `Ola ${nomeUsuario.split(" ")[0]}, aqui esta a performance da sua equipe`
+    : ctx.subtitle
+    : ctx.subtitle;
+
   return (
-    <Card className="border-[#747474] bg-gradient-to-r from-[#1A3A5C] to-[#0F2847] backdrop-blur shadow-xl shadow-blue-900/10">
+    <Card className={cn("border-[#747474] bg-gradient-to-r backdrop-blur shadow-xl shadow-blue-900/10", ctx.gradient)}>
       {/* ── Header ── */}
       <CardHeader className="pb-3 pt-4 px-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-500/25">
-              <Brain className="h-5 w-5 text-white" />
+              <CtxIcon className="h-5 w-5 text-white" />
             </div>
             <div>
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                Conselheiro de IA
+                {ctx.label}
                 <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/40 text-[9px] font-semibold tracking-wider">
                   BETA
                 </Badge>
               </h2>
               <p className="text-[11px] text-slate-400">
-                Analise inteligente do seu pipeline em tempo real
+                {saudacao}
               </p>
             </div>
           </div>
@@ -200,8 +227,7 @@ function AIAdvisorSection() {
               Sem analise disponivel
             </p>
             <p className="text-xs text-slate-500 mt-1">
-              Clique em &quot;Atualizar IA&quot; para gerar uma analise do seu
-              pipeline
+              Clique em &quot;Atualizar IA&quot; para gerar uma analise
             </p>
           </div>
         )}
@@ -209,59 +235,103 @@ function AIAdvisorSection() {
         {/* Data loaded — 3 columns */}
         {hasData && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* ── a) Analise do Pipeline ── */}
+            {/* ── a) Analise (adapta por contexto) ── */}
             <div className="rounded-xl bg-white/[0.04] border border-white/10 p-4 space-y-3">
               <div className="flex items-center gap-2 mb-1">
-                <TrendingUp className="h-4 w-4 text-blue-400" />
+                <AnalyIcon className="h-4 w-4 text-blue-400" />
                 <span className="text-xs font-semibold text-blue-300 uppercase tracking-wider">
-                  Analise do Pipeline
+                  {ctx.analyLabel}
                 </span>
               </div>
 
-              {/* Leads Parados */}
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-red-500/[0.06] border border-red-500/20">
-                <div className="w-9 h-9 rounded-lg bg-red-500/15 flex items-center justify-center shrink-0">
-                  <AlertTriangle className="h-4 w-4 text-red-400" />
+              {/* Cadastro context */}
+              {contextoIA === "cadastro" ? (<>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/[0.06] border border-amber-500/20">
+                  <div className="w-9 h-9 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+                    <FileWarning className="h-4 w-4 text-amber-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-amber-400 leading-none">{analise?.cadastros_pendentes ?? 0}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Cadastros Pendentes</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-red-400 leading-none">
-                    {analise?.leads_parados ?? 0}
-                  </p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
-                    Leads Parados
-                  </p>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-red-500/[0.06] border border-red-500/20">
+                  <div className="w-9 h-9 rounded-lg bg-red-500/15 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="h-4 w-4 text-red-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-red-400 leading-none">{analise?.dados_incompletos ?? 0}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Dados Incompletos</p>
+                  </div>
                 </div>
-              </div>
-
-              {/* Leads Quentes */}
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/20">
-                <div className="w-9 h-9 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
-                  <Flame className="h-4 w-4 text-emerald-400" />
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-500/[0.06] border border-blue-500/20">
+                  <div className="w-9 h-9 rounded-lg bg-blue-500/15 flex items-center justify-center shrink-0">
+                    <ClipboardCheck className="h-4 w-4 text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-blue-400 leading-none">{analise?.contratos_pendentes ?? 0}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Contratos Pendentes</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-emerald-400 leading-none">
-                    {analise?.leads_quentes ?? 0}
-                  </p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
-                    Leads Quentes
-                  </p>
+              </>) : (contextoIA === "diretoria" || contextoIA === "administrativo") ? (<>
+                {/* Diretoria/ADM context */}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-violet-500/[0.06] border border-violet-500/20">
+                  <div className="w-9 h-9 rounded-lg bg-violet-500/15 flex items-center justify-center shrink-0">
+                    <Users className="h-4 w-4 text-violet-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-violet-400 leading-none">{analise?.leads_totais ?? 0}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Leads da Equipe</p>
+                  </div>
                 </div>
-              </div>
-
-              {/* Taxa Conversao */}
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-500/[0.06] border border-blue-500/20">
-                <div className="w-9 h-9 rounded-lg bg-blue-500/15 flex items-center justify-center shrink-0">
-                  <TrendingUp className="h-4 w-4 text-blue-400" />
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-red-500/[0.06] border border-red-500/20">
+                  <div className="w-9 h-9 rounded-lg bg-red-500/15 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="h-4 w-4 text-red-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-red-400 leading-none">{analise?.excecoes_pendentes ?? 0}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Excecoes Pendentes</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-blue-400 leading-none">
-                    {analise?.taxa_conversao ?? 0}%
-                  </p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
-                    Taxa Conversao
-                  </p>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/20">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+                    <BarChart3 className="h-4 w-4 text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-emerald-400 leading-none">{analise?.meta_percentual ?? 0}%</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Meta Atingida</p>
+                  </div>
                 </div>
-              </div>
+              </>) : (<>
+                {/* Comercial / Gestor Comercial context */}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-red-500/[0.06] border border-red-500/20">
+                  <div className="w-9 h-9 rounded-lg bg-red-500/15 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="h-4 w-4 text-red-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-red-400 leading-none">{analise?.leads_parados ?? 0}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Leads Parados</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/20">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+                    <Flame className="h-4 w-4 text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-emerald-400 leading-none">{analise?.leads_quentes ?? 0}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Leads Quentes</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-500/[0.06] border border-blue-500/20">
+                  <div className="w-9 h-9 rounded-lg bg-blue-500/15 flex items-center justify-center shrink-0">
+                    <TrendingUp className="h-4 w-4 text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-blue-400 leading-none">{analise?.taxa_conversao ?? 0}%</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Taxa Conversao</p>
+                  </div>
+                </div>
+              </>)}
             </div>
 
             {/* ── b) Proxima Melhor Acao ── */}
@@ -277,7 +347,7 @@ function AIAdvisorSection() {
                 <div className="flex-1 flex flex-col">
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <p className="text-sm font-bold text-white">
-                      {nextAction.nome_lead || nextAction.lead || "Lead"}
+                      {nextAction.nome_lead || nextAction.lead || nextAction.tipo || "Acao"}
                     </p>
                     <Badge
                       className={cn(
@@ -290,37 +360,41 @@ function AIAdvisorSection() {
                       {(
                         nextAction.stage ||
                         nextAction.urgencia ||
+                        nextAction.tipo ||
                         "—"
                       ).toUpperCase()}
                     </Badge>
                   </div>
 
                   {/* Canal */}
-                  <div className="flex items-center gap-2 text-[11px] text-slate-400 mb-3">
-                    {(() => {
-                      const canal = (
-                        nextAction.canal_sugerido ||
-                        nextAction.canal ||
-                        ""
-                      ).toLowerCase();
-                      const Icon = canalIcons[canal] || PhoneCall;
-                      return <Icon className="h-3.5 w-3.5" />;
-                    })()}
-                    <span>
-                      Canal:{" "}
-                      <strong className="text-white">
-                        {nextAction.canal_sugerido || nextAction.canal || "—"}
-                      </strong>
-                    </span>
-                  </div>
+                  {(nextAction.canal_sugerido || nextAction.canal) && (
+                    <div className="flex items-center gap-2 text-[11px] text-slate-400 mb-3">
+                      {(() => {
+                        const canal = (
+                          nextAction.canal_sugerido ||
+                          nextAction.canal ||
+                          ""
+                        ).toLowerCase();
+                        const Icon = canalIcons[canal] || PhoneCall;
+                        return <Icon className="h-3.5 w-3.5" />;
+                      })()}
+                      <span>
+                        Canal:{" "}
+                        <strong className="text-white">
+                          {nextAction.canal_sugerido || nextAction.canal || "—"}
+                        </strong>
+                      </span>
+                    </div>
+                  )}
 
-                  {/* Mensagem sugerida */}
+                  {/* Mensagem/descricao sugerida */}
                   <div className="p-3 rounded-lg bg-white/5 border border-white/10 mb-4 flex-1">
                     <p className="text-xs text-slate-300 italic leading-relaxed">
                       &ldquo;
                       {nextAction.mensagem_sugerida ||
+                        nextAction.descricao ||
                         nextAction.argumento ||
-                        "Mensagem nao disponivel"}
+                        "Sem descricao"}
                       &rdquo;
                     </p>
                   </div>
@@ -330,7 +404,7 @@ function AIAdvisorSection() {
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9 font-medium"
                   >
                     <Send className="h-3.5 w-3.5 mr-1.5" />
-                    Executar Agora
+                    {contextoIA === "cadastro" ? "Conferir Agora" : contextoIA === "diretoria" || contextoIA === "administrativo" ? "Resolver Agora" : "Executar Agora"}
                   </Button>
                 </div>
               ) : (
@@ -347,7 +421,7 @@ function AIAdvisorSection() {
               <div className="flex items-center gap-2 mb-3">
                 <Calendar className="h-4 w-4 text-amber-400" />
                 <span className="text-xs font-semibold text-amber-300 uppercase tracking-wider">
-                  Agenda Sugerida
+                  {contextoIA === "cadastro" ? "Agenda de Revisao" : contextoIA === "diretoria" || contextoIA === "administrativo" ? "Acoes Prioritarias" : "Agenda Sugerida"}
                 </span>
                 {agenda.length > 0 && (
                   <Badge

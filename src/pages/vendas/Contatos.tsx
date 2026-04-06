@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useUsuario } from "@/hooks/useUsuario";
 
 interface ContatoRow {
   id: string;
@@ -33,16 +34,20 @@ interface ContatoRow {
   created_at: string;
 }
 
-async function fetchContatos() {
-  const { data, error } = await (supabase as any)
+async function fetchContatos(scope?: { consultor?: string; cooperativas?: string[] }) {
+  let q = (supabase as any)
     .from("negociacoes")
     .select("id, lead_nome, cpf_cnpj, telefone, email, consultor, cooperativa, origem, stage, plano, veiculo_modelo, veiculo_placa, valor_plano, created_at")
     .order("created_at", { ascending: false });
+  if (scope?.consultor) q = q.eq("consultor", scope.consultor);
+  if (scope?.cooperativas && scope.cooperativas.length > 0) q = q.in("cooperativa", scope.cooperativas);
+  const { data, error } = await q;
   if (error) throw error;
   return (data || []) as ContatoRow[];
 }
 
 export default function Contatos() {
+  const { usuario, isConsultor, isGestor, canViewAllData, cooperativas: minhasCoops } = useUsuario();
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("todos");
   const [page, setPage] = useState(0);
@@ -52,9 +57,16 @@ export default function Contatos() {
   const [filterConsultor, setFilterConsultor] = useState("all");
   const [filterCooperativa, setFilterCooperativa] = useState("all");
 
+  const scope = useMemo(() => {
+    if (canViewAllData) return undefined;
+    if (isGestor && minhasCoops.length > 0) return { cooperativas: minhasCoops };
+    if (isConsultor && usuario?.nome) return { consultor: usuario.nome };
+    return undefined;
+  }, [canViewAllData, isConsultor, isGestor, usuario?.nome, minhasCoops]);
+
   const { data: contatos = [], isLoading } = useQuery({
-    queryKey: ["contatos-negociacoes"],
-    queryFn: fetchContatos,
+    queryKey: ["contatos-negociacoes", scope?.consultor, scope?.cooperativas?.join(",")],
+    queryFn: () => fetchContatos(scope),
   });
 
   // Deduplicate by cpf_cnpj or lead_nome to get unique contacts
