@@ -304,16 +304,31 @@ export default function CotacaoTab({ deal }: Props) {
     return plano;
   };
 
-  // Buscar coberturas ao selecionar plano
+  // Mapear tipo de veículo do form para tipo_veiculo da coberturas_plano
+  const tipoVeiculoCob = (): string => {
+    const t = form.tipoVeiculo.toLowerCase();
+    if (t.includes("moto")) return "motos";
+    if (t.includes("caminhão") || t.includes("van") || t.includes("ônibus")) return "pesados";
+    return "leves";
+  };
+
+  // Buscar coberturas ao selecionar plano — filtrar por tipo de veículo
   const carregarCoberturas = async (plano: string) => {
     const planoNorm = normalizarPlano(plano);
-    const { data } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", planoNorm).order("ordem");
+    const tipo = tipoVeiculoCob();
+    // Buscar coberturas específicas para este tipo de veículo
+    const { data } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", planoNorm).eq("tipo_veiculo", tipo).order("ordem");
     if (data && data.length > 0) {
       setCoberturasPlano(data);
     } else {
-      // Tentar busca exata caso tenha match direto
-      const { data: data2 } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", plano).order("ordem");
-      setCoberturasPlano(data2 || []);
+      // Fallback: coberturas genéricas (leves) do plano
+      const { data: data2 } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", planoNorm).eq("tipo_veiculo", "leves").order("ordem");
+      if (data2 && data2.length > 0) {
+        setCoberturasPlano(data2);
+      } else {
+        const { data: data3 } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", plano).order("ordem");
+        setCoberturasPlano(data3 || []);
+      }
     }
   };
 

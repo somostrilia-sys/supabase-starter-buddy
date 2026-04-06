@@ -396,7 +396,7 @@ export default function MinhaConta() {
     negociacao: c.negociacao_codigo || c.negociacao_id || "", valorAdesao: Number(c.valor_adesao || 0),
     percentual: Number(c.percentual || 15), valorRecebido: Number(c.valor_calculado || 0),
     status: (c.pago ? "pago" : c.processando ? "processando" : "pendente") as ComissaoStatus,
-  })) : mockComissoes;
+  })) : [];
   const totalRecebido = comissoesFinal.filter(c => c.status === "pago").reduce((s, c) => s + c.valorRecebido, 0);
   const totalPendente = comissoesFinal.filter(c => c.status === "pendente" || c.status === "processando").reduce((s, c) => s + c.valorRecebido, 0);
   const comissoesMes = comissoesFinal.filter(c => c.data.startsWith(mesAtual) && c.status === "pago").reduce((s, c) => s + c.valorRecebido, 0);

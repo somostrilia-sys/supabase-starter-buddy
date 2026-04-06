@@ -144,13 +144,37 @@ export default function PlanoComparativo() {
         }
       }
 
+      // Detectar tipo de veículo pelo nome do plano
+      const detectTipoVeiculo = (): string => {
+        const nomes = todosPlanos.map(p => p.nome.toLowerCase()).join(" ");
+        if (nomes.includes("moto")) return "motos";
+        if (nomes.includes("pesado") || nomes.includes("van") || nomes.includes("caminhão")) return "pesados";
+        return "leves";
+      };
+      const tipoVeiculoCot = detectTipoVeiculo();
+
       // Usar coberturas do snapshot se disponíveis, senão buscar do banco
       const temSnapshot = todosPlanos.some(p => p.coberturas && p.coberturas.length > 0);
       if (!temSnapshot) {
-        const nomesPlanos = [...new Set(todosPlanos.map(p => p.nome))];
+        // Normalizar nomes de planos para busca
+        const normPlano = (n: string): string => {
+          const p = n.toLowerCase();
+          if (p.includes("premium")) return "Premium";
+          if (p.includes("completo")) return "Completo";
+          if (p.includes("objetivo")) return "Objetivo";
+          if (p.includes("básico") || p.includes("basico")) return "Básico";
+          return n;
+        };
+        const nomesPlanos = [...new Set(todosPlanos.map(p => normPlano(p.nome)))];
         if (nomesPlanos.length > 0) {
-          const { data: cobData } = await supabase.from("coberturas_plano" as any)
-            .select("*").in("plano", nomesPlanos);
+          // Buscar coberturas específicas para o tipo de veículo
+          let { data: cobData } = await supabase.from("coberturas_plano" as any)
+            .select("*").in("plano", nomesPlanos).eq("tipo_veiculo", tipoVeiculoCot);
+          // Fallback para leves se não encontrar
+          if (!cobData || cobData.length === 0) {
+            ({ data: cobData } = await supabase.from("coberturas_plano" as any)
+              .select("*").in("plano", nomesPlanos).eq("tipo_veiculo", "leves"));
+          }
           if (cobData && (cobData as any[]).length > 0) {
             const cobMap: Record<string, { coberturas: string[]; assistencias: string[]; detalhes: Record<string, string> }> = {};
             (cobData as any[]).forEach(c => {
@@ -188,13 +212,15 @@ export default function PlanoComparativo() {
 
       setPlanos(todosPlanos);
 
-      // Buscar opcionais do catálogo
+      // Buscar opcionais do catálogo filtrados por tipo de veículo
+      const tiposPermitidos = tipoVeiculoCot === "motos" ? ["motos", "todos"] : tipoVeiculoCot === "pesados" ? ["pesados", "todos"] : ["leves", "todos"];
       const { data: opcData } = await supabase.from("opcionais_catalogo" as any)
-        .select("id, nome, categoria, valor_mensal, tipo_veiculo")
+        .select("id, nome, categoria, valor_mensal, tipo_veiculo, planos")
         .eq("ativo", true)
+        .in("tipo_veiculo", tiposPermitidos)
         .order("categoria")
         .order("ordem");
-      if (opcData) setOpcionais(opcData as OpcionalCatalogo[]);
+      if (opcData) setOpcionais(opcData as any[]);
 
       if ((cot as any).negociacao_id) {
         const { data: negData } = await supabase.from("negociacoes" as any).select("*").eq("id", (cot as any).negociacao_id).single();
