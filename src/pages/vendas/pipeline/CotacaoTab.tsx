@@ -174,6 +174,12 @@ export default function CotacaoTab({ deal }: Props) {
     obsContrato: "",
     obsInterna: "",
   });
+  const adesaoPadrao = (() => {
+    const t = form.tipoVeiculo.toLowerCase();
+    if (t.includes("moto")) return 250;
+    if (t.includes("caminhão") || t.includes("van") || t.includes("ônibus")) return 1000;
+    return 400; // leves
+  })();
   const [planoSelecionado, setPlanoSelecionado] = useState("Completo");
   const [fipeLoading, setFipeLoading] = useState(false);
   const [fipeFetched, setFipeFetched] = useState(false);
@@ -584,19 +590,19 @@ export default function CotacaoTab({ deal }: Props) {
           percentual: 0,
           coberturas: [] as string[],
           valorReal: Number(p?.cota || 0),
-          adesao: Number(p?.adesao || 0) || 400,
+          adesao: Number(p?.adesao || 0) || adesaoPadrao,
           rastreador: p?.rastreador || "Não",
           instalacao: Number(p?.instalacao || 0) || 100,
         };
       })
-    : planosConfigDefault.map(p => ({ ...p, valorReal: 0, adesao: 400, rastreador: "Não", instalacao: 100 }));
+    : planosConfigDefault.map(p => ({ ...p, valorReal: 0, adesao: adesaoPadrao, rastreador: "Não", instalacao: 100 }));
   // Usar valor FIPE real da API
   const valorFipe = valorFipeReal;
   const codFipe = codFipeReal;
 
   // Desconto RBAC: consultor NUNCA pode, gestor sempre pode (IA analisa >5%), diretor/admin livre
   const descontoAprovadoPorDiretor = !!(deal as any).desconto_aprovado_por || !!(deal as any).desconto_ia_aprovado;
-  const descontoBloqueado = !podeDesconto; // Consultor = bloqueado. Gestor/diretor = aberto.
+  const descontoBloqueado = isConsultor; // Consultor = completely disabled. Gestor = max 5%. Diretor/Admin = no limit.
 
   const set = (field: string, value: string | boolean) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -622,8 +628,8 @@ export default function CotacaoTab({ deal }: Props) {
         nome: planoSelecionado,
         mensal: descontoMensal ? Number(descontoMensal) : mensal,
         mensalOriginal: descontoMensal ? mensal : undefined,
-        adesao: descontoAdesao ? Number(descontoAdesao) : (precoPlano ? Number(precoPlano.adesao) : 400),
-        adesaoOriginal: descontoAdesao ? (precoPlano ? Number(precoPlano.adesao) : 400) : undefined,
+        adesao: descontoAdesao ? Number(descontoAdesao) : (precoPlano ? Number(precoPlano.adesao) : adesaoPadrao),
+        adesaoOriginal: descontoAdesao ? (precoPlano ? Number(precoPlano.adesao) : adesaoPadrao) : undefined,
         participacao: precoPlano ? `${precoPlano.tipo_franquia} ${precoPlano.valor_franquia}` : "5% FIPE",
         rastreador: precoPlano?.rastreador || "Não",
         instalacao: valorInstalacaoEdit ? Number(valorInstalacaoEdit) : (precoPlano ? Number(precoPlano.instalacao || 0) : 100),
@@ -1172,7 +1178,7 @@ export default function CotacaoTab({ deal }: Props) {
                     );
                   })()}
                   {/* Adesão + Instalação rastreador */}
-                  <div className="text-xs text-muted-foreground">Adesão: <span className="font-semibold text-[#1A3A5C]">{formatCurrency((p as any).adesao || 400)}</span></div>
+                  <div className="text-xs text-muted-foreground">Adesão: <span className="font-semibold text-[#1A3A5C]">{formatCurrency((p as any).adesao || adesaoPadrao)}</span></div>
                   <div className="flex items-center gap-1 p-1.5 rounded border border-amber-300 bg-amber-50">
                     <span className="text-[10px] text-amber-800 font-medium">Instalação Rastreador: R$</span>
                     <input type="number" className="w-16 text-[10px] border border-amber-300 rounded px-1 py-0.5 bg-white font-semibold" value={valorInstalacaoEdit || String((p as any).instalacao || 100)} onChange={e => { setValorInstalacaoEdit(e.target.value); if (e.target.value) supabase.from("negociacoes").update({ instalacao_rastreador: Number(e.target.value) } as any).eq("id", deal.id).then(() => {}); }} onClick={e => e.stopPropagation()} />
@@ -1197,7 +1203,7 @@ export default function CotacaoTab({ deal }: Props) {
             const pl = planosConfig.find(p => p.nome === planoSelecionado);
             const mensalVal = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : Math.round(valorFipe * (pl?.percentual || 0));
             const mensalidadeTotal = mensalVal + totalOpcionais;
-            const adesaoVal = (pl as any)?.adesao || 400;
+            const adesaoVal = (pl as any)?.adesao || adesaoPadrao;
             const instVal = valorInstalacaoEdit ? Number(valorInstalacaoEdit) : ((pl as any)?.instalacao || 100);
             return (
               <>
@@ -1223,12 +1229,37 @@ export default function CotacaoTab({ deal }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Desconto Mensalidade (valor final c/ opcionais)</Label>
-              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60" : ""}`} type="number" placeholder={totalOpcionais > 0 ? `Sem desconto = ${(() => { const pl = planosConfig.find(p => p.nome === planoSelecionado); const mv = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : Math.round(valorFipe * (pl?.percentual || 0)); return formatCurrency(mv + totalOpcionais); })()}` : "Deixe vazio = sem desconto"} value={descontoMensal} disabled={descontoBloqueado} onChange={e => { setDescontoMensal(e.target.value); setDescontoIaResult(null); }} />
+              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60" : ""}`} type="number" placeholder={totalOpcionais > 0 ? `Sem desconto = ${(() => { const pl = planosConfig.find(p => p.nome === planoSelecionado); const mv = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : Math.round(valorFipe * (pl?.percentual || 0)); return formatCurrency(mv + totalOpcionais); })()}` : "Deixe vazio = sem desconto"} value={descontoMensal} disabled={descontoBloqueado} onChange={e => {
+                const val = e.target.value;
+                if (isGestor && val) {
+                  const pl = planosConfig.find(p => p.nome === planoSelecionado);
+                  const mensalPlanoVal = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : Math.round(valorFipe * (pl?.percentual || 0));
+                  const mensalOrig = mensalPlanoVal + totalOpcionais;
+                  const pct = mensalOrig > 0 ? ((mensalOrig - Number(val)) / mensalOrig) * 100 : 0;
+                  if (pct > 5) {
+                    toast.error("Desconto máximo 5%. Use Pedir Liberação para valores maiores.");
+                    return;
+                  }
+                }
+                setDescontoMensal(val); setDescontoIaResult(null);
+              }} />
               <p className="text-[10px] text-muted-foreground">Valor final já inclui plano + opcionais. Se preencher, o PDF mostrará desconto.</p>
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Desconto Adesão (valor final)</Label>
-              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60" : ""}`} type="number" placeholder="Deixe vazio = sem desconto" value={descontoAdesao} disabled={descontoBloqueado} onChange={e => { setDescontoAdesao(e.target.value); setDescontoIaResult(null); }} />
+              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60" : ""}`} type="number" placeholder="Deixe vazio = sem desconto" value={descontoAdesao} disabled={descontoBloqueado} onChange={e => {
+                const val = e.target.value;
+                if (isGestor && val) {
+                  const precoPlanoDesc = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
+                  const adesaoOrig = precoPlanoDesc ? Number(precoPlanoDesc.adesao) : adesaoPadrao;
+                  const pct = adesaoOrig > 0 ? ((adesaoOrig - Number(val)) / adesaoOrig) * 100 : 0;
+                  if (pct > 5) {
+                    toast.error("Desconto máximo 5%. Use Pedir Liberação para valores maiores.");
+                    return;
+                  }
+                }
+                setDescontoAdesao(val); setDescontoIaResult(null);
+              }} />
               <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
             </div>
           </div>
@@ -1238,7 +1269,7 @@ export default function CotacaoTab({ deal }: Props) {
             const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
             const mensalPlanoOnly = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
             const mensalOriginal = mensalPlanoOnly + totalOpcionais;
-            const adesaoOriginal = precoPlano ? Number(precoPlano.adesao) : 400;
+            const adesaoOriginal = precoPlano ? Number(precoPlano.adesao) : adesaoPadrao;
             const descMensalPct = descontoMensal && mensalOriginal > 0 ? ((mensalOriginal - Number(descontoMensal)) / mensalOriginal) * 100 : 0;
             const descAdesaoPct = descontoAdesao && adesaoOriginal > 0 ? ((adesaoOriginal - Number(descontoAdesao)) / adesaoOriginal) * 100 : 0;
             const maiorDesconto = Math.max(descMensalPct, descAdesaoPct);
@@ -1474,7 +1505,7 @@ export default function CotacaoTab({ deal }: Props) {
           const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
           const mensalPlanoOnly2 = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
           const mensalOriginal = mensalPlanoOnly2 + totalOpcionais;
-          const adesaoOriginal = precoPlano ? Number(precoPlano.adesao) : 400;
+          const adesaoOriginal = precoPlano ? Number(precoPlano.adesao) : adesaoPadrao;
           const descMensalPct = descontoMensal && mensalOriginal > 0 ? ((mensalOriginal - Number(descontoMensal)) / mensalOriginal) * 100 : 0;
           const descAdesaoPct = descontoAdesao && adesaoOriginal > 0 ? ((adesaoOriginal - Number(descontoAdesao)) / adesaoOriginal) * 100 : 0;
           const maiorDesconto = Math.max(descMensalPct, descAdesaoPct);

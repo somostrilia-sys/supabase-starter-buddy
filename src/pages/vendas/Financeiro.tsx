@@ -226,7 +226,7 @@ export default function Financeiro() {
                 </div>
                 <div>
                   <p className="text-xl font-bold">{fmt(totalComissoes)}</p>
-                  <p className="text-xs text-muted-foreground">Total Comissoes (10%)</p>
+                  <p className="text-xs text-muted-foreground">Total Comissoes</p>
                 </div>
               </CardContent>
             </Card>
@@ -351,7 +351,7 @@ export default function Financeiro() {
             <Card>
               <CardContent className="p-4 text-center">
                 <p className="text-xl font-bold text-warning">{fmt(totalComissoes)}</p>
-                <p className="text-xs text-muted-foreground">Total Comissoes (10%)</p>
+                <p className="text-xs text-muted-foreground">Total Comissoes</p>
               </CardContent>
             </Card>
             <Card>
@@ -374,7 +374,7 @@ export default function Financeiro() {
                     <TableHead className="text-xs">Consultor</TableHead>
                     <TableHead className="text-xs text-right">Qtd Vendas</TableHead>
                     <TableHead className="text-xs text-right">Total Vendido</TableHead>
-                    <TableHead className="text-xs text-right">Comissao (10%)</TableHead>
+                    <TableHead className="text-xs text-right">Comissao</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

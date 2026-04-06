@@ -1,188 +1,152 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Copy, ExternalLink, RefreshCw, Save, Wifi, WifiOff } from "lucide-react";
+import { Copy, Save, Wifi, WifiOff, Loader2, Plus, Key } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
-const regionaisOpcoes = ["São Paulo Capital", "Interior SP", "Regional Sul", "Regional Nordeste"];
-const cooperativasOpcoes = ["Coop Central SP", "Coop ABC Paulista", "Coop Campinas", "Coop Curitiba"];
-const camposApi = ["CPF Vendedor", "Nome Associado", "Placa", "Modelo", "Plano", "Valor Adesão", "Valor Mensalidade"];
+interface Integracao {
+  id: string;
+  nome: string;
+  ativo: boolean;
+  config: Record<string, any>;
+  token: string | null;
+}
+
+const integracoesDefault: { nome: string; descricao: string; icon: string }[] = [
+  { nome: "SGA (Gestao)", descricao: "Sincronizacao com sistema de gestao de associados", icon: "🔗" },
+  { nome: "Power Sign", descricao: "Assinatura digital de contratos", icon: "✍️" },
+  { nome: "API REST (SDR IA)", descricao: "Endpoint para agentes IA e integrações externas", icon: "🤖" },
+  { nome: "WhatsApp", descricao: "Envio automatico de cotacoes e notificacoes", icon: "💬" },
+  { nome: "Gateway Pagamento", descricao: "Cobranca de adesao e mensalidades", icon: "💳" },
+];
 
 export default function IntegracoesTab() {
-  // Gestão
-  const [tokenGestao, setTokenGestao] = useState("sk_gestao_live_a1b2c3d4e5f6");
-  const [gestaoRegionais, setGestaoRegionais] = useState<string[]>(["São Paulo Capital", "Interior SP"]);
-  const [gestaoCooperativas, setGestaoCooperativas] = useState<string[]>(["Coop Central SP"]);
-  const [gestaoFormaPagamento, setGestaoFormaPagamento] = useState(true);
-  const [gestaoVencimento, setGestaoVencimento] = useState(true);
-  const [gestaoContaBancaria, setGestaoContaBancaria] = useState(false);
-  const [gestaoConectado, setGestaoConectado] = useState(true);
+  const [integracoes, setIntegracoes] = useState<Integracao[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState<string | null>(null);
 
-  // Power Sign
-  const [tokenPowerSign, setTokenPowerSign] = useState("ps_token_x9y8z7");
-  const [psTipoDoc, setPsTipoDoc] = useState("documento");
-  const [psEnvioMultiplo, setPsEnvioMultiplo] = useState(false);
-  const [psConectado, setPsConectado] = useState(true);
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any).from("integracoes").select("*").order("nome");
+      if (data && data.length > 0) {
+        setIntegracoes(data);
+      } else {
+        // Seed defaults
+        const seeds = integracoesDefault.map(d => ({
+          nome: d.nome,
+          ativo: false,
+          config: { descricao: d.descricao, icon: d.icon },
+          token: null,
+        }));
+        const { data: inserted } = await (supabase as any).from("integracoes").insert(seeds).select();
+        setIntegracoes(inserted || []);
+      }
+      setLoading(false);
+    })();
+  }, []);
 
-  // API REST
-  const [apiToken] = useState("api_rest_f1e10329c68a4fab_live_token_2025");
+  async function toggleAtivo(integ: Integracao) {
+    const newAtivo = !integ.ativo;
+    await (supabase as any).from("integracoes").update({ ativo: newAtivo }).eq("id", integ.id);
+    setIntegracoes(prev => prev.map(i => i.id === integ.id ? { ...i, ativo: newAtivo } : i));
+    toast.success(`${integ.nome} ${newAtivo ? "ativada" : "desativada"}`);
+  }
 
-  const toggleList = (list: string[], setList: (v: string[]) => void, item: string) => {
-    setList(list.includes(item) ? list.filter(x => x !== item) : [...list, item]);
-  };
+  async function saveToken(integ: Integracao, token: string) {
+    setSaving(integ.id);
+    await (supabase as any).from("integracoes").update({ token, updated_at: new Date().toISOString() }).eq("id", integ.id);
+    setIntegracoes(prev => prev.map(i => i.id === integ.id ? { ...i, token } : i));
+    setSaving(null);
+    toast.success(`Token de ${integ.nome} salvo`);
+  }
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("Copiado para a área de transferência");
-  };
+  function copyToken(token: string) {
+    navigator.clipboard.writeText(token);
+    toast.success("Token copiado!");
+  }
+
+  async function gerarToken(integ: Integracao) {
+    const token = `gia_${crypto.randomUUID().replace(/-/g, "").slice(0, 32)}`;
+    await saveToken(integ, token);
+  }
+
+  if (loading) return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+
+  // API SDR info
+  const apiUrl = "https://dxuoppekxgvdqnytftho.supabase.co/functions/v1/gia-sdr-api";
 
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold">Integrações</h3>
-        <p className="text-sm text-muted-foreground">Configure as integrações com sistemas externos</p>
+        <h3 className="text-lg font-semibold">Integracoes</h3>
+        <p className="text-sm text-muted-foreground">Configure conexoes com sistemas externos</p>
       </div>
 
-      <Accordion type="multiple" defaultValue={["gestao"]} className="space-y-3">
-        {/* Gestão */}
-        <AccordionItem value="gestao" className="border rounded-lg px-4">
-          <AccordionTrigger className="hover:no-underline">
-            <div className="flex items-center gap-3">
-              <span className="font-semibold">Gestão - Sistema de Gestão</span>
-              <Badge className={gestaoConectado ? "bg-emerald-500/10 text-emerald-600 border-success/20" : "bg-destructive/10 text-destructive border-red-200"}>
-                {gestaoConectado ? <><Wifi className="h-3 w-3 mr-1" /> Conectado</> : <><WifiOff className="h-3 w-3 mr-1" /> Desconectado</>}
-              </Badge>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="space-y-4 pb-4">
-            <div>
-              <Label>Token Gestão</Label>
-              <Input type="password" value={tokenGestao} onChange={e => setTokenGestao(e.target.value)} />
-            </div>
-            <div>
-              <Label className="mb-2 block">Regionais Habilitadas</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {regionaisOpcoes.map(r => (
-                  <div key={r} className="flex items-center gap-2">
-                    <Checkbox checked={gestaoRegionais.includes(r)} onCheckedChange={() => toggleList(gestaoRegionais, setGestaoRegionais, r)} />
-                    <span className="text-sm">{r}</span>
-                  </div>
-                ))}
+      {integracoes.map(integ => (
+        <Card key={integ.id} className={integ.ativo ? "border-emerald-500/30" : ""}>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{integ.config?.icon || "🔌"}</span>
+                <div>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    {integ.nome}
+                    {integ.ativo ? (
+                      <Badge className="bg-emerald-500/10 text-emerald-400 text-[9px]"><Wifi className="h-3 w-3 mr-1" />Ativa</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[9px]"><WifiOff className="h-3 w-3 mr-1" />Inativa</Badge>
+                    )}
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">{integ.config?.descricao || ""}</p>
+                </div>
               </div>
+              <Switch checked={integ.ativo} onCheckedChange={() => toggleAtivo(integ)} />
             </div>
-            <div>
-              <Label className="mb-2 block">Cooperativas Habilitadas</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {cooperativasOpcoes.map(c => (
-                  <div key={c} className="flex items-center gap-2">
-                    <Checkbox checked={gestaoCooperativas.includes(c)} onCheckedChange={() => toggleList(gestaoCooperativas, setGestaoCooperativas, c)} />
-                    <span className="text-sm">{c}</span>
+          </CardHeader>
+          {integ.ativo && (
+            <CardContent className="space-y-3 pt-0">
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <Label className="text-xs">Token</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      type="password"
+                      value={integ.token || ""}
+                      onChange={e => setIntegracoes(prev => prev.map(i => i.id === integ.id ? { ...i, token: e.target.value } : i))}
+                      placeholder="Cole ou gere um token"
+                      className="font-mono text-xs"
+                    />
+                    {integ.token && (
+                      <Button size="sm" variant="outline" onClick={() => copyToken(integ.token!)}><Copy className="h-3.5 w-3.5" /></Button>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => gerarToken(integ)}><Key className="h-3.5 w-3.5 mr-1" />Gerar</Button>
+                    <Button size="sm" onClick={() => saveToken(integ, integ.token || "")} disabled={saving === integ.id}>
+                      {saving === integ.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                    </Button>
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
-            <div>
-              <Label className="mb-2 block">Campos Obrigatórios</Label>
-              <div className="space-y-2">
-                {[
-                  { label: "Forma de Pagamento", value: gestaoFormaPagamento, set: setGestaoFormaPagamento },
-                  { label: "Vencimento Mensalidade", value: gestaoVencimento, set: setGestaoVencimento },
-                  { label: "Conta Bancária", value: gestaoContaBancaria, set: setGestaoContaBancaria },
-                ].map(item => (
-                  <div key={item.label} className="flex items-center gap-2">
-                    <Checkbox checked={item.value} onCheckedChange={(v) => item.set(!!v)} />
-                    <span className="text-sm">{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => toast.success("Conexão Gestão testada com sucesso!")} className="gap-2">
-                <RefreshCw className="h-4 w-4" /> Testar Conexão
-              </Button>
-              <Button className="gap-2"><Save className="h-4 w-4" /> Salvar</Button>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
 
-        {/* Power Sign */}
-        <AccordionItem value="powersign" className="border rounded-lg px-4">
-          <AccordionTrigger className="hover:no-underline">
-            <div className="flex items-center gap-3">
-              <span className="font-semibold">Power Sign - Assinatura Digital</span>
-              <Badge className={psConectado ? "bg-emerald-500/10 text-emerald-600 border-success/20" : "bg-destructive/10 text-destructive border-red-200"}>
-                {psConectado ? <><Wifi className="h-3 w-3 mr-1" /> Conectado</> : <><WifiOff className="h-3 w-3 mr-1" /> Desconectado</>}
-              </Badge>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="space-y-4 pb-4">
-            <div>
-              <Label>Token Power Sign</Label>
-              <Input type="password" value={tokenPowerSign} onChange={e => setTokenPowerSign(e.target.value)} />
-            </div>
-            <div>
-              <Label>Tipo Documento</Label>
-              <Select value={psTipoDoc} onValueChange={setPsTipoDoc}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="documento">Documento</SelectItem>
-                  <SelectItem value="envelope">Envelope</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2 p-3 rounded-lg border">
-              <Switch checked={psEnvioMultiplo} onCheckedChange={setPsEnvioMultiplo} />
-              <Label>Envio múltiplo</Label>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => toast.success("Power Sign testado com sucesso!")} className="gap-2">
-                <RefreshCw className="h-4 w-4" /> Testar
-              </Button>
-              <Button className="gap-2"><Save className="h-4 w-4" /> Salvar</Button>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* API REST */}
-        <AccordionItem value="api" className="border rounded-lg px-4">
-          <AccordionTrigger className="hover:no-underline">
-            <div className="flex items-center gap-3">
-              <span className="font-semibold">API REST</span>
-              <Badge variant="outline">Disponível</Badge>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="space-y-4 pb-4">
-            <div>
-              <Label>Token de Acesso</Label>
-              <div className="flex gap-2">
-                <Input readOnly value={apiToken} className="font-mono text-xs" />
-                <Button variant="outline" size="icon" onClick={() => copyToClipboard(apiToken)}><Copy className="h-4 w-4" /></Button>
-              </div>
-            </div>
-            <Button variant="outline" onClick={() => toast.info("Novo token gerado!")} className="gap-2">
-              <RefreshCw className="h-4 w-4" /> Gerar Novo Token
-            </Button>
-            <div>
-              <Label className="mb-2 block">Campos Disponíveis</Label>
-              <div className="flex flex-wrap gap-2">
-                {camposApi.map(c => (
-                  <Badge key={c} variant="secondary">{c}</Badge>
-                ))}
-              </div>
-            </div>
-            <Button variant="link" className="gap-2 p-0 h-auto">
-              <ExternalLink className="h-4 w-4" /> Documentação Completa
-            </Button>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+              {/* API SDR specific info */}
+              {integ.nome.includes("API") && (
+                <div className="p-3 rounded-lg bg-muted/30 border space-y-2">
+                  <p className="text-xs font-semibold">Endpoint SDR IA</p>
+                  <div className="flex items-center gap-2">
+                    <code className="text-[10px] bg-muted px-2 py-1 rounded flex-1 overflow-x-auto">{apiUrl}</code>
+                    <Button size="sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(apiUrl); toast.success("URL copiada"); }}><Copy className="h-3 w-3" /></Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Acoes: cotacao_completa, buscar_placa, listar_planos, status_negociacao</p>
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
+      ))}
     </div>
   );
 }

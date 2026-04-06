@@ -1,30 +1,46 @@
-import { useAuth, UserRole } from "./useAuth";
+import { useUsuario } from "./useUsuario";
+import { UserRole } from "./useAuth";
 
 export function usePermission() {
-  const { profile } = useAuth();
-  const role: UserRole = profile?.role ?? 'consultor';
+  const {
+    usuario,
+    isConsultor,
+    isGestor,
+    isDiretor,
+    isAdmin,
+    isCadastro,
+  } = useUsuario();
 
-  const canConcretizarVenda = ['admin', 'cadastro', 'administrativo', 'diretor'].includes(role);
-  const canLiberarCadastro = ['admin', 'supervisor', 'administrativo', 'diretor'].includes(role);
-  const canEditarAposConcretizacao = ['admin', 'cadastro', 'administrativo', 'diretor'].includes(role);
-  const canAcessarFinanceiro = ['admin', 'financeiro', 'administrativo', 'diretor'].includes(role);
-  const isAdmin = ['admin', 'administrativo', 'diretor'].includes(role);
+  // Map contexto_ia → legacy role name for backward compat
+  const role: UserRole = (() => {
+    if (isAdmin) return 'admin';
+    if (isDiretor) return 'diretor';
+    if (isGestor) return 'gestor';
+    if (isCadastro) return 'cadastro';
+    return 'consultor';
+  })();
+
+  const canConcretizarVenda = ['admin', 'cadastro', 'diretor'].includes(role);
+  const canLiberarCadastro = ['admin', 'diretor', 'gestor'].includes(role);
+  const canEditarAposConcretizacao = ['admin', 'cadastro', 'diretor'].includes(role);
+  const canAcessarFinanceiro = ['admin', 'diretor'].includes(role);
+  const isAdminOrDirector = ['admin', 'diretor'].includes(role);
 
   return {
     role,
-    profile,
+    profile: usuario,
     // canonical names
     canConcretizarVenda,
     canLiberarCadastro,
     canEditarAposConcretizacao,
     canAcessarFinanceiro,
-    isAdmin,
+    isAdmin: isAdminOrDirector,
     // spec aliases
     canConcretizar: canConcretizarVenda,
     canEditarAssociado: canEditarAposConcretizacao,
     canVerFinanceiro: canAcessarFinanceiro,
-    canVerRelatorios: ['admin', 'supervisor', 'financeiro', 'administrativo', 'diretor'].includes(role),
-    canViewGestao: ['admin', 'cadastro', 'administrativo', 'diretor'].includes(role),
+    canVerRelatorios: ['admin', 'diretor', 'gestor'].includes(role),
+    canViewGestao: ['admin', 'cadastro', 'diretor'].includes(role),
   };
 }
 
@@ -33,7 +49,7 @@ export function usePermission() {
 // ADMIN/DIRETOR: vê todos
 export function useLeadScope() {
   const { role, profile } = usePermission();
-  if (role === 'consultor') return { usuario_id: profile?.id };
+  if (role === 'consultor') return { usuario_id: (profile as any)?.id };
   if (role === 'gestor') return { unidade_id: (profile as any)?.unidade_id };
   return {} as Record<string, string | undefined>;
 }

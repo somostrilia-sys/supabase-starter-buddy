@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,9 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Bold, Italic, Underline, Save } from "lucide-react";
+import { Bold, Italic, Underline, Save, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const camposDinamicos = [
   "{nome_associado}",
@@ -46,7 +48,48 @@ export default function ContratoAdesaoTab() {
   const [tipoDocumento, setTipoDocumento] = useState("simples");
   const [envioMultiplo, setEnvioMultiplo] = useState(false);
   const [tokenPowerSign, setTokenPowerSign] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [templateId, setTemplateId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load from DB
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any).from("contrato_templates").select("*").eq("ativo", true).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (data) {
+        setTemplateId(data.id);
+        setTituloContrato(data.titulo || "Contrato de Adesão");
+        setConteudo(data.conteudo_html || defaultContrato);
+        setObservacoes(data.observacoes || "");
+        setEnvioAutomatico(data.envio_automatico ?? true);
+        setPowerSignHabilitado(data.power_sign_ativo ?? false);
+        setTokenPowerSign(data.power_sign_token || "");
+        setTipoDocumento(data.power_sign_tipo || "simples");
+      }
+    })();
+  }, []);
+
+  const salvarContrato = async () => {
+    setSaving(true);
+    const payload = {
+      titulo: tituloContrato,
+      conteudo_html: conteudo,
+      observacoes,
+      envio_automatico: envioAutomatico,
+      power_sign_ativo: powerSignHabilitado,
+      power_sign_token: tokenPowerSign || null,
+      power_sign_tipo: tipoDocumento,
+      updated_at: new Date().toISOString(),
+    };
+    if (templateId) {
+      await (supabase as any).from("contrato_templates").update(payload).eq("id", templateId);
+    } else {
+      const { data } = await (supabase as any).from("contrato_templates").insert(payload).select().single();
+      if (data) setTemplateId(data.id);
+    }
+    setSaving(false);
+    toast.success("Contrato salvo!");
+  };
 
   const inserirCampo = (campo: string) => {
     const ta = textareaRef.current;
@@ -151,7 +194,9 @@ export default function ContratoAdesaoTab() {
             )}
           </Card>
 
-          <Button className="gap-2"><Save className="h-4 w-4" /> Salvar Contrato</Button>
+          <Button className="gap-2" onClick={salvarContrato} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Salvar Contrato
+          </Button>
         </div>
 
         {/* Sidebar - Campos Dinâmicos */}

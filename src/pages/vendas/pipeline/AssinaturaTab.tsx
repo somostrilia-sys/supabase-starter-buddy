@@ -10,7 +10,7 @@ import { PipelineDeal } from "./mockData";
 import { supabase, callEdge } from "@/integrations/supabase/client";
 import { gerarContratoPdf } from "@/lib/gerarContratoPdf";
 import {
-  PenTool, Mail, MessageSquare, FileText, CheckCircle, Clock,
+  Mail, MessageSquare, FileText, CheckCircle, Clock,
   Eye, Send, AlertTriangle, Copy, ExternalLink, RotateCcw, Loader2,
 } from "lucide-react";
 import ExcecaoButton from "@/components/ExcecaoButton";
@@ -166,21 +166,6 @@ export default function AssinaturaTab({ deal }: Props) {
     toast.success("Contrato baixado!");
   };
 
-  const handleSimularAssinatura = async () => {
-    setStatus("assinado");
-    // Auto-transição: liberado_cadastro → concluido
-    if (deal.stage === "liberado_cadastro") {
-      await supabase.from("negociacoes").update({ stage: "concluido" } as any).eq("id", deal.id);
-      await supabase.from("pipeline_transicoes").insert({
-        negociacao_id: deal.id,
-        stage_anterior: "liberado_cadastro",
-        stage_novo: "concluido",
-        motivo: "Contrato assinado",
-        automatica: true,
-      } as any);
-    }
-    toast.success("Assinatura confirmada! Negociação concluída.", { duration: 5000 });
-  };
 
   const lbl = "text-sm font-semibold";
 
@@ -318,9 +303,6 @@ export default function AssinaturaTab({ deal }: Props) {
           <div className="flex gap-2 pt-1 flex-wrap">
             <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => { setStatus("enviado"); toast.info("Lembrete reenviado!"); }}>
               <RotateCcw className="h-3.5 w-3.5 mr-1" />Reenviar Lembrete
-            </Button>
-            <Button size="sm" variant="ghost" className="rounded-none text-xs text-success border border-green-200" onClick={handleSimularAssinatura}>
-              <PenTool className="h-3.5 w-3.5 mr-1" />Simular Assinatura (demo)
             </Button>
             <ExcecaoButton
               negociacaoId={deal.id}

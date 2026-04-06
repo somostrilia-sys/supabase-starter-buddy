@@ -6,10 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Info } from "lucide-react";
+import { Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-
-const STORAGE_KEY = "gia_personalizacao";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ConfigData {
   validadeCotacao: string;
@@ -53,36 +52,34 @@ const defaults: ConfigData = {
   textoWhatsApp: "Ola %{clientName}! Sua cotacao para o %{vehicleModel} esta pronta. Acesse: %{link}",
 };
 
-function loadConfig(): ConfigData {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return { ...defaults, ...JSON.parse(stored) };
-  } catch {
-    // ignore
-  }
-  return { ...defaults };
-}
-
 export default function PersonalizacaoTab() {
   const [subTab, setSubTab] = useState("configuracoes");
-  const [config, setConfig] = useState<ConfigData>(loadConfig);
+  const [config, setConfig] = useState<ConfigData>({ ...defaults });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setConfig(loadConfig());
+    (async () => {
+      const { data } = await (supabase as any).from("personalizacao").select("valor").eq("chave", "config").maybeSingle();
+      if (data?.valor) setConfig({ ...defaults, ...data.valor });
+    })();
   }, []);
 
   const update = <K extends keyof ConfigData>(key: K, value: ConfigData[K]) => {
     setConfig((prev) => ({ ...prev, [key]: value }));
   };
 
-  const saveConfig = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-    toast.success("Configuracoes salvas localmente");
+  const saveConfig = async () => {
+    setSaving(true);
+    await (supabase as any).from("personalizacao").upsert({ chave: "config", valor: config, updated_at: new Date().toISOString() }, { onConflict: "chave" });
+    setSaving(false);
+    toast.success("Configuracoes salvas");
   };
 
-  const saveNomenclaturas = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-    toast.success("Nomenclaturas salvas localmente");
+  const saveNomenclaturas = async () => {
+    setSaving(true);
+    await (supabase as any).from("personalizacao").upsert({ chave: "config", valor: config, updated_at: new Date().toISOString() }, { onConflict: "chave" });
+    setSaving(false);
+    toast.success("Nomenclaturas salvas");
   };
 
   const toggleItems: { label: string; key: keyof ConfigData }[] = [
@@ -102,14 +99,7 @@ export default function PersonalizacaoTab() {
         <p className="text-sm text-muted-foreground">Configure parametros e nomenclaturas da empresa</p>
       </div>
 
-      <div className="flex items-center gap-2 p-3 rounded-lg border border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/30">
-        <Info className="h-4 w-4 text-blue-500 shrink-0" />
-        <p className="text-xs text-blue-700 dark:text-blue-300">
-          As configuracoes sao salvas localmente no navegador. Futuramente serao sincronizadas com o banco de dados.
-        </p>
-      </div>
-
-      <Tabs value={subTab} onValueChange={setSubTab}>
+<Tabs value={subTab} onValueChange={setSubTab}>
         <TabsList>
           <TabsTrigger value="configuracoes">Configuracoes</TabsTrigger>
           <TabsTrigger value="nomenclaturas">Nomenclaturas</TabsTrigger>

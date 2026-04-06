@@ -90,22 +90,8 @@ export default function PlanoComparativo() {
   const payRef = useRef<HTMLDivElement>(null);
 
   // Inicializar countdown da oferta (1x por cotação, localStorage)
-  useEffect(() => {
-    if (!id) return;
-    const storageKey = `offer_${id}`;
-    const stored = localStorage.getItem(storageKey);
-    let endTime: number;
-    if (stored) {
-      endTime = parseInt(stored, 10);
-    } else {
-      endTime = Date.now() + OFFER_DURATION_MS;
-      localStorage.setItem(storageKey, String(endTime));
-    }
-    setOfferEnd(endTime);
-    if (Date.now() >= endTime) {
-      setOfferExpired(true);
-    }
-  }, [id]);
+  // Countdown vinculado ao banco (oferta_inicio da cotação)
+  // Inicializado no useEffect principal após carregar cotação
 
   // Ticker do countdown
   useEffect(() => {
@@ -133,6 +119,20 @@ export default function PlanoComparativo() {
       setLoading(true);
       const { data: cot } = await supabase.from("cotacoes" as any).select("*").eq("id", id).single();
       if (!cot) { setError("Cotação não encontrada."); setLoading(false); return; }
+
+      // Countdown da oferta vinculado ao banco
+      const ofertaInicio = (cot as any).oferta_inicio ? new Date((cot as any).oferta_inicio).getTime() : null;
+      if (ofertaInicio) {
+        const endTime = ofertaInicio + OFFER_DURATION_MS;
+        setOfferEnd(endTime);
+        if (Date.now() >= endTime) setOfferExpired(true);
+      } else {
+        // Cotação sem oferta_inicio — setar agora no banco
+        const agora = new Date().toISOString();
+        await supabase.from("cotacoes" as any).update({ oferta_inicio: agora } as any).eq("id", id);
+        const endTime = Date.now() + OFFER_DURATION_MS;
+        setOfferEnd(endTime);
+      }
 
       const todosPlanosBruto = Array.isArray((cot as any).todos_planos) ? (cot as any).todos_planos as Plano[] : [];
       const seenNames = new Set<string>();

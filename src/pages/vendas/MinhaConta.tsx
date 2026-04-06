@@ -61,26 +61,7 @@ interface ComissaoRecord {
   status: ComissaoStatus;
 }
 
-const day = 86400000;
-const now = Date.now();
-
-const mockComissoes: ComissaoRecord[] = [
-  { id: "cr1", data: new Date(now - 1 * day).toISOString().split("T")[0], associado: "João Pereira", negociacao: "NEG-2026-001", valorAdesao: 799.00, percentual: 15, valorRecebido: 119.85, status: "processando" },
-  { id: "cr2", data: new Date(now - 3 * day).toISOString().split("T")[0], associado: "Maria Santos", negociacao: "NEG-2026-002", valorAdesao: 599.00, percentual: 15, valorRecebido: 89.85, status: "pago" },
-  { id: "cr3", data: new Date(now - 5 * day).toISOString().split("T")[0], associado: "Carlos Oliveira", negociacao: "NEG-2026-003", valorAdesao: 799.00, percentual: 15, valorRecebido: 119.85, status: "pago" },
-  { id: "cr4", data: new Date(now - 7 * day).toISOString().split("T")[0], associado: "Ana Costa", negociacao: "NEG-2026-004", valorAdesao: 999.00, percentual: 15, valorRecebido: 149.85, status: "pago" },
-  { id: "cr5", data: new Date(now - 9 * day).toISOString().split("T")[0], associado: "Roberto Lima", negociacao: "NEG-2026-005", valorAdesao: 599.00, percentual: 15, valorRecebido: 89.85, status: "pendente" },
-  { id: "cr6", data: new Date(now - 12 * day).toISOString().split("T")[0], associado: "Fernanda Alves", negociacao: "NEG-2026-006", valorAdesao: 799.00, percentual: 15, valorRecebido: 119.85, status: "pago" },
-  { id: "cr7", data: new Date(now - 15 * day).toISOString().split("T")[0], associado: "Pedro Souza", negociacao: "NEG-2026-007", valorAdesao: 999.00, percentual: 15, valorRecebido: 149.85, status: "pago" },
-  { id: "cr8", data: new Date(now - 18 * day).toISOString().split("T")[0], associado: "Juliana Mendes", negociacao: "NEG-2026-008", valorAdesao: 599.00, percentual: 15, valorRecebido: 89.85, status: "pago" },
-  { id: "cr9", data: new Date(now - 22 * day).toISOString().split("T")[0], associado: "Marcos Silva", negociacao: "NEG-2026-009", valorAdesao: 799.00, percentual: 15, valorRecebido: 119.85, status: "pago" },
-  { id: "cr10", data: new Date(now - 25 * day).toISOString().split("T")[0], associado: "Camila Rodrigues", negociacao: "NEG-2026-010", valorAdesao: 999.00, percentual: 15, valorRecebido: 149.85, status: "pago" },
-  { id: "cr11", data: new Date(now - 28 * day).toISOString().split("T")[0], associado: "Lucas Ferreira", negociacao: "NEG-2026-011", valorAdesao: 599.00, percentual: 15, valorRecebido: 89.85, status: "pago" },
-  { id: "cr12", data: new Date(now - 32 * day).toISOString().split("T")[0], associado: "Beatriz Nunes", negociacao: "NEG-2026-012", valorAdesao: 799.00, percentual: 15, valorRecebido: 119.85, status: "pago" },
-  { id: "cr13", data: new Date(now - 35 * day).toISOString().split("T")[0], associado: "Gabriel Martins", negociacao: "NEG-2026-013", valorAdesao: 999.00, percentual: 15, valorRecebido: 149.85, status: "pendente" },
-  { id: "cr14", data: new Date(now - 40 * day).toISOString().split("T")[0], associado: "Isabela Costa", negociacao: "NEG-2026-014", valorAdesao: 599.00, percentual: 15, valorRecebido: 89.85, status: "pago" },
-  { id: "cr15", data: new Date(now - 45 * day).toISOString().split("T")[0], associado: "Rafael Almeida", negociacao: "NEG-2026-015", valorAdesao: 799.00, percentual: 15, valorRecebido: 119.85, status: "pago" },
-];
+// Mock data removed — using real data from comissoes_consultor
 
 const statusConfig: Record<ComissaoStatus, { label: string; cls: string }> = {
   pago: { label: "Pago", cls: "bg-success/15 text-success border-green-300" },

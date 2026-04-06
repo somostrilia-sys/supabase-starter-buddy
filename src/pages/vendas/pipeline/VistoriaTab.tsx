@@ -16,6 +16,7 @@ import {
   Clock, AlertCircle, Camera, Globe, RotateCcw, Download, Eye, Mail,
 } from "lucide-react";
 import ExcecaoButton from "@/components/ExcecaoButton";
+import PedirLiberacaoButton from "@/components/PedirLiberacaoButton";
 
 type VistoriaStatus = "pendente" | "em_aprovacao" | "aprovada" | "reprovada";
 
@@ -499,16 +500,22 @@ export default function VistoriaTab({ deal }: Props) {
                     )}
                   </Button>
                 )}
-                {status === "reprovada" && isAdmin && (
-                  <Button size="sm" className="rounded-none bg-blue-600 hover:bg-blue-700 text-white" onClick={handleAprovar}>
-                    <CheckCircle className="h-3.5 w-3.5 mr-1" />Aprovar (Exceção)
-                  </Button>
+                {status === "reprovada" && (
+                  <PedirLiberacaoButton
+                    negociacaoId={deal.id}
+                    onSuccess={(res) => {
+                      if (res?.aprovado) {
+                        setStatus("aprovada");
+                        toast.success("Liberação aprovada! Vistoria liberada.");
+                      }
+                    }}
+                  />
                 )}
-                {status === "reprovada" && !isAdmin && (
+                {status === "reprovada" && (
                   <ExcecaoButton
                     negociacaoId={deal.id}
                     tipoDefault="vistoria_rejeitada"
-                    label="Peça a um Diretor"
+                    label="Solicitar Exceção"
                     onSuccess={() => toast.success("Exceção solicitada!")}
                   />
                 )}
