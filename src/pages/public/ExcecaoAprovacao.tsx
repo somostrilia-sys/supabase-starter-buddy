@@ -10,6 +10,7 @@ const SENHAS_DIRETORES: Record<string, string> = {
   "Lissandra Donato": "LD@obj2026",
   "Carlos alberto": "CA@obj2026",
   "Rafael Gelinske da Silva": "RG@obj2026",
+  "Thainá": "TH@obj2026",
 };
 
 function fmt(v: number) {
