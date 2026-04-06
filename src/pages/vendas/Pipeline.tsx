@@ -64,8 +64,13 @@ export default function Pipeline() {
     queryFn: async () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user?.user?.email) return null;
-      const { data } = await supabase.from("usuarios").select("nome, cooperativa, regional, funcao, grupo_permissao")
+      const { data } = await supabase.from("usuarios").select("id, nome, cooperativa, regional, funcao, grupo_permissao")
         .eq("email", user.user.email).limit(1).maybeSingle();
+      // Buscar voluntario_id vinculado
+      if (data?.id) {
+        const { data: vol } = await (supabase as any).from("voluntarios").select("id").eq("gia_usuario_id", data.id).limit(1).maybeSingle();
+        if (vol) (data as any).voluntario_id = vol.id;
+      }
       return data as any;
     },
   });
@@ -247,6 +252,8 @@ export default function Pipeline() {
         cooperativa: data.cooperativa || undefined,
         regional: data.regional || undefined,
         consultor: data.consultor || usuarioLogado?.nome || undefined,
+        consultor_id: usuarioLogado?.id || undefined,
+        voluntario_id: usuarioLogado?.voluntario_id || undefined,
         observacoes: data.observacoes || undefined,
         cidade_circulacao: data.cidadeCirc || undefined,
         estado_circulacao: data.estadoCirc || undefined,

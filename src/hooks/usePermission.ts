@@ -24,6 +24,7 @@ export function usePermission() {
     canEditarAssociado: canEditarAposConcretizacao,
     canVerFinanceiro: canAcessarFinanceiro,
     canVerRelatorios: ['admin', 'supervisor', 'financeiro', 'administrativo', 'diretor'].includes(role),
+    canViewGestao: ['admin', 'cadastro', 'administrativo', 'diretor'].includes(role),
   };
 }
 

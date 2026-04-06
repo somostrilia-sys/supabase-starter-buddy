@@ -4,7 +4,7 @@ import { usePermission } from "@/hooks/usePermission";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 
-type PermissionKey = "canVerFinanceiro" | "canConcretizar";
+type PermissionKey = "canVerFinanceiro" | "canConcretizar" | "canViewGestao";
 
 export function ProtectedRoute({
   children,

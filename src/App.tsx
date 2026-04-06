@@ -83,6 +83,13 @@ const M = ({ children }: { children: React.ReactNode }) => (
   </ProtectedRoute>
 );
 
+// Gestão layout - protected for admin/diretor only
+const G = ({ children }: { children: React.ReactNode }) => (
+  <ProtectedRoute permission="canViewGestao">
+    <ModuleLayout>{children}</ModuleLayout>
+  </ProtectedRoute>
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -104,26 +111,26 @@ const App = () => (
             <Route path="/" element={<D><Dashboard /></D>} />
 
             {/* Gestão - New */}
-            <Route path="/gestao/*" element={<ProtectedRoute><GestaoModule /></ProtectedRoute>} />
+            <Route path="/gestao/*" element={<ProtectedRoute permission="canViewGestao"><GestaoModule /></ProtectedRoute>} />
             <Route path="/financeiro/*" element={<ProtectedRoute permission="canVerFinanceiro"><FinanceiroModule /></ProtectedRoute>} />
 
-            {/* Gestão (legacy) */}
-            <Route path="/associados" element={<M><Associados /></M>} />
-            <Route path="/veiculos" element={<M><Veiculos /></M>} />
-            <Route path="/sinistros" element={<M><Sinistros /></M>} />
-            <Route path="/regionais" element={<M><Regionais /></M>} />
-            <Route path="/cooperativas" element={<M><Cooperativas /></M>} />
-            <Route path="/documentacao" element={<M><Documentacao /></M>} />
-            <Route path="/vistorias" element={<M><Vistorias /></M>} />
-            <Route path="/produtos" element={<M><Produtos /></M>} />
-            <Route path="/usuarios" element={<M><Usuarios /></M>} />
-            <Route path="/parametros" element={<M><Parametros /></M>} />
+            {/* Gestão (legacy) — admin/diretor only */}
+            <Route path="/associados" element={<G><Associados /></G>} />
+            <Route path="/veiculos" element={<G><Veiculos /></G>} />
+            <Route path="/sinistros" element={<G><Sinistros /></G>} />
+            <Route path="/regionais" element={<G><Regionais /></G>} />
+            <Route path="/cooperativas" element={<G><Cooperativas /></G>} />
+            <Route path="/documentacao" element={<G><Documentacao /></G>} />
+            <Route path="/vistorias" element={<G><Vistorias /></G>} />
+            <Route path="/produtos" element={<G><Produtos /></G>} />
+            <Route path="/usuarios" element={<G><Usuarios /></G>} />
+            <Route path="/parametros" element={<G><Parametros /></G>} />
 
-            {/* Financeiro */}
-            <Route path="/financeiro/fluxo-diario" element={<M><FluxoDiario /></M>} />
-            <Route path="/financeiro/boletos" element={<M><Boletos /></M>} />
-            <Route path="/financeiro/conciliacao" element={<M><Conciliacao /></M>} />
-            <Route path="/financeiro/relatorios" element={<M><RelatoriosFinanceiro /></M>} />
+            {/* Financeiro — admin/diretor only */}
+            <Route path="/financeiro/fluxo-diario" element={<G><FluxoDiario /></G>} />
+            <Route path="/financeiro/boletos" element={<G><Boletos /></G>} />
+            <Route path="/financeiro/conciliacao" element={<G><Conciliacao /></G>} />
+            <Route path="/financeiro/relatorios" element={<G><RelatoriosFinanceiro /></G>} />
 
             {/* Vendas */}
             <Route path="/vendas/dashboard" element={<M><DashboardVendas /></M>} />
