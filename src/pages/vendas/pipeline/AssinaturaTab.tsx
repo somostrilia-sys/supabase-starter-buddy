@@ -13,6 +13,26 @@ import {
   Mail, MessageSquare, FileText, CheckCircle, Clock,
   Eye, Send, AlertTriangle, Copy, ExternalLink, RotateCcw, Loader2,
 } from "lucide-react";
+
+// Buscar coberturas reais do plano
+async function buscarCoberturasPlano(plano: string, tipoVeiculo?: string): Promise<string[]> {
+  // Busca exata
+  let { data } = await (supabase as any).from("coberturas_plano").select("cobertura").eq("plano", plano);
+  if (data && data.length > 0) return data.map((c: any) => c.cobertura);
+  // Normalizar
+  const norm = (p: string) => {
+    const l = p.toLowerCase();
+    if (l.includes("premium")) return "Premium";
+    if (l.includes("completo")) return "Completo";
+    if (l.includes("objetivo")) return "Objetivo";
+    if (l.includes("básico") || l.includes("basico")) return "Básico";
+    return p;
+  };
+  const tipo = tipoVeiculo || "leves";
+  ({ data } = await (supabase as any).from("coberturas_plano").select("cobertura").eq("plano", norm(plano)).eq("tipo_veiculo", tipo));
+  if (data && data.length > 0) return data.map((c: any) => c.cobertura);
+  return ["Conforme plano contratado"];
+}
 import ExcecaoButton from "@/components/ExcecaoButton";
 
 type AssinaturaStatus = "pendente" | "enviado" | "visualizado" | "assinado" | "expirado";
@@ -107,13 +127,15 @@ export default function AssinaturaTab({ deal }: Props) {
 
   const handleEnviar = async (canal: "email" | "whatsapp" | "ambos") => {
     setGerando(true);
+    // Buscar coberturas reais do plano
+    const produtosReais = await buscarCoberturasPlano(deal.plano || "Completo");
     // Gerar PDF do contrato
     const pdfBlob = gerarContratoPdf({
       empresa: { nome: "Objetivo Auto Benefícios", cnpj: "58.506.161/0001-31" },
       associado: { nome: deal.lead_nome, cpf: deal.cpf_cnpj || "", rg: "", cnh: "", sexo: "", nascimento: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "", cep: "", email: deal.email || "", celular: deal.telefone || "" },
-      veiculo: { placa: deal.veiculo_placa, modelo: deal.veiculo_modelo, marca: "", anoFab: "", anoModelo: "", cor: "", combustivel: "", chassi: "", renavam: "", codFipe: "", valorFipe: deal.valor_plano || 0, valorProtegido: deal.valor_plano || 0, diaVencimento: "10", veiculoTrabalho: "Não" },
-      plano: { nome: deal.plano || "Completo", valorMensal: deal.valor_plano || 0, adesao: 400, participacao: "5% FIPE" },
-      produtos: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Assistência 24H", "Reboque", "Chaveiro", "Hospedagem"],
+      veiculo: { placa: deal.veiculo_placa, modelo: deal.veiculo_modelo, marca: "", anoFab: "", anoModelo: "", cor: "", combustivel: "", chassi: "", renavam: "", codFipe: "", valorFipe: deal.valor_plano || 0, valorProtegido: deal.valor_plano || 0, diaVencimento: String((deal as any).dia_vencimento || "10"), veiculoTrabalho: "Não" },
+      plano: { nome: deal.plano || "Completo", valorMensal: deal.valor_plano || 0, adesao: (deal as any).adesao || 400, participacao: (deal as any).participacao || "5% FIPE" },
+      produtos: produtosReais,
       consultor: { nome: deal.consultor || "", celular: "", email: "" },
     });
 
@@ -148,13 +170,14 @@ export default function AssinaturaTab({ deal }: Props) {
     reader.readAsDataURL(pdfBlob);
   };
 
-  const handleBaixarContrato = () => {
+  const handleBaixarContrato = async () => {
+    const produtosReais = await buscarCoberturasPlano(deal.plano || "Completo");
     const blob = gerarContratoPdf({
       empresa: { nome: "Objetivo Auto Benefícios", cnpj: "58.506.161/0001-31" },
       associado: { nome: deal.lead_nome, cpf: deal.cpf_cnpj || "", rg: "", cnh: "", sexo: "", nascimento: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "", cep: "", email: deal.email || "", celular: deal.telefone || "" },
-      veiculo: { placa: deal.veiculo_placa, modelo: deal.veiculo_modelo, marca: "", anoFab: "", anoModelo: "", cor: "", combustivel: "", chassi: "", renavam: "", codFipe: "", valorFipe: deal.valor_plano || 0, valorProtegido: deal.valor_plano || 0, diaVencimento: "10", veiculoTrabalho: "Não" },
-      plano: { nome: deal.plano || "Completo", valorMensal: deal.valor_plano || 0, adesao: 400, participacao: "5% FIPE" },
-      produtos: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Assistência 24H", "Reboque", "Chaveiro", "Hospedagem"],
+      veiculo: { placa: deal.veiculo_placa, modelo: deal.veiculo_modelo, marca: "", anoFab: "", anoModelo: "", cor: "", combustivel: "", chassi: "", renavam: "", codFipe: "", valorFipe: deal.valor_plano || 0, valorProtegido: deal.valor_plano || 0, diaVencimento: String((deal as any).dia_vencimento || "10"), veiculoTrabalho: "Não" },
+      plano: { nome: deal.plano || "Completo", valorMensal: deal.valor_plano || 0, adesao: (deal as any).adesao || 400, participacao: (deal as any).participacao || "5% FIPE" },
+      produtos: produtosReais,
       consultor: { nome: deal.consultor || "", celular: "", email: "" },
     });
     const url = URL.createObjectURL(blob);

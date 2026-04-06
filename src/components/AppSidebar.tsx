@@ -4,6 +4,7 @@ import {
   ChevronDown, LayoutDashboard, DollarSign, Target,
   BarChart3, Receipt, ArrowLeftRight, Wallet, Kanban, Contact, Building,
   Activity, UsersRound, Tag, Upload, Crosshair, UserCircle, ArrowRightLeft, Globe,
+  ScrollText,
 } from "lucide-react";
 import { useBrand } from "@/hooks/useBrand";
 import { NavLink } from "@/components/NavLink";
@@ -37,6 +38,7 @@ const gestaoItems = [
   { title: "Produtos", url: "/produtos", icon: Package },
   { title: "Usuários", url: "/usuarios", icon: UserCog },
   { title: "Parâmetros", url: "/parametros", icon: SlidersHorizontal },
+  { title: "Auditoria", url: "/gestao/auditoria", icon: ScrollText },
 ];
 
 const financeiroItems = [

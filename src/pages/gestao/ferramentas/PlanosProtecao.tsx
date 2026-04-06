@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,6 +57,7 @@ const tierColors: Record<string, { border: string; bg: string; accent: string }>
 };
 
 export default function PlanosProtecao({ onBack }: { onBack: () => void }) {
+  const queryClient = useQueryClient();
   const { data: planosFromDb = [], isLoading: loadingPlanos } = useQuery({
     queryKey: ["grupos_produtos"],
     queryFn: async () => {
@@ -116,15 +118,59 @@ export default function PlanosProtecao({ onBack }: { onBack: () => void }) {
     setEditCategorias([...p.categorias]);
   };
 
-  const handleSaveEdit = () => {
+  const [saving, setSaving] = useState(false);
+
+  const handleSaveEdit = async () => {
     if (!editing) return;
-    setPlanos(prev => prev.map(p => p.id === editing.id ? {
-      ...editing,
-      coberturas: todasCoberturas.filter(c => editCoberturas.includes(c.id)),
-      regionais: editRegionais,
-      categorias: editCategorias as CategoriaVeiculo[],
-    } : p));
-    setEditing(null);
+    setSaving(true);
+    try {
+      // 1. Update grupo_produto name/description
+      const { error: updateError } = await (supabase as any)
+        .from("grupos_produtos")
+        .update({
+          nome: editing.nome,
+          descricao: editing.descricao,
+          ativo: editing.ativo,
+        })
+        .eq("id", editing.id);
+      if (updateError) throw updateError;
+
+      // 2. Replace items: delete existing, insert new
+      const { error: deleteError } = await (supabase as any)
+        .from("grupo_produto_itens")
+        .delete()
+        .eq("grupo_id", editing.id);
+      if (deleteError) throw deleteError;
+
+      if (editCoberturas.length > 0) {
+        const rows = editCoberturas.map(produtoId => ({
+          grupo_id: editing.id,
+          produto_id: produtoId,
+        }));
+        const { error: insertError } = await (supabase as any)
+          .from("grupo_produto_itens")
+          .insert(rows);
+        if (insertError) throw insertError;
+      }
+
+      // 3. Update local state optimistically
+      setPlanos(prev => prev.map(p => p.id === editing.id ? {
+        ...editing,
+        coberturas: todasCoberturas.filter(c => editCoberturas.includes(c.id)),
+        regionais: editRegionais,
+        categorias: editCategorias as CategoriaVeiculo[],
+      } : p));
+
+      // 4. Invalidate cache and close
+      await queryClient.invalidateQueries({ queryKey: ["grupos_produtos"] });
+      toast.success("Plano salvo com sucesso");
+      setEditing(null);
+    } catch (err: any) {
+      console.error("Erro ao salvar plano:", err);
+      toast.error("Erro ao salvar plano: " + (err.message || "erro desconhecido"));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -355,7 +401,10 @@ export default function PlanosProtecao({ onBack }: { onBack: () => void }) {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setEditing(null)}>Cancelar</Button>
-                <Button onClick={handleSaveEdit}>Salvar Alterações</Button>
+                <Button onClick={handleSaveEdit} disabled={saving}>
+                  {saving && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
+                  Salvar Alterações
+                </Button>
               </DialogFooter>
             </>
           )}

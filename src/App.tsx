@@ -64,6 +64,7 @@ import CotacaoFormPublica from "./pages/public/CotacaoFormPublica";
 import PlanoComparativo from "./pages/public/PlanoComparativo";
 import ConsultorLanding from "./pages/public/ConsultorLanding";
 import ExcecaoAprovacao from "./pages/public/ExcecaoAprovacao";
+import AuditLog from "./pages/gestao/AuditLog";
 
 const queryClient = new QueryClient();
 
@@ -125,6 +126,7 @@ const App = () => (
             <Route path="/produtos" element={<G><Produtos /></G>} />
             <Route path="/usuarios" element={<G><Usuarios /></G>} />
             <Route path="/parametros" element={<G><Parametros /></G>} />
+            <Route path="/gestao/auditoria" element={<G><AuditLog /></G>} />
 
             {/* Financeiro — admin/diretor only */}
             <Route path="/financeiro/fluxo-diario" element={<G><FluxoDiario /></G>} />
