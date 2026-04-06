@@ -19,7 +19,7 @@ const MOTIVOS_LIBERACAO = [
   { value: "desconto", label: "Desconto" },
   { value: "vencimento", label: "Data de Vencimento" },
   { value: "vistoria_negada", label: "Vistoria Negada" },
-  { value: "veiculo_bloqueado", label: "Veículo Não Aceito" },
+  { value: "veiculo_bloqueado", label: "Veículo sem Aceitação" },
 ];
 
 interface AnaliseResult {
@@ -81,7 +81,7 @@ export default function PedirLiberacaoButton({ negociacaoId, consultorId, onSucc
       pedidos.vistoria = { reanalisar: true };
     }
     if (motivo === "veiculo_bloqueado") {
-      pedidos.veiculo = { liberar: true };
+      pedidos.veiculo = { modelo_bloqueado: true };
     }
 
     try {
@@ -315,7 +315,7 @@ export default function PedirLiberacaoButton({ negociacaoId, consultorId, onSucc
                 {!analiseResult.aprovado && (
                   <ExcecaoButton
                     negociacaoId={negociacaoId}
-                    tipoDefault={motivo === "desconto" ? "desconto_extra" : motivo === "vencimento" ? "vencimento_especial" : "vistoria_rejeitada"}
+                    tipoDefault={motivo === "desconto" ? "desconto_extra" : motivo === "vencimento" ? "vencimento_especial" : motivo === "veiculo_bloqueado" ? "veiculo_bloqueado" : "vistoria_rejeitada"}
                     descontoSolicitado={motivo === "desconto" ? parseFloat(descontoPercentual) : undefined}
                     label="Pedir Liberação ao Diretor"
                     onSuccess={(res) => {

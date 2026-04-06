@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,29 +10,9 @@ import { PipelineDeal } from "./mockData";
 import { supabase, callEdge } from "@/integrations/supabase/client";
 import { gerarContratoPdf } from "@/lib/gerarContratoPdf";
 import {
-  Mail, MessageSquare, FileText, CheckCircle, Clock,
+  PenTool, Mail, MessageSquare, FileText, CheckCircle, Clock,
   Eye, Send, AlertTriangle, Copy, ExternalLink, RotateCcw, Loader2,
 } from "lucide-react";
-
-// Buscar coberturas reais do plano
-async function buscarCoberturasPlano(plano: string, tipoVeiculo?: string): Promise<string[]> {
-  // Busca exata
-  let { data } = await (supabase as any).from("coberturas_plano").select("cobertura").eq("plano", plano);
-  if (data && data.length > 0) return data.map((c: any) => c.cobertura);
-  // Normalizar
-  const norm = (p: string) => {
-    const l = p.toLowerCase();
-    if (l.includes("premium")) return "Premium";
-    if (l.includes("completo")) return "Completo";
-    if (l.includes("objetivo")) return "Objetivo";
-    if (l.includes("básico") || l.includes("basico")) return "Básico";
-    return p;
-  };
-  const tipo = tipoVeiculo || "leves";
-  ({ data } = await (supabase as any).from("coberturas_plano").select("cobertura").eq("plano", norm(plano)).eq("tipo_veiculo", tipo));
-  if (data && data.length > 0) return data.map((c: any) => c.cobertura);
-  return ["Conforme plano contratado"];
-}
 import ExcecaoButton from "@/components/ExcecaoButton";
 
 type AssinaturaStatus = "pendente" | "enviado" | "visualizado" | "assinado" | "expirado";
@@ -68,9 +48,9 @@ const tipoCores: Record<string, string> = {
   expiracao: "bg-destructive/80 text-white", reenvio: "bg-primary/60 text-white",
 };
 
-interface Props { deal: PipelineDeal; }
+interface Props { deal: PipelineDeal; onUpdate?: () => void; }
 
-export default function AssinaturaTab({ deal }: Props) {
+export default function AssinaturaTab({ deal, onUpdate }: Props) {
   const [status, setStatus] = useState<AssinaturaStatus>("pendente");
   const [docSelecionado, setDocSelecionado] = useState("");
   const [enviado, setEnviado] = useState(false);
@@ -80,7 +60,7 @@ export default function AssinaturaTab({ deal }: Props) {
     queryKey: ["assinatura-docs", deal.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("contratos")
+        .from("contratos" as any)
         .select("*")
         .eq("associado_id", (deal as any).associado_id || deal.id)
         .order("created_at", { ascending: false });
@@ -112,11 +92,13 @@ export default function AssinaturaTab({ deal }: Props) {
     },
   });
 
-  // Auto-select first document when loaded
   const docs = documentos || [];
-  if (docs.length > 0 && !docSelecionado) {
-    setDocSelecionado(docs[0].id);
-  }
+  // Auto-select first document when loaded
+  React.useEffect(() => {
+    if (docs.length > 0 && !docSelecionado) {
+      setDocSelecionado(docs[0].id);
+    }
+  }, [documentos]);
 
   const st = statusConfig[status];
   const StIcon = st.icon;
@@ -127,15 +109,13 @@ export default function AssinaturaTab({ deal }: Props) {
 
   const handleEnviar = async (canal: "email" | "whatsapp" | "ambos") => {
     setGerando(true);
-    // Buscar coberturas reais do plano
-    const produtosReais = await buscarCoberturasPlano(deal.plano || "Completo");
     // Gerar PDF do contrato
-    const pdfBlob = gerarContratoPdf({
+    const pdfBlob = await gerarContratoPdf({
       empresa: { nome: "Objetivo Auto Benefícios", cnpj: "58.506.161/0001-31" },
       associado: { nome: deal.lead_nome, cpf: deal.cpf_cnpj || "", rg: "", cnh: "", sexo: "", nascimento: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "", cep: "", email: deal.email || "", celular: deal.telefone || "" },
-      veiculo: { placa: deal.veiculo_placa, modelo: deal.veiculo_modelo, marca: "", anoFab: "", anoModelo: "", cor: "", combustivel: "", chassi: "", renavam: "", codFipe: "", valorFipe: deal.valor_plano || 0, valorProtegido: deal.valor_plano || 0, diaVencimento: String((deal as any).dia_vencimento || "10"), veiculoTrabalho: "Não" },
-      plano: { nome: deal.plano || "Completo", valorMensal: deal.valor_plano || 0, adesao: (deal as any).adesao || 400, participacao: (deal as any).participacao || "5% FIPE" },
-      produtos: produtosReais,
+      veiculo: { placa: deal.veiculo_placa, modelo: deal.veiculo_modelo, marca: "", anoFab: "", anoModelo: "", cor: "", combustivel: "", chassi: "", renavam: "", codFipe: "", valorFipe: deal.valor_plano || 0, valorProtegido: deal.valor_plano || 0, diaVencimento: "10", veiculoTrabalho: "Não" },
+      plano: { nome: deal.plano || "Completo", valorMensal: deal.valor_plano || 0, adesao: 400, participacao: "5% FIPE" },
+      produtos: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Assistência 24H", "Reboque", "Chaveiro", "Hospedagem"],
       consultor: { nome: deal.consultor || "", celular: "", email: "" },
     });
 
@@ -171,13 +151,12 @@ export default function AssinaturaTab({ deal }: Props) {
   };
 
   const handleBaixarContrato = async () => {
-    const produtosReais = await buscarCoberturasPlano(deal.plano || "Completo");
-    const blob = gerarContratoPdf({
+    const blob = await gerarContratoPdf({
       empresa: { nome: "Objetivo Auto Benefícios", cnpj: "58.506.161/0001-31" },
       associado: { nome: deal.lead_nome, cpf: deal.cpf_cnpj || "", rg: "", cnh: "", sexo: "", nascimento: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "", cep: "", email: deal.email || "", celular: deal.telefone || "" },
-      veiculo: { placa: deal.veiculo_placa, modelo: deal.veiculo_modelo, marca: "", anoFab: "", anoModelo: "", cor: "", combustivel: "", chassi: "", renavam: "", codFipe: "", valorFipe: deal.valor_plano || 0, valorProtegido: deal.valor_plano || 0, diaVencimento: String((deal as any).dia_vencimento || "10"), veiculoTrabalho: "Não" },
-      plano: { nome: deal.plano || "Completo", valorMensal: deal.valor_plano || 0, adesao: (deal as any).adesao || 400, participacao: (deal as any).participacao || "5% FIPE" },
-      produtos: produtosReais,
+      veiculo: { placa: deal.veiculo_placa, modelo: deal.veiculo_modelo, marca: "", anoFab: "", anoModelo: "", cor: "", combustivel: "", chassi: "", renavam: "", codFipe: "", valorFipe: deal.valor_plano || 0, valorProtegido: deal.valor_plano || 0, diaVencimento: "10", veiculoTrabalho: "Não" },
+      plano: { nome: deal.plano || "Completo", valorMensal: deal.valor_plano || 0, adesao: 400, participacao: "5% FIPE" },
+      produtos: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Assistência 24H", "Reboque", "Chaveiro", "Hospedagem"],
       consultor: { nome: deal.consultor || "", celular: "", email: "" },
     });
     const url = URL.createObjectURL(blob);
@@ -189,6 +168,22 @@ export default function AssinaturaTab({ deal }: Props) {
     toast.success("Contrato baixado!");
   };
 
+  const handleSimularAssinatura = async () => {
+    setStatus("assinado");
+    // Auto-transição: liberado_cadastro → concluido
+    if (deal.stage === "liberado_cadastro") {
+      await supabase.from("negociacoes").update({ stage: "concluido" } as any).eq("id", deal.id);
+      await supabase.from("pipeline_transicoes").insert({
+        negociacao_id: deal.id,
+        stage_anterior: "liberado_cadastro",
+        stage_novo: "concluido",
+        motivo: "Contrato assinado",
+        automatica: true,
+      } as any);
+      onUpdate?.();
+    }
+    toast.success("Assinatura confirmada! Negociação concluída.", { duration: 5000 });
+  };
 
   const lbl = "text-sm font-semibold";
 
@@ -326,6 +321,9 @@ export default function AssinaturaTab({ deal }: Props) {
           <div className="flex gap-2 pt-1 flex-wrap">
             <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => { setStatus("enviado"); toast.info("Lembrete reenviado!"); }}>
               <RotateCcw className="h-3.5 w-3.5 mr-1" />Reenviar Lembrete
+            </Button>
+            <Button size="sm" variant="ghost" className="rounded-none text-xs text-success border border-green-200" onClick={handleSimularAssinatura}>
+              <PenTool className="h-3.5 w-3.5 mr-1" />Simular Assinatura (demo)
             </Button>
             <ExcecaoButton
               negociacaoId={deal.id}

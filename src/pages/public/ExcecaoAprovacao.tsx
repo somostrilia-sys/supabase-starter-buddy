@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { callEdgePublic } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle, XCircle, AlertTriangle, Image, FileText, Lock, Shield, Car, User, MapPin, DollarSign } from "lucide-react";
+
+// Senhas dos diretores
+const SENHAS_DIRETORES: Record<string, string> = {
+  "Lissandra Donato": "LD@obj2026",
+  "Carlos alberto": "CA@obj2026",
+  "Rafael Gelinske da Silva": "RG@obj2026",
+  "Thainá": "TH@obj2026",
+};
 
 function fmt(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -24,8 +31,6 @@ export default function ExcecaoAprovacao() {
   const [diretorNome, setDiretorNome] = useState("");
   const [senha, setSenha] = useState("");
   const [senhaErro, setSenhaErro] = useState("");
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [diretores, setDiretores] = useState<string[]>([]);
 
   // Ações
   const [comentario, setComentario] = useState("");
@@ -54,14 +59,6 @@ export default function ExcecaoAprovacao() {
 
   useEffect(() => {
     if (!token) return;
-
-    // Buscar diretores via edge function GET
-    callEdgePublic("gia-excecao-link", { method: "GET", params: { token } })
-      .then((res: any) => {
-        if (res.diretores) setDiretores(res.diretores);
-      })
-      .catch(() => {});
-
     // 1. Buscar exceção por token_aprovacao ou negociacao_id
     (supabase as any).from("excecoes_aprovacao").select("*")
       .or(`token_aprovacao.eq.${token},negociacao_id.eq.${token}`)
@@ -90,27 +87,12 @@ export default function ExcecaoAprovacao() {
       });
   }, [token]);
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     setSenhaErro("");
-    if (!diretorNome) { setSenhaErro("Selecione um diretor."); return; }
-    if (!senha) { setSenhaErro("Digite sua senha."); return; }
-    setLoginLoading(true);
-    try {
-      const res = await callEdgePublic("gia-excecao-link", {
-        method: "POST",
-        params: { token: token! },
-        body: { acao: "login", diretor_nome: diretorNome, senha },
-      });
-      if (res.autenticado) {
-        setAutenticado(true);
-      } else {
-        setSenhaErro(res.error || "Erro ao autenticar.");
-      }
-    } catch {
-      setSenhaErro("Erro de conexão. Tente novamente.");
-    } finally {
-      setLoginLoading(false);
-    }
+    const senhaCorreta = SENHAS_DIRETORES[diretorNome];
+    if (!senhaCorreta) { setSenhaErro("Selecione um diretor."); return; }
+    if (senha !== senhaCorreta) { setSenhaErro("Senha incorreta."); return; }
+    setAutenticado(true);
   };
 
   const handleAcao = async (acao: "aprovado" | "rejeitado") => {
@@ -148,6 +130,16 @@ export default function ExcecaoAprovacao() {
         negociacao_id: excecao.negociacao_id, stage_anterior: "excecao_pendente", stage_novo: "em_negociacao",
         motivo: `Exceção "${excecao.tipo}" aprovada por ${diretorNome}${excecao.desconto_solicitado > 0 ? ` — desconto ${excecao.desconto_solicitado}% aplicado` : ""}`, automatica: false,
       });
+
+      // Auto-aceitar modelo quando diretor aprova exceção de veículo bloqueado
+      if (excecao.tipo === "veiculo_bloqueado" && neg?.veiculo_modelo) {
+        const modeloNome = (neg.veiculo_modelo || "").split(" ")[0]; // primeira palavra do modelo
+        if (modeloNome) {
+          await (supabase as any).from("modelos_veiculo")
+            .update({ aceito: true, motivo_rejeicao: null })
+            .ilike("nome", `%${modeloNome}%`);
+        }
+      }
     }
     setResultado(acao);
     setProcessando(false);
@@ -200,7 +192,7 @@ export default function ExcecaoAprovacao() {
             <label className="text-sm font-semibold text-gray-700 block mb-1">Diretor</label>
             <select className="w-full border rounded-lg px-3 py-2.5 text-sm" value={diretorNome} onChange={e => setDiretorNome(e.target.value)}>
               <option value="">Selecione seu nome</option>
-              {diretores.map(nome => <option key={nome} value={nome}>{nome}</option>)}
+              {Object.keys(SENHAS_DIRETORES).map(nome => <option key={nome} value={nome}>{nome}</option>)}
             </select>
           </div>
           <div>
@@ -211,7 +203,7 @@ export default function ExcecaoAprovacao() {
             </div>
           </div>
           {senhaErro && <p className="text-sm text-red-500">{senhaErro}</p>}
-          <button onClick={handleLogin} disabled={!diretorNome || !senha || loginLoading} className="w-full py-3 rounded-lg font-bold text-white bg-[#1A3A5C] hover:bg-[#15304D] disabled:bg-gray-300">{loginLoading ? "Verificando..." : "Acessar"}</button>
+          <button onClick={handleLogin} disabled={!diretorNome || !senha} className="w-full py-3 rounded-lg font-bold text-white bg-[#1A3A5C] hover:bg-[#15304D] disabled:bg-gray-300">Acessar</button>
         </div>
       </div>
     </div>

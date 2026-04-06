@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PUBLIC_DOMAIN } from "@/lib/constants";
 import { callEdge } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -80,7 +81,7 @@ export default function ExcecaoButton({
             <p className="text-xs text-gray-500">O card ficará bloqueado até um diretor aprovar ou rejeitar.</p>
             <div className="flex gap-2 justify-center">
               <Button size="sm" variant="outline" className="rounded-none border-gray-300" onClick={() => {
-                const link = `${window.location.origin}/excecao/${negociacaoId}`;
+                const link = `${PUBLIC_DOMAIN}/excecao/${negociacaoId}`;
                 navigator.clipboard.writeText(link);
                 toast.success("Link copiado!");
               }}>
@@ -150,7 +151,7 @@ export default function ExcecaoButton({
               variant="outline"
               className="rounded-none border-gray-300"
               onClick={() => {
-                const link = `${window.location.origin}/excecao/${negociacaoId}`;
+                const link = `${PUBLIC_DOMAIN}/excecao/${negociacaoId}`;
                 navigator.clipboard.writeText(link);
                 toast.success("Link copiado!");
               }}

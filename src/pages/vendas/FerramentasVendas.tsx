@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { PUBLIC_DOMAIN } from "@/lib/constants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -133,7 +134,7 @@ export default function FerramentasVendas() {
     queryFn: fetchMetasRapidas,
   });
 
-  const baseUrl = window.location.origin + "/c/";
+  const baseUrl = PUBLIC_DOMAIN + "/";
 
   function copyLink(link: string) {
     navigator.clipboard.writeText(link);

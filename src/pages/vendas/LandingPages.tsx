@@ -97,7 +97,7 @@ export default function LandingPages() {
   }, [allConsultores, canViewAllData, isConsultor, isGestor, usuario?.nome, minhasCoops]);
 
   const filtered = consultores.filter(c => !busca || c.nome.toLowerCase().includes(busca.toLowerCase()));
-  const baseUrl = window.location.origin + "/c/";
+  const baseUrl = "https://objetivoauto.com.br/";
 
   const comSlug = consultores.filter(c => c.slug).length;
   const totalLeadsLP = consultores.reduce((s, c) => s + c.leads, 0);
@@ -216,7 +216,7 @@ export default function LandingPages() {
                       <TableCell className="font-medium">{c.nome}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{c.cooperativa || "—"}</TableCell>
                       <TableCell>
-                        <span className="font-mono text-xs bg-muted/50 px-2 py-1 rounded">/c/{c.slug}</span>
+                        <span className="font-mono text-xs bg-muted/50 px-2 py-1 rounded">/{c.slug}</span>
                       </TableCell>
                       <TableCell className="text-center font-semibold">{c.leads}</TableCell>
                       <TableCell className="text-center font-semibold text-emerald-400">{c.conversoes}</TableCell>

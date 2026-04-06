@@ -49,7 +49,7 @@ function fmtBRLParts(v: number): { currency: string; integer: string; decimals: 
   return { currency: "R$", integer: parts[0], decimals: `,${parts[1]}` };
 }
 
-// Map de emojis/ícones e categorias para visual do PDF (sem descrições hardcoded — usar detalhe do banco)
+// Map de emojis/ícones e categorias para benefícios (sem desc hardcoded — usar detalhe do banco)
 const beneficiosMeta: Record<string, { emoji: string; cat: string; ico: string }> = {
   "Colisão": { emoji: "💥", cat: "cat-colisao", ico: "ico-red" },
   "Incêndio": { emoji: "🔥", cat: "cat-colisao", ico: "ico-red" },
@@ -62,26 +62,16 @@ const beneficiosMeta: Record<string, { emoji: string; cat: string; ico: string }
   "Retrovisor": { emoji: "🪞", cat: "cat-vidro", ico: "ico-cyan" },
   "Danos da natureza": { emoji: "🌧️", cat: "cat-extra", ico: "ico-blue" },
   "Carro Reserva": { emoji: "🚙", cat: "cat-assist", ico: "ico-green" },
-  "Moto Reserva": { emoji: "🏍️", cat: "cat-assist", ico: "ico-green" },
-  "Assistência": { emoji: "🚗", cat: "cat-assist", ico: "ico-yellow" },
+  "Assistência 24H": { emoji: "🚗", cat: "cat-assist", ico: "ico-yellow" },
   "Guincho": { emoji: "♾️", cat: "cat-assist", ico: "ico-yellow" },
   "Reboque": { emoji: "♾️", cat: "cat-assist", ico: "ico-yellow" },
   "Chaveiro": { emoji: "🔑", cat: "cat-extra", ico: "ico-orange" },
-  "Recarga": { emoji: "🔋", cat: "cat-extra", ico: "ico-orange" },
-  "Auxílio": { emoji: "⛽", cat: "cat-extra", ico: "ico-orange" },
-  "Troca": { emoji: "🛞", cat: "cat-extra", ico: "ico-orange" },
+  "Recarga de bateria": { emoji: "🔋", cat: "cat-extra", ico: "ico-orange" },
+  "Auxílio combustível": { emoji: "⛽", cat: "cat-extra", ico: "ico-orange" },
+  "Troca de pneus": { emoji: "🛞", cat: "cat-extra", ico: "ico-orange" },
   "Hospedagem": { emoji: "🏨", cat: "cat-extra", ico: "ico-orange" },
-  "Retorno": { emoji: "🏠", cat: "cat-extra", ico: "ico-orange" },
+  "Retorno ao domicílio": { emoji: "🏠", cat: "cat-extra", ico: "ico-orange" },
   "Clube": { emoji: "⭐", cat: "cat-clube", ico: "ico-sky" },
-  "APP": { emoji: "👤", cat: "cat-terceiro", ico: "ico-green" },
-  "Destombamento": { emoji: "🔄", cat: "cat-extra", ico: "ico-blue" },
-  "Pneu": { emoji: "🛞", cat: "cat-extra", ico: "ico-orange" },
-  "VIDA": { emoji: "❤️", cat: "cat-clube", ico: "ico-sky" },
-  "Rastreador": { emoji: "📡", cat: "cat-extra", ico: "ico-blue" },
-  "Bloqueio": { emoji: "🔒", cat: "cat-extra", ico: "ico-purple" },
-  "RCF": { emoji: "🛡️", cat: "cat-terceiro", ico: "ico-green" },
-  "Remoção": { emoji: "🚛", cat: "cat-assist", ico: "ico-yellow" },
-  "Proteção": { emoji: "🛡️", cat: "cat-terceiro", ico: "ico-green" },
 };
 
 function getBenefMeta(nome: string) {
@@ -99,25 +89,32 @@ function buildPage3HTML(dados: DadosCotacao): string {
   const validadeDate = (() => { const d = new Date(); d.setDate(d.getDate() + dados.validade); return d.toLocaleDateString("pt-BR"); })();
   const price = fmtBRLParts(mensalFinal);
 
-  // Build benefícios HTML — usar coberturas REAIS do banco
+  // Build benefícios HTML — usar coberturas reais do banco, sem fallback inventado
   const coberturas = dados.coberturas.filter(c => c.inclusa);
-  const beneficiosNomes = coberturas.length > 0
-    ? coberturas.map(c => ({ nome: c.nome, detalhe: c.detalhe })).filter(n => n.nome.length > 0)
-    : [{ nome: "Coberturas conforme plano selecionado", detalhe: undefined as string | undefined }];
 
-  const beneficiosHTML = beneficiosNomes.map(item => {
-    const meta = getBenefMeta(item.nome);
-    const isClube = item.nome.toLowerCase().includes("clube");
-    // Usar detalhe do banco (real) ao invés de desc hardcoded
-    const descricao = item.detalhe || "";
-    return `<div class="benefit-item ${isClube ? "benefit-full " : ""}${meta.cat}">
-      <div class="benefit-icon ${meta.ico}">${meta.emoji}</div>
+  let beneficiosHTML = "";
+  if (coberturas.length > 0) {
+    beneficiosHTML = coberturas.map(c => {
+      const meta = getBenefMeta(c.nome);
+      const isClube = c.nome.toLowerCase().includes("clube");
+      const desc = c.detalhe || ""; // usar detalhe real do banco
+      return `<div class="benefit-item ${isClube ? "benefit-full " : ""}${meta.cat}">
+        <div class="benefit-icon ${meta.ico}">${meta.emoji}</div>
+        <div class="benefit-text-wrap">
+          <div class="benefit-name">${c.nome}</div>
+          ${desc ? `<div class="benefit-desc">${desc}</div>` : ""}
+        </div>
+      </div>`;
+    }).join("\n");
+  } else {
+    beneficiosHTML = `<div class="benefit-item benefit-full cat-extra">
+      <div class="benefit-icon ico-blue">📋</div>
       <div class="benefit-text-wrap">
-        <div class="benefit-name">${item.nome}</div>
-        ${descricao ? `<div class="benefit-desc">${descricao}</div>` : ""}
+        <div class="benefit-name">Coberturas conforme plano selecionado</div>
+        <div class="benefit-desc">Consulte seu consultor para detalhes das coberturas do plano ${dados.plano.nome}</div>
       </div>
     </div>`;
-  }).join("\n");
+  }
 
   // Opcionais HTML
   let opcionaisHTML = "";
@@ -147,14 +144,14 @@ function buildPage3HTML(dados: DadosCotacao): string {
     </div>`;
   }
 
-  // Preço com/sem desconto
+  // Preço com/sem desconto — valor original separado acima
   let priceHTML = "";
   if (mensalOriginal && mensalOriginal > mensalFinal) {
     priceHTML = `
-      <div style="font-size:14px;color:#7aaed4;text-decoration:line-through;margin-bottom:2px;">${fmtBRL(mensalOriginal)}</div>
-      <div class="price"><span class="currency">${price.currency}</span> ${price.integer}${price.decimals}</div>`;
+      <div style="font-size:16px;color:#7a9ab5;text-decoration:line-through;margin-bottom:4px;font-weight:500;">${fmtBRL(mensalOriginal)}</div>
+      <div class="price"><span class="currency">${price.currency}</span> ${price.integer}<span style="font-size:22px;">${price.decimals}</span></div>`;
   } else {
-    priceHTML = `<div class="price"><span class="currency">${price.currency}</span> ${price.integer}${price.decimals}</div>`;
+    priceHTML = `<div class="price"><span class="currency">${price.currency}</span> ${price.integer}<span style="font-size:22px;">${price.decimals}</span></div>`;
   }
 
   return `<div style="width:794px;font-family:'Inter','Helvetica','Arial',sans-serif;background:#fff;color:#1a1a1a;padding:0;position:relative;overflow:hidden;">
@@ -176,16 +173,16 @@ function buildPage3HTML(dados: DadosCotacao): string {
     .data-card-body{padding:10px 16px}
     .data-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.08)}
     .data-row:last-child{border-bottom:none}
-    .data-label{font-size:9.5px;color:#5a94c4;text-transform:uppercase;font-weight:600;letter-spacing:0.8px}
-    .data-value{font-size:12.5px;color:#ffffff;font-weight:500;text-align:right}
+    .data-label{font-size:9.5px;color:#8ab8d8;text-transform:uppercase;font-weight:600;letter-spacing:0.8px}
+    .data-value{font-size:13px;color:#ffffff;font-weight:600;text-align:right}
     .benefits-section{margin-bottom:20px}
-    .benefits-section-inner{background:linear-gradient(135deg,#0d2b5e 0%,#14376e 100%);border-radius:16px;padding:20px 22px;box-shadow:0 4px 25px rgba(13,43,94,0.35)}
+    .benefits-section-inner{background:linear-gradient(135deg,#0d2b5e 0%,#14376e 100%);border-radius:16px;padding:24px 22px;box-shadow:0 4px 25px rgba(13,43,94,0.35);border:1px solid rgba(91,184,245,0.15)}
     .benefits-title{display:flex;align-items:center;gap:12px;margin-bottom:14px}
     .benefits-title .line{flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,0.3),transparent)}
     .benefits-title .line-r{background:linear-gradient(270deg,rgba(255,255,255,0.3),transparent)}
-    .benefits-title h3{font-family:'Montserrat',sans-serif;font-weight:800;font-size:13px;color:#fff;letter-spacing:3px;text-transform:uppercase;white-space:nowrap}
-    .benefits-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-    .benefit-item{display:flex;align-items:center;gap:11px;padding:11px 14px;background:rgba(255,255,255,0.07);border-radius:11px;border:1px solid rgba(255,255,255,0.1);position:relative;overflow:hidden}
+    .benefits-title h3{font-family:'Montserrat',sans-serif;font-weight:800;font-size:14px;color:#fff;letter-spacing:3px;text-transform:uppercase;white-space:nowrap}
+    .benefits-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .benefit-item{display:flex;align-items:center;gap:12px;padding:14px 16px;background:linear-gradient(135deg,rgba(192,210,230,0.12),rgba(160,190,220,0.08));border-radius:12px;border:1px solid rgba(192,210,230,0.18);position:relative;overflow:hidden}
     .benefit-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px}
     .benefit-item.cat-colisao::before{background:linear-gradient(180deg,#ef4444,#dc2626)}
     .benefit-item.cat-roubo::before{background:linear-gradient(180deg,#8b5cf6,#7c3aed)}
@@ -194,12 +191,12 @@ function buildPage3HTML(dados: DadosCotacao): string {
     .benefit-item.cat-assist::before{background:linear-gradient(180deg,#f59e0b,#d97706)}
     .benefit-item.cat-extra::before{background:linear-gradient(180deg,#f97316,#ea580c)}
     .benefit-item.cat-clube::before{background:linear-gradient(180deg,#5bb8f5,#2a7fc9)}
-    .benefit-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-    .ico-red{background:rgba(239,68,68,0.15)}.ico-blue{background:rgba(59,130,246,0.15)}.ico-purple{background:rgba(139,92,246,0.15)}.ico-green{background:rgba(16,185,129,0.15)}.ico-cyan{background:rgba(6,182,212,0.15)}.ico-yellow{background:rgba(245,158,11,0.15)}.ico-orange{background:rgba(249,115,22,0.15)}.ico-sky{background:rgba(91,184,245,0.15)}
-    .benefit-name{font-size:11.5px;color:#f0f6fb;font-weight:700;line-height:1.3;letter-spacing:0.2px}
-    .benefit-desc{font-size:9.5px;color:#6a9fd4;font-weight:500;margin-top:1px}
+    .benefit-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+    .ico-red{background:rgba(239,68,68,0.2)}.ico-blue{background:rgba(59,130,246,0.2)}.ico-purple{background:rgba(139,92,246,0.2)}.ico-green{background:rgba(16,185,129,0.2)}.ico-cyan{background:rgba(6,182,212,0.2)}.ico-yellow{background:rgba(245,158,11,0.2)}.ico-orange{background:rgba(249,115,22,0.2)}.ico-sky{background:rgba(91,184,245,0.2)}
+    .benefit-name{font-size:14px;color:#ffffff;font-weight:700;line-height:1.3;letter-spacing:0.3px}
+    .benefit-desc{font-size:11px;color:#a0c4e0;font-weight:500;margin-top:2px}
     .benefit-full{grid-column:1 / -1}
-    .pricing-section{background:linear-gradient(135deg,#0d2b5e 0%,#14376e 100%);border:none;border-radius:16px;padding:20px 25px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;position:relative;overflow:hidden;box-shadow:0 4px 25px rgba(13,43,94,0.35)}
+    .pricing-section{background:linear-gradient(135deg,#0d2b5e 0%,#14376e 100%);border:1px solid rgba(91,184,245,0.15);border-radius:16px;padding:22px 28px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;position:relative;overflow:hidden;box-shadow:0 4px 25px rgba(13,43,94,0.35)}
     .pricing-section::before{content:'';position:absolute;top:-60%;right:-15%;width:280px;height:280px;background:radial-gradient(circle,rgba(91,184,245,0.08),transparent 70%);border-radius:50%}
     .pricing-left{position:relative;z-index:1}
     .pricing-left .consultor{font-size:9.5px;color:#5a94c4;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin-bottom:3px}
@@ -211,7 +208,7 @@ function buildPage3HTML(dados: DadosCotacao): string {
     .pricing-right .label{font-family:'Montserrat',sans-serif;font-weight:700;font-size:10px;color:#5bb8f5;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:2px}
     .pricing-right .price{font-family:'Montserrat',sans-serif;font-weight:900;font-size:44px;color:#fff;line-height:1;margin-bottom:6px;text-shadow:0 0 30px rgba(91,184,245,0.2)}
     .pricing-right .price .currency{font-size:20px;vertical-align:super;margin-right:2px;font-weight:700}
-    .pricing-right .discount{background:linear-gradient(135deg,#059669,#10b981);border-radius:20px;padding:5px 16px;font-size:10px;font-weight:700;color:#fff;display:inline-block;box-shadow:0 2px 10px rgba(16,185,129,0.3)}
+    .pricing-right .discount{background:linear-gradient(135deg,#059669,#10b981);border-radius:20px;padding:6px 18px;font-size:11px;font-weight:700;color:#fff;display:inline-block;box-shadow:0 2px 10px rgba(16,185,129,0.3);margin-top:4px}
     .proposta-footer{padding:12px 40px;border-top:1px solid #e0e8f0;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1}
     .proposta-footer p{font-size:9.5px;color:#6b7b8d}
     .proposta-footer .validity{background:#0d2b5e;border:none;border-radius:20px;padding:5px 16px;font-size:10.5px;color:#fff;font-weight:600}
@@ -290,7 +287,8 @@ function buildPage3HTML(dados: DadosCotacao): string {
         <div class="consultor-name">${dados.consultor.nome}</div>
         <div class="fees">
           <div class="fee-tag">Ades&atilde;o: <strong>${fmtBRL(dados.plano.adesao)}</strong></div>
-          ${dados.plano.rastreador && dados.plano.rastreador.toLowerCase() !== "não" ? `<div class="fee-tag">Rastreador: <strong>${fmtBRL(dados.plano.instalacao || 100)}</strong></div>` : ""}
+          <div class="fee-tag">Rastreador: <strong>${dados.plano.rastreador || "N&atilde;o"}</strong></div>
+          ${dados.plano.instalacao ? `<div class="fee-tag">Instala&ccedil;&atilde;o: <strong>${fmtBRL(dados.plano.instalacao)}</strong></div>` : ""}
           <div class="fee-tag">Participa&ccedil;&atilde;o: <strong>${dados.plano.participacao}</strong></div>
         </div>
       </div>

@@ -30,8 +30,6 @@ import { toast } from "sonner";
 import { usePermission, useLeadScope } from "@/hooks/usePermission";
 import ConcretizarVendaModal from "./ConcretizarVendaModal";
 import { useNegociacoes } from "@/hooks/useNegociacoes";
-import { useUsuario } from "@/hooks/useUsuario";
-
 
 function daysStalled(updated: string) {
   return Math.floor((Date.now() - new Date(updated).getTime()) / 86400000);
@@ -53,32 +51,24 @@ function StalledBadge({ days }: { days: number }) {
 type SortKey = "id" | "lead_nome" | "veiculo_modelo" | "plano" | "stage" | "consultor" | "cooperativa" | "regional" | "created_at" | "updated_at";
 
 export default function Pipeline() {
-  const { canLiberarCadastro, canConcretizarVenda, role } = usePermission();
+  const { canLiberarCadastro, canConcretizarVenda, role, profile, isAdmin: isAdminHook } = usePermission();
   const leadScope = useLeadScope();
   const queryClient = useQueryClient();
-
-  // Buscar cooperativas do usuário logado
-  const { profile } = usePermission();
   const { data: usuarioLogado } = useQuery({
     queryKey: ["usuario_logado", profile?.id],
     enabled: !!profile?.id,
     queryFn: async () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user?.user?.email) return null;
-      const { data } = await supabase.from("usuarios").select("id, nome, cooperativa, regional, funcao, grupo_permissao")
+      const { data } = await supabase.from("usuarios").select("nome, cooperativa, regional, funcao, grupo_permissao")
         .eq("email", user.user.email).limit(1).maybeSingle();
-      // Buscar voluntario_id vinculado
-      if (data?.id) {
-        const { data: vol } = await (supabase as any).from("voluntarios").select("id").eq("gia_usuario_id", data.id).limit(1).maybeSingle();
-        if (vol) (data as any).voluntario_id = vol.id;
-      }
       return data as any;
     },
   });
 
   // Cooperativas do usuário: split por vírgula (alguns têm múltiplas)
   const minhasCooperativas = (usuarioLogado?.cooperativa || "").split(",").map((c: string) => c.trim()).filter(Boolean);
-  const isAdmin = ["admin", "administrativo", "diretor"].includes(role);
+  const isAdmin = isAdminHook;
   const [concretizarDeal, setConcretizarDeal] = useState<PipelineDeal | null>(null);
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [newDealOpen, setNewDealOpen] = useState(false);
@@ -121,15 +111,8 @@ export default function Pipeline() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
 
-  // Hook de negociações (Supabase real) + RBAC client-side
-  const { usuario: _usr, isConsultor: _isC, isGestor: _isG, canViewAllData: _canAll, cooperativas: _myCoops } = useUsuario();
-  const { negociacoes: _allNegs, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "30d");
-  const negociacoes = useMemo(() => {
-    if (_canAll || !_usr) return _allNegs;
-    if (_isC) return _allNegs.filter(n => n.consultor === _usr.nome);
-    if (_isG && _myCoops.length > 0) return _allNegs.filter(n => _myCoops.some(c => n.cooperativa?.includes(c)));
-    return _allNegs;
-  }, [_allNegs, _usr, _isC, _isG, _canAll, _myCoops]);
+  // Hook de negociações (Supabase real)
+  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "30d");
 
   // Dados reais de cooperativas com regional vinculada
   const { data: cooperativasDb } = useQuery({
@@ -175,6 +158,27 @@ export default function Pipeline() {
   const consultoresLista = consultoresReais.length > 0 ? consultoresReais : consultores;
   const planosLista = planosDb && planosDb.length > 0 ? planosDb : planos;
   const [planosPermitidos, setPlanosPermitidos] = useState<string[]>([]);
+
+  // Auto-preencher cooperativa e consultor pelo usuário logado ao abrir nova negociação
+  useEffect(() => {
+    if (!usuarioLogado || form.consultor) return;
+    const autoConsultor = usuarioLogado.nome || "";
+    const autoCoops = (usuarioLogado.cooperativa || "").split(",").map((c: string) => c.trim()).filter(Boolean);
+    if (autoConsultor) {
+      setForm(f => ({ ...f, consultor: f.consultor || autoConsultor }));
+    }
+    if (autoCoops.length === 1) {
+      // Uma cooperativa → preenche direto
+      const coopMatch = (cooperativasDb || []).find((c: any) =>
+        c.nome.toLowerCase().includes(autoCoops[0].toLowerCase()) || autoCoops[0].toLowerCase().includes(c.nome.toLowerCase())
+      );
+      setForm(f => ({
+        ...f,
+        cooperativa: f.cooperativa || coopMatch?.nome || autoCoops[0],
+        regional: f.regional || coopMatch?.regionais?.nome || "",
+      }));
+    }
+  }, [usuarioLogado, cooperativasDb]);
 
   // Ao selecionar cooperativa → preencher regional automaticamente
   function handleCooperativaChange(coopNome: string) {
@@ -260,8 +264,6 @@ export default function Pipeline() {
         cooperativa: data.cooperativa || undefined,
         regional: data.regional || undefined,
         consultor: data.consultor || usuarioLogado?.nome || undefined,
-        consultor_id: usuarioLogado?.id || undefined,
-        voluntario_id: usuarioLogado?.voluntario_id || undefined,
         observacoes: data.observacoes || undefined,
         cidade_circulacao: data.cidadeCirc || undefined,
         estado_circulacao: data.estadoCirc || undefined,
@@ -329,70 +331,25 @@ export default function Pipeline() {
 
   const dealsToShow: PipelineDeal[] = negociacoesAsDeal;
 
-  // --- Cash sound: SÓ toca quando IA aprova e move para concluído ---
+  // --- Cash sound: toca APENAS quando onDealConcluido é chamado (IA ou manual) ---
   const cashAudioRef = useRef<HTMLAudioElement | null>(null);
-  const prevDealsRef = useRef<PipelineDeal[]>([]);
-  const concluídosProcessados = useRef<Set<string>>((() => {
-    try {
-      const stored = sessionStorage.getItem("gia_concluidos");
-      return stored ? new Set<string>(JSON.parse(stored)) : new Set<string>();
-    } catch { return new Set<string>(); }
-  })());
-  const initialLoadDone = useRef(false);
-  const marcarConcluido = (dealId: string) => {
-    concluídosProcessados.current.add(dealId);
-    try { sessionStorage.setItem("gia_concluidos", JSON.stringify([...concluídosProcessados.current])); } catch {}
-  };
+  const concluídosProcessados = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     cashAudioRef.current = new Audio("/sounds/cash.mp3");
     cashAudioRef.current.volume = 0.7;
   }, []);
 
-  // Marcar todos os concluídos existentes como já processados (não tocar som no load)
-  useEffect(() => {
-    if (dealsToShow.length === 0) return;
-    const prevIds = new Set(
-      prevDealsRef.current
-        .filter(d => d.stage === "concluido")
-        .map(d => d.id)
-    );
-    const newConcluidos = dealsToShow.filter(
-      d => d.stage === "concluido" && !prevIds.has(d.id) && !concluídosProcessados.current.has(d.id)
-    );
-
-    // Só dispara se já havia dados anteriores (evita tocar no primeiro load)
-    if (prevDealsRef.current.length > 0 && newConcluidos.length > 0) {
-      if (cashAudioRef.current) {
-        cashAudioRef.current.currentTime = 0;
-        cashAudioRef.current.play().catch(() => {});
-      }
-
-      for (const deal of newConcluidos) {
-        marcarConcluido(deal.id); // Marcar como processado ANTES de chamar
-        callEdge("gia-concluir-venda", { negociacao_id: deal.id }).then(res => {
-          if (res?.sucesso) toast.success(`Venda concluída: ${deal.lead_nome}`);
-        }).catch(() => {});
-      }
-    }
-    // Marcar concluídos existentes no primeiro load
-    if (!initialLoadDone.current && dealsToShow.length > 0) {
-      dealsToShow.filter(d => d.stage === "concluido").forEach(d => marcarConcluido(d.id));
-      initialLoadDone.current = true;
-    }
-    prevDealsRef.current = dealsToShow;
-  }, [dealsToShow]);
-
-  // Função chamada quando IA aprova e move para concluído
+  // Função chamada APENAS quando IA aprova ou usuário move manualmente para concluído
   const onDealConcluido = useCallback((dealId: string, dealNome: string) => {
     if (concluídosProcessados.current.has(dealId)) return;
-    marcarConcluido(dealId);
+    concluídosProcessados.current.add(dealId);
     if (cashAudioRef.current) {
       cashAudioRef.current.currentTime = 0;
       cashAudioRef.current.play().catch(() => {});
     }
     callEdge("gia-concluir-venda", { negociacao_id: dealId }).then(res => {
-      if (res?.sucesso) toast.success(`🎉 Venda concluída: ${dealNome}`);
+      if (res?.sucesso) toast.success(`Venda concluída: ${dealNome}`);
     }).catch(() => {});
   }, []);
   // --- Fim cash sound ---
@@ -482,6 +439,8 @@ export default function Pipeline() {
             negociacao_id: draggedId, stage_anterior: source.stage, stage_novo: stage,
             motivo: "Movido manualmente no pipeline", automatica: false,
           } as any);
+          // Reload imediato para refletir mudança no kanban
+          reloadNegociacoes();
         }
       } else {
         await updateLeadStatus.mutateAsync({ id: draggedId, status: stage });

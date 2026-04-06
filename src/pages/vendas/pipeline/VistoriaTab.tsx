@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { PUBLIC_DOMAIN } from "@/lib/constants";
 import VistoriaFotoSelector from "@/components/VistoriaFotoSelector";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +17,6 @@ import {
   Clock, AlertCircle, Camera, Globe, RotateCcw, Download, Eye, Mail,
 } from "lucide-react";
 import ExcecaoButton from "@/components/ExcecaoButton";
-import PedirLiberacaoButton from "@/components/PedirLiberacaoButton";
 
 type VistoriaStatus = "pendente" | "em_aprovacao" | "aprovada" | "reprovada";
 
@@ -70,11 +70,11 @@ function LazyFoto({ src, alt, className }: { src: string; alt: string; className
   );
 }
 
-function FotosReaisSection({ vistoriaId }: { vistoriaId: string }) {
+function FotosReaisSection({ vistoriaId, statusVistoria }: { vistoriaId: string; statusVistoria?: string }) {
   const { data: fotos, isLoading } = useQuery({
     queryKey: ["vistoria_fotos", vistoriaId],
     queryFn: async () => {
-      const { data } = await (supabase as any).from("vistoria_fotos").select("id,tipo,storage_path,ai_aprovada").eq("vistoria_id", vistoriaId).order("created_at");
+      const { data } = await (supabase as any).from("vistoria_fotos").select("id,tipo,storage_path,ai_aprovada,ai_motivo,ai_score").eq("vistoria_id", vistoriaId).order("created_at");
       // Gerar signed URLs (10min) — mais confiável que getPublicUrl
       return await Promise.all((data || []).map(async (foto: any) => {
         const { data: signed } = await supabase.storage.from("vistoria-fotos").createSignedUrl(foto.storage_path, 600);
@@ -97,19 +97,25 @@ function FotosReaisSection({ vistoriaId }: { vistoriaId: string }) {
   );
   if (!fotos || fotos.length === 0) return null;
 
+  const fotosAprovadas = fotos.filter((f: any) => f.ai_aprovada !== false);
+  const fotosReprovadas = fotos.filter((f: any) => f.ai_aprovada === false);
+
   return (
     <Card className="rounded-none border-2 border-green-500/30 bg-green-500/5">
-      <CardContent className="p-5">
+      <CardContent className="p-5 space-y-4">
         <div className="flex items-center gap-2 mb-3">
           <Camera className="h-4 w-4 text-green-500" />
           <span className="text-sm font-bold text-green-700 dark:text-green-400">FOTOS ENVIADAS PELO ASSOCIADO</span>
           <Badge className="bg-green-500/15 text-green-600 text-xs">{fotos.length} fotos</Badge>
+          {fotosReprovadas.length > 0 && (
+            <Badge className="bg-red-100 text-red-600 text-xs border border-red-300">{fotosReprovadas.length} reprovada{fotosReprovadas.length > 1 ? "s" : ""}</Badge>
+          )}
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
           {fotos.map((foto: any) => (
-            <div key={foto.id} className="relative aspect-square rounded-lg overflow-hidden border-2 border-green-500/20">
+            <div key={foto.id} className={`relative aspect-square rounded-lg overflow-hidden border-2 ${foto.ai_aprovada === false ? "border-red-400 ring-2 ring-red-200" : "border-green-500/20"}`}>
               <LazyFoto src={foto.thumbUrl} alt={foto.tipo} className="w-full h-full" />
-              <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[9px] text-center py-1 font-medium">
+              <div className={`absolute bottom-0 left-0 right-0 ${foto.ai_aprovada === false ? "bg-red-800/90" : "bg-black/70"} text-white text-[9px] text-center py-1 font-medium`}>
                 {(foto.tipo || "").replace(/_/g, " ")}
               </div>
               {foto.ai_aprovada === true && (
@@ -122,17 +128,37 @@ function FotosReaisSection({ vistoriaId }: { vistoriaId: string }) {
                   <XCircle className="h-3 w-3 text-white" />
                 </div>
               )}
+              {foto.ai_aprovada === false && foto.ai_motivo && (
+                <div className="absolute top-0 left-0 right-0 bg-red-600/95 text-white text-[8px] px-1 py-0.5 text-center leading-tight">
+                  {foto.ai_motivo}
+                </div>
+              )}
             </div>
           ))}
         </div>
+
+        {/* Resumo de fotos reprovadas com motivos */}
+        {fotosReprovadas.length > 0 && statusVistoria === "reprovada" && (
+          <div className="p-3 rounded border-2 border-red-300 bg-red-50 space-y-2">
+            <p className="text-xs font-bold text-red-700">Fotos que precisam ser refeitas:</p>
+            {fotosReprovadas.map((f: any) => (
+              <div key={f.id} className="flex items-center gap-2 text-xs text-red-600">
+                <XCircle className="h-3 w-3 shrink-0" />
+                <span className="font-semibold">{(f.tipo || "").replace(/_/g, " ")}</span>
+                {f.ai_motivo && <span className="text-red-500">— {f.ai_motivo}</span>}
+                {f.ai_score != null && <span className="text-red-400">(score: {f.ai_score})</span>}
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
 
-interface Props { deal: PipelineDeal; }
+interface Props { deal: PipelineDeal; onUpdate?: () => void; }
 
-export default function VistoriaTab({ deal }: Props) {
+export default function VistoriaTab({ deal, onUpdate }: Props) {
   const { isAdmin } = usePermission();
 
   // 2.1 — Mover card para aguardando_vistoria
@@ -145,6 +171,7 @@ export default function VistoriaTab({ deal }: Props) {
         negociacao_id: deal.id, stage_anterior: stageAtual, stage_novo: "aguardando_vistoria",
         motivo: "Vistoria enviada ao cliente", automatica: true,
       } as any);
+      onUpdate?.();
     }
   };
 
@@ -210,15 +237,16 @@ export default function VistoriaTab({ deal }: Props) {
     "chave","chassi","quilometragem"
   ]);
   // Detectar tipo de veículo pelo modelo (reativo ao deal)
+  const dealPlano = (deal as any).plano || "";
   const categoriaVistoria = React.useMemo(() => {
     const modelo = (deal.veiculo_modelo || "").toLowerCase();
-    const plano = ((deal as any).plano || "").toLowerCase();
+    const plano = dealPlano.toLowerCase();
     const motos = ["cg ", "cb ", "xre", "pcx", "nmax", "factor", "fazer", "twister", "titan", "fan ", "biz", "pop ", "bros", "lander", "crosser", "tenere", "mt-", "yzf", "ninja", "z900", "duke", "bmw gs", "harley", "indian", "motocicleta", "moto"];
     const caminhoes = ["caminhao", "caminhão", "truck", "trator", "carreta", "scania", "volvo fh", "volvo fm", "mercedes actros", "mercedes atego", "mercedes axor", "iveco", "man tgx", "man tgs", "daf", "vuc", "3/4", "toco", "bi-truck", "micro-onibus", "micro onibus", "sprinter", "daily", "accelo", "constellation", "worker", "cargo", "volkswagen worker", "ford cargo", "pesado", "pesados"];
     if (motos.some(m => modelo.includes(m)) || plano.includes("moto")) return "moto";
     if (caminhoes.some(c => modelo.includes(c)) || plano.includes("pesado") || plano.includes("van")) return "caminhao";
     return "automovel";
-  }, [deal.veiculo_modelo, (deal as any).plano]);
+  }, [deal.veiculo_modelo, dealPlano]);
 
   const handleAprovar = async () => {
     if (vistoriaId) {
@@ -298,15 +326,17 @@ export default function VistoriaTab({ deal }: Props) {
     } as any);
 
     // Auto-transição para aguardando_vistoria se aplicável
-    if (deal.stage === "em_negociacao") {
+    const stagesPermitidos = ["em_negociacao", "novo_lead", "em_contato"];
+    if (stagesPermitidos.includes(deal.stage)) {
       await supabase.from("negociacoes").update({ stage: "aguardando_vistoria" } as any).eq("id", deal.id);
       await supabase.from("pipeline_transicoes").insert({
         negociacao_id: deal.id,
-        stage_anterior: "em_negociacao",
+        stage_anterior: deal.stage,
         stage_novo: "aguardando_vistoria",
         motivo: "Vistoria solicitada automaticamente",
         automatica: true,
       } as any);
+      onUpdate?.();
     }
 
     setCodigo(token);
@@ -314,7 +344,7 @@ export default function VistoriaTab({ deal }: Props) {
     setCodigoGerado(true);
 
     // Copiar link automaticamente
-    const link = `${window.location.origin}/vistoria/${token}`;
+    const link = `${PUBLIC_DOMAIN}/vistoria/${token}`;
     navigator.clipboard.writeText(link);
     toast.success("Vistoria criada! Link copiado. Use os botões para enviar ao cliente.", { duration: 5000 });
 
@@ -407,7 +437,7 @@ export default function VistoriaTab({ deal }: Props) {
                 const d = negF || deal;
                 const tel = (d.telefone || "").replace(/\D/g, "");
                 if (!tel) { toast.error("Telefone não cadastrado. Preencha na aba Associado."); return; }
-                const link = `${window.location.origin}/vistoria/${cod}`;
+                const link = `${PUBLIC_DOMAIN}/vistoria/${cod}`;
                 const msg = encodeURIComponent(`Olá ${d.lead_nome}! Segue o link para envio das fotos da vistoria do veículo ${d.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização, e envie as fotos.`);
                 window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
                 await moveToAguardandoVistoria();
@@ -432,7 +462,7 @@ export default function VistoriaTab({ deal }: Props) {
                 const { data: negF } = await (supabase as any).from("negociacoes").select("telefone,email,lead_nome,veiculo_placa").eq("id", deal.id).maybeSingle();
                 const d = negF || deal;
                 if (!d.email) { toast.error("E-mail não cadastrado. Preencha na aba Associado."); return; }
-                const link = `${window.location.origin}/vistoria/${cod}`;
+                const link = `${PUBLIC_DOMAIN}/vistoria/${cod}`;
                 const msgEmail = `Olá ${d.lead_nome}! Segue o link para envio das fotos da vistoria do veículo ${d.veiculo_placa}:\n\n${link}\n\nAbra no celular, permita câmera e localização, e envie todas as fotos solicitadas.\n\nObjetivo Auto Benefícios`;
                 toast.info("Enviando e-mail...");
                 callEdge("gia-enviar-notificacao", {
@@ -463,7 +493,7 @@ export default function VistoriaTab({ deal }: Props) {
                   if (cod) setCodigo(cod);
                 }
                 if (!cod) { toast.error("Nenhuma vistoria encontrada."); return; }
-                const link = `${window.location.origin}/vistoria/${cod}`;
+                const link = `${PUBLIC_DOMAIN}/vistoria/${cod}`;
                 navigator.clipboard.writeText(link);
                 await moveToAguardandoVistoria();
                 toast.success("Link copiado!");
@@ -501,21 +531,60 @@ export default function VistoriaTab({ deal }: Props) {
                   </Button>
                 )}
                 {status === "reprovada" && (
-                  <PedirLiberacaoButton
-                    negociacaoId={deal.id}
-                    onSuccess={(res) => {
-                      if (res?.aprovado) {
-                        setStatus("aprovada");
-                        toast.success("Liberação aprovada! Vistoria liberada.");
-                      }
-                    }}
-                  />
+                  <Button size="sm" className="rounded-none bg-amber-500 hover:bg-amber-600 text-white" onClick={async () => {
+                    // Buscar fotos reprovadas
+                    const { data: fotosRep } = await (supabase as any).from("vistoria_fotos")
+                      .select("tipo, ai_motivo")
+                      .eq("vistoria_id", vistoriaId)
+                      .eq("ai_aprovada", false);
+                    const tiposReprovar = (fotosRep || []).map((f: any) => f.tipo).filter(Boolean);
+                    if (tiposReprovar.length === 0) {
+                      toast.error("Nenhuma foto reprovada encontrada. Use 'Recorrer' para reanalisar.");
+                      return;
+                    }
+                    // Incrementar tentativa e criar novo link com apenas fotos reprovadas
+                    const tentAtual = vistoriaReal?.tentativa || 1;
+                    const novoToken = `VST-${Date.now().toString(36).toUpperCase()}`;
+                    await (supabase as any).from("vistorias").update({
+                      token_publico: novoToken,
+                      status: "pendente",
+                      tentativa: tentAtual + 1,
+                      fotos_solicitadas: tiposReprovar,
+                      complemento: true,
+                    }).eq("id", vistoriaId);
+                    setCodigo(novoToken);
+                    setStatus("pendente");
+                    // Copiar link
+                    const link = `${PUBLIC_DOMAIN}/vistoria/${novoToken}`;
+                    navigator.clipboard.writeText(link);
+                    const motivos = (fotosRep || []).map((f: any) => `• ${(f.tipo || "").replace(/_/g, " ")}: ${f.ai_motivo || "refazer"}`).join("\n");
+                    toast.success(`Complemento solicitado! ${tiposReprovar.length} foto(s) para refazer. Link copiado.`, { duration: 6000 });
+                    // Enviar WhatsApp automaticamente
+                    const { data: negF } = await (supabase as any).from("negociacoes").select("telefone,lead_nome,veiculo_placa").eq("id", deal.id).maybeSingle();
+                    const d = negF || deal;
+                    const tel = (d.telefone || "").replace(/\D/g, "");
+                    if (tel) {
+                      const msg = encodeURIComponent(`Olá ${d.lead_nome}! Algumas fotos da vistoria do veículo ${d.veiculo_placa} precisam ser refeitas:\n\n${motivos}\n\nAcesse o link para enviar apenas as fotos pendentes:\n${link}`);
+                      window.open(`https://wa.me/55${tel}?text=${msg}`, "_blank");
+                    }
+                    await supabase.from("pipeline_transicoes").insert({
+                      negociacao_id: deal.id, stage_anterior: deal.stage, stage_novo: deal.stage,
+                      motivo: `Complemento de vistoria solicitado (tentativa ${tentAtual + 1}) — ${tiposReprovar.length} foto(s)`, automatica: false,
+                    } as any);
+                  }}>
+                    <RotateCcw className="h-3.5 w-3.5 mr-1" />Solicitar Complemento ({(() => { return "fotos reprovadas"; })()})
+                  </Button>
                 )}
-                {status === "reprovada" && (
+                {status === "reprovada" && isAdmin && (
+                  <Button size="sm" className="rounded-none bg-blue-600 hover:bg-blue-700 text-white" onClick={handleAprovar}>
+                    <CheckCircle className="h-3.5 w-3.5 mr-1" />Aprovar (Exceção)
+                  </Button>
+                )}
+                {status === "reprovada" && !isAdmin && (
                   <ExcecaoButton
                     negociacaoId={deal.id}
                     tipoDefault="vistoria_rejeitada"
-                    label="Solicitar Exceção"
+                    label="Peça a um Diretor"
                     onSuccess={() => toast.success("Exceção solicitada!")}
                   />
                 )}
@@ -549,7 +618,7 @@ export default function VistoriaTab({ deal }: Props) {
                   await gerarLaudoVistoria({
                     dataImpressao: new Date().toLocaleString("pt-BR"),
                     contratante: "OBJETIVO AUTO BENEFÍCIOS",
-                    logoUrl: `${window.location.origin}/logo-objetivo.png`,
+                    logoUrl: `${PUBLIC_DOMAIN}/logo-objetivo.png`,
                     configuracao: categoriaVistoria === "automovel" ? "Carro" : categoriaVistoria === "moto" ? "Moto" : "Caminhão",
                     solicitante: d.cooperativa || deal.cooperativa || "Objetivo Auto Benefícios",
                     vistoriador: d.consultor || deal.consultor || "Sistema",
@@ -564,8 +633,10 @@ export default function VistoriaTab({ deal }: Props) {
                       quilometragem: "",
                       chassiRemarcado: "Não",
                     },
-                    observacoes: "",
-                    acessorios: ["Air Bag", "Alarme", "Ar Condicionado", "Vidros Elétricos", "Travas Elétricas", "Direção Elétrica", "Freio ABS"],
+                    observacoes: vistoriaReal?.observacoes || "",
+                    acessorios: vistoriaReal?.acessorios && Array.isArray(vistoriaReal.acessorios) && vistoriaReal.acessorios.length > 0
+                      ? vistoriaReal.acessorios
+                      : ["Air Bag", "Alarme", "Ar Condicionado", "Vidros Elétricos", "Travas Elétricas", "Direção Elétrica", "Freio ABS"],
                     parecer: status === "aprovada" ? "Aprovado" : status === "reprovada" ? "Reprovado" : "Pendente",
                     avaliador: "Sistema IA",
                     dataAnalise: new Date().toLocaleString("pt-BR"),
@@ -580,7 +651,7 @@ export default function VistoriaTab({ deal }: Props) {
       </Card>
 
       {/* Fotos REAIS enviadas pelo lead */}
-      {vistoriaReal?.id && <FotosReaisSection vistoriaId={vistoriaReal.id} />}
+      {vistoriaReal?.id && <FotosReaisSection vistoriaId={vistoriaReal.id} statusVistoria={status} />}
 
       {/* Seleção de fotos modelo (para novas vistorias) */}
       {!vistoriaReal?.fotos_enviadas && (
@@ -600,8 +671,8 @@ export default function VistoriaTab({ deal }: Props) {
               <p className="text-sm font-semibold text-blue-900">Link Público da Vistoria</p>
               <p className="text-xs text-primary mt-0.5">O cliente acessa este link no celular, tira as fotos pelo navegador com GPS e timestamp obrigatórios.</p>
               <div className="flex items-center gap-2 mt-2">
-                <code className="text-[11px] bg-white border px-2 py-1 font-mono text-primary">{window.location.origin}/vistoria/{codigo}</code>
-                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/vistoria/${codigo}`); toast.success("Link copiado!"); }}>
+                <code className="text-[11px] bg-white border px-2 py-1 font-mono text-primary">{PUBLIC_DOMAIN}/vistoria/{codigo}</code>
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(`${PUBLIC_DOMAIN}/vistoria/${codigo}`); toast.success("Link copiado!"); }}>
                   <Copy className="h-3 w-3" />
                 </Button>
               </div>

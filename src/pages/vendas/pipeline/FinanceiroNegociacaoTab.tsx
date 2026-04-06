@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { PipelineDeal } from "./mockData";
 import {
   CreditCard, QrCode, Receipt, Banknote, DollarSign,
-  Link2, Download, Eye, Plus, FileText,
+  Link2, Download, Eye, Plus, FileText, CheckCircle,
 } from "lucide-react";
 
 type PagamentoStatus = "pago" | "pendente" | "nao_pago";
@@ -48,6 +48,10 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
   // 5.1 — Comissão do consultor + Adesão %
   const [configComissao, setConfigComissao] = useState<{ tipo: string; percentual: number; valor_fixo: number } | null>(null);
   const [percentualAdesao, setPercentualAdesao] = useState<number>(100);
+  // Valores reais do plano (adesão e mensalidade vindos do cache_precos)
+  const [adesaoReal, setAdesaoReal] = useState<number>(0);
+  const [mensalidadeReal, setMensalidadeReal] = useState<number>(0);
+  const [comissaoPaga, setComissaoPaga] = useState(false);
 
   useEffect(() => {
     supabase.from("config_empresa" as any).select("*").limit(1).maybeSingle()
@@ -71,6 +75,27 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
     }
   }, [deal.consultor]);
 
+  // Buscar adesão e mensalidade reais do cache_precos
+  useEffect(() => {
+    if (!deal.id || deal.id.startsWith("p")) return;
+    supabase.from("negociacoes" as any).select("cache_precos, plano, comissao_paga").eq("id", deal.id).maybeSingle()
+      .then(({ data }: any) => {
+        if (data?.comissao_paga) setComissaoPaga(true);
+        const precos = data?.cache_precos;
+        if (precos && Array.isArray(precos) && precos.length > 0) {
+          const planoNome = data?.plano || deal.plano || "";
+          // Buscar plano selecionado ou primeiro
+          const match = precos.find((p: any) =>
+            (p.plano_normalizado || p.plano) === planoNome ||
+            planoNome.startsWith(p.plano_normalizado || p.plano) ||
+            (p.plano_normalizado || p.plano || "").startsWith(planoNome)
+          ) || precos[0];
+          setAdesaoReal(Number(match?.adesao || 0));
+          setMensalidadeReal(Number(match?.cota || 0));
+        }
+      });
+  }, [deal.id, deal.plano]);
+
   // Buscar faturas reais da negociação
   useEffect(() => {
     if (!deal.id || deal.id.startsWith("p")) return;
@@ -91,20 +116,25 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
       });
   }, [deal.id]);
 
-  const taxaAdesao = deal.valor_plano || 0;
+  // Adesão real do plano (NÃO valor FIPE)
+  const taxaAdesao = adesaoReal > 0 ? adesaoReal : 400;
   const totalPago = faturas.filter(f => f.status === "pago").reduce((s, f) => s + f.valor, 0);
   const totalPendente = faturas.filter(f => f.status !== "pago").reduce((s, f) => s + f.valor, 0);
+  // Comissão sobre mensalidade (não sobre adesão)
+  const valorComissao = configComissao
+    ? (configComissao.tipo === "percentual" ? (mensalidadeReal * configComissao.percentual / 100) : configComissao.valor_fixo)
+    : (mensalidadeReal * 0.15);
 
   return (
     <div className="space-y-5">
       {/* 5.1 — Cards resumo com Comissão e Mensalidade */}
       <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
         {[
-          { label: "Taxa de Adesão", valor: taxaAdesao, sub: "", color: "#1A3A5C", icon: FileText },
+          { label: "Taxa de Adesão", valor: taxaAdesao, sub: deal.plano || "", color: "#1A3A5C", icon: FileText },
           { label: "Total Pago", valor: totalPago, sub: "", color: "#16a34a", icon: CreditCard },
-          { label: "Pendente", valor: totalPendente, sub: "", color: "#dc2626", icon: Receipt },
-          { label: "Mensalidade", valor: deal.valor_plano || 0, sub: deal.plano || "", color: "#7c3aed", icon: Banknote },
-          { label: "Comissão", valor: configComissao ? (configComissao.tipo === "percentual" ? (taxaAdesao * configComissao.percentual / 100) : configComissao.valor_fixo) : (taxaAdesao * 0.15), sub: configComissao ? (configComissao.tipo === "percentual" ? `${configComissao.percentual}%` : "fixo") : "15%", color: "#059669", icon: DollarSign },
+          { label: "Pendente", valor: totalPendente > 0 ? totalPendente : Math.max(0, taxaAdesao - totalPago), sub: "", color: "#dc2626", icon: Receipt },
+          { label: "Mensalidade", valor: mensalidadeReal, sub: deal.plano || "", color: "#7c3aed", icon: Banknote },
+          { label: "Comissão", valor: valorComissao, sub: configComissao ? (configComissao.tipo === "percentual" ? `${configComissao.percentual}% s/ mensal` : "fixo") : "15% s/ mensal", color: "#059669", icon: DollarSign },
         ].map(c => (
           <Card key={c.label} className="rounded-none border-t-2" style={{ borderTopColor: c.color }}>
             <CardContent className="p-4 space-y-1">
@@ -222,8 +252,8 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
             </div>
             <div className="text-center p-3 rounded bg-emerald-50 dark:bg-emerald-950/20 border border-success/20 dark:border-emerald-800">
               <p className="text-[10px] text-muted-foreground uppercase">Comissão Mensal</p>
-              <p className="text-lg font-bold text-success dark:text-emerald-400">{fmt(configComissao ? (configComissao.tipo === "percentual" ? taxaAdesao * configComissao.percentual / 100 : configComissao.valor_fixo) : taxaAdesao * 0.15)}</p>
-              <p className="text-[10px] text-emerald-600">{configComissao ? (configComissao.tipo === "percentual" ? `${configComissao.percentual}%` : `Fixo ${fmt(configComissao.valor_fixo)}`) : "15%"} — {deal.consultor}</p>
+              <p className="text-lg font-bold text-success dark:text-emerald-400">{fmt(valorComissao)}</p>
+              <p className="text-[10px] text-emerald-600">{configComissao ? (configComissao.tipo === "percentual" ? `${configComissao.percentual}% s/ mensal ${fmt(mensalidadeReal)}` : `Fixo ${fmt(configComissao.valor_fixo)}`) : `15% s/ mensal ${fmt(mensalidadeReal)}`} — {deal.consultor}</p>
             </div>
             <div className="text-center p-3 rounded bg-background border">
               <p className="text-[10px] text-muted-foreground uppercase">Líquido Associação</p>
@@ -304,6 +334,20 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
         <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => toast.info("Registrando pagamento manual...")}>
           <Plus className="h-3.5 w-3.5 mr-1" />Registrar Pagamento Manual
         </Button>
+        {!comissaoPaga && valorComissao > 0 && (
+          <Button size="sm" className="rounded-none bg-emerald-600 hover:bg-emerald-700 text-white" onClick={async () => {
+            await supabase.from("negociacoes").update({ comissao_paga: true, comissao_valor: valorComissao, comissao_data: new Date().toISOString() } as any).eq("id", deal.id);
+            setComissaoPaga(true);
+            toast.success(`Baixa de comissão registrada: ${fmt(valorComissao)} para ${deal.consultor}`);
+          }}>
+            <DollarSign className="h-3.5 w-3.5 mr-1" />Baixa Pgto. Comissão
+          </Button>
+        )}
+        {comissaoPaga && (
+          <Badge className="rounded-none border border-green-300 bg-green-50 text-green-700 text-xs self-center px-3 py-1.5">
+            <CheckCircle className="h-3 w-3 mr-1 inline" />Comissão paga: {fmt(valorComissao)}
+          </Badge>
+        )}
       </div>
     </div>
   );

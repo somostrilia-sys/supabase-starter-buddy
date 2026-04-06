@@ -24,7 +24,7 @@ import { supabase, callEdge } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   FileText, User, Car, ClipboardCheck, Activity, PenTool, Wallet,
-  Mail, MessageSquare, Plus, Send, Image, Archive, Paperclip, CheckCircle,
+  Mail, MessageSquare, Plus, Send, Image, Archive, Paperclip, CheckCircle, X,
 } from "lucide-react";
 
 interface Props {
@@ -51,12 +51,44 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
   const { profile } = useAuth();
   const [percentualAdesao, setPercentualAdesao] = React.useState<number | null>(null);
 
-  // Buscar percentual_adesao do consultor
+  const [comissaoPct, setComissaoPct] = React.useState<number>(15);
+  const [comissaoTipo, setComissaoTipo] = React.useState<string>("percentual");
+  const [comissaoFixo, setComissaoFixo] = React.useState<number>(0);
+  const [mensalidadeCalc, setMensalidadeCalc] = React.useState<number>(0);
+  const [adesaoCalc, setAdesaoCalc] = React.useState<number>(0);
+
+  // Buscar percentual_adesao e comissão do consultor
   React.useEffect(() => {
     if (!deal.consultor) return;
-    supabase.from("usuarios" as any).select("percentual_adesao").eq("nome", deal.consultor).maybeSingle()
-      .then(({ data }: any) => { if (data) setPercentualAdesao(data.percentual_adesao ?? 100); });
+    supabase.from("usuarios" as any).select("percentual_adesao, comissao_percentual, comissao_tipo, comissao_valor_fixo").eq("nome", deal.consultor).maybeSingle()
+      .then(({ data }: any) => {
+        if (data) {
+          setPercentualAdesao(data.percentual_adesao ?? 100);
+          setComissaoPct(Number(data.comissao_percentual || 15));
+          setComissaoTipo(data.comissao_tipo || "percentual");
+          setComissaoFixo(Number(data.comissao_valor_fixo || 0));
+        }
+      });
   }, [deal.consultor]);
+
+  // Buscar mensalidade e adesão do cache_precos
+  React.useEffect(() => {
+    if (!deal.id || deal.id.startsWith("p")) return;
+    supabase.from("negociacoes" as any).select("cache_precos, plano").eq("id", deal.id).maybeSingle()
+      .then(({ data }: any) => {
+        const precos = data?.cache_precos;
+        if (precos && Array.isArray(precos) && precos.length > 0) {
+          const planoNome = data?.plano || deal.plano || "";
+          const match = precos.find((p: any) =>
+            (p.plano_normalizado || p.plano) === planoNome ||
+            planoNome.startsWith(p.plano_normalizado || p.plano) ||
+            (p.plano_normalizado || p.plano || "").startsWith(planoNome)
+          ) || precos[0];
+          setMensalidadeCalc(Number(match?.cota || 0));
+          setAdesaoCalc(Number(match?.adesao || 0));
+        }
+      });
+  }, [deal.id, deal.plano]);
 
   // OCR auto-fill state
   const [dadosCnh, setDadosCnh] = useState<Record<string, any> | null>(null);
@@ -173,7 +205,7 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[92vh] p-0 gap-0 flex flex-col rounded-none">
+      <DialogContent className="max-w-5xl max-h-[92vh] p-0 gap-0 flex flex-col rounded-none" hideClose>
         {/* Header com nome e código */}
         <DialogHeader className="px-6 pt-5 pb-3 border-b" style={{ backgroundColor: "#1A3A5C" }}>
           <DialogTitle className="flex items-center gap-3 text-white flex-wrap">
@@ -181,9 +213,14 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
             <Badge variant="outline" className="text-[10px] font-mono border-white/30 text-white/80 rounded-none">{deal.codigo}</Badge>
             <Badge variant="outline" className="text-xs border-white/30 text-white/80 rounded-none">{deal.veiculo_modelo}</Badge>
             <Badge className="text-[10px] font-mono bg-white/15 text-white rounded-none">{deal.veiculo_placa}</Badge>
-            <Button size="sm" variant="ghost" className="ml-auto text-white/60 hover:text-white hover:bg-white/10 text-xs rounded-none h-7" onClick={() => setShowArquivar(!showArquivar)}>
-              <Archive className="h-3 w-3 mr-1" />Arquivar
-            </Button>
+            <div className="ml-auto flex items-center gap-1">
+              <Button size="sm" variant="ghost" className="text-white/60 hover:text-white hover:bg-white/10 text-xs rounded-none h-7" onClick={() => setShowArquivar(!showArquivar)}>
+                <Archive className="h-3 w-3 mr-1" />Arquivar
+              </Button>
+              <Button size="icon" variant="ghost" className="text-white/60 hover:text-white hover:bg-white/10 rounded-none h-7 w-7" onClick={() => onOpenChange(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </DialogTitle>
         </DialogHeader>
 
@@ -218,7 +255,7 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
           <ScrollArea className="flex-1 px-6 py-4 overflow-y-auto">
             {/* TAB 1 - Cotação */}
             <TabsContent value="cotacao" className="mt-0">
-              <CotacaoTab deal={deal} />
+              <CotacaoTab deal={deal} onUpdate={onUpdate} />
             </TabsContent>
             <TabsContent value="associado" className="mt-0">
               <AssociadoTab deal={deal} dadosCnh={dadosCnh} />
@@ -248,12 +285,12 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
 
             {/* TAB - Vistoria */}
             <TabsContent value="vistoria" className="mt-0">
-              <VistoriaTab deal={deal} />
+              <VistoriaTab deal={deal} onUpdate={onUpdate} />
             </TabsContent>
 
             {/* TAB 5 - Assinatura */}
             <TabsContent value="assinatura" className="mt-0">
-              <AssinaturaTab deal={deal} />
+              <AssinaturaTab deal={deal} onUpdate={onUpdate} />
             </TabsContent>
 
             {/* TAB 6 - Financeiro */}
@@ -326,29 +363,42 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
               )}
             </div>
 
-            {/* Afiliado */}
+            {/* Comissão e Adesão */}
             <div className="space-y-1 border-t pt-3">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <span className="text-[10px] text-muted-foreground">Afiliado(a)</span>
-                  <p className="text-sm">Nenhum</p>
-                </div>
-              </div>
               <div className="flex items-center gap-2">
                 <Wallet className="h-4 w-4 text-success" />
                 <div>
-                  <span className="text-[10px] text-muted-foreground">Comissão</span>
-                  <p className="text-sm font-semibold text-success">R$ 0,00</p>
+                  <span className="text-[10px] text-muted-foreground">Comissão {comissaoTipo === "fixo" ? "(fixo)" : `(${comissaoPct}% s/ mensal)`}</span>
+                  <p className="text-sm font-semibold text-success">
+                    {comissaoTipo === "fixo"
+                      ? `R$ ${comissaoFixo.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                      : mensalidadeCalc > 0
+                        ? `R$ ${(mensalidadeCalc * comissaoPct / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                        : "—"}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <Wallet className="h-4 w-4 text-primary" />
                 <div>
                   <span className="text-[10px] text-muted-foreground">Adesão</span>
-                  <p className="text-sm font-semibold text-primary">{percentualAdesao != null ? `${percentualAdesao}%` : "—"}</p>
+                  <p className="text-sm font-semibold text-primary">
+                    {adesaoCalc > 0
+                      ? `R$ ${adesaoCalc.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                      : "—"}
+                    {percentualAdesao != null && percentualAdesao < 100 && <span className="text-[10px] text-muted-foreground ml-1">({percentualAdesao}% consultor)</span>}
+                  </p>
                 </div>
               </div>
+              {mensalidadeCalc > 0 && (
+                <div className="flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-purple-500" />
+                  <div>
+                    <span className="text-[10px] text-muted-foreground">Mensalidade</span>
+                    <p className="text-sm font-semibold text-purple-600">R$ {mensalidadeCalc.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Stepper contratação */}

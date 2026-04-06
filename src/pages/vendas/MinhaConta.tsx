@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { PUBLIC_DOMAIN } from "@/lib/constants";
 import { supabase, callEdge } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -264,7 +265,7 @@ export default function MinhaConta() {
     setSavingProfile(false);
   }
 
-  const landingPageUrl = slug ? `${window.location.origin}/c/${slug}` : "";
+  const landingPageUrl = slug ? `${PUBLIC_DOMAIN}/${slug}` : "";
 
   // Bank form state
   const [tipoConta, setTipoConta] = useState("");
