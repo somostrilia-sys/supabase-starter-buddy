@@ -312,24 +312,25 @@ export default function CotacaoTab({ deal }: Props) {
     return "leves";
   };
 
-  // Buscar coberturas ao selecionar plano — filtrar por tipo de veículo
+  // Buscar coberturas ao selecionar plano — busca exata pelo nome do plano da tabela_precos
   const carregarCoberturas = async (plano: string) => {
-    const planoNorm = normalizarPlano(plano);
-    const tipo = tipoVeiculoCob();
-    // Buscar coberturas específicas para este tipo de veículo
-    const { data } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", planoNorm).eq("tipo_veiculo", tipo).order("ordem");
+    // 1. Busca exata pelo nome do plano (ex: "Objetivo (Leves)", "PESADOS (Completo)")
+    const { data } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", plano).order("tipo").order("ordem");
     if (data && data.length > 0) {
       setCoberturasPlano(data);
-    } else {
-      // Fallback: coberturas genéricas (leves) do plano
-      const { data: data2 } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", planoNorm).eq("tipo_veiculo", "leves").order("ordem");
-      if (data2 && data2.length > 0) {
-        setCoberturasPlano(data2);
-      } else {
-        const { data: data3 } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", plano).order("ordem");
-        setCoberturasPlano(data3 || []);
-      }
+      return;
     }
+    // 2. Fallback: busca pelo nome normalizado + tipo de veículo
+    const planoNorm = normalizarPlano(plano);
+    const tipo = tipoVeiculoCob();
+    const { data: data2 } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", planoNorm).eq("tipo_veiculo", tipo).order("ordem");
+    if (data2 && data2.length > 0) {
+      setCoberturasPlano(data2);
+      return;
+    }
+    // 3. Fallback: busca fuzzy por ILIKE
+    const { data: data3 } = await supabase.from("coberturas_plano" as any).select("*").ilike("plano", `%${planoNorm}%`).eq("tipo_veiculo", tipo).order("ordem").limit(30);
+    setCoberturasPlano(data3 || []);
   };
 
   // Verificar se veículo é aceito

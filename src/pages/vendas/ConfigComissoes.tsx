@@ -174,7 +174,7 @@ export default function ConfigComissoes() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Gestao de Comissoes</h1>
-        <p className="text-sm text-muted-foreground">Comissoes, salarios, faixas de bonus e fechamento mensal</p>
+        <p className="text-sm text-muted-foreground">Comissoes, fixo, faixas de bonus e fechamento mensal</p>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -193,7 +193,7 @@ export default function ConfigComissoes() {
                   <TableRow className="bg-muted/60">
                     <TableHead className="text-[10px] uppercase">Colaborador</TableHead>
                     <TableHead className="text-[10px] uppercase">Funcao</TableHead>
-                    <TableHead className="text-[10px] uppercase text-center">Salario Fixo</TableHead>
+                    <TableHead className="text-[10px] uppercase text-center">Fixo</TableHead>
                     <TableHead className="text-[10px] uppercase text-center">Comissao</TableHead>
                     <TableHead className="text-[10px] uppercase text-center">Dep. Boleto</TableHead>
                     <TableHead className="text-[10px] uppercase">Acoes</TableHead>
@@ -364,7 +364,7 @@ export default function ConfigComissoes() {
           <DialogHeader><DialogTitle>Editar — {editing?.nome}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-xs">Salario Fixo (R$)</Label>
+              <Label className="text-xs">Fixo (R$)</Label>
               <Input type="number" value={editSalario} onChange={e => setEditSalario(e.target.value)} className="mt-1" />
             </div>
             <Separator />

@@ -165,15 +165,22 @@ export default function PlanoComparativo() {
           if (p.includes("básico") || p.includes("basico")) return "Básico";
           return n;
         };
-        const nomesPlanos = [...new Set(todosPlanos.map(p => normPlano(p.nome)))];
-        if (nomesPlanos.length > 0) {
-          // Buscar coberturas específicas para o tipo de veículo
+        // Buscar por nomes exatos primeiro, depois normalizados
+        const nomesExatos = [...new Set(todosPlanos.map(p => p.nome))];
+        const nomesNorm = [...new Set(todosPlanos.map(p => normPlano(p.nome)))];
+        if (nomesExatos.length > 0) {
+          // Buscar por nome exato do plano
           let { data: cobData } = await supabase.from("coberturas_plano" as any)
-            .select("*").in("plano", nomesPlanos).eq("tipo_veiculo", tipoVeiculoCot);
-          // Fallback para leves se não encontrar
+            .select("*").in("plano", nomesExatos);
+          // Fallback: nome normalizado + tipo veículo
           if (!cobData || cobData.length === 0) {
             ({ data: cobData } = await supabase.from("coberturas_plano" as any)
-              .select("*").in("plano", nomesPlanos).eq("tipo_veiculo", "leves"));
+              .select("*").in("plano", nomesNorm).eq("tipo_veiculo", tipoVeiculoCot));
+          }
+          // Fallback: nome normalizado sem tipo
+          if (!cobData || cobData.length === 0) {
+            ({ data: cobData } = await supabase.from("coberturas_plano" as any)
+              .select("*").in("plano", nomesNorm));
           }
           if (cobData && (cobData as any[]).length > 0) {
             const cobMap: Record<string, { coberturas: string[]; assistencias: string[]; detalhes: Record<string, string> }> = {};
