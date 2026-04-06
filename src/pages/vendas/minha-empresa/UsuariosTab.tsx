@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Edit, Trash2, Users, Search, Shield, ChevronDown, ChevronUp, Info, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
@@ -35,11 +35,14 @@ interface Usuario {
   status: "ativo" | "inativo";
 }
 
-// ── Permission Groups Config ──
+// ── Permission Groups (loaded from DB) ──
 
-interface PermissaoItem {
-  key: string;
-  label: string;
+interface GrupoPermissaoDb {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  permissoes: string[];
+  ativo: boolean;
 }
 
 interface GrupoPermissao {
@@ -47,66 +50,26 @@ interface GrupoPermissao {
   label: string;
   descricao: string;
   badgeColor: string;
-  permissoes: PermissaoItem[];
+  permissoes: { key: string; label: string }[];
 }
 
-const gruposPermissao: GrupoPermissao[] = [
-  {
-    id: "consultor",
-    label: "Consultor",
-    descricao: "Acesso operacional básico — atendimento, cotações e vendas",
-    badgeColor: "bg-primary/8 text-primary",
-    permissoes: [
-      { key: "atendimento", label: "Atendimento ao cliente" },
-      { key: "cotacoes", label: "Criar e gerenciar cotações" },
-      { key: "vendas", label: "Registrar vendas" },
-      { key: "pipeline", label: "Visualizar pipeline próprio" },
-      { key: "contatos", label: "Gerenciar contatos" },
-    ],
-  },
-  {
-    id: "gestor",
-    label: "Gestor",
-    descricao: "Acesso intermediário — equipe, relatórios e aprovações",
-    badgeColor: "bg-warning/10 text-warning",
-    permissoes: [
-      { key: "equipe", label: "Gerenciar equipe" },
-      { key: "relatorios", label: "Relatórios de desempenho" },
-      { key: "aprovacoes", label: "Aprovar cotações e vistorias" },
-      { key: "pipeline_equipe", label: "Pipeline da equipe" },
-      { key: "metas", label: "Definir metas da equipe" },
-      { key: "comissoes_equipe", label: "Visualizar comissões da equipe" },
-    ],
-  },
-  {
-    id: "diretor",
-    label: "Diretor",
-    descricao: "Acesso amplo — metas, configurações estratégicas",
-    badgeColor: "bg-accent/8 text-accent",
-    permissoes: [
-      { key: "metas_globais", label: "Metas globais" },
-      { key: "config_estrategicas", label: "Configurações estratégicas" },
-      { key: "relatorios_gerenciais", label: "Relatórios gerenciais" },
-      { key: "auditoria", label: "Log de auditoria" },
-      { key: "usuarios", label: "Gerenciar todos os usuários" },
-      { key: "planos_precos", label: "Tabelas de preços e planos" },
-    ],
-  },
-  {
-    id: "administrativo",
-    label: "Administrativo",
-    descricao: "Acesso financeiro e operacional — boletos, contratos, cadastros",
-    badgeColor: "bg-success/10 text-success",
-    permissoes: [
-      { key: "boletos", label: "Emissão e gestão de boletos" },
-      { key: "contratos", label: "Contratos de adesão" },
-      { key: "cadastros", label: "Cadastros gerais" },
-      { key: "financeiro", label: "Módulo financeiro" },
-      { key: "conciliacao", label: "Conciliação bancária" },
-      { key: "notas_fiscais", label: "Notas fiscais" },
-    ],
-  },
-];
+const BADGE_COLORS: Record<string, string> = {
+  consultor: "bg-primary/8 text-primary",
+  gestor: "bg-warning/10 text-warning",
+  diretor: "bg-accent/8 text-accent",
+  administrativo: "bg-success/10 text-success",
+};
+
+function dbToGrupo(g: GrupoPermissaoDb): GrupoPermissao {
+  const idNorm = g.nome.toLowerCase();
+  return {
+    id: idNorm,
+    label: g.nome,
+    descricao: g.descricao || "Grupo personalizado",
+    badgeColor: BADGE_COLORS[idNorm] || "bg-muted text-muted-foreground",
+    permissoes: (Array.isArray(g.permissoes) ? g.permissoes : []).map((k) => ({ key: k, label: k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) })),
+  };
+}
 
 // ── Static Options ──
 
@@ -153,10 +116,6 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
-function getGrupoConfig(id: string) {
-  return gruposPermissao.find(g => g.id === id);
-}
-
 // ── Data fetching ──
 
 async function fetchUsuarios(): Promise<Usuario[]> {
@@ -178,6 +137,25 @@ export default function UsuariosTab() {
     queryKey: ["usuarios"],
     queryFn: fetchUsuarios,
   });
+
+  // Buscar grupos de permissão do banco
+  const { data: gruposPermissao = [] } = useQuery({
+    queryKey: ["grupo_permissoes_usuarios"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("grupo_permissoes")
+        .select("*")
+        .eq("ativo", true)
+        .order("nome");
+      if (error) throw error;
+      return (data || []).map((g: any) => dbToGrupo({
+        ...g,
+        permissoes: Array.isArray(g.permissoes) ? g.permissoes : JSON.parse(g.permissoes || "[]"),
+      })) as GrupoPermissao[];
+    },
+  });
+
+  const getGrupoConfig = (id: string) => gruposPermissao.find(g => g.id === id);
 
   const [search, setSearch] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { PUBLIC_DOMAIN } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,6 @@ import { MessageSquare, Mail, Link2, CreditCard, CheckCircle, Shield, ShieldChec
 import ExcecaoButton from "@/components/ExcecaoButton";
 import PedirLiberacaoButton from "@/components/PedirLiberacaoButton";
 import OpcionaisSection, { OpcionalItem } from "@/components/OpcionaisSection";
-import { useUsuario } from "@/hooks/useUsuario";
 
 /* ─── Marcas estáticas (fallback para select manual quando API não retorna) ─── */
 const marcas = ["Chevrolet", "Hyundai", "Honda", "Toyota", "Volkswagen", "Fiat", "Jeep", "Nissan", "Renault", "Ford"];
@@ -114,12 +114,9 @@ async function buscarPrecosReais(valorFipe: number): Promise<{ plano: string; co
   return (data || []) as any[];
 }
 
-interface Props { deal: PipelineDeal; }
+interface Props { deal: PipelineDeal; onUpdate?: () => void; }
 
-export default function CotacaoTab({ deal }: Props) {
-  const { isConsultor, isGestor, isDiretor, isAdmin } = useUsuario();
-  const podeDesconto = isGestor || isDiretor || isAdmin; // Consultor NÃO pode
-  const podeLiberacao = isGestor || isDiretor || isAdmin; // Consultor NÃO pode
+export default function CotacaoTab({ deal, onUpdate }: Props) {
   // Inferir marca do modelo do deal
   const dealModelo = (deal.veiculo_modelo || "").toUpperCase();
   const inferredMarca = marcas.find(m => dealModelo.includes(m.toUpperCase())) || "";
@@ -174,20 +171,45 @@ export default function CotacaoTab({ deal }: Props) {
     obsContrato: "",
     obsInterna: "",
   });
-  const adesaoPadrao = (() => {
-    const t = form.tipoVeiculo.toLowerCase();
-    if (t.includes("moto")) return 250;
-    if (t.includes("caminhão") || t.includes("van") || t.includes("ônibus")) return 1000;
-    return 400; // leves
-  })();
   const [planoSelecionado, setPlanoSelecionado] = useState("Completo");
   const [fipeLoading, setFipeLoading] = useState(false);
   const [fipeFetched, setFipeFetched] = useState(false);
   const [descontoMensal, setDescontoMensal] = useState("");
   const [descontoAdesao, setDescontoAdesao] = useState("");
   const descontoAplicadoRef = React.useRef(false);
-  const [valorInstalacaoEdit, setValorInstalacaoEdit] = useState((deal as any).instalacao_rastreador ? String((deal as any).instalacao_rastreador) : "");
+  const [valorInstalacaoEdit, setValorInstalacaoEdit] = useState("");
   const [opcionaisSelecionados, setOpcionaisSelecionados] = useState<OpcionalItem[]>([]);
+
+  // Implementos / Agregados
+  const [implementosCatalogo, setImplementosCatalogo] = useState<{ id: string; nome: string }[]>([]);
+  const [implementoSelecionado, setImplementoSelecionado] = useState("");
+  const [implementoValorDeclarado, setImplementoValorDeclarado] = useState("");
+  const [implementoCotaAdicional, setImplementoCotaAdicional] = useState(0);
+
+  React.useEffect(() => {
+    supabase.from("implementos_catalogo" as any).select("id, nome").eq("ativo", true).order("ordem")
+      .then(({ data }: any) => setImplementosCatalogo(data || []));
+  }, []);
+
+  // Buscar cota do agregado quando valor declarado muda
+  const calcularCotaAgregado = async (valorDeclarado: number) => {
+    if (valorDeclarado <= 0) { setImplementoCotaAdicional(0); return; }
+    const regionalPrecos = await buscarRegionalPrecos(form.estadoCirc || "", form.cidadeCirc || "");
+    const { data } = await supabase.from("tabela_precos" as any)
+      .select("cota, regional_normalizado")
+      .ilike("plano_normalizado", "%agregado%")
+      .lte("valor_menor", valorDeclarado)
+      .gte("valor_maior", valorDeclarado);
+    if (data && data.length > 0) {
+      // Prioridade: regional específica, senão qualquer
+      const match = regionalPrecos
+        ? (data as any[]).find((d: any) => (d.regional_normalizado || "").toUpperCase() === regionalPrecos.toUpperCase())
+        : null;
+      setImplementoCotaAdicional(Number((match || data[0] as any).cota) || 0);
+    } else {
+      setImplementoCotaAdicional(0);
+    }
+  };
 
   // Carregar opcionais salvos
   React.useEffect(() => {
@@ -214,7 +236,8 @@ export default function CotacaoTab({ deal }: Props) {
     }
   };
 
-  const totalOpcionais = opcionaisSelecionados.reduce((s, o) => s + o.valor_mensal, 0);
+  const totalOpcionais = opcionaisSelecionados.reduce((s, o) => s + o.valor_mensal, 0) + implementoCotaAdicional;
+  const [linkCotacao, setLinkCotacao] = useState("");
   const [descontoIaLoading, setDescontoIaLoading] = useState(false);
   const [descontoIaResult, setDescontoIaResult] = useState<{
     aprovado: boolean;
@@ -300,43 +323,56 @@ export default function CotacaoTab({ deal }: Props) {
   const [motivoRejeicao, setMotivoRejeicao] = useState("");
   const [coberturasPlano, setCoberturasPlano] = useState<any[]>([]);
 
-  // Normalizar nome do plano para busca em coberturas_plano
-  const normalizarPlano = (plano: string): string => {
-    const p = plano.toLowerCase();
-    if (p.includes("premium")) return "Premium";
-    if (p.includes("completo")) return "Completo";
-    if (p.includes("objetivo")) return "Objetivo";
-    if (p.includes("básico") || p.includes("basico")) return "Básico";
-    return plano;
+  // Ordem de relevância para coberturas
+  const ORDEM_COBERTURAS: Record<string, number> = {
+    "colisão": 1, "colisao": 1, "incêndio": 2, "incendio": 2, "roubo": 3, "furto": 4,
+    "perda total": 5, "assistência 24h": 6, "assistencia 24h": 6, "carro reserva": 7,
+    "vidros": 8, "faróis": 9, "farois": 9, "terceiros": 10, "reboque": 11,
+    "chaveiro": 12, "hospedagem": 13, "app": 14, "rastreador": 15,
+  };
+  const ordemCobertura = (nome: string) => {
+    const n = nome.toLowerCase();
+    for (const [key, val] of Object.entries(ORDEM_COBERTURAS)) {
+      if (n.includes(key)) return val;
+    }
+    return 50;
   };
 
-  // Mapear tipo de veículo do form para tipo_veiculo da coberturas_plano
-  const tipoVeiculoCob = (): string => {
-    const t = form.tipoVeiculo.toLowerCase();
-    if (t.includes("moto")) return "motos";
-    if (t.includes("caminhão") || t.includes("van") || t.includes("ônibus")) return "pesados";
-    return "leves";
-  };
-
-  // Buscar coberturas ao selecionar plano — busca exata pelo nome do plano da tabela_precos
+  // Buscar coberturas ao selecionar plano (match exato → normalizado → ILIKE) + deduplicar + ordenar
   const carregarCoberturas = async (plano: string) => {
-    // 1. Busca exata pelo nome do plano (ex: "Objetivo (Leves)", "PESADOS (Completo)")
-    const { data } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", plano).order("tipo").order("ordem");
-    if (data && data.length > 0) {
-      setCoberturasPlano(data);
-      return;
+    let result: any[] = [];
+    // 1. Match exato
+    const { data } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", plano).order("ordem");
+    if (data && data.length > 0) { result = data; }
+    else {
+      // 2. Normalizado: remover "(Leves)", "(Pesados)", etc.
+      const planoNorm = plano.replace(/\s*\(.*?\)\s*/g, "").trim();
+      if (planoNorm !== plano) {
+        const r2 = await supabase.from("coberturas_plano" as any).select("*").eq("plano", planoNorm).order("ordem");
+        if (r2.data && r2.data.length > 0) { result = r2.data; }
+      }
+      if (result.length === 0) {
+        const planoNorm = plano.replace(/\s*\(.*?\)\s*/g, "").trim();
+        // 3. ILIKE — pegar só do primeiro plano que casa (evitar misturar planos)
+        const r3 = await supabase.from("coberturas_plano" as any).select("*").ilike("plano", `%${planoNorm}%`).order("ordem");
+        if (r3.data && r3.data.length > 0) {
+          // Pegar só coberturas do PRIMEIRO plano encontrado
+          const primeiroPlano = r3.data[0].plano;
+          result = r3.data.filter((c: any) => c.plano === primeiroPlano);
+        }
+      }
     }
-    // 2. Fallback: busca pelo nome normalizado + tipo de veículo
-    const planoNorm = normalizarPlano(plano);
-    const tipo = tipoVeiculoCob();
-    const { data: data2 } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", planoNorm).eq("tipo_veiculo", tipo).order("ordem");
-    if (data2 && data2.length > 0) {
-      setCoberturasPlano(data2);
-      return;
-    }
-    // 3. Fallback: busca fuzzy por ILIKE
-    const { data: data3 } = await supabase.from("coberturas_plano" as any).select("*").ilike("plano", `%${planoNorm}%`).eq("tipo_veiculo", tipo).order("ordem").limit(30);
-    setCoberturasPlano(data3 || []);
+    // Deduplicar por nome de cobertura
+    const seen = new Set<string>();
+    const deduplicado = result.filter((c: any) => {
+      const key = (c.cobertura || "").toLowerCase().trim();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    // Ordenar por relevância
+    deduplicado.sort((a: any, b: any) => ordemCobertura(a.cobertura) - ordemCobertura(b.cobertura));
+    setCoberturasPlano(deduplicado);
   };
 
   // Verificar se veículo é aceito
@@ -354,26 +390,33 @@ export default function CotacaoTab({ deal }: Props) {
     }
   };
 
-  // Buscar regional de preços pela cidade/UF de circulação
+  // Buscar regional de preços pela cidade/UF de circulação (via regional_cidades)
   const buscarRegionalPrecos = async (uf: string, cidade: string): Promise<string> => {
-    // Primeiro tenta match por cidade específica (ex: São Paulo → SP Capital)
+    // Buscar o municipio_id pela cidade + UF
     if (cidade) {
-      const { data: cidadeMatch } = await supabase.from("uf_regional_precos" as any)
-        .select("regional_precos")
+      const { data: mun } = await (supabase as any).from("municipios")
+        .select("id")
         .eq("uf", uf)
-        .ilike("cidade", cidade)
+        .ilike("nome", cidade)
         .limit(1)
         .maybeSingle();
-      if (cidadeMatch) return (cidadeMatch as any).regional_precos;
+      if (mun) {
+        // Buscar a regional vinculada a essa cidade
+        const { data: rc } = await (supabase as any).from("regional_cidades")
+          .select("regional_id")
+          .eq("municipio_id", mun.id)
+          .limit(1)
+          .maybeSingle();
+        if (rc) return rc.regional_id;
+      }
     }
-    // Fallback: match por UF (cidade IS NULL = default do estado)
-    const { data: ufMatch } = await supabase.from("uf_regional_precos" as any)
-      .select("regional_precos")
-      .eq("uf", uf)
-      .is("cidade", null)
+    // Fallback: buscar qualquer cidade da UF para pegar a regional padrão do estado
+    const { data: fallback } = await (supabase as any).from("regional_cidades")
+      .select("regional_id, municipios!inner(uf)")
+      .eq("municipios.uf", uf)
       .limit(1)
       .maybeSingle();
-    return ufMatch ? (ufMatch as any).regional_precos : "";
+    return fallback ? fallback.regional_id : "";
   };
 
   // Buscar preços reais por valor FIPE + tipo veículo + cidade/UF circulação
@@ -396,16 +439,22 @@ export default function CotacaoTab({ deal }: Props) {
       .order("plano_normalizado");
 
     if (todos && todos.length > 0) {
-      // Buscar regional pela cidade/UF de circulação do veículo
-      const regionalPrecos = await buscarRegionalPrecos(ufOverride || form.estadoCirc || "", cidadeOverride || form.cidadeCirc || "");
+      // Buscar regional pela cidade/UF de circulação do veículo (retorna regional_id)
+      const regionalId = await buscarRegionalPrecos(ufOverride || form.estadoCirc || "", cidadeOverride || form.cidadeCirc || "");
       let resultado = todos;
-      if (regionalPrecos) {
-        const filtered = todos.filter((t: any) =>
-          (t.regional_normalizado || "").toUpperCase() === regionalPrecos.toUpperCase()
-        );
+      if (regionalId) {
+        const filtered = todos.filter((t: any) => t.regional_id === regionalId);
         resultado = filtered.length > 0 ? filtered : todos;
       }
       setPrecosReais(resultado);
+      // Auto-selecionar plano se nome atual não bate exatamente com os planos reais
+      const nomesReais = [...new Set(resultado.map((p: any) => p.plano_normalizado || p.plano))];
+      if (nomesReais.length > 0 && !nomesReais.includes(planoSelecionado)) {
+        const match = nomesReais.find(n => n.startsWith(planoSelecionado) || planoSelecionado.startsWith(n));
+        const novoPlano = match || nomesReais[0];
+        setPlanoSelecionado(novoPlano);
+        carregarCoberturas(novoPlano);
+      }
       // Aplicar desconto aprovado pelo diretor (só uma vez)
       if (!descontoAplicadoRef.current) {
         const pct = Number((deal as any).desconto_percentual || 0);
@@ -579,38 +628,53 @@ export default function CotacaoTab({ deal }: Props) {
   }, [deal.veiculo_placa, dadosReaisCarregados, precosCarregadosDaCotacao, aplicarDadosFipe]);
 
   // planosConfig: usa preços reais se tiver, senão fallback default
-  // Agrupa por plano_normalizado para evitar duplicatas
+  // Normaliza nomes de planos (remove espaços extras, parênteses duplos)
+  const normPlanoNome = (n: string) => n.replace(/\s+/g, " ").replace(/\)\)/g, ")").replace(/\(\(/g, "(").trim();
+  // Agrupa por plano normalizado para evitar duplicatas
   const planosConfig = precosReais.length > 0
-    ? [...new Set(precosReais.map((p: any) => p.plano_normalizado || p.plano))].map(planoNorm => {
-        const p = precosReais.find((pr: any) => (pr.plano_normalizado || pr.plano) === planoNorm);
-        return {
+    ? (() => {
+        const seen = new Map<string, any>();
+        for (const pr of precosReais) {
+          const nome = normPlanoNome(pr.plano_normalizado || pr.plano);
+          if (!seen.has(nome)) seen.set(nome, pr);
+        }
+        return [...seen.entries()].map(([planoNorm, p]) => ({
           nome: planoNorm,
           icon: planoNorm.includes("Premium") ? ShieldPlus : planoNorm.includes("Completo") ? ShieldCheck : planoNorm.includes("Objetivo") ? ShieldCheck : Shield,
           cor: planoNorm.includes("Premium") ? "border-warning/25 bg-warning/8" : planoNorm.includes("Completo") ? "border-success/20 bg-emerald-50" : planoNorm.includes("Objetivo") ? "border-blue-300 bg-blue-50" : "border-blue-200 bg-primary/6",
           percentual: 0,
           coberturas: [] as string[],
           valorReal: Number(p?.cota || 0),
-          adesao: Number(p?.adesao || 0) || adesaoPadrao,
+          adesao: Number(p?.adesao || 0) || 400,
           rastreador: p?.rastreador || "Não",
           instalacao: Number(p?.instalacao || 0) || 100,
-        };
-      })
-    : planosConfigDefault.map(p => ({ ...p, valorReal: 0, adesao: adesaoPadrao, rastreador: "Não", instalacao: 100 }));
+        }));
+      })()
+    : planosConfigDefault.map(p => ({ ...p, valorReal: 0, adesao: 400, rastreador: "Não", instalacao: 100 }));
   // Usar valor FIPE real da API
   const valorFipe = valorFipeReal;
   const codFipe = codFipeReal;
 
-  // Desconto RBAC: consultor NUNCA pode, gestor sempre pode (IA analisa >5%), diretor/admin livre
+  // Desconto: livre em cards novos, bloqueado após cotação enviada (precisa IA >5% ou diretor)
   const descontoAprovadoPorDiretor = !!(deal as any).desconto_aprovado_por || !!(deal as any).desconto_ia_aprovado;
-  const descontoBloqueado = isConsultor; // Consultor = completely disabled. Gestor = max 5%. Diretor/Admin = no limit.
+  const descontoBloqueado = cotacaoEnviada && !descontoIaResult?.aprovado && !descontoAprovadoPorDiretor;
 
   const set = (field: string, value: string | boolean) => setForm(prev => ({ ...prev, [field]: value }));
 
   const handleBaixarPdf = async () => {
     if (!planoSelecionado) { toast.error("Selecione um plano para baixar o PDF"); return; }
+    // Garantir coberturas carregadas antes do PDF
+    await carregarCoberturas(planoSelecionado);
     const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
+    if (!precoPlano) {
+      console.warn("[PDF] precoPlano não encontrado para:", planoSelecionado, "precosReais:", precosReais.map((p: any) => p.plano_normalizado || p.plano));
+    }
     const mensalPlano = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
     const mensal = mensalPlano + totalOpcionais;
+    const adesaoReal = precoPlano ? Number(precoPlano.adesao) : 400;
+    if (coberturasPlano.length === 0) {
+      toast.warning("Coberturas não encontradas para este plano. PDF será gerado sem detalhes de coberturas.");
+    }
     await gerarPdfCotacao({
       numeroCotacao: `${Date.now().toString().slice(-8)}`,
       data: new Date().toLocaleDateString("pt-BR"),
@@ -628,30 +692,27 @@ export default function CotacaoTab({ deal }: Props) {
         nome: planoSelecionado,
         mensal: descontoMensal ? Number(descontoMensal) : mensal,
         mensalOriginal: descontoMensal ? mensal : undefined,
-        adesao: descontoAdesao ? Number(descontoAdesao) : (precoPlano ? Number(precoPlano.adesao) : adesaoPadrao),
-        adesaoOriginal: descontoAdesao ? (precoPlano ? Number(precoPlano.adesao) : adesaoPadrao) : undefined,
+        adesao: descontoAdesao ? Number(descontoAdesao) : adesaoReal,
+        adesaoOriginal: descontoAdesao ? adesaoReal : undefined,
         participacao: precoPlano ? `${precoPlano.tipo_franquia} ${precoPlano.valor_franquia}` : "5% FIPE",
         rastreador: precoPlano?.rastreador || "Não",
-        instalacao: valorInstalacaoEdit ? Number(valorInstalacaoEdit) : (precoPlano ? Number(precoPlano.instalacao || 0) : 100),
+        instalacao: precoPlano ? Number(precoPlano.instalacao || 0) : 0,
       },
-      coberturas: coberturasPlano.map((c: any) => ({ nome: c.cobertura, inclusa: c.inclusa, tipo: c.tipo, detalhe: c.detalhe })),
+      coberturas: coberturasPlano.length > 0
+        ? coberturasPlano.map((c: any) => ({ nome: c.cobertura, inclusa: c.inclusa, tipo: c.tipo, detalhe: c.valor ?? c.detalhe }))
+        : (planosConfigDefault.find(p => planoSelecionado.includes(p.nome) || p.nome.includes(planoSelecionado))?.coberturas || ["Colisão", "Incêndio", "Roubo", "Furto", "Perda Total", "Assistência 24H"]).map(c => ({ nome: c, inclusa: true, tipo: "cobertura", detalhe: "" })),
       consultor: { nome: deal.consultor || "Consultor", telefone: "", email: "" },
-      opcionais: opcionaisSelecionados.map(o => ({ nome: o.nome, categoria: o.categoria, valor_mensal: o.valor_mensal })),
+      opcionais: [
+        ...opcionaisSelecionados.map(o => ({ nome: o.nome, categoria: o.categoria, valor_mensal: o.valor_mensal })),
+        ...(implementoCotaAdicional > 0 ? [{ nome: `${implementoSelecionado} (${formatCurrency(Number(implementoValorDeclarado))})`, categoria: "Implemento", valor_mensal: implementoCotaAdicional }] : []),
+      ],
     });
-    if (!(deal as any).email) {
-      toast.success("PDF baixado! Para enviar ao cliente, preencha o email na aba Associado.", { duration: 6000 });
-    } else {
-      toast.success("PDF da cotação baixado!");
-    }
+    toast.success("PDF da cotação baixado!");
   };
 
   const handleEnviar = async (tipo: string) => {
-    if (tipo !== "PDF" && !(deal as any).email) {
-      toast.error("Email obrigatório para envio da cotação. Preencha na aba Associado.");
-      return;
-    }
     if (tipo === "PDF") {
-      handleBaixarPdf();
+      await handleBaixarPdf();
       // Auto-transição mesmo ao baixar PDF
       const { data: negPdf } = await (supabase as any).from("negociacoes").select("stage").eq("id", deal.id).maybeSingle();
       const stagePdf = negPdf?.stage || deal.stage;
@@ -662,6 +723,7 @@ export default function CotacaoTab({ deal }: Props) {
           motivo: "Cotação PDF baixada", automatica: true,
         });
         toast.info("Card movido para Em Negociação");
+        onUpdate?.();
       }
       return;
     }
@@ -669,12 +731,12 @@ export default function CotacaoTab({ deal }: Props) {
       toast.error("Preencha Estado e Cidade de Circulação antes de enviar a cotação.");
       return;
     }
-    // Buscar regional pela cidade/estado de circulação
+    // Buscar regional pela cidade/estado de circulação (retorna regional_id)
     const regionalCot = await buscarRegionalPrecos(form.estadoCirc || "", form.cidadeCirc || "");
 
     // Criar cotação com planos filtrados pela regional
     const planosFiltrados = precosReais.length > 0
-      ? precosReais.filter((p: any) => !regionalCot || (p.regional_normalizado || "").toUpperCase() === regionalCot.toUpperCase())
+      ? precosReais.filter((p: any) => !regionalCot || p.regional_id === regionalCot)
       : precosReais;
 
     const { data: cotacao } = await supabase
@@ -684,9 +746,28 @@ export default function CotacaoTab({ deal }: Props) {
         cidade_circulacao: form.cidadeCirc,
         estado_circulacao: form.estadoCirc,
         regional_precos: regionalCot,
-        todos_planos: planosFiltrados.length > 0
-          ? planosFiltrados.map((p: any) => ({ nome: p.plano_normalizado || p.plano, valor_mensal: p.cota, adesao: p.adesao, rastreador: p.rastreador, instalacao: Number(p.instalacao || 0), franquia: p.valor_franquia, valor_fipe: valorFipe }))
-          : [{ nome: planoSelecionado, valor_mensal: valorFipe * 0.015 }],
+        todos_planos: await (async () => {
+          if (planosFiltrados.length === 0) return [{ nome: planoSelecionado, valor_mensal: valorFipe * 0.015 }];
+          // Buscar coberturas + produtos reais para snapshot
+          const nomesPlanos = [...new Set(planosFiltrados.map((p: any) => p.plano_normalizado || p.plano))];
+          const { data: cobSnap } = await supabase.from("coberturas_plano" as any).select("*").in("plano", nomesPlanos);
+          const cobMap: Record<string, any[]> = {};
+          if (cobSnap) (cobSnap as any[]).forEach((c: any) => {
+            if (!cobMap[c.plano]) cobMap[c.plano] = [];
+            cobMap[c.plano].push({ cobertura: c.cobertura, tipo: c.tipo, inclusa: c.inclusa, detalhe: c.valor ?? c.detalhe, ordem: c.ordem });
+          });
+          // Buscar nomes reais de produtos (grupo_produto_itens → produtos_gia)
+          const { data: grupoItens } = await supabase.from("grupo_produto_itens" as any).select("grupo_produto, produto_id, produtos_gia(nome)").in("grupo_produto", nomesPlanos);
+          const prodMap: Record<string, string[]> = {};
+          if (grupoItens) (grupoItens as any[]).forEach((gi: any) => {
+            if (!prodMap[gi.grupo_produto]) prodMap[gi.grupo_produto] = [];
+            if (gi.produtos_gia?.nome) prodMap[gi.grupo_produto].push(gi.produtos_gia.nome);
+          });
+          return planosFiltrados.map((p: any) => {
+            const nome = p.plano_normalizado || p.plano;
+            return { nome, valor_mensal: p.cota, adesao: p.adesao, rastreador: p.rastreador, franquia: p.valor_franquia, valor_fipe: valorFipe, coberturas: cobMap[nome] || [], produtos: prodMap[nome] || [] };
+          });
+        })(),
         desconto_aplicado: 0,
       } as any)
       .select()
@@ -712,9 +793,11 @@ export default function CotacaoTab({ deal }: Props) {
           automatica: true,
         });
         toast.info("Card movido para Em Negociação");
+        onUpdate?.();
       }
 
-      const linkPlanos = `${window.location.origin}/planos/${cotId}`;
+      const linkPlanos = `${PUBLIC_DOMAIN}/cotacao/${cotId}`;
+      setLinkCotacao(linkPlanos);
       const msgCotacao = `Olá ${deal.lead_nome}! Segue sua cotação de proteção veicular para o veículo ${deal.veiculo_placa}:\n\n${linkPlanos}\n\nCompare os planos e escolha o melhor para você!\n\nObjetivo Auto Benefícios`;
 
       // Buscar dados FRESCOS do banco (telefone/email podem ter sido atualizados após cadastro inicial)
@@ -758,6 +841,7 @@ export default function CotacaoTab({ deal }: Props) {
           motivo: `Cotação enviada via ${tipo}`, automatica: true,
         });
         toast.info("Card movido para Em Negociação");
+        onUpdate?.();
       }
       toast.error("Erro ao criar cotação, mas card foi movido");
       return;
@@ -844,7 +928,7 @@ export default function CotacaoTab({ deal }: Props) {
 
     setFipeLoading(false);
     toast.error("Placa não encontrada. Selecione marca/modelo manualmente.");
-  }, [planoSelecionado, deal.regional]);
+  }, [planoSelecionado, deal.regional, form.estadoCirc, form.cidadeCirc]);
 
   const handlePlacaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const masked = maskPlaca(e.target.value);
@@ -864,7 +948,7 @@ export default function CotacaoTab({ deal }: Props) {
           <CheckCircle className="h-5 w-5 text-success shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-success">Dados FIPE preenchidos automaticamente</p>
-            <p className="text-xs text-success">{marca} {modeloReal || deal.veiculo_modelo} — {formatCurrency(valorFipe)} — Ref. Março/2026</p>
+            <p className="text-xs text-success">{marca} {modeloReal || deal.veiculo_modelo} — {formatCurrency(valorFipe)} — Ref. {new Date().toLocaleString("pt-BR", { month: "long", year: "numeric" })}</p>
           </div>
           <Badge className="bg-success text-white text-[10px]">Tabela FIPE</Badge>
         </div>
@@ -992,12 +1076,15 @@ export default function CotacaoTab({ deal }: Props) {
 
               if (!foraFaixa) return <p className="text-[10px] text-muted-foreground">Dia {diaPadrao} — padrão para contratação no dia {dt}</p>;
 
-              // Calcular proporcional: dias entre o dia padrão e o dia escolhido
+              // Calcular proporcional: dias até o PRÓXIMO dia de vencimento a partir de hoje
               const hoje = new Date();
               const mesAtual = hoje.getMonth();
               const anoAtual = hoje.getFullYear();
-              // Próximo vencimento no dia escolhido
-              const proxVenc = new Date(anoAtual, diaVenc > dt ? mesAtual : mesAtual + 1, diaVenc);
+              // Próximo vencimento: se dia ainda não passou este mês, é neste mês; senão, próximo mês
+              let proxVenc = new Date(anoAtual, mesAtual, diaVenc);
+              if (proxVenc.getTime() <= hoje.getTime()) {
+                proxVenc = new Date(anoAtual, mesAtual + 1, diaVenc);
+              }
               const diasAteVenc = Math.max(1, Math.round((proxVenc.getTime() - hoje.getTime()) / 86400000));
               const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
               const mensalidadePlano = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
@@ -1043,12 +1130,55 @@ export default function CotacaoTab({ deal }: Props) {
           </label>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 pt-2">
-          <div className="space-y-1">
-            <Label className={lbl}>Implemento / Agregado (opcional)</Label>
-            <Input className="rounded-none border border-gray-300" value={form.implemento} onChange={e => set("implemento", e.target.value)} placeholder="Ex: Baú, Guincho..." />
+        {/* Implemento / Agregado — selecionável com valor declarado e cota automática */}
+        {(form.tipoVeiculo === "Caminhão" || form.tipoVeiculo === "Van/Utilitário") && (
+          <div className="p-3 border-2 border-blue-200 rounded bg-blue-50/50 space-y-3">
+            <Label className="text-sm font-bold text-[#1A3A5C]">Implemento / Agregado</Label>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Tipo</Label>
+                <Select value={implementoSelecionado} onValueChange={v => { setImplementoSelecionado(v === "__none__" ? "" : v); if (v === "__none__") { setImplementoValorDeclarado(""); setImplementoCotaAdicional(0); } set("implemento", v === "__none__" ? "" : v); }}>
+                  <SelectTrigger className="rounded-none border border-gray-300"><SelectValue placeholder="Selecione (opcional)" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Nenhum</SelectItem>
+                    {implementosCatalogo.map(imp => <SelectItem key={imp.id} value={imp.nome}>{imp.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              {implementoSelecionado && (
+                <>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Valor Declarado (R$)</Label>
+                    <Input className="rounded-none border border-gray-300" type="number" placeholder="Ex: 35000" value={implementoValorDeclarado} onChange={e => { setImplementoValorDeclarado(e.target.value); const v = Number(e.target.value); if (v > 0) calcularCotaAgregado(v); else setImplementoCotaAdicional(0); }} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Cota Adicional</Label>
+                    <div className="h-9 flex items-center px-3 bg-white border border-gray-300 rounded-none">
+                      {implementoCotaAdicional > 0 ? (
+                        <span className="text-sm font-bold text-[#1A3A5C]">+ {formatCurrency(implementoCotaAdicional)}/mês</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">{implementoValorDeclarado ? "Sem tabela" : "Informe valor"}</span>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            {implementoCotaAdicional > 0 && (
+              <p className="text-[10px] text-blue-700">
+                {implementoSelecionado} — Valor declarado {formatCurrency(Number(implementoValorDeclarado))} → cota adicional {formatCurrency(implementoCotaAdicional)}/mês somada à mensalidade
+              </p>
+            )}
           </div>
-        </div>
+        )}
+        {(form.tipoVeiculo !== "Caminhão" && form.tipoVeiculo !== "Van/Utilitário") && (
+          <div className="grid grid-cols-2 gap-4 pt-2">
+            <div className="space-y-1">
+              <Label className={lbl}>Implemento / Agregado (opcional)</Label>
+              <Input className="rounded-none border border-gray-300" value={form.implemento} onChange={e => set("implemento", e.target.value)} placeholder="Ex: Baú, Guincho..." />
+            </div>
+          </div>
+        )}
         <div className="space-y-1 pt-1">
           <Label className={lbl}>Observações no Termo (cliente vê)</Label>
           <Textarea className="rounded-none border border-gray-300" rows={2} value={form.obsContrato} onChange={e => set("obsContrato", e.target.value)} />
@@ -1105,14 +1235,17 @@ export default function CotacaoTab({ deal }: Props) {
         {veiculoAceito === false && (
           <Card className="rounded-none border-2 border-destructive bg-destructive/5 mb-3">
             <CardContent className="p-4 flex items-center gap-3">
-              <Search className="h-5 w-5 text-destructive" />
-              <div>
+              <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+              <div className="flex-1">
                 <p className="text-sm font-bold text-destructive">Veículo sem aceitação</p>
                 <p className="text-xs text-muted-foreground">{motivoRejeicao}</p>
               </div>
-              <Button size="sm" variant="outline" className="rounded-none ml-auto text-xs border-destructive text-destructive" onClick={() => toast.info("Solicitação de liberação enviada ao diretor")}>
-                Solicitar Liberação
-              </Button>
+              <ExcecaoButton
+                negociacaoId={deal.id}
+                tipoDefault="veiculo_bloqueado"
+                label="Solicitar Liberação"
+                onSuccess={() => { setVeiculoAceito(true); toast.success("Veículo liberado!"); }}
+              />
             </CardContent>
           </Card>
         )}
@@ -1122,8 +1255,8 @@ export default function CotacaoTab({ deal }: Props) {
             <CardContent className="p-6 text-center space-y-2">
               <Search className="h-8 w-8 text-destructive mx-auto" />
               <p className="text-sm font-semibold text-destructive">Nenhum plano encontrado para este veículo</p>
-              <p className="text-xs text-muted-foreground">Não há precificação cadastrada na tabela de preços para a faixa FIPE {valorFipe > 0 ? `(${formatCurrency(valorFipe)})` : ""} na regional {deal.regional || "não definida"}.</p>
-              <p className="text-xs text-muted-foreground">Verifique em <strong>Minha Empresa → Tabelas de Preços</strong> ou consulte o gestor.</p>
+              <p className="text-xs text-muted-foreground">Não há precificação cadastrada na tabela de preços para a faixa FIPE deste veículo na regional selecionada.</p>
+              <p className="text-xs text-muted-foreground">Verifique a tabela de preços em <strong>Minha Empresa → Tabelas de Preços</strong> ou consulte o gestor.</p>
             </CardContent>
           </Card>
         )}
@@ -1144,56 +1277,93 @@ export default function CotacaoTab({ deal }: Props) {
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-3" style={{ display: precosReais.length === 0 && !fipeFetched ? "none" : undefined }}>
-          {planosConfig.map(p => {
-            const mensal = (p as any).valorReal > 0 ? (p as any).valorReal : (fipeFetched && precosReais.length === 0 ? 0 : Math.round(valorFipe * p.percentual));
-            if (fipeFetched && precosReais.length === 0) return null;
-            const selected = planoSelecionado === p.nome;
-            return (
-              <Card
-                key={p.nome}
-                onClick={() => setPlanoSelecionado(p.nome)}
-                className={`rounded-none cursor-pointer transition-all border-2 ${selected ? "border-[#1A3A5C] ring-2 ring-[#1A3A5C]/20" : p.cor} hover:shadow-md`}
-              >
-                <CardHeader className="pb-2 pt-4 px-4">
-                  <div className="flex items-center gap-2">
-                    <p.icon className={`h-5 w-5 ${selected ? "text-[#1A3A5C]" : "text-muted-foreground"}`} />
-                    <CardTitle className="text-sm">{p.nome}</CardTitle>
-                    {selected && <CheckCircle className="h-4 w-4 text-[#1A3A5C] ml-auto" />}
-                  </div>
-                </CardHeader>
-                <CardContent className="px-4 pb-4 space-y-2">
-                  {(() => {
-                    const pctDesc = Number((deal as any).desconto_percentual || 0);
-                    const temDesconto = pctDesc > 0 && descontoAprovadoPorDiretor && mensal > 0;
-                    const mensalComDesconto = temDesconto ? Math.round(mensal * (1 - pctDesc / 100)) : mensal;
-                    const mensalBase = temDesconto ? mensalComDesconto : mensal;
-                    const pontualidade15 = Math.round(mensalBase * 0.85);
+        <div className="space-y-3" style={{ display: precosReais.length === 0 && !fipeFetched ? "none" : undefined }}>
+          {/* Select dropdown de planos */}
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-sm font-semibold">Selecione o Plano</Label>
+              <Select value={planoSelecionado} onValueChange={v => { setPlanoSelecionado(v); carregarCoberturas(v); }}>
+                <SelectTrigger className="rounded-none border-2 border-[#1A3A5C]/40 font-semibold">
+                  <SelectValue placeholder="Selecione um plano" />
+                </SelectTrigger>
+                <SelectContent>
+                  {planosConfig.map(p => {
+                    const mensal = (p as any).valorReal > 0 ? (p as any).valorReal : (fipeFetched && precosReais.length === 0 ? 0 : Math.round(valorFipe * p.percentual));
+                    const totalComOpc = mensal + totalOpcionais;
                     return (
-                      <div>
-                        {temDesconto && <div className="text-sm line-through text-muted-foreground">{formatCurrency(mensal)}</div>}
-                        <div className={`text-2xl font-bold ${temDesconto ? "text-green-600" : "text-[#1A3A5C]"}`}>{formatCurrency(mensalBase)}<span className="text-xs font-normal text-muted-foreground">/mês</span>{temDesconto && <span className="text-xs text-green-600 ml-1">-{pctDesc}%</span>}</div>
-                        {mensalBase > 0 && <div className="text-[10px] text-emerald-600 font-medium">15% pontualidade: {formatCurrency(pontualidade15)}/mês se pagar em dia</div>}
-                      </div>
+                      <SelectItem key={p.nome} value={p.nome}>
+                        {p.nome} — {formatCurrency(totalComOpc)}/mês
+                      </SelectItem>
                     );
-                  })()}
-                  {/* Adesão + Instalação rastreador */}
-                  <div className="text-xs text-muted-foreground">Adesão: <span className="font-semibold text-[#1A3A5C]">{formatCurrency((p as any).adesao || adesaoPadrao)}</span></div>
-                  <div className="flex items-center gap-1 p-1.5 rounded border border-amber-300 bg-amber-50">
-                    <span className="text-[10px] text-amber-800 font-medium">Instalação Rastreador: R$</span>
-                    <input type="number" className="w-16 text-[10px] border border-amber-300 rounded px-1 py-0.5 bg-white font-semibold" value={valorInstalacaoEdit || String((p as any).instalacao || 100)} onChange={e => { setValorInstalacaoEdit(e.target.value); if (e.target.value) supabase.from("negociacoes").update({ instalacao_rastreador: Number(e.target.value) } as any).eq("id", deal.id).then(() => {}); }} onClick={e => e.stopPropagation()} />
-                  </div>
-                  <ul className="space-y-1">
-                    {p.coberturas.map(c => (
-                      <li key={c} className="text-[11px] text-muted-foreground flex items-start gap-1">
-                        <CheckCircle className="h-3 w-3 text-success mt-0.5 shrink-0" />{c}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            );
-          })}
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Card expandido do plano selecionado */}
+            {(() => {
+              const p = planosConfig.find(pl => pl.nome === planoSelecionado || planoSelecionado.startsWith(pl.nome) || pl.nome.startsWith(planoSelecionado));
+              if (!p) return null;
+              const mensal = (p as any).valorReal > 0 ? (p as any).valorReal : (fipeFetched && precosReais.length === 0 ? 0 : Math.round(valorFipe * p.percentual));
+              if (fipeFetched && precosReais.length === 0) return null;
+              const pctDesc = Number((deal as any).desconto_percentual || 0);
+              const temDesconto = pctDesc > 0 && descontoAprovadoPorDiretor && mensal > 0;
+              const mensalComDesconto = temDesconto ? Math.round(mensal * (1 - pctDesc / 100)) : mensal;
+              const mensalBase = temDesconto ? mensalComDesconto : mensal;
+              const totalComOpc = mensalBase + totalOpcionais;
+              const pontualidade15 = Math.round(totalComOpc * 0.85);
+
+              return (
+                <Card className="rounded-none border-2 border-[#1A3A5C] ring-2 ring-[#1A3A5C]/20">
+                  <CardHeader className="pb-2 pt-4 px-4">
+                    <div className="flex items-center gap-2">
+                      <p.icon className="h-5 w-5 text-[#1A3A5C]" />
+                      <CardTitle className="text-sm">{p.nome}</CardTitle>
+                      <CheckCircle className="h-4 w-4 text-[#1A3A5C] ml-auto" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4 space-y-2">
+                    <div>
+                      {temDesconto && <div className="text-sm line-through text-muted-foreground">{formatCurrency(mensal + totalOpcionais)}</div>}
+                      <div className={`text-2xl font-bold ${temDesconto ? "text-green-600" : "text-[#1A3A5C]"}`}>
+                        {formatCurrency(totalComOpc)}<span className="text-xs font-normal text-muted-foreground">/mês</span>
+                        {temDesconto && <span className="text-xs text-green-600 ml-1">-{pctDesc}%</span>}
+                      </div>
+                      {totalOpcionais > 0 && (
+                        <div className="text-xs text-muted-foreground mt-1 p-2 rounded bg-emerald-50 border border-emerald-200">
+                          Plano <strong>{formatCurrency(mensalBase)}</strong> + Opcionais <strong>{formatCurrency(totalOpcionais)}</strong> = <strong className="text-[#1A3A5C]">{formatCurrency(totalComOpc)}/mês</strong>
+                        </div>
+                      )}
+                      {totalComOpc > 0 && <div className="text-[10px] text-emerald-600 font-medium mt-1">15% pontualidade: {formatCurrency(pontualidade15)}/mês se pagar em dia</div>}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Adesão: <span className="font-semibold text-[#1A3A5C]">{formatCurrency((p as any).adesao || 400)}</span></div>
+                    <div className="flex items-center gap-1 p-1.5 rounded border border-amber-300 bg-amber-50">
+                      <span className="text-[10px] text-amber-800 font-medium">Instalação Rastreador: R$</span>
+                      <input type="number" className="w-16 text-[10px] border border-amber-300 rounded px-1 py-0.5 bg-white font-semibold" value={valorInstalacaoEdit || String((p as any).instalacao || 100)} onChange={e => setValorInstalacaoEdit(e.target.value)} onClick={e => e.stopPropagation()} />
+                    </div>
+                    {coberturasPlano.length > 0 && (
+                      <ul className="space-y-1">
+                        {coberturasPlano.filter((c: any) => c.inclusa).map((c: any) => (
+                          <li key={c.cobertura} className="text-[11px] text-muted-foreground flex items-start gap-1">
+                            <CheckCircle className="h-3 w-3 text-success mt-0.5 shrink-0" />{c.cobertura}{c.valor ?? c.detalhe ? ` — ${c.valor ?? c.detalhe}` : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {coberturasPlano.length === 0 && p.coberturas.length > 0 && (
+                      <ul className="space-y-1">
+                        {p.coberturas.map(c => (
+                          <li key={c} className="text-[11px] text-muted-foreground flex items-start gap-1">
+                            <CheckCircle className="h-3 w-3 text-success mt-0.5 shrink-0" />{c}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })()}
+          </div>
         </div>
 
         <div className="flex items-center gap-3 pt-1 flex-wrap">
@@ -1203,7 +1373,7 @@ export default function CotacaoTab({ deal }: Props) {
             const pl = planosConfig.find(p => p.nome === planoSelecionado);
             const mensalVal = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : Math.round(valorFipe * (pl?.percentual || 0));
             const mensalidadeTotal = mensalVal + totalOpcionais;
-            const adesaoVal = (pl as any)?.adesao || adesaoPadrao;
+            const adesaoVal = (pl as any)?.adesao || 400;
             const instVal = valorInstalacaoEdit ? Number(valorInstalacaoEdit) : ((pl as any)?.instalacao || 100);
             return (
               <>
@@ -1223,43 +1393,18 @@ export default function CotacaoTab({ deal }: Props) {
           {descontoBloqueado && (
             <div className="flex items-center gap-2 p-2 rounded border border-amber-300 bg-amber-50">
               <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-              <p className="text-xs text-amber-700 font-medium">Apenas gestores e diretores podem aplicar descontos. Fale com seu gestor.</p>
+              <p className="text-xs text-amber-700 font-medium">Cotação já enviada. Use "Pedir Liberação" abaixo para alterar desconto.</p>
             </div>
           )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Desconto Mensalidade (valor final c/ opcionais)</Label>
-              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60" : ""}`} type="number" placeholder={totalOpcionais > 0 ? `Sem desconto = ${(() => { const pl = planosConfig.find(p => p.nome === planoSelecionado); const mv = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : Math.round(valorFipe * (pl?.percentual || 0)); return formatCurrency(mv + totalOpcionais); })()}` : "Deixe vazio = sem desconto"} value={descontoMensal} disabled={descontoBloqueado} onChange={e => {
-                const val = e.target.value;
-                if (isGestor && val) {
-                  const pl = planosConfig.find(p => p.nome === planoSelecionado);
-                  const mensalPlanoVal = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : Math.round(valorFipe * (pl?.percentual || 0));
-                  const mensalOrig = mensalPlanoVal + totalOpcionais;
-                  const pct = mensalOrig > 0 ? ((mensalOrig - Number(val)) / mensalOrig) * 100 : 0;
-                  if (pct > 5) {
-                    toast.error("Desconto máximo 5%. Use Pedir Liberação para valores maiores.");
-                    return;
-                  }
-                }
-                setDescontoMensal(val); setDescontoIaResult(null);
-              }} />
+              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60" : ""}`} type="number" placeholder={totalOpcionais > 0 ? `Sem desconto = ${(() => { const pl = planosConfig.find(p => p.nome === planoSelecionado); const mv = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : Math.round(valorFipe * (pl?.percentual || 0)); return formatCurrency(mv + totalOpcionais); })()}` : "Deixe vazio = sem desconto"} value={descontoMensal} disabled={descontoBloqueado} onChange={e => { setDescontoMensal(e.target.value); setDescontoIaResult(null); }} />
               <p className="text-[10px] text-muted-foreground">Valor final já inclui plano + opcionais. Se preencher, o PDF mostrará desconto.</p>
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Desconto Adesão (valor final)</Label>
-              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60" : ""}`} type="number" placeholder="Deixe vazio = sem desconto" value={descontoAdesao} disabled={descontoBloqueado} onChange={e => {
-                const val = e.target.value;
-                if (isGestor && val) {
-                  const precoPlanoDesc = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
-                  const adesaoOrig = precoPlanoDesc ? Number(precoPlanoDesc.adesao) : adesaoPadrao;
-                  const pct = adesaoOrig > 0 ? ((adesaoOrig - Number(val)) / adesaoOrig) * 100 : 0;
-                  if (pct > 5) {
-                    toast.error("Desconto máximo 5%. Use Pedir Liberação para valores maiores.");
-                    return;
-                  }
-                }
-                setDescontoAdesao(val); setDescontoIaResult(null);
-              }} />
+              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60" : ""}`} type="number" placeholder="Deixe vazio = sem desconto" value={descontoAdesao} disabled={descontoBloqueado} onChange={e => { setDescontoAdesao(e.target.value); setDescontoIaResult(null); }} />
               <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
             </div>
           </div>
@@ -1269,7 +1414,7 @@ export default function CotacaoTab({ deal }: Props) {
             const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
             const mensalPlanoOnly = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
             const mensalOriginal = mensalPlanoOnly + totalOpcionais;
-            const adesaoOriginal = precoPlano ? Number(precoPlano.adesao) : adesaoPadrao;
+            const adesaoOriginal = precoPlano ? Number(precoPlano.adesao) : 400;
             const descMensalPct = descontoMensal && mensalOriginal > 0 ? ((mensalOriginal - Number(descontoMensal)) / mensalOriginal) * 100 : 0;
             const descAdesaoPct = descontoAdesao && adesaoOriginal > 0 ? ((adesaoOriginal - Number(descontoAdesao)) / adesaoOriginal) * 100 : 0;
             const maiorDesconto = Math.max(descMensalPct, descAdesaoPct);
@@ -1482,7 +1627,7 @@ export default function CotacaoTab({ deal }: Props) {
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground">{descontoIaResult.justificativa}</p>
-                      {descontoIaResult.necessita_diretor && !descontoIaResult.aprovado && podeLiberacao && (
+                      {descontoIaResult.necessita_diretor && !descontoIaResult.aprovado && (
                         <div className="pt-1">
                           <ExcecaoButton
                             negociacaoId={deal.id}
@@ -1505,7 +1650,7 @@ export default function CotacaoTab({ deal }: Props) {
           const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
           const mensalPlanoOnly2 = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
           const mensalOriginal = mensalPlanoOnly2 + totalOpcionais;
-          const adesaoOriginal = precoPlano ? Number(precoPlano.adesao) : adesaoPadrao;
+          const adesaoOriginal = precoPlano ? Number(precoPlano.adesao) : 400;
           const descMensalPct = descontoMensal && mensalOriginal > 0 ? ((mensalOriginal - Number(descontoMensal)) / mensalOriginal) * 100 : 0;
           const descAdesaoPct = descontoAdesao && adesaoOriginal > 0 ? ((adesaoOriginal - Number(descontoAdesao)) / adesaoOriginal) * 100 : 0;
           const maiorDesconto = Math.max(descMensalPct, descAdesaoPct);
@@ -1515,12 +1660,14 @@ export default function CotacaoTab({ deal }: Props) {
           const hoje2 = new Date();
           const mesAt2 = hoje2.getMonth();
           const anoAt2 = hoje2.getFullYear();
-          const proxVenc2 = new Date(anoAt2, diaVenc > dt ? mesAt2 : mesAt2 + 1, diaVenc);
+          // Primeiro vencimento = dia escolhido no MÊS SEGUINTE
+          let proxVenc2 = new Date(anoAt2, mesAt2, diaVenc);
+          if (proxVenc2.getTime() <= hoje2.getTime()) proxVenc2 = new Date(anoAt2, mesAt2 + 1, diaVenc);
           const diasAteVenc2 = Math.max(1, Math.round((proxVenc2.getTime() - hoje2.getTime()) / 86400000));
           const vencimentoForaFaixa = diaVenc !== diaPadrao;
           const vencimentoPrecisaIA = vencimentoForaFaixa && diasAteVenc2 <= 40;
           const precisaAnalise = maiorDesconto > 5 || vencimentoPrecisaIA;
-          const mostrarLiberacao = podeLiberacao && (precisaAnalise || cotacaoEnviada);
+          const mostrarLiberacao = precisaAnalise || cotacaoEnviada;
 
           if (!mostrarLiberacao) return null;
 
@@ -1555,7 +1702,6 @@ export default function CotacaoTab({ deal }: Props) {
           <OpcionaisSection
             negociacaoId={deal.id}
             tipoVeiculo={form.tipoVeiculo}
-            plano={planoSelecionado}
             selected={opcionaisSelecionados}
             onChange={handleOpcionaisChange}
           />
@@ -1568,25 +1714,46 @@ export default function CotacaoTab({ deal }: Props) {
         </fieldset>
 
         {!(deal as any).email && (
-          <div className="flex items-center gap-2 p-2 rounded border border-red-300 bg-red-50">
-            <AlertTriangle className="h-4 w-4 text-red-600 shrink-0" />
-            <p className="text-xs text-red-700 font-medium">Email obrigatório para envio da cotação. Preencha na aba Associado.</p>
+          <div className="flex items-center gap-2 p-2 rounded border border-amber-300 bg-amber-50">
+            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+            <p className="text-xs text-amber-700 font-medium">Sem email — cotação será enviada apenas por link/WhatsApp. Preencha na aba Associado para enviar por e-mail também.</p>
           </div>
         )}
         <div className="flex flex-wrap gap-2 pt-2">
           <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => handleEnviar("PDF")}>
             <Mail className="h-3.5 w-3.5 mr-1" />Enviar PDF
           </Button>
-          <Button size="sm" variant="outline" className="rounded-none border border-gray-300" disabled={!(deal as any).email} onClick={() => handleEnviar("Link")}>
+          <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => handleEnviar("Link")}>
             <Link2 className="h-3.5 w-3.5 mr-1" />Enviar Link
           </Button>
-          <Button size="sm" className="rounded-none bg-success hover:bg-success/90 text-white" disabled={!(deal as any).email} onClick={() => handleEnviar("WhatsApp")}>
+          <Button size="sm" className="rounded-none bg-success hover:bg-success/90 text-white" onClick={() => handleEnviar("WhatsApp")}>
             <MessageSquare className="h-3.5 w-3.5 mr-1" />Enviar WhatsApp
           </Button>
           <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white" onClick={() => toast.success("Link de pagamento gerado!")}>
             <CreditCard className="h-3.5 w-3.5 mr-1" />Enviar Link de Pagamento
           </Button>
         </div>
+
+        {/* Card com link visível após envio */}
+        {linkCotacao && (
+          <Card className="rounded-none border-2 border-emerald-300 bg-emerald-50">
+            <CardContent className="p-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <Link2 className="h-4 w-4 text-emerald-700" />
+                <span className="text-sm font-bold text-emerald-800">Link da Cotação</span>
+              </div>
+              <a href={linkCotacao} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 underline break-all">{linkCotacao}</a>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="rounded-none border-emerald-300 text-emerald-700 text-xs h-7" onClick={() => { navigator.clipboard.writeText(linkCotacao); toast.success("Link copiado!"); }}>
+                  Copiar Link
+                </Button>
+                <Button size="sm" variant="outline" className="rounded-none border-emerald-300 text-emerald-700 text-xs h-7" onClick={() => window.open(linkCotacao, "_blank")}>
+                  Abrir
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </fieldset>
     </div>
   );

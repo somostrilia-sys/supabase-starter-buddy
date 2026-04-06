@@ -134,21 +134,32 @@ export default function CotacaoFormPublica() {
         "Caminhão": "Caminhões e Micro-Ônibus",
         "Van/Utilitário": "Carros e Utilitários Pequenos",
       };
-      // Buscar regional pela cidade/estado
-      const { data: regMatch } = await supabase.from("uf_regional_precos" as any)
-        .select("regional_precos").eq("uf", estado).ilike("cidade", cidade || "___NONE___").limit(1).maybeSingle();
-      const { data: regDefault } = !regMatch ? await supabase.from("uf_regional_precos" as any)
-        .select("regional_precos").eq("uf", estado).is("cidade", null).limit(1).maybeSingle() : { data: null };
-      const regionalPrecos = (regMatch as any)?.regional_precos || (regDefault as any)?.regional_precos || "";
+      // Buscar regional pela cidade/estado via regional_cidades
+      let regionalId = "";
+      if (cidade) {
+        const { data: mun } = await (supabase as any).from("municipios")
+          .select("id").eq("uf", estado).ilike("nome", cidade).limit(1).maybeSingle();
+        if (mun) {
+          const { data: rc } = await (supabase as any).from("regional_cidades")
+            .select("regional_id").eq("municipio_id", mun.id).limit(1).maybeSingle();
+          if (rc) regionalId = rc.regional_id;
+        }
+      }
+      if (!regionalId) {
+        const { data: fb } = await (supabase as any).from("regional_cidades")
+          .select("regional_id, municipios!inner(uf)")
+          .eq("municipios.uf", estado).limit(1).maybeSingle();
+        if (fb) regionalId = fb.regional_id;
+      }
 
-      // Buscar preços filtrados por regional
+      // Buscar preços filtrados por regional_id
       let precosQuery = supabase.from("tabela_precos" as any)
         .select("*")
         .lte("valor_menor", vFipe)
         .gte("valor_maior", vFipe)
         .eq("tipo_veiculo", tipoMap[tipoVeiculo] || "Carros e Utilitários Pequenos")
         .order("plano_normalizado");
-      if (regionalPrecos) precosQuery = precosQuery.eq("regional_normalizado", regionalPrecos);
+      if (regionalId) precosQuery = precosQuery.eq("regional_id", regionalId);
 
       const { data: precos } = await precosQuery;
 

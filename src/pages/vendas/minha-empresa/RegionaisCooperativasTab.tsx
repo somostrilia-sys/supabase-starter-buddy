@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { Plus, Edit, Trash2, AlertTriangle, Loader2, MapPin, Search, X, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 interface Regional {
@@ -31,6 +31,25 @@ interface Cooperativa {
   regionais: { id: string; nome: string } | null;
 }
 
+interface Municipio {
+  id: number;
+  nome: string;
+  uf: string;
+}
+
+interface RegionalCidade {
+  id: string;
+  regional_id: string;
+  municipio_id: number;
+  municipios: { id: number; nome: string; uf: string };
+}
+
+// ── UFs do Brasil ──
+const UFS = [
+  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
+  "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"
+];
+
 export default function RegionaisCooperativasTab() {
   const queryClient = useQueryClient();
 
@@ -46,6 +65,11 @@ export default function RegionaisCooperativasTab() {
   const [codigoSgaCoop, setCodigoSgaCoop] = useState("");
   const [regionalCoop, setRegionalCoop] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<{ type: "regional" | "cooperativa"; id: string; nome: string } | null>(null);
+
+  // Cidades state
+  const [expandedRegionalId, setExpandedRegionalId] = useState<string | null>(null);
+  const [cidadeUfFilter, setCidadeUfFilter] = useState<string>("all");
+  const [cidadeSearch, setCidadeSearch] = useState("");
 
   // ── Queries ──
   const { data: regionais = [], isLoading: loadingRegionais } = useQuery({
@@ -71,6 +95,80 @@ export default function RegionaisCooperativasTab() {
       return (data || []) as Cooperativa[];
     },
   });
+
+  // Cidades vinculadas à regional expandida
+  const { data: cidadesVinculadas = [], isLoading: loadingCidades } = useQuery({
+    queryKey: ["regional-cidades", expandedRegionalId],
+    enabled: !!expandedRegionalId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("regional_cidades")
+        .select("id, regional_id, municipio_id, municipios(id, nome, uf)")
+        .eq("regional_id", expandedRegionalId)
+        .order("municipios(nome)");
+      if (error) throw error;
+      return (data || []) as RegionalCidade[];
+    },
+  });
+
+  // Municípios disponíveis para adicionar (filtrados)
+  const { data: municipios = [] } = useQuery({
+    queryKey: ["municipios-lista"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("municipios")
+        .select("id, nome, uf")
+        .order("nome");
+      if (error) throw error;
+      return (data || []) as Municipio[];
+    },
+  });
+
+  // Todas as cidades já vinculadas a qualquer regional (para checar conflitos)
+  const { data: todasCidadesVinculadas = [] } = useQuery({
+    queryKey: ["todas-regional-cidades"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("regional_cidades")
+        .select("municipio_id, regional_id, regionais(nome)");
+      if (error) throw error;
+      return (data || []) as Array<{ municipio_id: number; regional_id: string; regionais: { nome: string } | null }>;
+    },
+  });
+
+  const cidadesVinculadasMap = useMemo(() => {
+    const map = new Map<number, { regional_id: string; regional_nome: string }>();
+    todasCidadesVinculadas.forEach((c) => {
+      map.set(c.municipio_id, { regional_id: c.regional_id, regional_nome: c.regionais?.nome || "" });
+    });
+    return map;
+  }, [todasCidadesVinculadas]);
+
+  // Contagem de cidades por regional
+  const cidadeCountByRegional = useMemo(() => {
+    const map = new Map<string, number>();
+    todasCidadesVinculadas.forEach((c) => {
+      map.set(c.regional_id, (map.get(c.regional_id) || 0) + 1);
+    });
+    return map;
+  }, [todasCidadesVinculadas]);
+
+  // Municípios filtrados para adicionar
+  const municipiosFiltrados = useMemo(() => {
+    if (!expandedRegionalId) return [];
+    let filtered = municipios;
+    if (cidadeUfFilter !== "all") {
+      filtered = filtered.filter((m) => m.uf === cidadeUfFilter);
+    }
+    if (cidadeSearch.trim()) {
+      const s = cidadeSearch.toLowerCase().trim();
+      filtered = filtered.filter((m) => m.nome.toLowerCase().includes(s));
+    }
+    // Excluir cidades já vinculadas a ESTA regional
+    const idsVinculados = new Set(cidadesVinculadas.map((c) => c.municipio_id));
+    filtered = filtered.filter((m) => !idsVinculados.has(m.id));
+    return filtered.slice(0, 50); // Limitar para performance
+  }, [municipios, cidadeUfFilter, cidadeSearch, cidadesVinculadas, expandedRegionalId]);
 
   // ── Mutations: Regional ──
   const saveRegionalMutation = useMutation({
@@ -102,6 +200,7 @@ export default function RegionaisCooperativasTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["regionais-tab"] });
       queryClient.invalidateQueries({ queryKey: ["cooperativas-tab"] });
+      queryClient.invalidateQueries({ queryKey: ["todas-regional-cidades"] });
       toast.success("Regional removida!");
     },
     onError: (e: any) => toast.error(e.message || "Erro ao excluir regional. Pode haver cooperativas vinculadas."),
@@ -139,7 +238,60 @@ export default function RegionaisCooperativasTab() {
       queryClient.invalidateQueries({ queryKey: ["cooperativas-tab"] });
       toast.success("Cooperativa removida!");
     },
-    onError: (e: any) => toast.error(e.message || "Erro ao excluir cooperativa. Pode haver registros vinculados."),
+    onError: (e: any) => toast.error(e.message || "Erro ao excluir cooperativa."),
+  });
+
+  // ── Mutations: Cidades ──
+  const addCidadeMutation = useMutation({
+    mutationFn: async (payload: { regional_id: string; municipio_id: number }) => {
+      const { error } = await (supabase as any).from("regional_cidades").insert(payload);
+      if (error) {
+        if (error.code === "23505") {
+          const owner = cidadesVinculadasMap.get(payload.municipio_id);
+          throw new Error(`Esta cidade já pertence à regional "${owner?.regional_nome || "outra"}"`);
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["regional-cidades", expandedRegionalId] });
+      queryClient.invalidateQueries({ queryKey: ["todas-regional-cidades"] });
+      toast.success("Cidade adicionada!");
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao adicionar cidade"),
+  });
+
+  const removeCidadeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any).from("regional_cidades").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["regional-cidades", expandedRegionalId] });
+      queryClient.invalidateQueries({ queryKey: ["todas-regional-cidades"] });
+      toast.success("Cidade removida!");
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao remover cidade"),
+  });
+
+  // Adicionar todas as cidades de uma UF
+  const addAllUfMutation = useMutation({
+    mutationFn: async ({ regional_id, uf }: { regional_id: string; uf: string }) => {
+      const cidadesUf = municipios.filter((m) => m.uf === uf);
+      const idsVinculados = new Set(cidadesVinculadas.map((c) => c.municipio_id));
+      const novas = cidadesUf.filter((m) => !idsVinculados.has(m.id) && !cidadesVinculadasMap.has(m.id));
+      if (novas.length === 0) throw new Error("Todas as cidades desta UF já estão vinculadas");
+      const rows = novas.map((m) => ({ regional_id, municipio_id: m.id }));
+      const { error } = await (supabase as any).from("regional_cidades").insert(rows);
+      if (error) throw error;
+      return novas.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["regional-cidades", expandedRegionalId] });
+      queryClient.invalidateQueries({ queryKey: ["todas-regional-cidades"] });
+      toast.success(`${count} cidades adicionadas!`);
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao adicionar cidades"),
   });
 
   // ── Helpers ──
@@ -212,9 +364,18 @@ export default function RegionaisCooperativasTab() {
     setDeleteTarget(null);
   };
 
+  const toggleExpandRegional = (id: string) => {
+    if (expandedRegionalId === id) {
+      setExpandedRegionalId(null);
+    } else {
+      setExpandedRegionalId(id);
+      setCidadeUfFilter("all");
+      setCidadeSearch("");
+    }
+  };
+
   const isLoading = loadingRegionais || loadingCoops;
 
-  // Count cooperativas per regional
   const coopCountByRegional = (regionalId: string) =>
     cooperativas.filter((c) => c.regional_id === regionalId).length;
 
@@ -233,7 +394,7 @@ export default function RegionaisCooperativasTab() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold">Regionais</h3>
-            <p className="text-sm text-muted-foreground">Gerencie as regionais da organização</p>
+            <p className="text-sm text-muted-foreground">Gerencie as regionais e suas cidades atendidas</p>
           </div>
           <Button onClick={openNewRegional} className="gap-2">
             <Plus className="h-4 w-4" /> Nova Regional
@@ -244,39 +405,193 @@ export default function RegionaisCooperativasTab() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-8"></TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Cooperativas Vinculadas</TableHead>
+                  <TableHead>Cooperativas</TableHead>
+                  <TableHead>Cidades</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {regionais.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                       Nenhuma regional encontrada
                     </TableCell>
                   </TableRow>
                 ) : (
-                  regionais.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-medium">{r.nome}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={r.ativo ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"}>
-                          {r.ativo ? "Ativa" : "Inativa"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{coopCountByRegional(r.id)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditRegional(r)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteTarget({ type: "regional", id: r.id, nome: r.nome })}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  regionais.map((r) => {
+                    const isExpanded = expandedRegionalId === r.id;
+                    return (
+                      <>
+                        <TableRow key={r.id} className="cursor-pointer hover:bg-muted/50" onClick={() => toggleExpandRegional(r.id)}>
+                          <TableCell>
+                            {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </TableCell>
+                          <TableCell className="font-medium">{r.nome}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={r.ativo ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"}>
+                              {r.ativo ? "Ativa" : "Inativa"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{coopCountByRegional(r.id)}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {cidadeCountByRegional.get(r.id) || 0} cidades
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditRegional(r)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteTarget({ type: "regional", id: r.id, nome: r.nome })}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+
+                        {/* Cidades Atendidas expandidas */}
+                        {isExpanded && (
+                          <TableRow key={`${r.id}-cidades`}>
+                            <TableCell colSpan={6} className="bg-muted/30 p-4">
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                                    <MapPin className="h-4 w-4 text-primary" />
+                                    Cidades Atendidas — {r.nome}
+                                  </h4>
+                                  {cidadeUfFilter !== "all" && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="gap-1 text-xs"
+                                      onClick={() => addAllUfMutation.mutate({ regional_id: r.id, uf: cidadeUfFilter })}
+                                      disabled={addAllUfMutation.isPending}
+                                    >
+                                      {addAllUfMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                                      Adicionar todas de {cidadeUfFilter}
+                                    </Button>
+                                  )}
+                                </div>
+
+                                {/* Cidades vinculadas */}
+                                {loadingCidades ? (
+                                  <div className="flex items-center gap-2 py-4 justify-center text-muted-foreground">
+                                    <Loader2 className="h-4 w-4 animate-spin" /> Carregando cidades...
+                                  </div>
+                                ) : cidadesVinculadas.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground py-2">Nenhuma cidade vinculada a esta regional.</p>
+                                ) : (
+                                  <div className="flex flex-wrap gap-1.5 max-h-[200px] overflow-y-auto p-2 border rounded-md bg-card">
+                                    {cidadesVinculadas.map((cv) => (
+                                      <Badge key={cv.id} variant="secondary" className="gap-1 pr-1">
+                                        {cv.municipios.nome}/{cv.municipios.uf}
+                                        <button
+                                          onClick={() => removeCidadeMutation.mutate(cv.id)}
+                                          className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </button>
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Adicionar cidades */}
+                                <div className="border-t pt-4 space-y-3">
+                                  <p className="text-xs font-medium text-muted-foreground">Adicionar cidades:</p>
+                                  <div className="flex gap-2">
+                                    <Select value={cidadeUfFilter} onValueChange={setCidadeUfFilter}>
+                                      <SelectTrigger className="w-[120px]">
+                                        <SelectValue placeholder="UF" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="all">Todas UFs</SelectItem>
+                                        {UFS.map((uf) => (
+                                          <SelectItem key={uf} value={uf}>{uf}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <div className="relative flex-1">
+                                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                      <Input
+                                        placeholder="Buscar cidade..."
+                                        value={cidadeSearch}
+                                        onChange={(e) => setCidadeSearch(e.target.value)}
+                                        className="pl-9"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {(cidadeUfFilter !== "all" || cidadeSearch.trim()) && (
+                                    <div className="border rounded-md max-h-[250px] overflow-y-auto">
+                                      <Table>
+                                        <TableHeader>
+                                          <TableRow>
+                                            <TableHead className="text-xs">Cidade</TableHead>
+                                            <TableHead className="text-xs w-16">UF</TableHead>
+                                            <TableHead className="text-xs w-32">Status</TableHead>
+                                            <TableHead className="text-xs w-20 text-right">Ação</TableHead>
+                                          </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                          {municipiosFiltrados.length === 0 ? (
+                                            <TableRow>
+                                              <TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-4">
+                                                {cidadeSearch ? "Nenhuma cidade encontrada" : "Selecione uma UF ou busque por nome"}
+                                              </TableCell>
+                                            </TableRow>
+                                          ) : (
+                                            municipiosFiltrados.map((m) => {
+                                              const owner = cidadesVinculadasMap.get(m.id);
+                                              const isOwnedByOther = owner && owner.regional_id !== expandedRegionalId;
+                                              return (
+                                                <TableRow key={m.id}>
+                                                  <TableCell className="text-xs">{m.nome}</TableCell>
+                                                  <TableCell className="text-xs">{m.uf}</TableCell>
+                                                  <TableCell className="text-xs">
+                                                    {isOwnedByOther ? (
+                                                      <span className="text-warning text-[10px]">Em: {owner.regional_nome}</span>
+                                                    ) : (
+                                                      <span className="text-muted-foreground text-[10px]">Disponível</span>
+                                                    )}
+                                                  </TableCell>
+                                                  <TableCell className="text-right">
+                                                    <Button
+                                                      size="sm"
+                                                      variant="ghost"
+                                                      className="h-7 w-7 p-0"
+                                                      disabled={!!isOwnedByOther || addCidadeMutation.isPending}
+                                                      onClick={() => addCidadeMutation.mutate({ regional_id: r.id, municipio_id: m.id })}
+                                                    >
+                                                      <Plus className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                  </TableCell>
+                                                </TableRow>
+                                              );
+                                            })
+                                          )}
+                                          {municipiosFiltrados.length >= 50 && (
+                                            <TableRow>
+                                              <TableCell colSpan={4} className="text-center text-[10px] text-muted-foreground py-2">
+                                                Mostrando 50 primeiros resultados. Refine a busca para ver mais.
+                                              </TableCell>
+                                            </TableRow>
+                                          )}
+                                        </TableBody>
+                                      </Table>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
