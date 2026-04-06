@@ -1,71 +1,76 @@
+import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle } from "lucide-react";
-
-const veiculos = [
-  { modelo: "Porsche Cayenne", marca: "Porsche", ano: 2024, regiao: "SP Capital", motivo: "Valor FIPE acima do limite" },
-  { modelo: "BMW X5", marca: "BMW", ano: 2023, regiao: "RJ", motivo: "Veículo importado sem cobertura" },
-  { modelo: "Land Rover Defender", marca: "Land Rover", ano: 2022, regiao: "MG", motivo: "Modelo fora da tabela de rateio" },
-  { modelo: "Mercedes GLE", marca: "Mercedes-Benz", ano: 2024, regiao: "SP Capital", motivo: "Valor FIPE acima do limite" },
-  { modelo: "Audi Q7", marca: "Audi", ano: 2023, regiao: "Interior SP", motivo: "Veículo importado sem cobertura" },
-  { modelo: "Volvo XC90", marca: "Volvo", ano: 2022, regiao: "RJ", motivo: "Modelo fora da tabela de rateio" },
-  { modelo: "Jaguar F-Pace", marca: "Jaguar", ano: 2024, regiao: "SP Capital", motivo: "Veículo importado sem cobertura" },
-  { modelo: "Tesla Model 3", marca: "Tesla", ano: 2024, regiao: "SP Capital", motivo: "Veículo elétrico sem cobertura" },
-];
-
-const topModelos = ["Porsche Cayenne", "BMW X5", "Mercedes GLE"];
-const topRegioes = ["SP Capital (4)", "RJ (2)", "Interior SP (1)"];
+import { AlertTriangle, Loader2, Car } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function VeiculosSemCoberturaTab() {
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="border-red-200 bg-destructive/50 dark:bg-red-950/20">
-          <CardContent className="p-4 text-center">
-            <AlertTriangle className="h-6 w-6 text-destructive mx-auto mb-1" />
-            <p className="text-2xl font-bold">{veiculos.length}</p>
-            <p className="text-xs text-muted-foreground">Veículos Sem Cobertura</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-2">Top 3 Modelos</p>
-            <div className="space-y-1">{topModelos.map(m => <p key={m} className="text-sm font-medium">{m}</p>)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-2">Top 3 Regiões</p>
-            <div className="space-y-1">{topRegioes.map(r => <p key={r} className="text-sm font-medium">{r}</p>)}</div>
-          </CardContent>
-        </Card>
-      </div>
+  const { data: modelos = [], isLoading } = useQuery({
+    queryKey: ["veiculos-sem-cobertura"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("modelos_veiculo")
+        .select("id, nome, cod_fipe, tipo_veiculo, motivo_rejeicao, marca:marcas_veiculo(nome)")
+        .eq("aceito", false)
+        .not("motivo_rejeicao", "is", null)
+        .order("nome")
+        .limit(100);
+      return data || [];
+    },
+  });
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader><TableRow>
-              <TableHead className="text-xs">Modelo</TableHead>
-              <TableHead className="text-xs">Marca</TableHead>
-              <TableHead className="text-xs">Ano</TableHead>
-              <TableHead className="text-xs">Região</TableHead>
-              <TableHead className="text-xs">Motivo</TableHead>
-            </TableRow></TableHeader>
-            <TableBody>
-              {veiculos.map((v, i) => (
-                <TableRow key={i}>
-                  <TableCell className="font-medium text-sm">{v.modelo}</TableCell>
-                  <TableCell className="text-sm">{v.marca}</TableCell>
-                  <TableCell className="text-sm">{v.ano}</TableCell>
-                  <TableCell className="text-sm">{v.regiao}</TableCell>
-                  <TableCell><Badge variant="outline" className="text-[10px] text-destructive border-red-300">{v.motivo}</Badge></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+  const porMotivo = useMemo(() => {
+    const map: Record<string, number> = {};
+    modelos.forEach((m: any) => {
+      const motivo = m.motivo_rejeicao || "Sem motivo";
+      map[motivo] = (map[motivo] || 0) + 1;
+    });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }, [modelos]);
+
+  if (isLoading) return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+
+  return (
+    <div className="space-y-4 mt-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card><CardContent className="p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center"><AlertTriangle className="h-5 w-5 text-red-400" /></div>
+          <div><p className="text-xl font-bold">{modelos.length}</p><p className="text-xs text-muted-foreground">Veiculos Rejeitados</p></div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><Car className="h-5 w-5 text-amber-400" /></div>
+          <div><p className="text-xl font-bold">{porMotivo.length}</p><p className="text-xs text-muted-foreground">Motivos Distintos</p></div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <p className="text-xs text-muted-foreground mb-2">Top Motivos</p>
+          <div className="space-y-1">{porMotivo.slice(0, 3).map(([motivo, qtd]) => (
+            <div key={motivo} className="flex justify-between text-xs"><span className="truncate flex-1">{motivo}</span><Badge variant="outline" className="text-[9px] ml-2">{qtd}</Badge></div>
+          ))}</div>
+        </CardContent></Card>
+      </div>
+      <Card><CardContent className="p-0 overflow-x-auto">
+        <Table><TableHeader><TableRow className="bg-muted/60">
+          <TableHead className="text-[10px] uppercase">Marca</TableHead>
+          <TableHead className="text-[10px] uppercase">Modelo</TableHead>
+          <TableHead className="text-[10px] uppercase">Cod FIPE</TableHead>
+          <TableHead className="text-[10px] uppercase">Tipo</TableHead>
+          <TableHead className="text-[10px] uppercase">Motivo Rejeicao</TableHead>
+        </TableRow></TableHeader>
+        <TableBody>
+          {modelos.length === 0 ? (
+            <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhum veiculo rejeitado encontrado</TableCell></TableRow>
+          ) : modelos.map((m: any) => (
+            <TableRow key={m.id}>
+              <TableCell className="text-xs font-medium">{m.marca?.nome || "—"}</TableCell>
+              <TableCell className="text-sm">{m.nome}</TableCell>
+              <TableCell className="text-xs font-mono text-muted-foreground">{m.cod_fipe || "—"}</TableCell>
+              <TableCell className="text-xs">{m.tipo_veiculo || "—"}</TableCell>
+              <TableCell><Badge className="bg-red-500/10 text-red-400 text-[10px]">{m.motivo_rejeicao}</Badge></TableCell>
+            </TableRow>
+          ))}
+        </TableBody></Table>
+      </CardContent></Card>
     </div>
   );
 }

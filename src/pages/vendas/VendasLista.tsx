@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { stageColumns, stageColumnPerdido, type PipelineStage } from "./pipeline/mockData";
 import { useQuery } from "@tanstack/react-query";
+import { useUsuario } from "@/hooks/useUsuario";
 import { supabase } from "@/integrations/supabase/client";
 
 interface NegociacaoRow {
@@ -58,16 +59,26 @@ const etapasFilter = [
 
 type SortKey = "id" | "lead_nome" | "created_at" | "stage" | "valor_plano";
 
-async function fetchNegociacoes() {
-  const { data, error } = await (supabase as any)
+async function fetchNegociacoes(scope?: { consultor?: string; cooperativas?: string[] }) {
+  let q = (supabase as any)
     .from("negociacoes")
     .select("id, codigo, lead_nome, cpf_cnpj, telefone, email, veiculo_modelo, veiculo_placa, plano, valor_plano, stage, consultor, cooperativa, origem, created_at, venda_concluida_em")
     .order("created_at", { ascending: false });
+  if (scope?.consultor) q = q.eq("consultor", scope.consultor);
+  if (scope?.cooperativas && scope.cooperativas.length > 0) q = q.in("cooperativa", scope.cooperativas);
+  const { data, error } = await q;
   if (error) throw error;
   return (data || []) as NegociacaoRow[];
 }
 
 export default function VendasLista() {
+  const { usuario, isConsultor, isGestor, canViewAllData, cooperativas: minhasCoops } = useUsuario();
+  const scope = useMemo(() => {
+    if (canViewAllData) return undefined;
+    if (isGestor && minhasCoops.length > 0) return { cooperativas: minhasCoops };
+    if (isConsultor && usuario?.nome) return { consultor: usuario.nome };
+    return undefined;
+  }, [canViewAllData, isConsultor, isGestor, usuario?.nome, minhasCoops]);
   const [fEtapa, setFEtapa] = useState("all");
   const [fConsultor, setFConsultor] = useState("all");
   const [fCoop, setFCoop] = useState("all");
@@ -97,8 +108,8 @@ export default function VendasLista() {
   });
 
   const { data: deals = [], isLoading } = useQuery({
-    queryKey: ["negociacoes-lista"],
-    queryFn: fetchNegociacoes,
+    queryKey: ["negociacoes-lista", scope?.consultor, scope?.cooperativas?.join(",")],
+    queryFn: () => fetchNegociacoes(scope),
   });
 
   // Extract unique values for filters

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useUsuario } from "@/hooks/useUsuario";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,14 +30,19 @@ export default function VistoriasVendas() {
   const [fotosDetalhe, setFotosDetalhe] = useState<any[]>([]);
   const [loadingFotos, setLoadingFotos] = useState(false);
 
+  const { usuario: _u, isConsultor: _iC, isGestor: _iG, canViewAllData: _cA, cooperativas: _mC } = useUsuario();
+
   const { data: vistorias = [], isLoading } = useQuery({
-    queryKey: ["vistorias-vendas"],
+    queryKey: ["vistorias-vendas", _u?.nome, _cA],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      let q = (supabase as any)
         .from("vistorias")
         .select("*, negociacoes!inner(lead_nome, veiculo_modelo, veiculo_placa, consultor, cooperativa)")
         .order("created_at", { ascending: false })
         .limit(500);
+      if (!_cA && _iC && _u?.nome) q = q.eq("negociacoes.consultor", _u.nome);
+      if (!_cA && _iG && _mC.length > 0) q = q.in("negociacoes.cooperativa", _mC);
+      const { data, error } = await q;
       if (error) throw error;
       return (data || []).map((v: any) => ({
         id: v.id,

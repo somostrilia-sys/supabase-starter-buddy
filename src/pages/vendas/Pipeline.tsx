@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { usePermission, useLeadScope } from "@/hooks/usePermission";
 import ConcretizarVendaModal from "./ConcretizarVendaModal";
 import { useNegociacoes } from "@/hooks/useNegociacoes";
+import { useUsuario } from "@/hooks/useUsuario";
 
 
 function daysStalled(updated: string) {
@@ -120,8 +121,15 @@ export default function Pipeline() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
 
-  // Hook de negociações (Supabase real)
-  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "30d");
+  // Hook de negociações (Supabase real) + RBAC client-side
+  const { usuario: _usr, isConsultor: _isC, isGestor: _isG, canViewAllData: _canAll, cooperativas: _myCoops } = useUsuario();
+  const { negociacoes: _allNegs, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "30d");
+  const negociacoes = useMemo(() => {
+    if (_canAll || !_usr) return _allNegs;
+    if (_isC) return _allNegs.filter(n => n.consultor === _usr.nome);
+    if (_isG && _myCoops.length > 0) return _allNegs.filter(n => _myCoops.some(c => n.cooperativa?.includes(c)));
+    return _allNegs;
+  }, [_allNegs, _usr, _isC, _isG, _canAll, _myCoops]);
 
   // Dados reais de cooperativas com regional vinculada
   const { data: cooperativasDb } = useQuery({

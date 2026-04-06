@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase, callEdge } from "@/integrations/supabase/client";
 import {
   Phone, MessageSquare, Instagram, Camera, ChevronRight, ChevronLeft,
@@ -94,6 +94,8 @@ function injectStyles() {
 
 export default function ConsultorLanding() {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const refCode = searchParams.get("ref") || "";
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [consultor, setConsultor] = useState<ConsultorData | null>(null);
@@ -166,14 +168,32 @@ export default function ConsultorLanding() {
         });
       } catch { /* fallback below */ }
 
-      const { data: neg } = await supabase.from("negociacoes").insert({
+      const negPayload: Record<string, unknown> = {
         lead_nome: nome, telefone: telefone.replace(/\D/g, ""), email,
         veiculo_placa: placa.replace("-", ""),
         veiculo_modelo: veiculo ? `${veiculo.marca} ${veiculo.modelo}` : "",
         valor_plano: veiculo?.valorFipe || 0, stage: "novo_lead",
-        consultor: consultor.nome, origem: "Landing Consultor",
+        consultor: consultor.nome, origem: refCode ? "Afiliado" : "Landing Consultor",
         observacoes: taxiApp ? "Veículo usado em táxi/aplicativo" : "",
-      } as any).select().single();
+      };
+      if (refCode) negPayload.afiliado_codigo = refCode;
+      const { data: neg } = await supabase.from("negociacoes").insert(negPayload as any).select().single();
+
+      // Vincular indicação ao afiliado
+      if (refCode && neg) {
+        const { data: afData } = await (supabase as any)
+          .from("afiliados").select("id, comissao_valor").eq("codigo", refCode).eq("ativo", true).maybeSingle();
+        if (afData) {
+          await (supabase as any).from("afiliado_indicacoes").insert({
+            afiliado_id: afData.id, negociacao_id: (neg as any).id,
+            lead_nome: nome, lead_telefone: telefone.replace(/\D/g, ""),
+            lead_email: email || null,
+            status: "novo", comissao_valor: afData.comissao_valor,
+          });
+          // Incremento atômico via RPC (sem race condition)
+          await (supabase as any).rpc("increment_afiliado_leads", { af_id: afData.id });
+        }
+      }
 
       if (!neg) throw new Error("Erro ao criar negociação");
 

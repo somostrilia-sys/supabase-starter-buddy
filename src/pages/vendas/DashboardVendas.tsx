@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useUsuario } from "@/hooks/useUsuario";
 import {
   Users, FileText, Handshake, DollarSign, TrendingUp, Trophy, ArrowRightLeft,
   BarChart3, Target,
@@ -38,9 +39,18 @@ function getDateRange(periodo: string, dataInicio: string, dataFim: string) {
 }
 
 export default function DashboardVendas() {
+  const { usuario: _u, isConsultor: _iC, isGestor: _iG, canViewAllData: _cA, cooperativas: _mC, loading: _uLoading } = useUsuario();
   const [periodo, setPeriodo] = useState("30d");
   const [consultor, setConsultor] = useState("Todos");
   const [cooperativa, setCooperativa] = useState("Todas");
+  const [scopeApplied, setScopeApplied] = useState(false);
+
+  // Apply scope once usuario loads
+  if (!scopeApplied && !_uLoading && _u) {
+    if (_iC && _u.nome) { setConsultor(_u.nome); setScopeApplied(true); }
+    else if (_iG && !_cA && _mC.length > 0) { setCooperativa(_mC[0]); setScopeApplied(true); }
+    else { setScopeApplied(true); }
+  }
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
 

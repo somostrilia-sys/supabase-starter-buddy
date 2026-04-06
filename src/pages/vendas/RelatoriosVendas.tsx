@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon, Filter, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useUsuario } from "@/hooks/useUsuario";
 
 import DashboardTab from "./relatorios/DashboardTab";
 import FunilTab from "./relatorios/FunilTab";
@@ -25,9 +26,14 @@ import VeiculosSemCoberturaTab from "./relatorios/VeiculosSemCoberturaTab";
 import ExtratoComissoesTab from "./relatorios/ExtratoComissoesTab";
 
 export default function RelatoriosVendas() {
+  const { usuario, isConsultor, isGestor, canViewAllData, cooperativas: minhasCoops } = useUsuario();
   const [tab, setTab] = useState("dashboard");
   const [fCoop, setFCoop] = useState("all");
   const [fConsultor, setFConsultor] = useState("all");
+
+  // Auto-scope for consultores
+  const scopedConsultor = isConsultor && usuario?.nome ? usuario.nome : fConsultor;
+  const scopedCoop = isGestor && !canViewAllData && fCoop === "all" && minhasCoops.length > 0 ? minhasCoops[0] : fCoop;
   const [fDateStart, setFDateStart] = useState<Date | undefined>();
   const [fDateEnd, setFDateEnd] = useState<Date | undefined>();
   const [showFilters, setShowFilters] = useState(false);
@@ -127,16 +133,16 @@ export default function RelatoriosVendas() {
           ))}
         </TabsList>
 
-        <TabsContent value="dashboard"><DashboardTab filters={{ cooperativa: fCoop, consultor: fConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
-        <TabsContent value="funil"><FunilTab filters={{ cooperativa: fCoop, consultor: fConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
-        <TabsContent value="motivos"><MotivosTab filters={{ cooperativa: fCoop, consultor: fConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
-        <TabsContent value="ranking"><RankingTab filters={{ cooperativa: fCoop, consultor: fConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
-        <TabsContent value="origens"><OrigemLeadsTab filters={{ cooperativa: fCoop, consultor: fConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
+        <TabsContent value="dashboard"><DashboardTab filters={{ cooperativa: scopedCoop, consultor: scopedConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
+        <TabsContent value="funil"><FunilTab filters={{ cooperativa: scopedCoop, consultor: scopedConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
+        <TabsContent value="motivos"><MotivosTab filters={{ cooperativa: scopedCoop, consultor: scopedConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
+        <TabsContent value="ranking"><RankingTab filters={{ cooperativa: scopedCoop, consultor: scopedConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
+        <TabsContent value="origens"><OrigemLeadsTab filters={{ cooperativa: scopedCoop, consultor: scopedConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
         <TabsContent value="banco"><BancoDadosTab /></TabsContent>
         <TabsContent value="tags"><GrupoTagsTab /></TabsContent>
-        <TabsContent value="metas"><ResumoMetasTab filters={{ cooperativa: fCoop, consultor: fConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
+        <TabsContent value="metas"><ResumoMetasTab filters={{ cooperativa: scopedCoop, consultor: scopedConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
         <TabsContent value="veiculos"><VeiculosSemCoberturaTab /></TabsContent>
-        <TabsContent value="extrato-comissoes"><ExtratoComissoesTab filters={{ cooperativa: fCoop, consultor: fConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
+        <TabsContent value="extrato-comissoes"><ExtratoComissoesTab filters={{ cooperativa: scopedCoop, consultor: scopedConsultor, dateStart: fDateStart, dateEnd: fDateEnd }} /></TabsContent>
       </Tabs>
     </div>
   );

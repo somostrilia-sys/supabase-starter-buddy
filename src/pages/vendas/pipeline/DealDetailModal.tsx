@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { PipelineDeal, planos } from "./mockData";
 import { usePermission } from "@/hooks/usePermission";
 import { useAuth } from "@/hooks/useAuth";
+import { useUsuario } from "@/hooks/useUsuario";
 import AssociadoTab from "./AssociadoTab";
 import CotacaoTab from "./CotacaoTab";
 import DocumentosTab from "./DocumentosTab";
@@ -36,6 +37,9 @@ interface Props {
 const MOTIVOS_ARQUIVAR = ["Teste", "Erro de cadastro", "Cancelamento pelo cliente", "Duplicidade", "Sem interesse", "Outro"];
 
 export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: Props) {
+  const { isConsultor } = useUsuario();
+  const isConcluido = deal.stage === "concluido";
+  const bloqueado = isConsultor && isConcluido;
   const [activeTab, setActiveTab] = useState("cotacao");
   const [historicoReal, setHistoricoReal] = useState<any[]>([]);
   const [showArquivar, setShowArquivar] = useState(false);

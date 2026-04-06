@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase, callEdge } from "@/integrations/supabase/client";
 import { CheckCircle, Loader2, ChevronRight, ChevronLeft, Car, Shield, Phone, MessageSquare } from "lucide-react";
 
@@ -25,6 +25,8 @@ const TIPOS = ["Carro", "Moto", "Caminhão", "Van/Utilitário"];
 
 export default function CotacaoFormPublica() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const refCode = searchParams.get("ref") || "";
   const [step, setStep] = useState(1);
 
   // Step 1
@@ -89,7 +91,7 @@ export default function CotacaoFormPublica() {
     setEnviando(true);
     try {
       // Criar negociação
-      const { data: neg } = await supabase.from("negociacoes").insert({
+      const negPayload: Record<string, unknown> = {
         lead_nome: nome,
         telefone: telefone.replace(/\D/g, ""),
         email,
@@ -97,11 +99,28 @@ export default function CotacaoFormPublica() {
         veiculo_modelo: veiculo ? `${veiculo.marca} ${veiculo.modelo}` : "",
         valor_plano: veiculo?.valorFipe || 0,
         stage: "novo_lead",
-        origem: "Site Objetivo",
+        origem: refCode ? "Afiliado" : "Site Objetivo",
         observacoes: taxiApp ? "Veículo usado em táxi/aplicativo" : "",
-      } as any).select().single();
+      };
+      if (refCode) negPayload.afiliado_codigo = refCode;
+      const { data: neg } = await supabase.from("negociacoes").insert(negPayload as any).select().single();
 
       if (!neg) throw new Error("Erro ao criar negociação");
+
+      // Vincular indicação ao afiliado
+      if (refCode) {
+        const { data: afData } = await (supabase as any)
+          .from("afiliados").select("id, comissao_valor").eq("codigo", refCode).eq("ativo", true).maybeSingle();
+        if (afData) {
+          await (supabase as any).from("afiliado_indicacoes").insert({
+            afiliado_id: afData.id, negociacao_id: (neg as any).id,
+            lead_nome: nome, lead_telefone: telefone.replace(/\D/g, ""),
+            lead_email: email || null,
+            status: "novo", comissao_valor: afData.comissao_valor,
+          });
+          await (supabase as any).rpc("increment_afiliado_leads", { af_id: afData.id });
+        }
+      }
 
       // Buscar preços
       const vFipe = veiculo?.valorFipe || 0;

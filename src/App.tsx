@@ -64,6 +64,7 @@ import CotacaoFormPublica from "./pages/public/CotacaoFormPublica";
 import PlanoComparativo from "./pages/public/PlanoComparativo";
 import ConsultorLanding from "./pages/public/ConsultorLanding";
 import ExcecaoAprovacao from "./pages/public/ExcecaoAprovacao";
+import PortalAfiliado from "./pages/public/PortalAfiliado";
 import AuditLog from "./pages/gestao/AuditLog";
 
 const queryClient = new QueryClient();
@@ -109,6 +110,7 @@ const App = () => (
             <Route path="/c/:slug" element={<ConsultorLanding />} />
             <Route path="/aprovacao/:token" element={<ExcecaoAprovacao />} />
             <Route path="/excecao/:token" element={<ExcecaoAprovacao />} />
+            <Route path="/afiliado/:token" element={<PortalAfiliado />} />
             <Route path="/" element={<D><Dashboard /></D>} />
 
             {/* Gestão - New */}

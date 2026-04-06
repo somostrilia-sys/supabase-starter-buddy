@@ -30,12 +30,16 @@ export default function ExtratoComissoesTab({ filters }: { filters?: { cooperati
   });
 
   const { data: negociacoes, isLoading: loadingNeg } = useQuery({
-    queryKey: ["extrato-negociacoes"],
+    queryKey: ["extrato-negociacoes", filters?.cooperativa, filters?.consultor, filters?.dateStart?.toISOString(), filters?.dateEnd?.toISOString()],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("negociacoes")
-        .select("id, consultor, valor_plano, stage, venda_concluida_em")
+      let q = (supabase as any).from("negociacoes")
+        .select("id, consultor, valor_plano, stage, venda_concluida_em, cooperativa")
         .eq("stage", "concluido");
+      if (filters?.cooperativa && filters.cooperativa !== "all") q = q.eq("cooperativa", filters.cooperativa);
+      if (filters?.consultor && filters.consultor !== "all") q = q.eq("consultor", filters.consultor);
+      if (filters?.dateStart) q = q.gte("venda_concluida_em", filters.dateStart.toISOString());
+      if (filters?.dateEnd) q = q.lte("venda_concluida_em", new Date(filters.dateEnd.getTime() + 86400000).toISOString());
+      const { data, error } = await q;
       if (error) throw error;
       return (data || []) as any[];
     },

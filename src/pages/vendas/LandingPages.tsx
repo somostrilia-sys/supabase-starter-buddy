@@ -10,6 +10,7 @@ import { Globe, Search, Eye, Copy, ExternalLink, Users, MousePointerClick, Trend
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useUsuario } from "@/hooks/useUsuario";
 
 interface Consultor {
   id: string;
@@ -78,13 +79,22 @@ async function fetchConsultores(): Promise<Consultor[]> {
 }
 
 export default function LandingPages() {
+  const { usuario, isConsultor, isGestor, canViewAllData, cooperativas: minhasCoops } = useUsuario();
   const [busca, setBusca] = useState("");
   const [previewConsultor, setPreviewConsultor] = useState<Consultor | null>(null);
 
-  const { data: consultores = [], isLoading } = useQuery({
+  const { data: allConsultores = [], isLoading } = useQuery({
     queryKey: ["landing-pages-consultores"],
     queryFn: fetchConsultores,
   });
+
+  // Scope: consultor sees only theirs, gestor sees cooperativa, director sees all
+  const consultores = useMemo(() => {
+    if (canViewAllData) return allConsultores;
+    if (isConsultor && usuario?.nome) return allConsultores.filter(c => c.nome === usuario.nome);
+    if (isGestor && minhasCoops.length > 0) return allConsultores.filter(c => minhasCoops.some(coop => c.cooperativa?.includes(coop)));
+    return allConsultores;
+  }, [allConsultores, canViewAllData, isConsultor, isGestor, usuario?.nome, minhasCoops]);
 
   const filtered = consultores.filter(c => !busca || c.nome.toLowerCase().includes(busca.toLowerCase()));
   const baseUrl = window.location.origin + "/c/";
