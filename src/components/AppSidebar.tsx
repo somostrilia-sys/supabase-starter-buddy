@@ -62,8 +62,8 @@ function getVendasItems(perms: { canViewTags: boolean; canImportLeads: boolean; 
   items.push({ title: "Relatórios", url: "/vendas/relatorios", icon: BarChart3 });
   items.push({ title: "Financeiro", url: "/vendas/financeiro", icon: DollarSign });
   items.push({ title: "Comissões", url: "/vendas/comissoes", icon: ArrowRightLeft });
-  if (perms.canViewMinhaEmpresa) items.push({ title: "Minha Empresa", url: "/vendas/minha-empresa", icon: Building });
   items.push({ title: "Minha Conta", url: "/vendas/minha-conta", icon: UserCircle });
+  if (perms.canViewMinhaEmpresa) items.push({ title: "Minha Empresa", url: "/vendas/minha-empresa", icon: Building });
   return items;
 }
 

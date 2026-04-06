@@ -49,8 +49,8 @@ function getVendasItems(perms: { canViewTags: boolean; canImportLeads: boolean; 
   if (perms.canImportLeads) items.push({ title: "Importar Leads", url: "/vendas/importar", icon: Upload });
   items.push({ title: "Afiliados", url: "/vendas/afiliados", icon: UsersRound });
   items.push({ title: "Relatórios", url: "/vendas/relatorios", icon: BarChart3 });
-  if (perms.canViewMinhaEmpresa) items.push({ title: "Minha Empresa", url: "/vendas/minha-empresa", icon: Building });
   items.push({ title: "Minha Conta", url: "/vendas/minha-conta", icon: UserCircle });
+  if (perms.canViewMinhaEmpresa) items.push({ title: "Minha Empresa", url: "/vendas/minha-empresa", icon: Building });
   return items;
 }
 

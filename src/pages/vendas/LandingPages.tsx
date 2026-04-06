@@ -36,15 +36,14 @@ async function fetchConsultores(): Promise<Consultor[]> {
   if (userError) throw userError;
   if (!usuarios || usuarios.length === 0) return [];
 
-  // Fetch all negociacoes counts grouped by consultor
+  // Only count leads from landing page (origem = 'Landing Consultor')
   const nomes = usuarios.map((u: any) => u.nome);
 
-  const { data: allNeg, error: negError } = await supabase
+  const { data: allNeg } = await supabase
     .from("negociacoes")
     .select("consultor, stage")
-    .in("consultor", nomes);
-
-  if (negError) throw negError;
+    .in("consultor", nomes)
+    .eq("origem", "Landing Consultor");
 
   // Build counts map
   const leadsMap: Record<string, number> = {};
@@ -91,6 +90,9 @@ export default function LandingPages() {
   const baseUrl = window.location.origin + "/c/";
 
   const comSlug = consultores.filter(c => c.slug).length;
+  const totalLeadsLP = consultores.reduce((s, c) => s + c.leads, 0);
+  const totalConvLP = consultores.reduce((s, c) => s + c.conversoes, 0);
+  const taxaLP = totalLeadsLP > 0 ? Math.round((totalConvLP / totalLeadsLP) * 1000) / 10 : 0;
 
   function handleCopy(slug: string) {
     const url = baseUrl + slug;
@@ -119,15 +121,48 @@ export default function LandingPages() {
         </div>
       </div>
 
-      <div className="flex gap-4">
-        <Card className="border-border flex-1">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-border">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary/8 flex items-center justify-center">
               <Users className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Landing Pages Ativas</p>
+              <p className="text-xs text-muted-foreground">Paginas Ativas</p>
               <p className="text-lg font-bold text-foreground">{comSlug}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-border">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-emerald-500/8 flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Leads via LP</p>
+              <p className="text-lg font-bold text-foreground">{totalLeadsLP}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-border">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-violet-500/8 flex items-center justify-center">
+              <Globe className="h-5 w-5 text-violet-400" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Convertidos</p>
+              <p className="text-lg font-bold text-foreground">{totalConvLP}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-border">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-500/8 flex items-center justify-center">
+              <MousePointerClick className="h-5 w-5 text-amber-400" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Taxa Conversao</p>
+              <p className="text-lg font-bold text-foreground">{taxaLP}%</p>
             </div>
           </CardContent>
         </Card>
@@ -159,7 +194,9 @@ export default function LandingPages() {
                     <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Consultor</TableHead>
                     <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Cooperativa</TableHead>
                     <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">URL</TableHead>
-                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-center">Leads LP</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-center">Convertidos</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-center">Taxa</TableHead>
                     <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Acoes</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -171,8 +208,10 @@ export default function LandingPages() {
                       <TableCell>
                         <span className="font-mono text-xs bg-muted/50 px-2 py-1 rounded">/c/{c.slug}</span>
                       </TableCell>
-                      <TableCell>
-                        <Badge className="bg-success/10 text-success">Ativa</Badge>
+                      <TableCell className="text-center font-semibold">{c.leads}</TableCell>
+                      <TableCell className="text-center font-semibold text-emerald-400">{c.conversoes}</TableCell>
+                      <TableCell className="text-center">
+                        {c.leads > 0 ? <Badge className={c.taxa >= 25 ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}>{c.taxa}%</Badge> : <span className="text-muted-foreground text-xs">—</span>}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
@@ -185,7 +224,7 @@ export default function LandingPages() {
                   ))}
                   {filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         {busca ? "Nenhum consultor encontrado" : "Nenhum consultor ativo com landing page"}
                       </TableCell>
                     </TableRow>

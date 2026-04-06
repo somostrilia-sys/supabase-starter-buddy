@@ -1,15 +1,17 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Shield, ShieldCheck, ShieldPlus, CheckCircle, XCircle,
-  Phone, MessageSquare, QrCode, Copy, ChevronRight, Car, Clock,
+  Phone, MessageSquare, Copy, ChevronRight, Car, Clock, AlertTriangle, Timer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const LOGO_URL = "https://objetivoauto.com.br/wp-content/uploads/2025/11/IMG_1299.png";
 const PHONE_0800 = "0800 111 3400";
+const OFFER_DURATION_MS = 60 * 60 * 1000; // 1 hora
 
 function fmtBRL(v: number | null | undefined) {
   if (v == null) return "—";
@@ -27,15 +29,12 @@ const TODAS_ASSISTENCIAS = [
   "Hospedagem", "Retorno ao domicílio", "Chaveiro", "Troca de pneus",
 ];
 
-// Extrair detalhe numérico de nomes de produtos SGA (ex: "DANOS A TERCEIROS 70 MIL" → "70 mil")
 function extractDetail(produtoNome: string): string {
-  // Padrões comuns: "70 MIL", "500KM", "15 DIAS", "60%", etc.
   const m = produtoNome.match(/(\d+[\.,]?\d*)\s*(MIL|KM|DIAS|%)/i);
   if (m) return `${m[1]} ${m[2].toLowerCase()}`.replace("mil", "mil");
   return "";
 }
 
-// Match nome do produto SGA com a categoria comparativa
 function matchCoberturaDetail(produtos: string[], target: string): string {
   const t = target.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   for (const p of produtos) {
@@ -56,8 +55,11 @@ function normalizeCheck(items: string[], target: string): boolean {
   });
 }
 
+function padZero(n: number) { return String(n).padStart(2, "0"); }
+
 interface Plano { nome: string; valor_mensal?: number; adesao?: number; rastreador?: string | boolean; instalacao?: number; franquia?: string; valor_fipe?: number; coberturas?: string[]; assistencias?: string[]; detalhes_coberturas?: Record<string, string>; [k: string]: unknown; }
 interface Negociacao { lead_nome?: string; veiculo_modelo?: string; veiculo_placa?: string; consultor?: string; telefone?: string; email?: string; [k: string]: unknown; }
+interface OpcionalCatalogo { id: string; nome: string; categoria: string; valor_mensal: number; tipo_veiculo: string; }
 
 export default function PlanoComparativo() {
   const { id } = useParams<{ id: string }>();
@@ -71,7 +73,55 @@ export default function PlanoComparativo() {
   const [pixCopied, setPixCopied] = useState(false);
   const [consultorData, setConsultorData] = useState<any>(null);
 
+  // Opcionais
+  const [opcionais, setOpcionais] = useState<OpcionalCatalogo[]>([]);
+  const [opcionaisSelecionados, setOpcionaisSelecionados] = useState<string[]>([]);
+
+  // Countdown oferta especial — 1h, não renova, baseado em localStorage
+  const [offerEnd, setOfferEnd] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState("");
+  const [offerExpired, setOfferExpired] = useState(false);
+  const [showOffer, setShowOffer] = useState(false);
+
   const payRef = useRef<HTMLDivElement>(null);
+
+  // Inicializar countdown da oferta (1x por cotação, localStorage)
+  useEffect(() => {
+    if (!id) return;
+    const storageKey = `offer_${id}`;
+    const stored = localStorage.getItem(storageKey);
+    let endTime: number;
+    if (stored) {
+      endTime = parseInt(stored, 10);
+    } else {
+      endTime = Date.now() + OFFER_DURATION_MS;
+      localStorage.setItem(storageKey, String(endTime));
+    }
+    setOfferEnd(endTime);
+    if (Date.now() >= endTime) {
+      setOfferExpired(true);
+    }
+  }, [id]);
+
+  // Ticker do countdown
+  useEffect(() => {
+    if (!offerEnd || offerExpired) return;
+    const tick = () => {
+      const remaining = offerEnd - Date.now();
+      if (remaining <= 0) {
+        setOfferExpired(true);
+        setCountdown("00:00:00");
+        return;
+      }
+      const h = Math.floor(remaining / 3600000);
+      const m = Math.floor((remaining % 3600000) / 60000);
+      const s = Math.floor((remaining % 60000) / 1000);
+      setCountdown(`${padZero(h)}:${padZero(m)}:${padZero(s)}`);
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [offerEnd, offerExpired]);
 
   useEffect(() => {
     if (!id) return;
@@ -81,7 +131,6 @@ export default function PlanoComparativo() {
       if (!cot) { setError("Cotação não encontrada."); setLoading(false); return; }
 
       const todosPlanosBruto = Array.isArray((cot as any).todos_planos) ? (cot as any).todos_planos as Plano[] : [];
-      // Deduplicar por nome de plano (pode vir duplicado de tabela_precos por regional/faixa FIPE)
       const seenNames = new Set<string>();
       const todosPlanos: Plano[] = [];
       for (const p of todosPlanosBruto) {
@@ -118,24 +167,12 @@ export default function PlanoComparativo() {
         }
       }
 
-      // Fallback: se nenhum plano tem coberturas, aplicar defaults baseado no nome
+      // Fallback: se nenhum plano tem coberturas, aplicar defaults
       const defaultCob: Record<string, { coberturas: string[]; assistencias: string[] }> = {
-        "Básico": {
-          coberturas: ["Roubo", "Furto"],
-          assistencias: ["Assistência 24H", "Auxílio combustível", "Recarga de bateria", "Hospedagem", "Retorno ao domicílio", "Chaveiro", "Reboque", "Troca de pneus"],
-        },
-        "Completo": {
-          coberturas: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Vidros Completos", "Danos a Terceiros", "Carro Reserva"],
-          assistencias: ["Assistência 24H", "Auxílio combustível", "Recarga de bateria", "Hospedagem", "Retorno ao domicílio", "Chaveiro", "Reboque", "Troca de pneus"],
-        },
-        "Objetivo": {
-          coberturas: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Vidros Completos", "Danos a Terceiros", "Danos da Natureza", "Carro Reserva"],
-          assistencias: ["Assistência 24H", "Auxílio combustível", "Recarga de bateria", "Hospedagem", "Retorno ao domicílio", "Chaveiro", "Reboque", "Troca de pneus"],
-        },
-        "Premium": {
-          coberturas: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Vidros Completos", "Danos a Terceiros", "Danos da Natureza", "Carro Reserva"],
-          assistencias: ["Assistência 24H", "Auxílio combustível", "Recarga de bateria", "Hospedagem", "Retorno ao domicílio", "Chaveiro", "Reboque", "Troca de pneus"],
-        },
+        "Básico": { coberturas: ["Roubo", "Furto"], assistencias: ["Assistência 24H", "Auxílio combustível", "Recarga de bateria", "Hospedagem", "Retorno ao domicílio", "Chaveiro", "Reboque", "Troca de pneus"] },
+        "Completo": { coberturas: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Vidros Completos", "Danos a Terceiros", "Carro Reserva"], assistencias: ["Assistência 24H", "Auxílio combustível", "Recarga de bateria", "Hospedagem", "Retorno ao domicílio", "Chaveiro", "Reboque", "Troca de pneus"] },
+        "Objetivo": { coberturas: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Vidros Completos", "Danos a Terceiros", "Danos da Natureza", "Carro Reserva"], assistencias: ["Assistência 24H", "Auxílio combustível", "Recarga de bateria", "Hospedagem", "Retorno ao domicílio", "Chaveiro", "Reboque", "Troca de pneus"] },
+        "Premium": { coberturas: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Vidros Completos", "Danos a Terceiros", "Danos da Natureza", "Carro Reserva"], assistencias: ["Assistência 24H", "Auxílio combustível", "Recarga de bateria", "Hospedagem", "Retorno ao domicílio", "Chaveiro", "Reboque", "Troca de pneus"] },
       };
       todosPlanos.forEach(p => {
         if (!p.coberturas || p.coberturas.length === 0) {
@@ -147,11 +184,18 @@ export default function PlanoComparativo() {
 
       setPlanos(todosPlanos);
 
+      // Buscar opcionais do catálogo
+      const { data: opcData } = await supabase.from("opcionais_catalogo" as any)
+        .select("id, nome, categoria, valor_mensal, tipo_veiculo")
+        .eq("ativo", true)
+        .order("categoria")
+        .order("ordem");
+      if (opcData) setOpcionais(opcData as OpcionalCatalogo[]);
+
       if ((cot as any).negociacao_id) {
         const { data: negData } = await supabase.from("negociacoes" as any).select("*").eq("id", (cot as any).negociacao_id).single();
         if (negData) {
           setNeg(negData as any);
-          // Buscar dados do consultor (whatsapp pessoal)
           if ((negData as any).consultor) {
             const { data: usr } = await supabase.from("usuarios" as any).select("nome, whatsapp, telefone, email")
               .eq("nome", (negData as any).consultor).limit(1).maybeSingle();
@@ -174,6 +218,21 @@ export default function PlanoComparativo() {
   const consultorTel = consultorData?.whatsapp || consultorData?.telefone || neg?.telefone || "";
   const fipeValue = planos[0]?.valor_fipe;
 
+  const totalOpcionais = useMemo(() =>
+    opcionais.filter(o => opcionaisSelecionados.includes(o.id)).reduce((sum, o) => sum + Number(o.valor_mensal), 0),
+    [opcionaisSelecionados, opcionais]
+  );
+
+  // Agrupar opcionais por categoria
+  const opcionaisGrouped = useMemo(() => {
+    const map: Record<string, OpcionalCatalogo[]> = {};
+    opcionais.forEach(o => {
+      if (!map[o.categoria]) map[o.categoria] = [];
+      map[o.categoria].push(o);
+    });
+    return map;
+  }, [opcionais]);
+
   const waConsultor = (msg: string) => {
     const tel = consultorTel.replace(/\D/g, "");
     return tel ? `https://wa.me/${tel.startsWith("55") ? tel : `55${tel}`}?text=${encodeURIComponent(msg)}` : "#";
@@ -182,6 +241,7 @@ export default function PlanoComparativo() {
   const handleSelect = (idx: number) => {
     setSelected(idx);
     setShowPayment(false);
+    if (!showOffer && !offerExpired) setShowOffer(true);
   };
 
   const handlePay = () => {
@@ -216,6 +276,8 @@ export default function PlanoComparativo() {
   );
 
   const chosen = selected !== null ? planos[selected] : null;
+  const chosenTotal = chosen ? (Number(chosen.valor_mensal) || 0) + totalOpcionais : 0;
+  const chosenPontualidade = Math.round(chosenTotal * 0.85);
   const icons = [
     <Shield key={0} className="w-6 h-6" />,
     <ShieldCheck key={1} className="w-6 h-6" />,
@@ -249,7 +311,39 @@ export default function PlanoComparativo() {
         </div>
       </section>
 
-      {/* ═══ TABELA COMPARATIVA ═══ */}
+      {/* ALERTA OFERTA ESPECIAL — countdown 1h */}
+      {showOffer && !offerExpired && (
+        <section className="bg-gradient-to-r from-[#f59e0b] via-[#ef4444] to-[#f59e0b] py-4 px-4 animate-pulse-slow">
+          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-3 text-white text-center">
+            <Timer className="w-8 h-8 animate-bounce" />
+            <div>
+              <p className="text-lg sm:text-xl font-extrabold">OFERTA ESPECIAL — 15% de desconto todos os meses!</p>
+              <p className="text-sm font-semibold">Pagando em dia, você garante 15% OFF na mensalidade. Oferta expira em:</p>
+            </div>
+            <div className="bg-black/30 rounded-xl px-5 py-2 font-mono text-2xl sm:text-3xl font-extrabold tracking-widest min-w-[160px]">
+              {countdown}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* OFERTA EXPIRADA */}
+      {showOffer && offerExpired && (
+        <section className="bg-gray-800 py-6 px-4">
+          <div className="max-w-lg mx-auto text-center space-y-3">
+            <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto" />
+            <p className="text-white text-lg font-bold">Oferta expirada</p>
+            <p className="text-gray-300 text-sm">O prazo da condição especial de 15% encerrou, mas você ainda pode tentar! Entre em contato com seu consultor.</p>
+            <Button asChild size="lg" className="bg-[#2ecc71] hover:bg-[#27ae60] text-white font-bold text-base px-8 py-5 rounded-xl">
+              <a href={waConsultor(`Olá ${consultor}, vi a oferta de 15% de desconto na cotação e gostaria de saber se ainda posso aproveitar!`)} target="_blank" rel="noopener noreferrer">
+                <MessageSquare className="w-5 h-5 mr-2" />Falar com {consultor} no WhatsApp
+              </a>
+            </Button>
+          </div>
+        </section>
+      )}
+
+      {/* TABELA COMPARATIVA */}
       {planos.length > 0 && (
         <section className="py-8 sm:py-12 px-4">
           <div className="max-w-5xl mx-auto">
@@ -257,7 +351,6 @@ export default function PlanoComparativo() {
 
             <div className="overflow-x-auto">
               <table className="w-full border-collapse bg-white rounded-xl shadow-lg overflow-hidden">
-                {/* Header row with plan names */}
                 <thead>
                   <tr>
                     <th className="text-left px-4 py-4 bg-[#002b5e] text-white text-sm font-bold w-1/4">Benefício</th>
@@ -274,15 +367,28 @@ export default function PlanoComparativo() {
                   </tr>
                 </thead>
                 <tbody>
-                  {/* Preço */}
+                  {/* Mensalidade (plano + opcionais) */}
                   <tr className="bg-[#002b5e]/5">
-                    <td className="px-4 py-3 text-sm font-bold text-[#002b5e]">Mensalidade</td>
-                    {planos.map((p, i) => (
-                      <td key={i} className="text-center px-3 py-3">
-                        <span className="text-lg sm:text-xl font-extrabold text-[#003572]">{fmtBRL(p.valor_mensal)}</span>
-                        <span className="text-xs text-gray-400">/mês</span>
-                      </td>
-                    ))}
+                    <td className="px-4 py-3 text-sm font-bold text-[#002b5e]">
+                      Mensalidade
+                      {totalOpcionais > 0 && <span className="block text-[10px] text-gray-500 font-normal">(plano + opcionais)</span>}
+                    </td>
+                    {planos.map((p, i) => {
+                      const base = Number(p.valor_mensal) || 0;
+                      const total = base + totalOpcionais;
+                      return (
+                        <td key={i} className="text-center px-3 py-3">
+                          {totalOpcionais > 0 && (
+                            <div className="text-[10px] text-gray-400 line-through">{fmtBRL(base)}</div>
+                          )}
+                          <span className="text-lg sm:text-xl font-extrabold text-[#003572]">{fmtBRL(total)}</span>
+                          <span className="text-xs text-gray-400">/mês</span>
+                          {!offerExpired && total > 0 && (
+                            <div className="text-[10px] text-[#2ecc71] font-bold">15% OFF: {fmtBRL(Math.round(total * 0.85))}</div>
+                          )}
+                        </td>
+                      );
+                    })}
                   </tr>
                   <tr>
                     <td className="px-4 py-2.5 text-sm font-semibold text-gray-700 border-t">Adesão</td>
@@ -311,7 +417,7 @@ export default function PlanoComparativo() {
                     })}
                   </tr>
 
-                  {/* Separator: Coberturas */}
+                  {/* Coberturas */}
                   <tr>
                     <td colSpan={planos.length + 1} className="px-4 py-2 bg-[#002b5e]/10 text-xs font-bold text-[#002b5e] uppercase tracking-wider border-t-2 border-[#002b5e]/20">
                       Coberturas
@@ -323,7 +429,6 @@ export default function PlanoComparativo() {
                       {planos.map((p, i) => {
                         const has = normalizeCheck(p.coberturas || [], cob);
                         const detail = matchCoberturaDetail(p.coberturas || [], cob);
-                        // Also check detalhes_coberturas from snapshot
                         const snapshotDetail = p.detalhes_coberturas ? Object.entries(p.detalhes_coberturas).find(([k]) => k.toLowerCase().includes(cob.split("/")[0].toLowerCase()))?.[1] : undefined;
                         const finalDetail = snapshotDetail || (detail && detail !== "✓" ? detail : "");
                         return (
@@ -343,7 +448,7 @@ export default function PlanoComparativo() {
                     </tr>
                   ))}
 
-                  {/* Separator: Assistências */}
+                  {/* Assistências */}
                   <tr>
                     <td colSpan={planos.length + 1} className="px-4 py-2 bg-[#002b5e]/10 text-xs font-bold text-[#002b5e] uppercase tracking-wider border-t-2 border-[#002b5e]/20">
                       Assistências 24h
@@ -397,15 +502,72 @@ export default function PlanoComparativo() {
         </section>
       )}
 
-      {/* ═══ PLANO SELECIONADO + PIX ═══ */}
+      {/* OPCIONAIS */}
+      {opcionais.length > 0 && (
+        <section className="py-6 px-4 bg-white border-t">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-lg font-bold text-[#002b5e] mb-4">Coberturas Opcionais</h2>
+            <p className="text-sm text-gray-500 mb-4">Selecione coberturas extras para adicionar ao seu plano. O valor será somado à mensalidade.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {Object.entries(opcionaisGrouped).map(([cat, items]) => (
+                <div key={cat} className="border rounded-lg p-3">
+                  <h3 className="text-xs font-bold text-[#002b5e] uppercase tracking-wider mb-2">{cat}</h3>
+                  <div className="space-y-2">
+                    {items.map(item => {
+                      const checked = opcionaisSelecionados.includes(item.id);
+                      return (
+                        <label key={item.id} className="flex items-center justify-between gap-2 cursor-pointer group">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={() => {
+                                setOpcionaisSelecionados(prev =>
+                                  checked ? prev.filter(x => x !== item.id) : [...prev, item.id]
+                                );
+                              }}
+                            />
+                            <span className="text-xs text-gray-700 group-hover:text-[#002b5e]">{item.nome}</span>
+                          </div>
+                          <span className="text-xs font-semibold text-[#003572] whitespace-nowrap">
+                            +{fmtBRL(item.valor_mensal)}/mês
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {totalOpcionais > 0 && (
+              <div className="mt-4 p-3 bg-[#002b5e]/5 rounded-lg flex items-center justify-between">
+                <span className="text-sm font-semibold text-[#002b5e]">
+                  Total opcionais ({opcionaisSelecionados.length} selecionado{opcionaisSelecionados.length > 1 ? "s" : ""})
+                </span>
+                <span className="text-lg font-bold text-[#003572]">+{fmtBRL(totalOpcionais)}/mês</span>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* PLANO SELECIONADO */}
       {chosen && !showPayment && (
         <section className="py-8 px-4 bg-white border-t">
           <div className="max-w-lg mx-auto text-center space-y-4">
             <h2 className="text-xl font-bold text-[#002b5e]">Plano {chosen.nome} selecionado</h2>
             <div className="flex justify-center gap-6 text-sm">
-              <div><p className="text-gray-500">Mensalidade</p><p className="text-xl font-bold text-[#003572]">{fmtBRL(chosen.valor_mensal)}</p></div>
+              <div>
+                <p className="text-gray-500">Mensalidade</p>
+                <p className="text-xl font-bold text-[#003572]">{fmtBRL(chosenTotal)}</p>
+                {!offerExpired && chosenTotal > 0 && (
+                  <p className="text-sm font-bold text-[#2ecc71]">15% OFF: {fmtBRL(chosenPontualidade)}/mês</p>
+                )}
+              </div>
               <div><p className="text-gray-500">Adesão</p><p className="text-xl font-bold text-[#003572]">{fmtBRL(chosen.adesao)}</p></div>
             </div>
+            {totalOpcionais > 0 && (
+              <p className="text-xs text-gray-500">Plano {fmtBRL(chosen.valor_mensal)} + Opcionais {fmtBRL(totalOpcionais)}</p>
+            )}
             <Button size="lg" className="bg-[#2ecc71] hover:bg-[#27ae60] text-white font-bold text-lg px-10 py-6 rounded-xl shadow-xl" onClick={handlePay}>
               Prosseguir para pagamento <ChevronRight className="w-5 h-5 ml-2" />
             </Button>
@@ -413,7 +575,7 @@ export default function PlanoComparativo() {
         </section>
       )}
 
-      {/* ═══ PAGAMENTO PIX ═══ */}
+      {/* PAGAMENTO PIX */}
       {showPayment && chosen && (
         <section ref={payRef} className="py-10 px-4 bg-gradient-to-br from-[#002b5e] to-[#003572] text-white">
           <div className="max-w-lg mx-auto space-y-6">
@@ -455,7 +617,7 @@ export default function PlanoComparativo() {
                 </div>
 
                 <Button asChild className="w-full bg-[#2ecc71] hover:bg-[#27ae60] text-white font-bold py-5 text-base">
-                  <a href={waConsultor(`Olá ${consultor}, segue o comprovante de pagamento da adesão - Plano ${chosen.nome}`)} target="_blank" rel="noopener noreferrer">
+                  <a href={waConsultor(`Olá ${consultor}, segue o comprovante de pagamento da adesão - Plano ${chosen.nome}${totalOpcionais > 0 ? ` + opcionais (${fmtBRL(totalOpcionais)}/mês)` : ""}`)} target="_blank" rel="noopener noreferrer">
                     <MessageSquare className="w-5 h-5 mr-2" />Enviar comprovante via WhatsApp
                   </a>
                 </Button>
