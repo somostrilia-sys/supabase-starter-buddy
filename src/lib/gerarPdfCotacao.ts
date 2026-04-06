@@ -280,7 +280,7 @@ function buildPage3HTML(dados: DadosCotacao): string {
         <div class="consultor-name">${dados.consultor.nome}</div>
         <div class="fees">
           <div class="fee-tag">Ades&atilde;o: <strong>${fmtBRL(dados.plano.adesao)}</strong></div>
-          <div class="fee-tag">Rastreador: <strong>${fmtBRL(dados.plano.instalacao || 100)}</strong></div>
+          ${dados.plano.rastreador && dados.plano.rastreador.toLowerCase() !== "não" ? `<div class="fee-tag">Rastreador: <strong>${fmtBRL(dados.plano.instalacao || 100)}</strong></div>` : ""}
           <div class="fee-tag">Participa&ccedil;&atilde;o: <strong>${dados.plano.participacao}</strong></div>
         </div>
       </div>

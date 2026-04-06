@@ -56,7 +56,7 @@ function normalizeCheck(items: string[], target: string): boolean {
   });
 }
 
-interface Plano { nome: string; valor_mensal?: number; adesao?: number; rastreador?: string | boolean; franquia?: string; valor_fipe?: number; coberturas?: string[]; assistencias?: string[]; detalhes_coberturas?: Record<string, string>; [k: string]: unknown; }
+interface Plano { nome: string; valor_mensal?: number; adesao?: number; rastreador?: string | boolean; instalacao?: number; franquia?: string; valor_fipe?: number; coberturas?: string[]; assistencias?: string[]; detalhes_coberturas?: Record<string, string>; [k: string]: unknown; }
 interface Negociacao { lead_nome?: string; veiculo_modelo?: string; veiculo_placa?: string; consultor?: string; telefone?: string; email?: string; [k: string]: unknown; }
 
 export default function PlanoComparativo() {
@@ -293,10 +293,19 @@ export default function PlanoComparativo() {
                   <tr className="bg-gray-50">
                     <td className="px-4 py-2.5 text-sm font-semibold text-gray-700 border-t">Rastreador</td>
                     {planos.map((p, i) => {
-                      const sim = typeof p.rastreador === "string" ? p.rastreador.toLowerCase() === "sim" : !!p.rastreador;
+                      const rast = typeof p.rastreador === "string" ? p.rastreador : (p.rastreador ? "Sim" : "Não");
+                      const obrigatorio = rast.toLowerCase().includes("obrigat") || rast.toLowerCase() === "sim";
+                      const instVal = p.instalacao || 0;
                       return (
                         <td key={i} className="text-center px-3 py-2.5 border-t">
-                          {sim ? <CheckCircle className="w-5 h-5 text-[#2ecc71] mx-auto" /> : <span className="text-gray-400 text-sm">—</span>}
+                          {obrigatorio ? (
+                            <div>
+                              <span className="text-xs font-semibold text-[#003572]">Obrigatório</span>
+                              {instVal > 0 && <div className="text-[10px] text-gray-500">Instalação: {fmtBRL(instVal)}</div>}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-sm">—</span>
+                          )}
                         </td>
                       );
                     })}

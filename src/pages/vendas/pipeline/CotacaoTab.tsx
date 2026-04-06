@@ -589,7 +589,7 @@ export default function CotacaoTab({ deal }: Props) {
         adesaoOriginal: descontoAdesao ? (precoPlano ? Number(precoPlano.adesao) : 400) : undefined,
         participacao: precoPlano ? `${precoPlano.tipo_franquia} ${precoPlano.valor_franquia}` : "5% FIPE",
         rastreador: precoPlano?.rastreador || "Não",
-        instalacao: precoPlano ? Number(precoPlano.instalacao || 0) : 0,
+        instalacao: valorInstalacaoEdit ? Number(valorInstalacaoEdit) : (precoPlano ? Number(precoPlano.instalacao || 0) : 100),
       },
       coberturas: coberturasPlano.map((c: any) => ({ nome: c.cobertura, inclusa: c.inclusa, tipo: c.tipo, detalhe: c.detalhe })),
       consultor: { nome: deal.consultor || "Consultor", telefone: "", email: "" },
@@ -638,7 +638,7 @@ export default function CotacaoTab({ deal }: Props) {
         estado_circulacao: form.estadoCirc,
         regional_precos: regionalCot,
         todos_planos: planosFiltrados.length > 0
-          ? planosFiltrados.map((p: any) => ({ nome: p.plano_normalizado || p.plano, valor_mensal: p.cota, adesao: p.adesao, rastreador: p.rastreador, franquia: p.valor_franquia, valor_fipe: valorFipe }))
+          ? planosFiltrados.map((p: any) => ({ nome: p.plano_normalizado || p.plano, valor_mensal: p.cota, adesao: p.adesao, rastreador: p.rastreador, instalacao: Number(p.instalacao || 0), franquia: p.valor_franquia, valor_fipe: valorFipe }))
           : [{ nome: planoSelecionado, valor_mensal: valorFipe * 0.015 }],
         desconto_aplicado: 0,
       } as any)
