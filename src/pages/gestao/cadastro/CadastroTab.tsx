@@ -12,14 +12,18 @@ import { Switch } from "@/components/ui/switch";
 import {
   Package, DollarSign, Car, AlertTriangle, Building2, ClipboardCheck, MapPin,
   Plus, Edit, Trash2, Search, Download, Save, ChevronRight,
-  ArrowRightLeft, FileText, Shield,
+  ArrowRightLeft, FileText, Shield, Users,
 } from "lucide-react";
 import CadastrarRegional from "./CadastrarRegional";
+import ProdutoVeiculo from "./ProdutoVeiculo";
+import ListagemProdutos from "./ListagemProdutos";
+import ProdutosPorCooperativa from "./ProdutosPorCooperativa";
+import VoluntariosSection from "./VoluntariosSection";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 // ── Types ──
-type Group = "produtos" | "financeiros" | "veiculo" | "evento" | "cooperativa" | "regional" | "vistoria";
+type Group = "produtos" | "financeiros" | "veiculo" | "evento" | "cooperativa" | "regional" | "voluntarios" | "vistoria";
 
 const groups = [
   { id: "produtos" as Group, label: "Grupo de Produtos", icon: Package },
@@ -28,6 +32,7 @@ const groups = [
   { id: "evento" as Group, label: "Opcionais de Evento", icon: AlertTriangle },
   { id: "cooperativa" as Group, label: "Cooperativa", icon: Building2 },
   { id: "regional" as Group, label: "Regional", icon: MapPin },
+  { id: "voluntarios" as Group, label: "Voluntários", icon: Users },
   { id: "vistoria" as Group, label: "Vistoria", icon: ClipboardCheck },
 ];
 
@@ -215,6 +220,7 @@ export default function CadastroTab() {
           {activeGroup === "evento" && <OpcionaisEvento subView={subView} setSubView={setSubView} />}
           {activeGroup === "cooperativa" && <CooperativaSection subView={subView} setSubView={setSubView} />}
           {activeGroup === "regional" && <CadastrarRegional />}
+          {activeGroup === "voluntarios" && <VoluntariosSection />}
           {activeGroup === "vistoria" && <VistoriaConfig subView={subView} setSubView={setSubView} />}
         </div>
       </div>
@@ -251,7 +257,7 @@ function toRows(columns: string[], data: string[][]): CrudRow[] {
 // ═══════════════════════════════════════════════════════════
 
 function GrupoProdutos({ subView, setSubView }: { subView: number; setSubView: (v: number) => void }) {
-  const subs = ["Grupo de Cadastros", "Classificação", "Substituição Fornecedor", "Relatórios"];
+  const subs = ["Grupo de Cadastros", "Classificação", "Substituição Fornecedor", "Produtos"];
 
   // Grupo de Produtos - Supabase-backed CRUD
   const [grupos, setGrupos] = useState<any[]>([]);
@@ -373,7 +379,7 @@ function GrupoProdutos({ subView, setSubView }: { subView: number; setSubView: (
 
       {subView === 2 && <SubstituicaoFornecedor />}
 
-      {subView === 3 && <RelatoriosProdutos />}
+      {subView === 3 && <ProdutosSection />}
     </>
   );
 }
@@ -435,31 +441,15 @@ function SubstituicaoFornecedor() {
   );
 }
 
-function RelatoriosProdutos() {
-  const [relTab, setRelTab] = useState(0);
-  const rels = ["Produtos por Fornecedor", "Utilização por Cooperativa", "Alterações de Produto"];
-  const fornecedorCols = ["Fornecedor", "Produto", "Qtde Contratos", "Valor Mensal"];
-  const utilizCols = ["Cooperativa", "Produto", "Qtde Utiliz.", "% do Total"];
-  const alterCols = ["Data", "Produto", "Alteração", "Usuário"];
-
+function ProdutosSection() {
+  const [prodTab, setProdTab] = useState(0);
+  const tabs = ["Criar Produto", "Listagem Geral", "Por Cooperativa"];
   return (
     <>
-      <SubNav items={rels} active={relTab} onChange={setRelTab} />
-      {relTab === 0 && (
-        <div className="space-y-3">
-          <div className="flex justify-end"><Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => toast.success("Exportado")}><Download className="h-3 w-3" />Exportar</Button></div>
-          <CrudTable title="Produtos por Fornecedor" columns={fornecedorCols}
-            initialData={toRows(fornecedorCols, [["Tracker Pro", "Rastreador Veicular", "342", "R$ 39,90"],["Assist Brasil", "Assistência 24h", "847", "R$ 29,90"],["CarReserve", "Carro Reserva", "215", "R$ 49,90"]])} />
-        </div>
-      )}
-      {relTab === 1 && (
-        <CrudTable title="Utilização por Cooperativa" columns={utilizCols}
-          initialData={toRows(utilizCols, [["Central SP", "Assistência 24h", "425", "50.2%"],["Campinas", "Rastreador", "180", "21.2%"],["Litoral SP", "Carro Reserva", "98", "11.6%"]])} />
-      )}
-      {relTab === 2 && (
-        <CrudTable title="Alterações de Produto" columns={alterCols}
-          initialData={toRows(alterCols, [["10/07/2025", "Plano Completo", "Valor atualizado R$ 199 → R$ 219", "Admin"],["05/07/2025", "Rastreador", "Fornecedor alterado", "Gerente"],["01/07/2025", "Plano Moto", "Status: Ativo → Inativo", "Admin"]])} />
-      )}
+      <SubNav items={tabs} active={prodTab} onChange={setProdTab} />
+      {prodTab === 0 && <ProdutoVeiculo />}
+      {prodTab === 1 && <ListagemProdutos />}
+      {prodTab === 2 && <ProdutosPorCooperativa />}
     </>
   );
 }

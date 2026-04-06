@@ -38,12 +38,15 @@ const maskCep = (v: string) => {
   return d.length <= 5 ? d : `${d.slice(0,5)}-${d.slice(5)}`;
 };
 const calcIdade = (dt: string) => {
-  if (!dt) return "";
+  if (!dt || typeof dt !== "string") return "—";
   const b = new Date(dt);
+  // Valida data: rejeita Invalid Date, epochs muito antigos e datas futuras
+  if (isNaN(b.getTime()) || b.getFullYear() < 1900 || b > new Date()) return "—";
   const now = new Date();
   let age = now.getFullYear() - b.getFullYear();
   if (now.getMonth() < b.getMonth() || (now.getMonth() === b.getMonth() && now.getDate() < b.getDate())) age--;
-  return String(age);
+  if (age < 0 || age > 120) return "—";
+  return `${age} anos`;
 };
 
 const SelectWithAdd = ({ label, value, onValueChange, options, placeholder }: {

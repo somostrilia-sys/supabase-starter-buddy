@@ -18,17 +18,42 @@ function fmtBRL(v: number | null | undefined) {
 
 // All possible coberturas/assistências to compare across plans
 const TODAS_COBERTURAS = [
-  "Roubo", "Furto", "Colisão", "Incêndio", "Perda Total",
-  "Vidros Completos", "Danos a Terceiros", "Danos da Natureza",
+  "Roubo/Furto", "Colisão", "Incêndio", "Perda Total",
+  "Vidros", "Danos a Terceiros", "Danos da Natureza",
   "Carro Reserva",
 ];
 const TODAS_ASSISTENCIAS = [
-  "Assistência 24H", "Auxílio combustível", "Recarga de bateria",
-  "Hospedagem", "Retorno ao domicílio", "Chaveiro", "Reboque", "Troca de pneus",
+  "Assistência 24H/Guincho", "Auxílio combustível", "Recarga de bateria",
+  "Hospedagem", "Retorno ao domicílio", "Chaveiro", "Troca de pneus",
 ];
 
+// Extrair detalhe numérico de nomes de produtos SGA (ex: "DANOS A TERCEIROS 70 MIL" → "70 mil")
+function extractDetail(produtoNome: string): string {
+  // Padrões comuns: "70 MIL", "500KM", "15 DIAS", "60%", etc.
+  const m = produtoNome.match(/(\d+[\.,]?\d*)\s*(MIL|KM|DIAS|%)/i);
+  if (m) return `${m[1]} ${m[2].toLowerCase()}`.replace("mil", "mil");
+  return "";
+}
+
+// Match nome do produto SGA com a categoria comparativa
+function matchCoberturaDetail(produtos: string[], target: string): string {
+  const t = target.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  for (const p of produtos) {
+    const pn = p.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (pn.includes(t.split("/")[0]) || t.split("/").some(tt => pn.includes(tt))) {
+      const detail = extractDetail(p);
+      return detail || "✓";
+    }
+  }
+  return "";
+}
+
 function normalizeCheck(items: string[], target: string): boolean {
-  return items.some(i => i.toLowerCase().includes(target.toLowerCase()) || target.toLowerCase().includes(i.toLowerCase()));
+  const targets = target.toLowerCase().split("/");
+  return items.some(i => {
+    const il = i.toLowerCase();
+    return targets.some(t => il.includes(t) || t.includes(il));
+  });
 }
 
 interface Plano { nome: string; valor_mensal?: number; adesao?: number; rastreador?: string | boolean; franquia?: string; valor_fipe?: number; coberturas?: string[]; assistencias?: string[]; [k: string]: unknown; }
@@ -55,7 +80,16 @@ export default function PlanoComparativo() {
       const { data: cot } = await supabase.from("cotacoes" as any).select("*").eq("id", id).single();
       if (!cot) { setError("Cotação não encontrada."); setLoading(false); return; }
 
-      const todosPlanos = Array.isArray((cot as any).todos_planos) ? (cot as any).todos_planos as Plano[] : [];
+      const todosPlanosBruto = Array.isArray((cot as any).todos_planos) ? (cot as any).todos_planos as Plano[] : [];
+      // Deduplicar por nome de plano (pode vir duplicado de tabela_precos por regional/faixa FIPE)
+      const seenNames = new Set<string>();
+      const todosPlanos: Plano[] = [];
+      for (const p of todosPlanosBruto) {
+        if (!seenNames.has(p.nome)) {
+          seenNames.add(p.nome);
+          todosPlanos.push(p);
+        }
+      }
 
       // Buscar coberturas de cada plano do banco
       const nomesPlanos = [...new Set(todosPlanos.map(p => p.nome))];
@@ -273,11 +307,18 @@ export default function PlanoComparativo() {
                       <td className="px-4 py-2 text-sm text-gray-700 border-t border-gray-100">{cob}</td>
                       {planos.map((p, i) => {
                         const has = normalizeCheck(p.coberturas || [], cob);
+                        const detail = matchCoberturaDetail(p.coberturas || [], cob);
                         return (
                           <td key={i} className="text-center px-3 py-2 border-t border-gray-100">
-                            {has
-                              ? <CheckCircle className="w-5 h-5 text-[#2ecc71] mx-auto" />
-                              : <XCircle className="w-5 h-5 text-red-400 mx-auto" />}
+                            {has ? (
+                              detail && detail !== "✓" ? (
+                                <span className="text-sm font-semibold text-[#003572]">{detail}</span>
+                              ) : (
+                                <CheckCircle className="w-5 h-5 text-[#2ecc71] mx-auto" />
+                              )
+                            ) : (
+                              <XCircle className="w-5 h-5 text-red-400 mx-auto" />
+                            )}
                           </td>
                         );
                       })}
@@ -295,11 +336,18 @@ export default function PlanoComparativo() {
                       <td className="px-4 py-2 text-sm text-gray-700 border-t border-gray-100">{ass}</td>
                       {planos.map((p, i) => {
                         const has = normalizeCheck(p.assistencias || [], ass);
+                        const detail = matchCoberturaDetail(p.assistencias || [], ass);
                         return (
                           <td key={i} className="text-center px-3 py-2 border-t border-gray-100">
-                            {has
-                              ? <CheckCircle className="w-5 h-5 text-[#2ecc71] mx-auto" />
-                              : <XCircle className="w-5 h-5 text-red-400 mx-auto" />}
+                            {has ? (
+                              detail && detail !== "✓" ? (
+                                <span className="text-sm font-semibold text-[#003572]">{detail}</span>
+                              ) : (
+                                <CheckCircle className="w-5 h-5 text-[#2ecc71] mx-auto" />
+                              )
+                            ) : (
+                              <XCircle className="w-5 h-5 text-red-400 mx-auto" />
+                            )}
                           </td>
                         );
                       })}

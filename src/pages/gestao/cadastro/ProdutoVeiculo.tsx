@@ -1,100 +1,234 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Plus, Package, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
-const tiposProduto = [
-  "Assistência", "Carro Reserva", "Crédito", "Débito", "Desconto",
-  "Proteção a Terceiros", "Produto Adicional Veículo", "Produto Adicional Associado",
-  "Rastreador", "Rateio", "Tarifa Bancária", "Taxa Administrativa", "Vidros",
+const CLASSIFICACOES = [
+  "CARRO RESERVA", "PROTEÇÃO TERCEIROS", "ASSISTÊNCIA 24HRS",
+  "PRODUTO ADICIONAL VEICULO", "PRODUTO ADICIONAL ASSOCIADO",
+  "TAXA ADMINISTRATIVA", "VIDROS", "RASTREADOR", "OUTROS", "NAO INFORMADO",
 ];
 
-const tiposVeiculoElegivel = [
-  "Todos", "Automóvel Leve", "Motocicleta", "Utilitário",
-  "Vans e Caminhões Pequeno Porte", "Extra Pesado",
+const TIPOS_VEICULO = [
+  "TODOS", "AUTOMOVEL", "UTILITARIOS", "MOTOCICLETA", "PESADOS", "VANS E PESADOS P.P",
 ];
 
 interface Produto {
   id: string;
-  tipo: string;
-  descricao: string;
-  descricaoBoleto: string;
-  exibirBoleto: boolean;
-  formatoCobranca: "reais" | "porcentagem";
+  nome: string;
+  descricao?: string;
+  codigo_sga?: string;
   valor: number;
-  custoInterno: number;
-  permiteDesconto: boolean;
-  exibirApp: boolean;
-  tipoVeiculoElegivel: string;
-  fornecedor: string;
-  grupo: string;
-  cooperativas: string;
+  valor_base?: number;
+  tipo?: string;
+  classificacao?: string;
+  objeto_contrato?: string;
+  obrigatorio: boolean;
   ativo: boolean;
+  fornecedor_id?: string;
 }
 
-// produtos_gia table - empty until connected
-const initialProdutos: Produto[] = [];
-
-const emptyForm: Omit<Produto, "id"> = {
-  tipo: "", descricao: "", descricaoBoleto: "", exibirBoleto: true,
-  formatoCobranca: "reais", valor: 0, custoInterno: 0, permiteDesconto: false,
-  exibirApp: true, tipoVeiculoElegivel: "Todos", fornecedor: "", grupo: "",
-  cooperativas: "Todas", ativo: true,
+const emptyForm = {
+  nome: "", descricao: "", codigo_sga: "", valor: 0,
+  tipo: "TODOS", classificacao: "OUTROS", objeto_contrato: "",
+  obrigatorio: false, ativo: true, fornecedor_id: "",
 };
 
 export default function ProdutoVeiculo() {
-  const [produtos, setProdutos] = useState<Produto[]>(initialProdutos);
+  const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState<Omit<Produto, "id">>(emptyForm);
+  const [form, setForm] = useState<typeof emptyForm>(emptyForm);
+  const [regionaisSelecionadas, setRegionaisSelecionadas] = useState<string[]>([]);
+  const [cooperativasSelecionadas, setCooperativasSelecionadas] = useState<string[]>([]);
+  const [gruposSelecionados, setGruposSelecionados] = useState<string[]>([]);
 
   const set = (f: string, v: any) => setForm(p => ({ ...p, [f]: v }));
 
-  const filtered = produtos.filter(p =>
-    !search || p.descricao.toLowerCase().includes(search.toLowerCase()) || p.tipo.toLowerCase().includes(search.toLowerCase())
+  // Queries
+  const { data: produtos = [], isLoading } = useQuery({
+    queryKey: ["gestao-produtos-gia"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("produtos_gia")
+        .select("*")
+        .order("nome");
+      if (error) throw error;
+      return (data || []) as Produto[];
+    },
+  });
+
+  const { data: fornecedores = [] } = useQuery({
+    queryKey: ["fornecedores"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("fornecedores").select("id, nome").eq("ativo", true).order("nome");
+      return data || [];
+    },
+  });
+
+  const { data: regionais = [] } = useQuery({
+    queryKey: ["regionais-prod"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("regionais").select("id, nome, codigo_numerico").eq("ativo", true).order("codigo_numerico");
+      return data || [];
+    },
+  });
+
+  const { data: cooperativas = [] } = useQuery({
+    queryKey: ["cooperativas-prod"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("cooperativas").select("id, nome").order("nome");
+      return data || [];
+    },
+  });
+
+  const { data: grupos = [] } = useQuery({
+    queryKey: ["grupos-prod"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("grupos_produtos").select("id, nome").eq("ativo", true).order("nome");
+      return data || [];
+    },
+  });
+
+  // Carrega vínculos ao editar
+  async function loadVinculos(produtoId: string) {
+    const [r, c, g] = await Promise.all([
+      (supabase as any).from("produto_regras").select("regional_id").eq("produto_id", produtoId).eq("ativo", true),
+      (supabase as any).from("produto_cooperativas").select("cooperativa_id").eq("produto_id", produtoId),
+      (supabase as any).from("grupo_produto_itens").select("grupo_id").eq("produto_id", produtoId),
+    ]);
+    setRegionaisSelecionadas((r.data || []).map((x: any) => x.regional_id).filter(Boolean));
+    setCooperativasSelecionadas((c.data || []).map((x: any) => x.cooperativa_id).filter(Boolean));
+    setGruposSelecionados((g.data || []).map((x: any) => x.grupo_id).filter(Boolean));
+  }
+
+  const openNew = () => {
+    setEditId(null); setForm(emptyForm);
+    setRegionaisSelecionadas([]); setCooperativasSelecionadas([]); setGruposSelecionados([]);
+    setModalOpen(true);
+  };
+
+  const openEdit = async (p: Produto) => {
+    setEditId(p.id);
+    setForm({
+      nome: p.nome || "",
+      descricao: p.descricao || "",
+      codigo_sga: p.codigo_sga || "",
+      valor: Number(p.valor || p.valor_base || 0),
+      tipo: p.tipo || "TODOS",
+      classificacao: p.classificacao || "OUTROS",
+      objeto_contrato: p.objeto_contrato || "",
+      obrigatorio: p.obrigatorio || false,
+      ativo: p.ativo !== false,
+      fornecedor_id: p.fornecedor_id || "",
+    });
+    await loadVinculos(p.id);
+    setModalOpen(true);
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!form.nome) throw new Error("Nome obrigatório");
+      if (regionaisSelecionadas.length === 0) throw new Error("Selecione ao menos uma regional");
+
+      const payload = {
+        nome: form.nome,
+        descricao: form.descricao || null,
+        codigo_sga: form.codigo_sga || null,
+        valor: form.valor,
+        valor_base: form.valor,
+        tipo: form.tipo,
+        classificacao: form.classificacao,
+        objeto_contrato: form.objeto_contrato || null,
+        obrigatorio: form.obrigatorio,
+        ativo: form.ativo,
+        fornecedor_id: form.fornecedor_id || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      let produtoId = editId;
+      if (editId) {
+        const { error } = await (supabase as any).from("produtos_gia").update(payload).eq("id", editId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await (supabase as any).from("produtos_gia").insert(payload).select("id").single();
+        if (error) throw error;
+        produtoId = data.id;
+      }
+
+      // Replace strategy para vínculos
+      if (editId) {
+        await (supabase as any).from("produto_regras").delete().eq("produto_id", produtoId);
+        await (supabase as any).from("produto_cooperativas").delete().eq("produto_id", produtoId);
+        await (supabase as any).from("grupo_produto_itens").delete().eq("produto_id", produtoId);
+      }
+
+      if (regionaisSelecionadas.length > 0) {
+        await (supabase as any).from("produto_regras").insert(
+          regionaisSelecionadas.map(rid => ({ produto_id: produtoId, regional_id: rid, ativo: true }))
+        );
+      }
+      if (cooperativasSelecionadas.length > 0) {
+        await (supabase as any).from("produto_cooperativas").insert(
+          cooperativasSelecionadas.map(cid => ({ produto_id: produtoId, cooperativa_id: cid }))
+        );
+      }
+      if (gruposSelecionados.length > 0) {
+        await (supabase as any).from("grupo_produto_itens").insert(
+          gruposSelecionados.map(gid => ({ grupo_id: gid, produto_id: produtoId, obrigatorio: form.obrigatorio }))
+        );
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["gestao-produtos-gia"] });
+      toast.success(editId ? "Produto atualizado!" : "Produto cadastrado!");
+      setModalOpen(false);
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao salvar"),
+  });
+
+  const toggleAtivoMutation = useMutation({
+    mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
+      const { error } = await (supabase as any).from("produtos_gia").update({ ativo }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["gestao-produtos-gia"] });
+      toast.success("Status atualizado");
+    },
+  });
+
+  const filtered = produtos.filter((p: Produto) =>
+    !search ||
+    p.nome?.toLowerCase().includes(search.toLowerCase()) ||
+    p.classificacao?.toLowerCase().includes(search.toLowerCase()) ||
+    p.codigo_sga?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const openNew = () => { setEditId(null); setForm(emptyForm); setModalOpen(true); };
-  const openEdit = (p: Produto) => { setEditId(p.id); setForm({ ...p }); setModalOpen(true); };
-
-  const handleSave = () => {
-    if (!form.tipo || !form.descricao) { toast.error("Preencha tipo e descrição"); return; }
-    if (editId) {
-      setProdutos(prev => prev.map(p => p.id === editId ? { ...form, id: editId } : p));
-      toast.success("Produto atualizado!");
-    } else {
-      setProdutos(prev => [...prev, { ...form, id: `p${Date.now()}` }]);
-      toast.success("Produto cadastrado!");
-    }
-    setModalOpen(false);
-  };
-
-  const handleDelete = (id: string) => {
-    setProdutos(prev => prev.filter(p => p.id !== id));
-    toast.success("Produto removido!");
-  };
-
-  const tipoColor = (tipo: string) => {
-    if (["Crédito", "Desconto"].includes(tipo)) return "bg-emerald-500/10 text-emerald-600 border-success/20";
-    if (["Débito", "Taxa Administrativa", "Tarifa Bancária"].includes(tipo)) return "bg-destructive/10 text-destructive border-destructive/20";
-    if (tipo === "Rateio") return "bg-warning/8 text-warning border-warning/25";
-    return "bg-primary/10 text-blue-600 border-blue-200";
+  const toggleArr = (arr: string[], setArr: (a: string[]) => void, id: string) => {
+    setArr(arr.includes(id) ? arr.filter(x => x !== id) : [...arr, id]);
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-bold">Produto Veículo</h2>
+        <div>
+          <h2 className="text-lg font-bold">Produtos</h2>
+          <p className="text-xs text-muted-foreground">Catálogo unificado com vínculos por regional, cooperativa e plano</p>
+        </div>
         <Button onClick={openNew} className="gap-2"><Plus className="h-4 w-4" /> Novo Produto</Button>
       </div>
 
@@ -102,144 +236,170 @@ export default function ProdutoVeiculo() {
         <CardContent className="p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por descrição ou tipo" className="pl-10" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nome, classificação ou código SGA" className="pl-10" />
           </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Formato</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Custo</TableHead>
-                <TableHead>Veículo</TableHead>
-                <TableHead>Boleto</TableHead>
-                <TableHead>App</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map(p => (
-                <TableRow key={p.id}>
-                  <TableCell><Badge variant="outline" className={tipoColor(p.tipo)}>{p.tipo}</Badge></TableCell>
-                  <TableCell className="text-sm font-medium max-w-[200px] truncate">{p.descricao}</TableCell>
-                  <TableCell className="text-xs">{p.formatoCobranca === "reais" ? "R$" : "%"}</TableCell>
-                  <TableCell className="text-sm font-mono">
-                    {p.formatoCobranca === "reais" ? `R$ ${p.valor.toFixed(2)}` : `${p.valor}%`}
-                  </TableCell>
-                  <TableCell className="text-sm font-mono text-muted-foreground">R$ {p.custoInterno.toFixed(2)}</TableCell>
-                  <TableCell className="text-xs">{p.tipoVeiculoElegivel}</TableCell>
-                  <TableCell>{p.exibirBoleto ? <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 text-[10px]">Sim</Badge> : <span className="text-xs text-muted-foreground">Não</span>}</TableCell>
-                  <TableCell>{p.exibirApp ? <Badge variant="outline" className="bg-primary/10 text-blue-600 text-[10px]">Sim</Badge> : <span className="text-xs text-muted-foreground">Não</span>}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={p.ativo ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"}>
-                      {p.ativo ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(p.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                    </div>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex justify-center p-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Cód. SGA</TableHead>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Classificação</TableHead>
+                  <TableHead>Tipo Veículo</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead>Obrig.</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((p: Produto) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="text-xs font-mono text-muted-foreground">{p.codigo_sga || "—"}</TableCell>
+                    <TableCell className="text-sm font-medium max-w-[280px] truncate">{p.nome}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px]">{p.classificacao || "—"}</Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">{p.tipo || "TODOS"}</TableCell>
+                    <TableCell className="text-sm font-mono text-right">
+                      {Number(p.valor || p.valor_base || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    </TableCell>
+                    <TableCell>
+                      {p.obrigatorio ? <Badge className="bg-amber-500/10 text-amber-700 text-[10px]">Sim</Badge> : <span className="text-xs text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell>
+                      <Switch checked={p.ativo !== false} onCheckedChange={v => toggleAtivoMutation.mutate({ id: p.id, ativo: v })} />
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filtered.length === 0 && (
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum produto encontrado</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
       {/* Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editId ? "Editar Produto" : "Novo Produto"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Tipo do Produto *</Label>
-                <Select value={form.tipo} onValueChange={v => set("tipo", v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{tiposProduto.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Grupo</Label>
-                <Select value={form.grupo} onValueChange={v => set("grupo", v)}>
-                  <SelectTrigger><SelectValue placeholder="Grupo" /></SelectTrigger>
-                  <SelectContent>
-                    {["Serviços", "Coberturas", "Taxas", "Rateios", "Descontos", "Outros"].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="md:col-span-2">
-                <Label>Descrição do Produto *</Label>
-                <Input value={form.descricao} onChange={e => set("descricao", e.target.value)} placeholder="Ex: Assistência 24h Nacional" />
+                <Label>Nome do Produto *</Label>
+                <Input value={form.nome} onChange={e => set("nome", e.target.value)} placeholder="Ex: RASTREADOR" />
               </div>
+
               <div>
-                <Label>Descrição no Boleto</Label>
-                <Input value={form.descricaoBoleto} onChange={e => set("descricaoBoleto", e.target.value)} placeholder="ASSIST 24H" className="uppercase" />
+                <Label>Código SGA</Label>
+                <Input value={form.codigo_sga} onChange={e => set("codigo_sga", e.target.value)} placeholder="Ex: 54" />
               </div>
+
               <div>
-                <Label>Fornecedor</Label>
-                <Input value={form.fornecedor} onChange={e => set("fornecedor", e.target.value)} placeholder="Nome do fornecedor" />
-              </div>
-              <div>
-                <Label>Formato de Cobrança</Label>
-                <Select value={form.formatoCobranca} onValueChange={v => set("formatoCobranca", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="reais">Reais (R$)</SelectItem>
-                    <SelectItem value="porcentagem">Porcentagem (%)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Valor</Label>
+                <Label>Valor Mensal *</Label>
                 <Input type="number" step="0.01" value={form.valor} onChange={e => set("valor", Number(e.target.value))} />
               </div>
+
               <div>
-                <Label>Custo Interno</Label>
-                <Input type="number" step="0.01" value={form.custoInterno} onChange={e => set("custoInterno", Number(e.target.value))} />
-              </div>
-              <div>
-                <Label>Tipo Veículo Elegível</Label>
-                <Select value={form.tipoVeiculoElegivel} onValueChange={v => set("tipoVeiculoElegivel", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{tiposVeiculoElegivel.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Cooperativas</Label>
-                <Select value={form.cooperativas} onValueChange={v => set("cooperativas", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Label>Fornecedor</Label>
+                <Select value={form.fornecedor_id || undefined} onValueChange={v => set("fornecedor_id", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Todas">Todas</SelectItem>
-                    {["Cooperativa São Paulo", "Cooperativa Rio", "Cooperativa Minas"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    {fornecedores.map((f: any) => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label>Classificação *</Label>
+                <Select value={form.classificacao} onValueChange={v => set("classificacao", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CLASSIFICACOES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Tipo de Veículo *</Label>
+                <Select value={form.tipo} onValueChange={v => set("tipo", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {TIPOS_VEICULO.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="md:col-span-2">
+                <Label>Objeto do Contrato (descrição)</Label>
+                <Textarea value={form.objeto_contrato} onChange={e => set("objeto_contrato", e.target.value)}
+                  placeholder="Descrição usada no boleto e contrato" rows={2} />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2 border-t">
-              <div className="flex items-center gap-2">
-                <Switch checked={form.exibirBoleto} onCheckedChange={v => set("exibirBoleto", v)} />
-                <Label className="text-xs">Exibir no Boleto</Label>
+            {/* Vínculos */}
+            <div className="border-t pt-4 space-y-4">
+              <div>
+                <Label className="text-sm font-semibold">Regionais * (mín. 1)</Label>
+                <div className="mt-2 max-h-32 overflow-y-auto border rounded p-2 space-y-1">
+                  {regionais.map((r: any) => (
+                    <label key={r.id} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/30 px-1 rounded">
+                      <Checkbox checked={regionaisSelecionadas.includes(r.id)}
+                        onCheckedChange={() => toggleArr(regionaisSelecionadas, setRegionaisSelecionadas, r.id)} />
+                      <span>{r.codigo_numerico ? `${r.codigo_numerico}. ` : ""}{r.nome}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">{regionaisSelecionadas.length} selecionadas</p>
               </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={form.exibirApp} onCheckedChange={v => set("exibirApp", v)} />
-                <Label className="text-xs">Exibir no App</Label>
+
+              <div>
+                <Label className="text-sm font-semibold">Cooperativas (opcional)</Label>
+                <div className="mt-2 max-h-32 overflow-y-auto border rounded p-2 space-y-1">
+                  {cooperativas.map((c: any) => (
+                    <label key={c.id} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/30 px-1 rounded">
+                      <Checkbox checked={cooperativasSelecionadas.includes(c.id)}
+                        onCheckedChange={() => toggleArr(cooperativasSelecionadas, setCooperativasSelecionadas, c.id)} />
+                      <span>{c.nome}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">{cooperativasSelecionadas.length} selecionadas</p>
               </div>
+
+              <div>
+                <Label className="text-sm font-semibold">Grupos / Planos (opcional)</Label>
+                <div className="mt-2 max-h-32 overflow-y-auto border rounded p-2 space-y-1">
+                  {grupos.map((g: any) => (
+                    <label key={g.id} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/30 px-1 rounded">
+                      <Checkbox checked={gruposSelecionados.includes(g.id)}
+                        onCheckedChange={() => toggleArr(gruposSelecionados, setGruposSelecionados, g.id)} />
+                      <span>{g.nome}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">{gruposSelecionados.length} selecionados</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pt-2 border-t">
               <div className="flex items-center gap-2">
-                <Switch checked={form.permiteDesconto} onCheckedChange={v => set("permiteDesconto", v)} />
-                <Label className="text-xs">Permite Desconto</Label>
+                <Switch checked={form.obrigatorio} onCheckedChange={v => set("obrigatorio", v)} />
+                <Label className="text-xs">Obrigatório (auto-vincula ao plano)</Label>
               </div>
               <div className="flex items-center gap-2">
                 <Switch checked={form.ativo} onCheckedChange={v => set("ativo", v)} />
@@ -249,7 +409,10 @@ export default function ProdutoVeiculo() {
 
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave}>{editId ? "Salvar Alterações" : "Cadastrar Produto"}</Button>
+              <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+                {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {editId ? "Salvar Alterações" : "Cadastrar Produto"}
+              </Button>
             </div>
           </div>
         </DialogContent>

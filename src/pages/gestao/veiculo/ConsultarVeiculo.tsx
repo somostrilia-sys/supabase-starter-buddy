@@ -419,6 +419,7 @@ export default function ConsultarVeiculo() {
             <TabsTrigger value="condutores" className="text-xs gap-1"><Users className="h-3 w-3" />Condutores</TabsTrigger>
             <TabsTrigger value="financeiro" className="text-xs gap-1"><DollarSign className="h-3 w-3" />Financeiro</TabsTrigger>
             <TabsTrigger value="agregados" className="text-xs gap-1"><Package className="h-3 w-3" />Agregados</TabsTrigger>
+            <TabsTrigger value="produtos" className="text-xs gap-1"><Package className="h-3 w-3" />Produtos</TabsTrigger>
             <TabsTrigger value="vistorias" className="text-xs gap-1"><ClipboardCheck className="h-3 w-3" />Vistorias</TabsTrigger>
             <TabsTrigger value="documentos" className="text-xs gap-1"><FileText className="h-3 w-3" />Documentos</TabsTrigger>
             <TabsTrigger value="observacoes" className="text-xs gap-1"><FileText className="h-3 w-3" />Obs</TabsTrigger>
@@ -729,28 +730,13 @@ export default function ConsultarVeiculo() {
         </TabsContent>
 
         {/* TAB 5 - VISTORIAS */}
+        {/* TAB - PRODUTOS DO VEÍCULO */}
+        <TabsContent value="produtos" className="mt-4">
+          <VeiculoProdutosTab veiculoId={sel.id} />
+        </TabsContent>
+
         <TabsContent value="vistorias" className="mt-4">
-          <Card><CardContent className="p-4">
-            <div className="space-y-4">
-              {sel.vistorias.map((v, i) => (
-                <div key={i} className="flex gap-4 items-start">
-                  <div className="flex flex-col items-center">
-                    <div className={`w-3 h-3 rounded-full shrink-0 mt-1 ${v.resultado === "Aprovada" ? "bg-emerald-500" : v.resultado === "Pendente" ? "bg-warning/80" : "bg-destructive"}`} />
-                    {i < sel.vistorias.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
-                  </div>
-                  <div className="pb-4 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <StatusBadge status={v.resultado} />
-                      <span className="text-xs text-muted-foreground">{new Date(v.data).toLocaleDateString("pt-BR")}</span>
-                    </div>
-                    <p className="text-sm"><span className="font-medium">Tipo:</span> {v.tipo}</p>
-                    <p className="text-sm text-muted-foreground">{v.obs}</p>
-                    <p className="text-xs text-muted-foreground mt-1">por {v.usuario}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent></Card>
+          <VistoriaTabReal placa={sel.placa} veiculoId={sel.id} />
         </TabsContent>
 
         {/* TAB 6 - DOCUMENTOS */}
@@ -872,6 +858,188 @@ export default function ConsultarVeiculo() {
           </CardContent></Card>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// VeiculoProdutosTab — lista produtos vinculados ao veículo
+// ═══════════════════════════════════════════════════════════
+function VeiculoProdutosTab({ veiculoId }: { veiculoId: string }) {
+  const { data: produtos = [], isLoading } = useQuery({
+    queryKey: ["veiculo-produtos", veiculoId],
+    enabled: !!veiculoId,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("veiculo_produtos")
+        .select(`
+          id, ativo, obrigatorio, tipo, valor_contratado, data_inicio, data_fim,
+          produtos_gia(id, nome, valor, valor_base, classificacao, tipo)
+        `)
+        .eq("veiculo_id", veiculoId)
+        .eq("ativo", true);
+      return (data || []).filter((r: any) => r.produtos_gia);
+    },
+  });
+
+  const obrigatorios = produtos.filter((p: any) => p.obrigatorio);
+  const opcionais = produtos.filter((p: any) => !p.obrigatorio);
+  const total = produtos.reduce((s: number, p: any) => s + Number(p.valor_contratado || p.produtos_gia?.valor || 0), 0);
+
+  const fmt = (v: number) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  if (isLoading) {
+    return <Card><CardContent className="p-12 flex justify-center"><div className="animate-pulse text-sm text-muted-foreground">Carregando produtos...</div></CardContent></Card>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="p-4 flex justify-between items-center">
+          <div>
+            <p className="text-xs text-muted-foreground">Total de produtos ativos</p>
+            <p className="text-lg font-bold">{produtos.length} <span className="text-xs font-normal text-muted-foreground">({obrigatorios.length} obrigatórios · {opcionais.length} opcionais)</span></p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Total mensal</p>
+            <p className="text-lg font-bold font-mono text-primary">{fmt(total)}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {obrigatorios.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2">🔒 Produtos Obrigatórios ({obrigatorios.length})</CardTitle></CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Classificação</TableHead><TableHead>Desde</TableHead><TableHead className="text-right">Valor</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {obrigatorios.map((p: any) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="text-sm font-medium">{p.produtos_gia?.nome}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{p.produtos_gia?.classificacao || "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{p.data_inicio ? new Date(p.data_inicio).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                    <TableCell className="text-right font-mono text-sm">{fmt(Number(p.valor_contratado || p.produtos_gia?.valor || 0))}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {opcionais.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2">+ Produtos Opcionais ({opcionais.length})</CardTitle></CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Classificação</TableHead><TableHead>Desde</TableHead><TableHead className="text-right">Valor</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {opcionais.map((p: any) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="text-sm font-medium">{p.produtos_gia?.nome}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{p.produtos_gia?.classificacao || "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{p.data_inicio ? new Date(p.data_inicio).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                    <TableCell className="text-right font-mono text-sm">{fmt(Number(p.valor_contratado || p.produtos_gia?.valor || 0))}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {produtos.length === 0 && (
+        <Card><CardContent className="p-12 text-center text-muted-foreground text-sm">
+          Nenhum produto vinculado a este veículo.
+        </CardContent></Card>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// VistoriaTabReal — vistorias do veículo a partir de negociacoes/vistoria_fotos
+// ═══════════════════════════════════════════════════════════
+function VistoriaTabReal({ placa, veiculoId }: { placa?: string; veiculoId?: string }) {
+  const { data: vistorias = [], isLoading } = useQuery({
+    queryKey: ["veiculo-vistorias", placa, veiculoId],
+    enabled: !!placa || !!veiculoId,
+    queryFn: async () => {
+      // Busca negociações por placa do veículo (vistoria de venda)
+      if (!placa) return [];
+      const { data: negs } = await (supabase as any)
+        .from("negociacoes")
+        .select("id, lead_nome, veiculo_modelo, veiculo_placa, created_at, stage, vistoria_aprovada, vistoria_observacoes")
+        .ilike("veiculo_placa", placa.toUpperCase());
+
+      const resultado: any[] = [];
+      for (const n of (negs || [])) {
+        const { data: fotos } = await (supabase as any)
+          .from("vistoria_fotos")
+          .select("id, tipo, url, created_at, status")
+          .eq("negociacao_id", n.id);
+        resultado.push({
+          id: n.id,
+          data: n.created_at,
+          tipo: "Vistoria de Venda",
+          cliente: n.lead_nome,
+          veiculo: n.veiculo_modelo,
+          aprovada: n.vistoria_aprovada,
+          observacoes: n.vistoria_observacoes,
+          fotos: fotos || [],
+          origem: "negociacao",
+        });
+      }
+      return resultado.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+    },
+  });
+
+  if (isLoading) {
+    return <Card><CardContent className="p-12 text-center text-sm text-muted-foreground">Carregando vistorias...</CardContent></Card>;
+  }
+
+  if (vistorias.length === 0) {
+    return (
+      <Card><CardContent className="p-12 text-center">
+        <ClipboardCheck className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+        <p className="text-sm text-muted-foreground">Nenhuma vistoria encontrada para este veículo.</p>
+        <p className="text-xs text-muted-foreground mt-1">Vistorias são criadas no módulo de Vendas durante o processo de cotação.</p>
+      </CardContent></Card>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {vistorias.map((v: any) => (
+        <Card key={v.id}>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge className={v.aprovada ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-700"}>
+                    {v.aprovada ? "Aprovada" : "Pendente/Em Análise"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">{new Date(v.data).toLocaleDateString("pt-BR")}</span>
+                </div>
+                <p className="text-sm font-medium">{v.tipo}</p>
+                <p className="text-xs text-muted-foreground">Cliente: {v.cliente}</p>
+                {v.observacoes && <p className="text-xs mt-1 italic">{v.observacoes}</p>}
+              </div>
+              <Badge variant="outline" className="text-[10px]">{v.fotos.length} fotos</Badge>
+            </div>
+            {v.fotos.length > 0 && (
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5 mt-3">
+                {v.fotos.slice(0, 16).map((f: any) => (
+                  <a key={f.id} href={f.url} target="_blank" rel="noreferrer" className="aspect-square rounded overflow-hidden border bg-muted hover:ring-2 hover:ring-primary">
+                    <img src={f.url} alt={f.tipo} loading="lazy" className="w-full h-full object-cover" />
+                  </a>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }

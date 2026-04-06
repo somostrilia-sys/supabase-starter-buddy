@@ -27,6 +27,10 @@ interface FaixaFipe {
   fipe_final: number;
   descricao: string | null;
   taxa_adm: number | null;
+  valor_cota: number | null;
+  valor_rateio: number | null;
+  tipo_veiculo: string | null;
+  codigo_sga: string | null;
   ativo: boolean;
   created_at: string;
   categoria_nome?: string;
@@ -546,26 +550,9 @@ function EstruturaCotas() {
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
-      <Dialog open={!!showEdit} onOpenChange={() => setShowEdit(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle className="text-primary">Editar Cota</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label className="text-xs">Valor Inicial (R$)</Label><Input defaultValue={showEdit?.fipe_inicial} /></div>
-            <div><Label className="text-xs">Valor Final (R$)</Label><Input defaultValue={showEdit?.fipe_final} /></div>
-            <div><Label className="text-xs">Categoria</Label>
-              <Select defaultValue={showEdit?.categoria_nome}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{categoriaNomes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
-            </div>
-            <div><Label className="text-xs">Fator Multiplicador</Label><Input defaultValue={showEdit?.fator} /></div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEdit(null)} className="border-border">Cancelar</Button>
-            <Button className="bg-primary hover:bg-primary/90 text-white gap-2" onClick={() => { toast.success("Cota atualizada"); setShowEdit(null); }}>
-              <Save className="h-4 w-4" />Salvar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Edit Dialog — Cotas editáveis com persistência real */}
+      <EditCotaDialog showEdit={showEdit} setShowEdit={setShowEdit} onSaved={() => window.location.reload()} />
+
 
       {/* Rateio Manual Dialog */}
       <Dialog open={showRateioManual} onOpenChange={setShowRateioManual}>
@@ -1257,5 +1244,95 @@ function CargaInicialGestao() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// EditCotaDialog — edição persistente de faixas FIPE
+// ═══════════════════════════════════════════════════════════
+function EditCotaDialog({ showEdit, setShowEdit, onSaved }: { showEdit: any; setShowEdit: (v: any) => void; onSaved: () => void }) {
+  const [form, setForm] = useState<any>({});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (showEdit) {
+      setForm({
+        fipe_inicial: showEdit.fipe_inicial ?? 0,
+        fipe_final: showEdit.fipe_final ?? 0,
+        fator: showEdit.fator ?? 1,
+        taxa_adm: showEdit.taxa_adm ?? 0,
+        valor_cota: showEdit.valor_cota ?? 0,
+        valor_rateio: showEdit.valor_rateio ?? 0,
+        tipo_veiculo: showEdit.tipo_veiculo ?? "",
+        descricao: showEdit.descricao ?? "",
+      });
+    }
+  }, [showEdit]);
+
+  const save = async () => {
+    if (!showEdit) return;
+    setSaving(true);
+    try {
+      const { error } = await (supabase as any).from("faixas_fipe").update({
+        fipe_inicial: Number(form.fipe_inicial),
+        fipe_final: Number(form.fipe_final),
+        fator: Number(form.fator),
+        taxa_adm: Number(form.taxa_adm),
+        valor_cota: Number(form.valor_cota),
+        valor_rateio: Number(form.valor_rateio),
+        tipo_veiculo: form.tipo_veiculo || null,
+        descricao: form.descricao || null,
+      }).eq("id", showEdit.id);
+      if (error) throw error;
+      toast.success("Cota atualizada");
+      setShowEdit(null);
+      onSaved();
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao salvar");
+    }
+    setSaving(false);
+  };
+
+  return (
+    <Dialog open={!!showEdit} onOpenChange={() => setShowEdit(null)}>
+      <DialogContent>
+        <DialogHeader><DialogTitle className="text-primary">Editar Cota FIP</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label className="text-xs">Fipe Inicial (R$) *</Label>
+            <Input type="number" step="0.01" value={form.fipe_inicial} onChange={e => setForm((p: any) => ({ ...p, fipe_inicial: e.target.value }))} /></div>
+          <div><Label className="text-xs">Fipe Final (R$) *</Label>
+            <Input type="number" step="0.01" value={form.fipe_final} onChange={e => setForm((p: any) => ({ ...p, fipe_final: e.target.value }))} /></div>
+          <div><Label className="text-xs">Fator Multiplicador</Label>
+            <Input type="number" step="0.01" value={form.fator} onChange={e => setForm((p: any) => ({ ...p, fator: e.target.value }))} /></div>
+          <div><Label className="text-xs">Taxa Administrativa (R$)</Label>
+            <Input type="number" step="0.01" value={form.taxa_adm} onChange={e => setForm((p: any) => ({ ...p, taxa_adm: e.target.value }))} /></div>
+          <div><Label className="text-xs">Valor Cota (R$)</Label>
+            <Input type="number" step="0.01" value={form.valor_cota} onChange={e => setForm((p: any) => ({ ...p, valor_cota: e.target.value }))} /></div>
+          <div><Label className="text-xs">Valor Rateio (R$)</Label>
+            <Input type="number" step="0.01" value={form.valor_rateio} onChange={e => setForm((p: any) => ({ ...p, valor_rateio: e.target.value }))} /></div>
+          <div className="col-span-2"><Label className="text-xs">Tipo Veículo</Label>
+            <Select value={form.tipo_veiculo} onValueChange={v => setForm((p: any) => ({ ...p, tipo_veiculo: v }))}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="AUTOMOVEL">Automóvel</SelectItem>
+                <SelectItem value="UTILITARIOS">Utilitários</SelectItem>
+                <SelectItem value="MOTOCICLETA">Motocicleta</SelectItem>
+                <SelectItem value="PESADOS">Pesados</SelectItem>
+                <SelectItem value="VANS E PESADOS P.P">Vans e Pesados P.P</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-2"><Label className="text-xs">Descrição</Label>
+            <Input value={form.descricao} onChange={e => setForm((p: any) => ({ ...p, descricao: e.target.value }))} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowEdit(null)}>Cancelar</Button>
+          <Button onClick={save} disabled={saving} className="gap-2">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -566,7 +566,8 @@ export default function CotacaoTab({ deal }: Props) {
   const handleBaixarPdf = async () => {
     if (!planoSelecionado) { toast.error("Selecione um plano para baixar o PDF"); return; }
     const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
-    const mensal = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
+    const mensalPlano = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
+    const mensal = mensalPlano + totalOpcionais;
     await gerarPdfCotacao({
       numeroCotacao: `${Date.now().toString().slice(-8)}`,
       data: new Date().toLocaleDateString("pt-BR"),
@@ -598,6 +599,10 @@ export default function CotacaoTab({ deal }: Props) {
   };
 
   const handleEnviar = async (tipo: string) => {
+    if (tipo !== "PDF" && !(deal as any).email) {
+      toast.error("Email obrigatório para envio da cotação. Preencha na aba Associado.");
+      return;
+    }
     if (tipo === "PDF") {
       handleBaixarPdf();
       // Auto-transição mesmo ao baixar PDF
@@ -948,15 +953,20 @@ export default function CotacaoTab({ deal }: Props) {
               const proxVenc = new Date(anoAtual, diaVenc > dt ? mesAtual : mesAtual + 1, diaVenc);
               const diasAteVenc = Math.max(1, Math.round((proxVenc.getTime() - hoje.getTime()) / 86400000));
               const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
-              const mensalidade = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
+              const mensalidadePlano = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
+              const mensalidade = mensalidadePlano + totalOpcionais;
               const proporcional = Math.round((mensalidade / 30) * diasAteVenc * 100) / 100;
 
+              const automatico = diasAteVenc > 40;
               return (
-                <div className="p-2 rounded border border-amber-200 bg-amber-50 space-y-0.5">
-                  <p className="text-[10px] font-semibold text-amber-800">Vencimento fora da faixa padrão (dia {diaPadrao})</p>
+                <div className={`p-2 rounded border space-y-0.5 ${automatico ? "border-blue-200 bg-blue-50" : "border-amber-200 bg-amber-50"}`}>
+                  <p className={`text-[10px] font-semibold ${automatico ? "text-blue-800" : "text-amber-800"}`}>
+                    {automatico ? `Proporcional obrigatório (${diasAteVenc} dias > 40)` : `Vencimento fora da faixa padrão (dia ${diaPadrao})`}
+                  </p>
                   <p className="text-[10px] text-blue-800">1ª mensalidade proporcional: {formatCurrency(proporcional)} ({diasAteVenc} dias) — venc. {proxVenc.toLocaleDateString("pt-BR")}</p>
                   <p className="text-[10px] text-blue-700">Meses seguintes: {formatCurrency(mensalidade)}</p>
-                  <p className="text-[10px] text-amber-600">Requer exceção — análise IA ou diretor</p>
+                  {!automatico && <p className="text-[10px] text-amber-600">Requer análise IA ou diretor</p>}
+                  {automatico && <p className="text-[10px] text-green-700 font-medium">Aprovado automaticamente — sem necessidade de liberação</p>}
                 </div>
               );
             })()}
@@ -1154,16 +1164,17 @@ export default function CotacaoTab({ deal }: Props) {
           {(() => {
             const pl = planosConfig.find(p => p.nome === planoSelecionado);
             const mensalVal = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : Math.round(valorFipe * (pl?.percentual || 0));
+            const mensalidadeTotal = mensalVal + totalOpcionais;
             const adesaoVal = (pl as any)?.adesao || 400;
             const instVal = valorInstalacaoEdit ? Number(valorInstalacaoEdit) : ((pl as any)?.instalacao || 100);
             return (
               <>
-                <span className="text-sm font-semibold">{formatCurrency(mensalVal)}/mês</span>
+                <span className="text-sm font-semibold">{formatCurrency(mensalidadeTotal)}/mês</span>
+                {totalOpcionais > 0 && <span className="text-[10px] text-muted-foreground">(plano {formatCurrency(mensalVal)} + opcionais {formatCurrency(totalOpcionais)})</span>}
                 <span className="text-xs text-muted-foreground">|</span>
                 <span className="text-sm text-muted-foreground">Adesão: <strong>{formatCurrency(adesaoVal)}</strong></span>
                 <span className="text-xs text-muted-foreground">|</span>
                 <span className="text-sm text-muted-foreground">Instalação: <strong>{formatCurrency(instVal)}</strong></span>
-                {totalOpcionais > 0 && <><span className="text-xs text-muted-foreground">|</span><span className="text-sm text-emerald-600">+Opcionais: <strong>{formatCurrency(totalOpcionais)}</strong></span></>}
               </>
             );
           })()}
@@ -1179,9 +1190,9 @@ export default function CotacaoTab({ deal }: Props) {
           )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label className="text-xs font-semibold">Desconto Mensalidade (valor final)</Label>
-              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60" : ""}`} type="number" placeholder="Deixe vazio = sem desconto" value={descontoMensal} disabled={descontoBloqueado} onChange={e => { setDescontoMensal(e.target.value); setDescontoIaResult(null); }} />
-              <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
+              <Label className="text-xs font-semibold">Desconto Mensalidade (valor final c/ opcionais)</Label>
+              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60" : ""}`} type="number" placeholder={totalOpcionais > 0 ? `Sem desconto = ${(() => { const pl = planosConfig.find(p => p.nome === planoSelecionado); const mv = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : Math.round(valorFipe * (pl?.percentual || 0)); return formatCurrency(mv + totalOpcionais); })()}` : "Deixe vazio = sem desconto"} value={descontoMensal} disabled={descontoBloqueado} onChange={e => { setDescontoMensal(e.target.value); setDescontoIaResult(null); }} />
+              <p className="text-[10px] text-muted-foreground">Valor final já inclui plano + opcionais. Se preencher, o PDF mostrará desconto.</p>
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Desconto Adesão (valor final)</Label>
@@ -1193,7 +1204,8 @@ export default function CotacaoTab({ deal }: Props) {
           {/* IA Desconto — análise automática para descontos > 5% */}
           {(() => {
             const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
-            const mensalOriginal = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
+            const mensalPlanoOnly = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
+            const mensalOriginal = mensalPlanoOnly + totalOpcionais;
             const adesaoOriginal = precoPlano ? Number(precoPlano.adesao) : 400;
             const descMensalPct = descontoMensal && mensalOriginal > 0 ? ((mensalOriginal - Number(descontoMensal)) / mensalOriginal) * 100 : 0;
             const descAdesaoPct = descontoAdesao && adesaoOriginal > 0 ? ((adesaoOriginal - Number(descontoAdesao)) / adesaoOriginal) * 100 : 0;
@@ -1428,7 +1440,8 @@ export default function CotacaoTab({ deal }: Props) {
         {/* 1.3 + 1.6 — Análise IA unificada + Pedir Liberação na cotação */}
         {(() => {
           const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
-          const mensalOriginal = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
+          const mensalPlanoOnly2 = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
+          const mensalOriginal = mensalPlanoOnly2 + totalOpcionais;
           const adesaoOriginal = precoPlano ? Number(precoPlano.adesao) : 400;
           const descMensalPct = descontoMensal && mensalOriginal > 0 ? ((mensalOriginal - Number(descontoMensal)) / mensalOriginal) * 100 : 0;
           const descAdesaoPct = descontoAdesao && adesaoOriginal > 0 ? ((adesaoOriginal - Number(descontoAdesao)) / adesaoOriginal) * 100 : 0;
@@ -1436,8 +1449,14 @@ export default function CotacaoTab({ deal }: Props) {
           const dt = new Date().getDate();
           const diaPadrao = (dt >= 26 || dt <= 5) ? 1 : (dt >= 6 && dt <= 15) ? 10 : 20;
           const diaVenc = parseInt(form.diaVencimento) || diaPadrao;
+          const hoje2 = new Date();
+          const mesAt2 = hoje2.getMonth();
+          const anoAt2 = hoje2.getFullYear();
+          const proxVenc2 = new Date(anoAt2, diaVenc > dt ? mesAt2 : mesAt2 + 1, diaVenc);
+          const diasAteVenc2 = Math.max(1, Math.round((proxVenc2.getTime() - hoje2.getTime()) / 86400000));
           const vencimentoForaFaixa = diaVenc !== diaPadrao;
-          const precisaAnalise = maiorDesconto > 5 || vencimentoForaFaixa;
+          const vencimentoPrecisaIA = vencimentoForaFaixa && diasAteVenc2 <= 40;
+          const precisaAnalise = maiorDesconto > 5 || vencimentoPrecisaIA;
           const mostrarLiberacao = precisaAnalise || cotacaoEnviada;
 
           if (!mostrarLiberacao) return null;
@@ -1450,7 +1469,7 @@ export default function CotacaoTab({ deal }: Props) {
               </div>
               <div className="flex flex-wrap gap-1">
                 {maiorDesconto > 5 && <Badge className="rounded-none bg-amber-100 text-amber-700 text-[10px]">Desconto {maiorDesconto.toFixed(1)}%</Badge>}
-                {vencimentoForaFaixa && <Badge className="rounded-none bg-blue-100 text-blue-700 text-[10px]">Vencimento dia {diaVenc} (padrão: {diaPadrao})</Badge>}
+                {vencimentoPrecisaIA && <Badge className="rounded-none bg-blue-100 text-blue-700 text-[10px]">Vencimento dia {diaVenc} (padrão: {diaPadrao})</Badge>}
                 {cotacaoEnviada && !precisaAnalise && <Badge className="rounded-none bg-gray-100 text-gray-700 text-[10px]">Cotação já enviada — alterar desconto</Badge>}
               </div>
               <PedirLiberacaoButton
@@ -1484,14 +1503,20 @@ export default function CotacaoTab({ deal }: Props) {
           )}
         </fieldset>
 
+        {!(deal as any).email && (
+          <div className="flex items-center gap-2 p-2 rounded border border-red-300 bg-red-50">
+            <AlertTriangle className="h-4 w-4 text-red-600 shrink-0" />
+            <p className="text-xs text-red-700 font-medium">Email obrigatório para envio da cotação. Preencha na aba Associado.</p>
+          </div>
+        )}
         <div className="flex flex-wrap gap-2 pt-2">
           <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => handleEnviar("PDF")}>
             <Mail className="h-3.5 w-3.5 mr-1" />Enviar PDF
           </Button>
-          <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => handleEnviar("Link")}>
+          <Button size="sm" variant="outline" className="rounded-none border border-gray-300" disabled={!(deal as any).email} onClick={() => handleEnviar("Link")}>
             <Link2 className="h-3.5 w-3.5 mr-1" />Enviar Link
           </Button>
-          <Button size="sm" className="rounded-none bg-success hover:bg-success/90 text-white" onClick={() => handleEnviar("WhatsApp")}>
+          <Button size="sm" className="rounded-none bg-success hover:bg-success/90 text-white" disabled={!(deal as any).email} onClick={() => handleEnviar("WhatsApp")}>
             <MessageSquare className="h-3.5 w-3.5 mr-1" />Enviar WhatsApp
           </Button>
           <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white" onClick={() => toast.success("Link de pagamento gerado!")}>

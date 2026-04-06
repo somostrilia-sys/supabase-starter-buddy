@@ -33,6 +33,7 @@ const LABELS_CNH: Record<string, string> = {
   uf: "UF",
   filiacao_pai: "Pai",
   filiacao_mae: "Mãe",
+  sexo: "Sexo",
 };
 
 const LABELS_CRLV: Record<string, string> = {

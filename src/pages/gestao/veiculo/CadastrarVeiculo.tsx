@@ -286,6 +286,33 @@ export default function CadastrarVeiculo() {
   const produtosOpcionais = (produtosGia || []).filter(p => p.tipo === 'opcional');
   const toggleGiaProduto = (id: string) => setGiaSelecionados(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
 
+  // Resolução automática de cota FIP (Fase 4)
+  const [cotaResolvida, setCotaResolvida] = useState<any>(null);
+  const [resolvendoCota, setResolvendoCota] = useState(false);
+  useEffect(() => {
+    const fipe = form.valorFipe ? parseFloat(form.valorFipe.replace(/\./g, "").replace(",", ".")) : 0;
+    if (!fipe || !categoriaGiaNome) { setCotaResolvida(null); return; }
+    const t = setTimeout(async () => {
+      setResolvendoCota(true);
+      try {
+        const tipoMap: Record<string, string> = {
+          automovel: "AUTOMOVEL", motocicleta: "MOTOCICLETA", pesado: "PESADOS",
+        };
+        const { data, error } = await (supabase as any).functions.invoke("gia-cotas-resolver", {
+          body: {
+            valor_fipe: fipe,
+            tipo_veiculo: tipoMap[categoriaGiaNome] || "AUTOMOVEL",
+            regional_id: null,
+          },
+        });
+        if (!error && data?.sucesso) setCotaResolvida(data);
+        else setCotaResolvida(null);
+      } catch { setCotaResolvida(null); }
+      setResolvendoCota(false);
+    }, 500);
+    return () => clearTimeout(t);
+  }, [form.valorFipe, categoriaGiaNome]);
+
   // Debounced search
   useEffect(() => {
     if (searchQuery.length < 2) {
@@ -710,7 +737,19 @@ export default function CadastrarVeiculo() {
                 <Button variant="outline" size="sm" onClick={() => setShowFipeModal(true)}>🔍 FIPE</Button></div>
               </div>
               <SelectWithAdd label="Depreciação" value={form.depreciacao} onValueChange={v => set("depreciacao", v)} options={["Normal","Acelerada","Sem Depreciação"]} />
-              <div><Label className="text-xs">Valor FIPE (R$) *</Label><Input value={form.valorFipe} onChange={e => set("valorFipe", e.target.value)} placeholder="0,00" /></div>
+              <div>
+                <Label className="text-xs">Valor FIPE (R$) *</Label>
+                <Input value={form.valorFipe} onChange={e => set("valorFipe", e.target.value)} placeholder="0,00" />
+                {resolvendoCota && <p className="text-[10px] text-muted-foreground mt-1">Calculando cota...</p>}
+                {cotaResolvida && (
+                  <div className="mt-1.5 p-2 bg-primary/5 border border-primary/20 rounded text-[10px] space-y-0.5">
+                    <div className="flex justify-between"><span className="font-semibold">Cota FIP aplicada:</span><span>{cotaResolvida.faixa || "—"}</span></div>
+                    <div className="flex justify-between"><span>Taxa Admin:</span><span className="font-mono">R$ {Number(cotaResolvida.taxa_admin || 0).toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>Valor Cota:</span><span className="font-mono">R$ {Number(cotaResolvida.valor_cota || 0).toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>Rateio:</span><span className="font-mono">R$ {Number(cotaResolvida.valor_rateio || 0).toFixed(2)}</span></div>
+                  </div>
+                )}
+              </div>
               <div><Label className="text-xs">Valor Protegido (R$)</Label><Input value={form.valorProtegido} onChange={e => set("valorProtegido", e.target.value)} placeholder="0,00" /></div>
               <div><Label className="text-xs">% FIPE Protegido</Label><Input value={form.pctFipe} onChange={e => set("pctFipe", e.target.value)} placeholder="100" /></div>
               <SelectWithAdd label="Cota" value={form.cota} onValueChange={v => set("cota", v)} options={["Cota 80","Cota 100","Cota 120","Cota 150"]} />
@@ -839,9 +878,14 @@ export default function CadastrarVeiculo() {
                 <Select value={form.tipoEnvioBoleto} onValueChange={v => set("tipoEnvioBoleto", v)}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>{["Email","Correio","WhatsApp","SMS"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
               </div>
-              <div><Label className="text-xs">Vencimento</Label>
-                <Select value={form.vencimento} onValueChange={v => set("vencimento", v)}><SelectTrigger><SelectValue placeholder="Dia" /></SelectTrigger>
-                <SelectContent>{Array.from({length:31},(_,i)=>i+1).map(d => <SelectItem key={d} value={String(d)}>Dia {d}</SelectItem>)}</SelectContent></Select>
+              <div><Label className="text-xs">Dia de Vencimento *</Label>
+                <Select value={form.vencimento} onValueChange={v => set("vencimento", v)}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Dia 1</SelectItem>
+                  <SelectItem value="10">Dia 10</SelectItem>
+                  <SelectItem value="20">Dia 20</SelectItem>
+                </SelectContent></Select>
+                <p className="text-[10px] text-muted-foreground mt-1">Apenas dias 1, 10 ou 20 são permitidos</p>
               </div>
             </div>
           </AccordionContent>
