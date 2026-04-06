@@ -30,7 +30,7 @@ import { toast } from "sonner";
 import { usePermission, useLeadScope } from "@/hooks/usePermission";
 import ConcretizarVendaModal from "./ConcretizarVendaModal";
 import { useNegociacoes } from "@/hooks/useNegociacoes";
-import { useUsuario } from "@/hooks/useUsuario";
+
 
 function daysStalled(updated: string) {
   return Math.floor((Date.now() - new Date(updated).getTime()) / 86400000);
@@ -115,15 +115,8 @@ export default function Pipeline() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
 
-  // Hook de negociações (Supabase real) com scope RBAC
-  const { usuario: usr, isConsultor: isConsultorScope, isGestor: isGestorScope, canViewAllData } = useUsuario();
-  const negScope = useMemo(() => {
-    if (canViewAllData) return undefined;
-    if (isGestorScope && usr?.cooperativa) return { cooperativas: usr.cooperativa.split(",").map((s: string) => s.trim()).filter(Boolean) };
-    if (isConsultorScope && usr?.nome) return { consultor: usr.nome };
-    return undefined;
-  }, [canViewAllData, isConsultorScope, isGestorScope, usr?.nome, usr?.cooperativa]);
-  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "90d", negScope);
+  // Hook de negociações (Supabase real)
+  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "30d");
 
   // Dados reais de cooperativas com regional vinculada
   const { data: cooperativasDb } = useQuery({
@@ -324,12 +317,12 @@ export default function Pipeline() {
   // --- Cash sound: SÓ toca quando IA aprova e move para concluído ---
   const cashAudioRef = useRef<HTMLAudioElement | null>(null);
   const prevDealsRef = useRef<PipelineDeal[]>([]);
-  const concluídosProcessados = useRef<Set<string>>(() => {
+  const concluídosProcessados = useRef<Set<string>>((() => {
     try {
       const stored = sessionStorage.getItem("gia_concluidos");
-      return stored ? new Set(JSON.parse(stored)) : new Set();
-    } catch { return new Set(); }
-  });
+      return stored ? new Set<string>(JSON.parse(stored)) : new Set<string>();
+    } catch { return new Set<string>(); }
+  })());
   const initialLoadDone = useRef(false);
   const marcarConcluido = (dealId: string) => {
     concluídosProcessados.current.add(dealId);

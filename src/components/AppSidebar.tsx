@@ -135,7 +135,8 @@ export function AppSidebar() {
   const { signOut, user } = useAuth();
   const location = useLocation();
   const { brand } = useBrand();
-  const { canViewTags, canImportLeads, canViewMinhaEmpresa } = useUsuario();
+  const { canViewTags, canImportLeads, canViewMinhaEmpresa, isConsultor, isGestor } = useUsuario();
+  const canViewGestao = !isConsultor && !isGestor; // Apenas admin/diretor/cadastro
   const vendasItems = getVendasItems({ canViewTags, canImportLeads, canViewMinhaEmpresa });
 
   return (
@@ -173,23 +174,31 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
 
-        <div className="border-t border-sidebar-border/50 mx-3 my-2" />
-        <ModuleGroup
-          label="Gestão"
-          icon={Shield}
-          items={gestaoItems}
-          collapsed={collapsed}
-          pathname={location.pathname}
-        />
+        {canViewGestao && (
+          <>
+            <div className="border-t border-sidebar-border/50 mx-3 my-2" />
+            <ModuleGroup
+              label="Gestão"
+              icon={Shield}
+              items={gestaoItems}
+              collapsed={collapsed}
+              pathname={location.pathname}
+            />
+          </>
+        )}
 
-        <div className="border-t border-sidebar-border/50 mx-3 my-2" />
-        <ModuleGroup
-          label="Financeiro"
-          icon={DollarSign}
-          items={financeiroItems}
-          collapsed={collapsed}
-          pathname={location.pathname}
-        />
+        {canViewGestao && (
+          <>
+            <div className="border-t border-sidebar-border/50 mx-3 my-2" />
+            <ModuleGroup
+              label="Financeiro"
+              icon={DollarSign}
+              items={financeiroItems}
+              collapsed={collapsed}
+              pathname={location.pathname}
+            />
+          </>
+        )}
 
         <div className="border-t border-sidebar-border/50 mx-3 my-2" />
         <ModuleGroup

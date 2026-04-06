@@ -67,7 +67,7 @@ export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro 
       if (dataLimite) p0.set("created_at", `gte.${dataLimite}`);
       if (companyId) p0.set("company_id", `eq.${companyId}`);
       if (scope?.consultor) p0.set("consultor", `eq.${scope.consultor}`);
-      if (scope?.cooperativas && scope.cooperativas.length > 0) p0.set("cooperativa", `in.(${scope.cooperativas.join(",")})`);
+      if (scope?.cooperativas && scope.cooperativas.length > 0) p0.set("cooperativa", `in.(${scope.cooperativas.map(c => `"${c}"`).join(",")})`);
       const r0 = await fetch(`${url}/rest/v1/negociacoes?${p0}`, { headers });
       const d0 = await r0.json();
       if (!Array.isArray(d0)) { setNegociacoes([]); setTotalCount(0); setLoading(false); return; }
