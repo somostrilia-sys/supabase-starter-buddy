@@ -47,10 +47,14 @@ function matchCoberturaDetail(produtos: string[], target: string): string {
   return "";
 }
 
+function norm(s: string) {
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\b(a|de|da|do|e|em|o|os|as)\b/g, "").replace(/\s+/g, " ").trim();
+}
+
 function normalizeCheck(items: string[], target: string): boolean {
-  const targets = target.toLowerCase().split("/");
+  const targets = target.split("/").map(norm);
   return items.some(i => {
-    const il = i.toLowerCase();
+    const il = norm(i);
     return targets.some(t => il.includes(t) || t.includes(il));
   });
 }

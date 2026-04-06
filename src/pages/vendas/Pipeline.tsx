@@ -123,7 +123,7 @@ export default function Pipeline() {
     if (isConsultorScope && usr?.nome) return { consultor: usr.nome };
     return undefined;
   }, [canViewAllData, isConsultorScope, isGestorScope, usr?.nome, usr?.cooperativa]);
-  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "30d", negScope);
+  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "90d", negScope);
 
   // Dados reais de cooperativas com regional vinculada
   const { data: cooperativasDb } = useQuery({
@@ -324,8 +324,17 @@ export default function Pipeline() {
   // --- Cash sound: SÓ toca quando IA aprova e move para concluído ---
   const cashAudioRef = useRef<HTMLAudioElement | null>(null);
   const prevDealsRef = useRef<PipelineDeal[]>([]);
-  const concluídosProcessados = useRef<Set<string>>(new Set());
+  const concluídosProcessados = useRef<Set<string>>(() => {
+    try {
+      const stored = sessionStorage.getItem("gia_concluidos");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
   const initialLoadDone = useRef(false);
+  const marcarConcluido = (dealId: string) => {
+    concluídosProcessados.current.add(dealId);
+    try { sessionStorage.setItem("gia_concluidos", JSON.stringify([...concluídosProcessados.current])); } catch {}
+  };
 
   useEffect(() => {
     cashAudioRef.current = new Audio("/sounds/cash.mp3");
@@ -352,7 +361,7 @@ export default function Pipeline() {
       }
 
       for (const deal of newConcluidos) {
-        concluídosProcessados.current.add(deal.id); // Marcar como processado ANTES de chamar
+        marcarConcluido(deal.id); // Marcar como processado ANTES de chamar
         callEdge("gia-concluir-venda", { negociacao_id: deal.id }).then(res => {
           if (res?.sucesso) toast.success(`Venda concluída: ${deal.lead_nome}`);
         }).catch(() => {});
@@ -360,7 +369,7 @@ export default function Pipeline() {
     }
     // Marcar concluídos existentes no primeiro load
     if (!initialLoadDone.current && dealsToShow.length > 0) {
-      dealsToShow.filter(d => d.stage === "concluido").forEach(d => concluídosProcessados.current.add(d.id));
+      dealsToShow.filter(d => d.stage === "concluido").forEach(d => marcarConcluido(d.id));
       initialLoadDone.current = true;
     }
     prevDealsRef.current = dealsToShow;
@@ -369,7 +378,7 @@ export default function Pipeline() {
   // Função chamada quando IA aprova e move para concluído
   const onDealConcluido = useCallback((dealId: string, dealNome: string) => {
     if (concluídosProcessados.current.has(dealId)) return;
-    concluídosProcessados.current.add(dealId);
+    marcarConcluido(dealId);
     if (cashAudioRef.current) {
       cashAudioRef.current.currentTime = 0;
       cashAudioRef.current.play().catch(() => {});

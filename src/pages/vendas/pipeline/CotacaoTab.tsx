@@ -16,6 +16,7 @@ import { MessageSquare, Mail, Link2, CreditCard, CheckCircle, Shield, ShieldChec
 import ExcecaoButton from "@/components/ExcecaoButton";
 import PedirLiberacaoButton from "@/components/PedirLiberacaoButton";
 import OpcionaisSection, { OpcionalItem } from "@/components/OpcionaisSection";
+import { useUsuario } from "@/hooks/useUsuario";
 
 /* ─── Marcas estáticas (fallback para select manual quando API não retorna) ─── */
 const marcas = ["Chevrolet", "Hyundai", "Honda", "Toyota", "Volkswagen", "Fiat", "Jeep", "Nissan", "Renault", "Ford"];
@@ -116,6 +117,9 @@ async function buscarPrecosReais(valorFipe: number): Promise<{ plano: string; co
 interface Props { deal: PipelineDeal; }
 
 export default function CotacaoTab({ deal }: Props) {
+  const { isConsultor, isGestor, isDiretor, isAdmin } = useUsuario();
+  const podeDesconto = isGestor || isDiretor || isAdmin; // Consultor NÃO pode
+  const podeLiberacao = isGestor || isDiretor || isAdmin; // Consultor NÃO pode
   // Inferir marca do modelo do deal
   const dealModelo = (deal.veiculo_modelo || "").toUpperCase();
   const inferredMarca = marcas.find(m => dealModelo.includes(m.toUpperCase())) || "";
@@ -176,7 +180,7 @@ export default function CotacaoTab({ deal }: Props) {
   const [descontoMensal, setDescontoMensal] = useState("");
   const [descontoAdesao, setDescontoAdesao] = useState("");
   const descontoAplicadoRef = React.useRef(false);
-  const [valorInstalacaoEdit, setValorInstalacaoEdit] = useState("");
+  const [valorInstalacaoEdit, setValorInstalacaoEdit] = useState((deal as any).instalacao_rastreador ? String((deal as any).instalacao_rastreador) : "");
   const [opcionaisSelecionados, setOpcionaisSelecionados] = useState<OpcionalItem[]>([]);
 
   // Carregar opcionais salvos
@@ -574,9 +578,9 @@ export default function CotacaoTab({ deal }: Props) {
   const valorFipe = valorFipeReal;
   const codFipe = codFipeReal;
 
-  // Desconto: livre em cards novos, bloqueado após cotação enviada (precisa IA >5% ou diretor)
+  // Desconto RBAC: consultor NUNCA pode, gestor sempre pode (IA analisa >5%), diretor/admin livre
   const descontoAprovadoPorDiretor = !!(deal as any).desconto_aprovado_por || !!(deal as any).desconto_ia_aprovado;
-  const descontoBloqueado = cotacaoEnviada && !descontoIaResult?.aprovado && !descontoAprovadoPorDiretor;
+  const descontoBloqueado = !podeDesconto; // Consultor = bloqueado. Gestor/diretor = aberto.
 
   const set = (field: string, value: string | boolean) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -612,7 +616,11 @@ export default function CotacaoTab({ deal }: Props) {
       consultor: { nome: deal.consultor || "Consultor", telefone: "", email: "" },
       opcionais: opcionaisSelecionados.map(o => ({ nome: o.nome, categoria: o.categoria, valor_mensal: o.valor_mensal })),
     });
-    toast.success("PDF da cotação baixado!");
+    if (!(deal as any).email) {
+      toast.success("PDF baixado! Para enviar ao cliente, preencha o email na aba Associado.", { duration: 6000 });
+    } else {
+      toast.success("PDF da cotação baixado!");
+    }
   };
 
   const handleEnviar = async (tipo: string) => {
@@ -1087,22 +1095,13 @@ export default function CotacaoTab({ deal }: Props) {
           </Card>
         )}
 
-        {precosReais.length === 0 && fipeFetched && valorFipe > 0 && (
-          <Card className="rounded-none border-2 border-warning bg-warning/5 mb-3">
-            <CardContent className="p-4">
-              <p className="text-sm font-semibold text-warning">Sem precificação definida para este veículo nesta regional</p>
-              <p className="text-xs text-muted-foreground">Regional: {deal.regional || "não definida"} | FIPE: {formatCurrency(valorFipe)}</p>
-            </CardContent>
-          </Card>
-        )}
-
         {fipeFetched && precosReais.length === 0 && (
           <Card className="rounded-none border-2 border-destructive/30 bg-destructive/5">
             <CardContent className="p-6 text-center space-y-2">
               <Search className="h-8 w-8 text-destructive mx-auto" />
               <p className="text-sm font-semibold text-destructive">Nenhum plano encontrado para este veículo</p>
-              <p className="text-xs text-muted-foreground">Não há precificação cadastrada na tabela de preços para a faixa FIPE deste veículo na regional selecionada.</p>
-              <p className="text-xs text-muted-foreground">Verifique a tabela de preços em <strong>Minha Empresa → Tabelas de Preços</strong> ou consulte o gestor.</p>
+              <p className="text-xs text-muted-foreground">Não há precificação cadastrada na tabela de preços para a faixa FIPE {valorFipe > 0 ? `(${formatCurrency(valorFipe)})` : ""} na regional {deal.regional || "não definida"}.</p>
+              <p className="text-xs text-muted-foreground">Verifique em <strong>Minha Empresa → Tabelas de Preços</strong> ou consulte o gestor.</p>
             </CardContent>
           </Card>
         )}
@@ -1160,7 +1159,7 @@ export default function CotacaoTab({ deal }: Props) {
                   <div className="text-xs text-muted-foreground">Adesão: <span className="font-semibold text-[#1A3A5C]">{formatCurrency((p as any).adesao || 400)}</span></div>
                   <div className="flex items-center gap-1 p-1.5 rounded border border-amber-300 bg-amber-50">
                     <span className="text-[10px] text-amber-800 font-medium">Instalação Rastreador: R$</span>
-                    <input type="number" className="w-16 text-[10px] border border-amber-300 rounded px-1 py-0.5 bg-white font-semibold" value={valorInstalacaoEdit || String((p as any).instalacao || 100)} onChange={e => setValorInstalacaoEdit(e.target.value)} onClick={e => e.stopPropagation()} />
+                    <input type="number" className="w-16 text-[10px] border border-amber-300 rounded px-1 py-0.5 bg-white font-semibold" value={valorInstalacaoEdit || String((p as any).instalacao || 100)} onChange={e => { setValorInstalacaoEdit(e.target.value); if (e.target.value) supabase.from("negociacoes").update({ instalacao_rastreador: Number(e.target.value) } as any).eq("id", deal.id).then(() => {}); }} onClick={e => e.stopPropagation()} />
                   </div>
                   <ul className="space-y-1">
                     {p.coberturas.map(c => (
@@ -1202,7 +1201,7 @@ export default function CotacaoTab({ deal }: Props) {
           {descontoBloqueado && (
             <div className="flex items-center gap-2 p-2 rounded border border-amber-300 bg-amber-50">
               <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-              <p className="text-xs text-amber-700 font-medium">Cotação já enviada. Use "Pedir Liberação" abaixo para alterar desconto.</p>
+              <p className="text-xs text-amber-700 font-medium">Apenas gestores e diretores podem aplicar descontos. Fale com seu gestor.</p>
             </div>
           )}
           <div className="grid grid-cols-2 gap-4">
@@ -1436,7 +1435,7 @@ export default function CotacaoTab({ deal }: Props) {
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground">{descontoIaResult.justificativa}</p>
-                      {descontoIaResult.necessita_diretor && !descontoIaResult.aprovado && (
+                      {descontoIaResult.necessita_diretor && !descontoIaResult.aprovado && podeLiberacao && (
                         <div className="pt-1">
                           <ExcecaoButton
                             negociacaoId={deal.id}
@@ -1474,7 +1473,7 @@ export default function CotacaoTab({ deal }: Props) {
           const vencimentoForaFaixa = diaVenc !== diaPadrao;
           const vencimentoPrecisaIA = vencimentoForaFaixa && diasAteVenc2 <= 40;
           const precisaAnalise = maiorDesconto > 5 || vencimentoPrecisaIA;
-          const mostrarLiberacao = precisaAnalise || cotacaoEnviada;
+          const mostrarLiberacao = podeLiberacao && (precisaAnalise || cotacaoEnviada);
 
           if (!mostrarLiberacao) return null;
 

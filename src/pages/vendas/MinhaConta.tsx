@@ -141,7 +141,7 @@ export default function MinhaConta() {
   useEffect(() => {
     if (!profile?.id) return;
     supabase.from("usuarios" as any)
-      .select("slug, foto_capa_url, fotos_trabalho, fotos_fundo, bio, whatsapp, instagram, nome, frase_destaque")
+      .select("slug, foto_capa_url, fotos_trabalho, fotos_fundo, bio, whatsapp, instagram, nome, frase_destaque, tipo_conta, banco, agencia, conta, digito, cpf_titular, nome_titular, chave_pix")
       .eq("id", profile.id)
       .maybeSingle()
       .then(({ data }: any) => {
@@ -154,6 +154,16 @@ export default function MinhaConta() {
           setWhatsapp(data.whatsapp || "");
           setInstagramHandle(data.instagram || "");
           setFraseDestaque(data.frase_destaque || "");
+          // Load banking data
+          if (data.tipo_conta) setTipoConta(data.tipo_conta);
+          if (data.banco) setBanco(data.banco);
+          if (data.agencia) setAgencia(data.agencia);
+          if (data.conta) setConta(data.conta);
+          if (data.digito) setDigito(data.digito);
+          if (data.cpf_titular) setCpfCnpj(data.cpf_titular);
+          if (data.nome_titular) setTitular(data.nome_titular);
+          if (data.chave_pix) setChavePix(data.chave_pix);
+          if (data.banco) setSaved(true);
         } else {
           // fallback slug from profile name
           setSlug(slugify(profile.full_name || ""));
@@ -294,7 +304,7 @@ export default function MinhaConta() {
   const [fDateEnd, setFDateEnd] = useState<Date | undefined>();
   const [page, setPage] = useState(1);
 
-  function handleSave() {
+  async function handleSave() {
     if (!tipoConta || !banco || !agencia || !conta || !digito || !cpfCnpj || !titular) {
       toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
       return;
@@ -304,10 +314,25 @@ export default function MinhaConta() {
       toast({ title: "CPF ou CNPJ inválido", variant: "destructive" });
       return;
     }
+    if (!profile?.id) return;
+    const { error } = await (supabase as any).from("usuarios").update({
+      tipo_conta: tipoConta,
+      banco,
+      agencia,
+      conta,
+      digito,
+      cpf_titular: cpfCnpj,
+      nome_titular: titular,
+      chave_pix: chavePix || null,
+    }).eq("id", profile.id);
+    if (error) {
+      toast({ title: "Erro ao salvar dados bancários", description: error.message, variant: "destructive" });
+      return;
+    }
     setSaved(true);
     setVerificado(false);
-    toast({ title: "Dados bancários salvos com sucesso!", description: "Pendente de verificação pela equipe financeira." });
-    setTimeout(() => setVerificado(true), 3000);
+    toast({ title: "Dados bancários salvos com sucesso!" });
+    setTimeout(() => setVerificado(true), 2000);
   }
 
   // Filter commissions

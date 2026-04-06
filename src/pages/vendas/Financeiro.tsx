@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useUsuario } from "@/hooks/useUsuario";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 function fmt(v: number) {
@@ -25,12 +26,15 @@ function fmt(v: number) {
 
 const MONTH_LABELS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-async function fetchConcluidos() {
-  const { data, error } = await (supabase as any)
+async function fetchConcluidos(scope?: { consultor?: string; cooperativas?: string[] }) {
+  let q = (supabase as any)
     .from("negociacoes")
     .select("id, codigo, lead_nome, cpf_cnpj, telefone, email, veiculo_modelo, veiculo_placa, plano, valor_plano, stage, consultor, cooperativa, origem, created_at, venda_concluida_em")
     .eq("stage", "concluido")
     .order("venda_concluida_em", { ascending: false });
+  if (scope?.consultor) q = q.eq("consultor", scope.consultor);
+  if (scope?.cooperativas && scope.cooperativas.length > 0) q = q.in("cooperativa", scope.cooperativas);
+  const { data, error } = await q;
   if (error) throw error;
   return (data || []) as Array<{
     id: string;
@@ -53,14 +57,22 @@ async function fetchConcluidos() {
 }
 
 export default function Financeiro() {
+  const { usuario, isConsultor, isGestor, canViewAllData, cooperativas: minhasCoops } = useUsuario();
   const [tab, setTab] = useState("vendas");
   const [search, setSearch] = useState("");
   const [filterConsultor, setFilterConsultor] = useState("all");
   const [filterCooperativa, setFilterCooperativa] = useState("all");
 
+  const scope = useMemo(() => {
+    if (canViewAllData) return undefined;
+    if (isGestor && minhasCoops.length > 0) return { cooperativas: minhasCoops };
+    if (isConsultor && usuario?.nome) return { consultor: usuario.nome };
+    return undefined;
+  }, [canViewAllData, isConsultor, isGestor, usuario?.nome, minhasCoops]);
+
   const { data: concluidos = [], isLoading } = useQuery({
-    queryKey: ["financeiro-concluidos"],
-    queryFn: fetchConcluidos,
+    queryKey: ["financeiro-concluidos", scope?.consultor, scope?.cooperativas?.join(",")],
+    queryFn: () => fetchConcluidos(scope),
   });
 
   // Derived data
@@ -98,12 +110,23 @@ export default function Financeiro() {
     });
   }, [concluidos]);
 
-  // Comissoes por consultor
+  // Fetch comissao_pct per consultor
+  const { data: usuariosComissao = [] } = useQuery({
+    queryKey: ["usuarios-comissao-pct"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("usuarios").select("nome, comissao_pct").eq("ativo", true);
+      return (data || []) as { nome: string; comissao_pct: number | null }[];
+    },
+  });
+
   const comissoesPorConsultor = useMemo(() => {
-    const map: Record<string, { total: number; count: number }> = {};
+    const pctMap: Record<string, number> = {};
+    usuariosComissao.forEach((u: any) => { pctMap[u.nome] = Number(u.comissao_pct) || 10; });
+
+    const map: Record<string, { total: number; count: number; pct: number }> = {};
     for (const v of concluidos) {
       const c = v.consultor || "Sem consultor";
-      if (!map[c]) map[c] = { total: 0, count: 0 };
+      if (!map[c]) map[c] = { total: 0, count: 0, pct: pctMap[c] || 10 };
       map[c].total += v.valor_plano || 0;
       map[c].count += 1;
     }
@@ -111,9 +134,10 @@ export default function Financeiro() {
       consultor,
       totalVendido: data.total,
       qtdVendas: data.count,
-      comissao10: data.total * 0.1,
+      pct: data.pct,
+      comissao10: data.total * (data.pct / 100),
     }));
-  }, [concluidos]);
+  }, [concluidos, usuariosComissao]);
 
   const totalComissoes = comissoesPorConsultor.reduce((s, c) => s + c.comissao10, 0);
 
