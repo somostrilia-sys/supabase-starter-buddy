@@ -16,6 +16,7 @@ export interface OpcionalItem {
 interface Props {
   negociacaoId: string;
   tipoVeiculo: string; // "Automóvel" | "Motocicleta" | "Caminhão"
+  plano?: string; // Nome do plano selecionado para filtrar opcionais
   selected: OpcionalItem[];
   onChange: (selected: OpcionalItem[]) => void;
 }
@@ -32,14 +33,14 @@ function formatBRL(v: number) {
 }
 
 /* ─── Component ─── */
-export default function OpcionaisSection({ negociacaoId, tipoVeiculo, selected, onChange }: Props) {
+export default function OpcionaisSection({ negociacaoId, tipoVeiculo, plano, selected, onChange }: Props) {
   const [openCats, setOpenCats] = useState<Record<string, boolean>>({});
 
   const tiposPermitidos = TIPO_MAP[tipoVeiculo] ?? ["todos"];
 
-  /* Fetch opcionais_catalogo */
+  /* Fetch opcionais_catalogo filtrado por tipo de veículo e plano */
   const { data: catalogo = [], isLoading } = useQuery({
-    queryKey: ["opcionais_catalogo", tipoVeiculo],
+    queryKey: ["opcionais_catalogo", tipoVeiculo, plano],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("opcionais_catalogo")
@@ -49,13 +50,21 @@ export default function OpcionaisSection({ negociacaoId, tipoVeiculo, selected, 
         .order("categoria")
         .order("nome");
       if (error) throw error;
-      return (data ?? []) as Array<{
+      const all = (data ?? []) as Array<{
         id: string;
         nome: string;
         categoria: string;
         valor_mensal: number;
         tipo_veiculo: string;
+        planos?: string[];
       }>;
+      // Filtrar por plano: se planos está vazio/null = disponível para todos
+      if (!plano) return all;
+      const planoLower = plano.toLowerCase();
+      return all.filter(item => {
+        if (!item.planos || item.planos.length === 0) return true; // disponível para todos
+        return item.planos.some(p => planoLower.includes(p.toLowerCase()) || p.toLowerCase().includes(planoLower));
+      });
     },
   });
 

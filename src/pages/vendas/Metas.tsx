@@ -146,11 +146,64 @@ async function fetchEvolucao() {
   });
 }
 
+function PodiumCard({ title, top3, accentFrom, accentTo }: { title: string; top3: any[]; accentFrom: string; accentTo: string }) {
+  if (top3.length < 3) return null;
+  const sizes = [
+    { w: "w-[72px] h-[72px]", text: "text-lg", pedW: "w-28", pedPt: "pt-4 pb-3", mt: "", numW: "w-7 h-7", numText: "text-[11px]" },
+    { w: "w-24 h-24", text: "text-2xl", pedW: "w-32", pedPt: "pt-5 pb-4", mt: "-mt-4", numW: "w-9 h-9", numText: "text-sm" },
+    { w: "w-16 h-16", text: "text-base", pedW: "w-24", pedPt: "pt-3 pb-2.5", mt: "mt-2", numW: "w-6 h-6", numText: "text-[10px]" },
+  ];
+  const colors = [
+    { border: "border-slate-300/40", bg: "from-slate-300/30 to-slate-400/10", numBg: "from-slate-200 to-slate-400", numColor: "text-slate-800", textColor: "text-slate-300", pedBg: "from-slate-500/20 to-slate-400/5", pedBorder: "border-slate-400/20" },
+    { border: `border-yellow-400/50`, bg: `${accentFrom}/40 ${accentTo}/20`, numBg: `${accentFrom} ${accentTo}`, numColor: "text-amber-900", textColor: "text-yellow-300", pedBg: "from-yellow-500/20 to-amber-400/5", pedBorder: "border-yellow-400/30" },
+    { border: "border-amber-600/40", bg: "from-amber-600/30 to-amber-700/10", numBg: "from-amber-600 to-amber-800", numColor: "text-amber-200", textColor: "text-amber-500", pedBg: "from-amber-700/15 to-amber-600/5", pedBorder: "border-amber-600/20" },
+  ];
+  const order = [1, 0, 2]; // 2nd, 1st, 3rd
+
+  return (
+    <Card className="border-border overflow-hidden bg-gradient-to-br from-[#0F1729] via-[#1A2744] to-[#0F1729]">
+      <CardContent className="p-5 pb-7">
+        <div className="text-center mb-5">
+          <div className="inline-flex items-center gap-2 bg-amber-400/10 border border-amber-400/20 rounded-full px-3 py-1">
+            <Trophy className="h-3.5 w-3.5 text-amber-400" />
+            <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">{title}</span>
+          </div>
+        </div>
+        <div className="flex justify-center items-end gap-2 sm:gap-4">
+          {order.map((idx) => {
+            const c = top3[idx];
+            const s = sizes[idx];
+            const cl = colors[idx];
+            return (
+              <div key={c.nome} className={`flex flex-col items-center ${s.mt}`}>
+                <div className="relative mb-2">
+                  <div className={`${s.w} rounded-full bg-gradient-to-br ${cl.bg} border-2 ${cl.border} flex items-center justify-center shadow-lg`}>
+                    <span className={`${s.text} font-bold ${cl.textColor}`}>{initials(c.nome)}</span>
+                  </div>
+                  <div className={`absolute -top-1 -right-1 ${s.numW} rounded-full bg-gradient-to-br ${cl.numBg} flex items-center justify-center shadow-md`}>
+                    <span className={`${s.numText} font-black ${cl.numColor}`}>{idx + 1}</span>
+                  </div>
+                </div>
+                <div className={`bg-gradient-to-t ${cl.pedBg} border ${cl.pedBorder} rounded-t-xl ${s.pedW} ${s.pedPt} px-1.5 text-center`}>
+                  <p className="text-[11px] font-bold text-white truncate">{c.nome.split(" ").slice(0, 2).join(" ")}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{c.atualContratos} vendas</p>
+                  <p className="text-[10px] font-bold text-emerald-400">R$ {c.atualFaturamento.toLocaleString()}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Metas() {
   const queryClient = useQueryClient();
   const { usuario, isConsultor, isGestor, isDiretor, canConfigMetas, cooperativas: minhasCoops } = useUsuario();
   const [modalOpen, setModalOpen] = useState(false);
   const [filterCoop, setFilterCoop] = useState("all");
+  const [visao, setVisao] = useState<"consultores" | "filiais">("consultores");
   const periodOptions = useMemo(() => getPeriodOptions(), []);
   const [periodo, setPeriodo] = useState(periodOptions[0]?.value || "");
 
@@ -263,8 +316,35 @@ export default function Metas() {
     { label: "% Atingimento", value: `${taxa.toFixed(1)}%`, icon: Percent, color: "text-amber-400", bg: "bg-amber-500/10" },
   ];
 
-  // Top 3 podium (from full national ranking, not filtered)
-  const top3 = consultores.slice(0, 3);
+  // Top 3 podiums — national + filial side by side
+  const top3Nacional = consultores.slice(0, 3);
+  const filialSorted = useMemo(() => {
+    if (filterCoop === "all") return [];
+    const sorted = [...filtered].sort((a: any, b: any) => b.atualContratos - a.atualContratos || b.atualFaturamento - a.atualFaturamento);
+    sorted.forEach((c: any, i: number) => { c.rankingFilial = i + 1; });
+    return sorted;
+  }, [filtered, filterCoop]);
+  const top3Filial = filialSorted.slice(0, 3);
+  const showFilialRanking = filterCoop !== "all";
+
+  // Ranking de FILIAIS (coletivo) — agrupa por cooperativa
+  const rankingFiliais = useMemo(() => {
+    const map: Record<string, { nome: string; atualContratos: number; atualFaturamento: number; totalLeads: number; consultores: number }> = {};
+    consultores.forEach((c: any) => {
+      const coops = c.cooperativa ? c.cooperativa.split(",").map((s: string) => s.trim()).filter(Boolean) : ["Sem filial"];
+      coops.forEach((coop: string) => {
+        if (!map[coop]) map[coop] = { nome: coop, atualContratos: 0, atualFaturamento: 0, totalLeads: 0, consultores: 0 };
+        map[coop].atualContratos += c.atualContratos;
+        map[coop].atualFaturamento += c.atualFaturamento;
+        map[coop].totalLeads += c.totalLeads;
+        map[coop].consultores += 1;
+      });
+    });
+    const arr = Object.values(map).sort((a, b) => b.atualContratos - a.atualContratos || b.atualFaturamento - a.atualFaturamento);
+    arr.forEach((f, i) => { (f as any).ranking = i + 1; });
+    return arr as (typeof map[string] & { ranking: number })[];
+  }, [consultores]);
+  const top3Filiais = rankingFiliais.slice(0, 3);
 
   return (
     <div className="space-y-6">
@@ -274,13 +354,19 @@ export default function Metas() {
           <h1 className="text-xl font-bold">Metas de Vendas</h1>
           <p className="text-sm text-muted-foreground">Performance por consultor e evolucao mensal</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
+          {/* Toggle Consultores / Filiais */}
+          <div className="flex rounded-lg border border-border overflow-hidden">
+            <button onClick={() => setVisao("consultores")} className={`px-3 py-1.5 text-xs font-semibold transition-colors ${visao === "consultores" ? "bg-primary text-white" : "bg-muted/30 text-muted-foreground hover:bg-muted/50"}`}>Consultores</button>
+            <button onClick={() => setVisao("filiais")} className={`px-3 py-1.5 text-xs font-semibold transition-colors ${visao === "filiais" ? "bg-primary text-white" : "bg-muted/30 text-muted-foreground hover:bg-muted/50"}`}>Filiais</button>
+          </div>
           <Select value={periodo} onValueChange={setPeriodo}>
             <SelectTrigger className="w-36 border-border"><SelectValue /></SelectTrigger>
             <SelectContent>
               {periodOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          {visao === "consultores" && (
           <Select value={filterCoop} onValueChange={setFilterCoop}>
             <SelectTrigger className="w-44 border-border"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -288,6 +374,7 @@ export default function Metas() {
               {todasCoops.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
+          )}
           {canConfigMetas && (
             <Button size="sm" className="gap-1.5" onClick={() => setModalOpen(true)}>
               <Settings2 className="h-4 w-4" />Configurar Metas
@@ -301,71 +388,68 @@ export default function Metas() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <span className="ml-3 text-muted-foreground">Carregando dados...</span>
         </div>
+      ) : visao === "filiais" ? (
+        <>
+          {/* ── VISÃO FILIAIS ── */}
+          {top3Filiais.length >= 3 && (
+            <PodiumCard title="Ranking de Filiais" top3={top3Filiais.map(f => ({ nome: f.nome, atualContratos: f.atualContratos, atualFaturamento: f.atualFaturamento }))} accentFrom="from-blue-400" accentTo="to-indigo-500" />
+          )}
+
+          {/* Tabela Filiais */}
+          <Card className="border-border overflow-hidden">
+            <CardContent className="p-0 overflow-x-auto">
+              <Table className="min-w-[600px]">
+                <TableHeader>
+                  <TableRow className="bg-muted/60 hover:bg-muted/60 border-b-2 border-[#747474]">
+                    <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] w-16">#</TableHead>
+                    <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em]">Filial</TableHead>
+                    <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Consultores</TableHead>
+                    <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Vendas</TableHead>
+                    <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-right">Faturamento</TableHead>
+                    <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Leads</TableHead>
+                    <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Conversao</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rankingFiliais.map((f: any) => {
+                    const conv = f.totalLeads > 0 ? Math.round((f.atualContratos / f.totalLeads) * 1000) / 10 : 0;
+                    return (
+                      <TableRow key={f.nome} className="hover:bg-muted/30 transition-colors border-b border-[#747474]/20">
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            {f.ranking <= 3 && <Medal className={`h-4 w-4 ${medalColors[f.ranking - 1]}`} />}
+                            <span className="font-bold">{f.ranking}o</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-semibold">{f.nome}</TableCell>
+                        <TableCell className="text-center text-sm">{f.consultores}</TableCell>
+                        <TableCell className="text-center font-bold">{f.atualContratos}</TableCell>
+                        <TableCell className="text-right font-semibold text-emerald-400">R$ {f.atualFaturamento.toLocaleString()}</TableCell>
+                        <TableCell className="text-center text-sm">{f.totalLeads}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge className={conv >= 30 ? "bg-emerald-500/10 text-emerald-400" : conv >= 20 ? "bg-amber-500/10 text-amber-400" : "bg-red-500/8 text-red-400"}>
+                            {conv}%
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </>
       ) : (
         <>
-          {/* Podium Top 3 */}
-          {top3.length >= 3 && (
-            <Card className="border-border overflow-hidden bg-gradient-to-br from-[#0F1729] via-[#1A2744] to-[#0F1729]">
-              <CardContent className="p-6 pb-8">
-                <div className="text-center mb-6">
-                  <div className="inline-flex items-center gap-2 bg-amber-400/10 border border-amber-400/20 rounded-full px-4 py-1.5">
-                    <Trophy className="h-4 w-4 text-amber-400" />
-                    <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">Ranking Nacional</span>
-                  </div>
-                </div>
-                <div className="flex justify-center items-end gap-3 sm:gap-6">
-                  {/* 2o lugar */}
-                  <div className="flex flex-col items-center">
-                    <div className="relative mb-3">
-                      <div className="w-[72px] h-[72px] rounded-full bg-gradient-to-br from-slate-300/30 to-slate-400/10 border-2 border-slate-300/40 flex items-center justify-center shadow-lg shadow-slate-400/10">
-                        <span className="text-lg font-bold text-slate-300">{initials(top3[1].nome)}</span>
-                      </div>
-                      <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-gradient-to-br from-slate-200 to-slate-400 flex items-center justify-center shadow-md">
-                        <span className="text-[11px] font-black text-slate-800">2</span>
-                      </div>
-                    </div>
-                    <div className="bg-gradient-to-t from-slate-500/20 to-slate-400/5 border border-slate-400/20 rounded-t-xl w-28 pt-4 pb-3 px-2 text-center">
-                      <p className="text-xs font-bold text-white truncate">{top3[1].nome.split(" ").slice(0, 2).join(" ")}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{top3[1].atualContratos} vendas</p>
-                      <p className="text-[11px] font-bold text-emerald-400">R$ {top3[1].atualFaturamento.toLocaleString()}</p>
-                    </div>
-                  </div>
-                  {/* 1o lugar */}
-                  <div className="flex flex-col items-center -mt-4">
-                    <div className="relative mb-3">
-                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-300/40 to-amber-500/20 border-[3px] border-yellow-400/50 flex items-center justify-center shadow-xl shadow-yellow-500/20 ring-4 ring-yellow-400/10">
-                        <span className="text-2xl font-bold text-yellow-300">{initials(top3[0].nome)}</span>
-                      </div>
-                      <div className="absolute -top-2 -right-1 w-9 h-9 rounded-full bg-gradient-to-br from-yellow-300 to-amber-500 flex items-center justify-center shadow-lg shadow-yellow-500/30">
-                        <span className="text-sm font-black text-amber-900">1</span>
-                      </div>
-                    </div>
-                    <div className="bg-gradient-to-t from-yellow-500/20 to-amber-400/5 border border-yellow-400/30 rounded-t-xl w-32 pt-5 pb-4 px-2 text-center">
-                      <p className="text-sm font-bold text-white truncate">{top3[0].nome.split(" ").slice(0, 2).join(" ")}</p>
-                      <p className="text-xs text-amber-300/80 mt-0.5">{top3[0].atualContratos} vendas</p>
-                      <p className="text-sm font-bold text-emerald-400">R$ {top3[0].atualFaturamento.toLocaleString()}</p>
-                      <Badge className="mt-1.5 bg-yellow-400/15 text-yellow-300 border-yellow-400/30 text-[9px]">Campeao</Badge>
-                    </div>
-                  </div>
-                  {/* 3o lugar */}
-                  <div className="flex flex-col items-center mt-2">
-                    <div className="relative mb-3">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-600/30 to-amber-700/10 border-2 border-amber-600/40 flex items-center justify-center shadow-lg shadow-amber-600/10">
-                        <span className="text-base font-bold text-amber-500">{initials(top3[2].nome)}</span>
-                      </div>
-                      <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center shadow-md">
-                        <span className="text-[10px] font-black text-amber-200">3</span>
-                      </div>
-                    </div>
-                    <div className="bg-gradient-to-t from-amber-700/15 to-amber-600/5 border border-amber-600/20 rounded-t-xl w-24 pt-3 pb-2.5 px-2 text-center">
-                      <p className="text-[11px] font-bold text-white truncate">{top3[2].nome.split(" ").slice(0, 2).join(" ")}</p>
-                      <p className="text-[10px] text-amber-400/70 mt-0.5">{top3[2].atualContratos} vendas</p>
-                      <p className="text-[11px] font-bold text-emerald-400">R$ {top3[2].atualFaturamento.toLocaleString()}</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          {/* ── VISÃO CONSULTORES ── */}
+          {/* Podium Top 3 — Nacional + Filial side by side */}
+          {top3Nacional.length >= 3 && (
+            <div className={`grid gap-4 ${top3Filial.length >= 3 ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"}`}>
+              <PodiumCard title="Ranking Nacional" top3={top3Nacional} accentFrom="from-yellow-300" accentTo="to-amber-500" />
+              {top3Filial.length >= 3 && (
+                <PodiumCard title={`Ranking ${filterCoop}`} top3={top3Filial} accentFrom="from-blue-400" accentTo="to-indigo-500" />
+              )}
+            </div>
           )}
 
           {/* KPI Cards */}
@@ -391,7 +475,8 @@ export default function Metas() {
               <Table className="min-w-[800px]">
                 <TableHeader>
                   <TableRow className="bg-muted/60 hover:bg-muted/60 border-b-2 border-[#747474]">
-                    <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] w-16">#</TableHead>
+                    <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] w-16"># BR</TableHead>
+                    {showFilialRanking && <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] w-16"># Filial</TableHead>}
                     <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em]">Consultor</TableHead>
                     <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Meta Contr.</TableHead>
                     <TableHead className="text-foreground/70 font-semibold text-[10px] uppercase tracking-[0.08em] text-center">Atual</TableHead>
@@ -404,9 +489,9 @@ export default function Metas() {
                 </TableHeader>
                 <TableBody>
                   {filtered.length === 0 ? (
-                    <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Nenhum consultor encontrado.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={showFilialRanking ? 10 : 9} className="text-center py-8 text-muted-foreground">Nenhum consultor encontrado.</TableCell></TableRow>
                   ) : (
-                    filtered.map((c: any) => {
+                    (showFilialRanking ? filialSorted : filtered).map((c: any) => {
                       const pct = c.metaContratos > 0 ? (c.atualContratos / c.metaContratos) * 100 : 0;
                       const barColor = pct >= 80 ? "bg-emerald-500/80" : pct >= 50 ? "bg-amber-500/80" : "bg-red-500/80";
                       const isMe = usuario?.nome === c.nome;
@@ -418,6 +503,14 @@ export default function Metas() {
                               <span className="font-bold">{c.ranking}o</span>
                             </div>
                           </TableCell>
+                          {showFilialRanking && (
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                {c.rankingFilial <= 3 && <Medal className={`h-4 w-4 ${c.rankingFilial === 1 ? "text-blue-400" : c.rankingFilial === 2 ? "text-blue-300" : "text-blue-200"}`} />}
+                                <span className="font-bold text-blue-400">{c.rankingFilial}o</span>
+                              </div>
+                            </TableCell>
+                          )}
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Avatar className="h-7 w-7">

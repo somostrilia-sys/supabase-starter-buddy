@@ -290,10 +290,27 @@ export default function CotacaoTab({ deal }: Props) {
   const [motivoRejeicao, setMotivoRejeicao] = useState("");
   const [coberturasPlano, setCoberturasPlano] = useState<any[]>([]);
 
+  // Normalizar nome do plano para busca em coberturas_plano
+  const normalizarPlano = (plano: string): string => {
+    const p = plano.toLowerCase();
+    if (p.includes("premium")) return "Premium";
+    if (p.includes("completo")) return "Completo";
+    if (p.includes("objetivo")) return "Objetivo";
+    if (p.includes("básico") || p.includes("basico")) return "Básico";
+    return plano;
+  };
+
   // Buscar coberturas ao selecionar plano
   const carregarCoberturas = async (plano: string) => {
-    const { data } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", plano).order("ordem");
-    setCoberturasPlano(data || []);
+    const planoNorm = normalizarPlano(plano);
+    const { data } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", planoNorm).order("ordem");
+    if (data && data.length > 0) {
+      setCoberturasPlano(data);
+    } else {
+      // Tentar busca exata caso tenha match direto
+      const { data: data2 } = await supabase.from("coberturas_plano" as any).select("*").eq("plano", plano).order("ordem");
+      setCoberturasPlano(data2 || []);
+    }
   };
 
   // Verificar se veículo é aceito
@@ -1492,6 +1509,7 @@ export default function CotacaoTab({ deal }: Props) {
           <OpcionaisSection
             negociacaoId={deal.id}
             tipoVeiculo={form.tipoVeiculo}
+            plano={planoSelecionado}
             selected={opcionaisSelecionados}
             onChange={handleOpcionaisChange}
           />

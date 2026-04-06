@@ -90,15 +90,7 @@ export default function LandingPages() {
   const filtered = consultores.filter(c => !busca || c.nome.toLowerCase().includes(busca.toLowerCase()));
   const baseUrl = window.location.origin + "/c/";
 
-  const totalLeads = consultores.reduce((s, c) => s + c.leads, 0);
-  const totalConversoes = consultores.reduce((s, c) => s + c.conversoes, 0);
-
-  const kpis = [
-    { label: "Total Consultores", value: consultores.length, icon: Users, color: "text-primary", bg: "bg-primary/8" },
-    { label: "Total Leads", value: totalLeads, icon: TrendingUp, color: "text-success", bg: "bg-success/8" },
-    { label: "Total Conversões", value: totalConversoes, icon: Globe, color: "text-purple-600", bg: "bg-primary/6" },
-    { label: "Taxa Média", value: totalLeads > 0 ? (Math.round((totalConversoes / totalLeads) * 1000) / 10) + "%" : "0%", icon: MousePointerClick, color: "text-blue-600", bg: "bg-primary/6" },
-  ];
+  const comSlug = consultores.filter(c => c.slug).length;
 
   function handleCopy(slug: string) {
     const url = baseUrl + slug;
@@ -127,21 +119,18 @@ export default function LandingPages() {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map(k => (
-          <Card key={k.label} className="border-border">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-lg ${k.bg} flex items-center justify-center`}>
-                <k.icon className={`h-5 w-5 ${k.color}`} />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{k.label}</p>
-                <p className="text-lg font-bold text-foreground">{k.value}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="flex gap-4">
+        <Card className="border-border flex-1">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/8 flex items-center justify-center">
+              <Users className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Landing Pages Ativas</p>
+              <p className="text-lg font-bold text-foreground">{comSlug}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Search */}
@@ -168,29 +157,19 @@ export default function LandingPages() {
                 <TableHeader>
                   <TableRow className="bg-primary hover:bg-primary border-b-0">
                     <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Consultor</TableHead>
-                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Cargo</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Cooperativa</TableHead>
                     <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">URL</TableHead>
-                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Leads</TableHead>
-                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Conversões</TableHead>
-                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider text-right">Taxa</TableHead>
                     <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
-                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Ações</TableHead>
+                    <TableHead className="text-primary-foreground/90 font-semibold text-xs uppercase tracking-wider">Acoes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.map((c, i) => (
                     <TableRow key={c.id} className={`${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'} hover:bg-muted/40 transition-colors border-b-2 border-[#747474]`}>
                       <TableCell className="font-medium">{c.nome}</TableCell>
-                      <TableCell>
-                        <span className="text-xs text-muted-foreground">{c.funcao || "—"}</span>
-                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{c.cooperativa || "—"}</TableCell>
                       <TableCell>
                         <span className="font-mono text-xs bg-muted/50 px-2 py-1 rounded">/c/{c.slug}</span>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">{c.leads}</TableCell>
-                      <TableCell className="text-right font-semibold text-success">{c.conversoes}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge className={c.taxa >= 25 ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}>{c.taxa}%</Badge>
                       </TableCell>
                       <TableCell>
                         <Badge className="bg-success/10 text-success">Ativa</Badge>
@@ -206,7 +185,7 @@ export default function LandingPages() {
                   ))}
                   {filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                         {busca ? "Nenhum consultor encontrado" : "Nenhum consultor ativo com landing page"}
                       </TableCell>
                     </TableRow>
