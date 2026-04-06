@@ -153,11 +153,11 @@ export default function PortalAfiliado() {
 
   const referralLink = useMemo(() => {
     if (!afiliado?.codigo) return "";
-    if (consultorSlug) return `${window.location.origin}/c/${consultorSlug}?ref=${afiliado.codigo}`;
-    return `${window.location.origin}/cotacao?ref=${afiliado.codigo}`;
+    if (consultorSlug) return `https://gia.app.br/c/${consultorSlug}?ref=${afiliado.codigo}`;
+    return `https://gia.app.br/cotacao?ref=${afiliado.codigo}`;
   }, [afiliado, consultorSlug]);
 
-  const portalLink = `${window.location.origin}/afiliado/${token}`;
+  const portalLink = `https://gia.app.br/afiliado/${token}`;
 
   async function copyLink(text: string) {
     await navigator.clipboard.writeText(text);

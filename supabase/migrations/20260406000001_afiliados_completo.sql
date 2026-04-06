@@ -164,21 +164,41 @@ CREATE POLICY "saques_auth_all" ON afiliado_saques FOR ALL TO authenticated USIN
 CREATE POLICY "afiliados_anon_select" ON afiliados FOR SELECT TO anon
   USING (token_acesso IS NOT NULL);
 
--- Anon: update apenas dados bancários do próprio afiliado (via token no WHERE)
+-- Anon: update dados bancários (frontend filtra por token no WHERE)
 CREATE POLICY "afiliados_anon_update_bank" ON afiliados FOR UPDATE TO anon
   USING (token_acesso IS NOT NULL)
-  WITH CHECK (
-    -- Só permite alterar se o token_acesso não mudou (protege campos sensíveis)
-    token_acesso = token_acesso
-  );
+  WITH CHECK (true);
 
--- Anon: leitura de indicações (filtrado por afiliado_id no frontend)
-CREATE POLICY "indicacoes_anon_select" ON afiliado_indicacoes FOR SELECT TO anon USING (true);
+-- Anon: indicações/saques filtrados por afiliado com token válido
+CREATE POLICY "indicacoes_anon_select" ON afiliado_indicacoes FOR SELECT TO anon
+  USING (afiliado_id IN (SELECT id FROM afiliados WHERE token_acesso IS NOT NULL));
 
--- Anon: leitura e inserção de saques
-CREATE POLICY "saques_anon_select" ON afiliado_saques FOR SELECT TO anon USING (true);
+CREATE POLICY "saques_anon_select" ON afiliado_saques FOR SELECT TO anon
+  USING (afiliado_id IN (SELECT id FROM afiliados WHERE token_acesso IS NOT NULL));
 CREATE POLICY "saques_anon_insert" ON afiliado_saques FOR INSERT TO anon WITH CHECK (true);
 
--- 9. Adicionar campos de afiliado na negociacoes
+-- 9. Validação de saldo antes de inserir saque (previne double-spending)
+CREATE OR REPLACE FUNCTION validate_saque_insert()
+RETURNS TRIGGER AS $$
+DECLARE saldo NUMERIC; pendente NUMERIC;
+BEGIN
+  SELECT saldo_disponivel INTO saldo FROM afiliados WHERE id = NEW.afiliado_id;
+  SELECT COALESCE(SUM(valor), 0) INTO pendente FROM afiliado_saques
+    WHERE afiliado_id = NEW.afiliado_id AND status IN ('pendente', 'aprovado');
+  IF NEW.valor > (saldo - pendente) THEN
+    RAISE EXCEPTION 'Saldo insuficiente. Disponivel: %, Pendente: %', saldo, pendente;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_validate_saque ON afiliado_saques;
+CREATE TRIGGER trg_validate_saque
+  BEFORE INSERT ON afiliado_saques
+  FOR EACH ROW EXECUTE FUNCTION validate_saque_insert();
+
+-- 10. Adicionar campos de afiliado na negociacoes + índices
 ALTER TABLE negociacoes ADD COLUMN IF NOT EXISTS afiliado_id UUID REFERENCES afiliados(id);
 ALTER TABLE negociacoes ADD COLUMN IF NOT EXISTS afiliado_codigo TEXT;
+CREATE INDEX IF NOT EXISTS idx_negociacoes_afiliado_codigo ON negociacoes(afiliado_codigo);
+CREATE INDEX IF NOT EXISTS idx_negociacoes_afiliado_id ON negociacoes(afiliado_id);

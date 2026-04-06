@@ -109,17 +109,21 @@ export default function CotacaoFormPublica() {
 
       // Vincular indicação ao afiliado
       if (refCode) {
-        const { data: afData } = await (supabase as any)
-          .from("afiliados").select("id, comissao_valor").eq("codigo", refCode).eq("ativo", true).maybeSingle();
-        if (afData) {
-          await (supabase as any).from("afiliado_indicacoes").insert({
-            afiliado_id: afData.id, negociacao_id: (neg as any).id,
-            lead_nome: nome, lead_telefone: telefone.replace(/\D/g, ""),
-            lead_email: email || null,
-            status: "novo", comissao_valor: afData.comissao_valor,
-          });
-          await (supabase as any).rpc("increment_afiliado_leads", { af_id: afData.id });
-        }
+        try {
+          const { data: afData } = await (supabase as any)
+            .from("afiliados").select("id, comissao_valor").eq("codigo", refCode).eq("ativo", true).maybeSingle();
+          if (afData) {
+            const { error: indErr } = await (supabase as any).from("afiliado_indicacoes").insert({
+              afiliado_id: afData.id, negociacao_id: (neg as any).id,
+              lead_nome: nome, lead_telefone: telefone.replace(/\D/g, ""),
+              lead_email: email || null,
+              status: "novo", comissao_valor: afData.comissao_valor,
+            });
+            if (!indErr) {
+              await (supabase as any).rpc("increment_afiliado_leads", { af_id: afData.id });
+            }
+          }
+        } catch { /* não bloqueia o fluxo principal */ }
       }
 
       // Buscar preços

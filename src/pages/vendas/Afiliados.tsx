@@ -296,13 +296,13 @@ export default function Afiliados() {
   }
 
   function getPortalLink(a: Afiliado) {
-    return `${window.location.origin}/afiliado/${a.token_acesso}`;
+    return `https://gia.app.br/afiliado/${a.token_acesso}`;
   }
 
   function getReferralLink(a: Afiliado) {
     const c = consultores.find((c) => c.id === a.consultor_id);
-    if (c?.slug) return `${window.location.origin}/c/${c.slug}?ref=${a.codigo}`;
-    return `${window.location.origin}/cotacao?ref=${a.codigo}`;
+    if (c?.slug) return `https://gia.app.br/c/${c.slug}?ref=${a.codigo}`;
+    return `https://gia.app.br/cotacao?ref=${a.codigo}`;
   }
 
   function enviarLinkWhatsApp(a: Afiliado) {
