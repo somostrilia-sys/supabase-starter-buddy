@@ -7,8 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { PipelineDeal } from "./mockData";
 import {
-  CreditCard, QrCode, Receipt, Banknote, DollarSign,
-  Link2, Download, Eye, Plus, FileText, CheckCircle,
+  CreditCard, QrCode, Receipt, Banknote,
+  Link2, Download, Eye, Plus, FileText,
 } from "lucide-react";
 
 type PagamentoStatus = "pago" | "pendente" | "nao_pago";
@@ -45,42 +45,20 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
   const [formaPgto, setFormaPgto] = useState("pix");
   const [configEmpresa, setConfigEmpresa] = useState<any>(null);
   const [faturas, setFaturas] = useState<Fatura[]>([]);
-  // 5.1 — Comissão do consultor + Adesão %
-  const [configComissao, setConfigComissao] = useState<{ tipo: string; percentual: number; valor_fixo: number } | null>(null);
-  const [percentualAdesao, setPercentualAdesao] = useState<number>(100);
   // Valores reais do plano (adesão e mensalidade vindos do cache_precos)
   const [adesaoReal, setAdesaoReal] = useState<number>(0);
   const [mensalidadeReal, setMensalidadeReal] = useState<number>(0);
-  const [comissaoPaga, setComissaoPaga] = useState(false);
 
   useEffect(() => {
     supabase.from("config_empresa" as any).select("*").limit(1).maybeSingle()
       .then(({ data }) => setConfigEmpresa(data));
-    if (deal.consultor) {
-      supabase.from("usuarios" as any)
-        .select("comissao_tipo, comissao_percentual, comissao_valor_fixo, percentual_adesao")
-        .eq("nome", deal.consultor)
-        .limit(1)
-        .maybeSingle()
-        .then(({ data }: any) => {
-          if (data) {
-            setConfigComissao({
-              tipo: data.comissao_tipo || "percentual",
-              percentual: Number(data.comissao_percentual || 15),
-              valor_fixo: Number(data.comissao_valor_fixo || 0),
-            });
-            setPercentualAdesao(Number(data.percentual_adesao ?? 100));
-          }
-        });
-    }
-  }, [deal.consultor]);
+  }, []);
 
   // Buscar adesão e mensalidade reais do cache_precos
   useEffect(() => {
     if (!deal.id || deal.id.startsWith("p")) return;
-    supabase.from("negociacoes" as any).select("cache_precos, plano, comissao_paga").eq("id", deal.id).maybeSingle()
+    supabase.from("negociacoes" as any).select("cache_precos, plano").eq("id", deal.id).maybeSingle()
       .then(({ data }: any) => {
-        if (data?.comissao_paga) setComissaoPaga(true);
         const precos = data?.cache_precos;
         if (precos && Array.isArray(precos) && precos.length > 0) {
           const planoNome = data?.plano || deal.plano || "";
@@ -119,22 +97,15 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
   // Adesão real do plano (NÃO valor FIPE)
   const taxaAdesao = adesaoReal > 0 ? adesaoReal : 400;
   const totalPago = faturas.filter(f => f.status === "pago").reduce((s, f) => s + f.valor, 0);
-  const totalPendente = faturas.filter(f => f.status !== "pago").reduce((s, f) => s + f.valor, 0);
-  // Comissão sobre adesão (por venda, não recorrente)
-  const valorComissao = configComissao
-    ? (configComissao.tipo === "percentual" ? (adesaoReal * configComissao.percentual / 100) : configComissao.valor_fixo)
-    : (adesaoReal * 0.15);
 
   return (
     <div className="space-y-5">
       {/* 5.1 — Cards resumo com Comissão e Mensalidade */}
-      <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {[
           { label: "Taxa de Adesão", valor: taxaAdesao, sub: deal.plano || "", color: "#1A3A5C", icon: FileText },
           { label: "Total Pago", valor: totalPago, sub: "", color: "#16a34a", icon: CreditCard },
-          { label: "Pendente", valor: totalPendente > 0 ? totalPendente : Math.max(0, taxaAdesao - totalPago), sub: "", color: "#dc2626", icon: Receipt },
           { label: "Mensalidade", valor: mensalidadeReal, sub: deal.plano || "", color: "#7c3aed", icon: Banknote },
-          { label: "Comissão", valor: valorComissao, sub: configComissao ? (configComissao.tipo === "percentual" ? `${configComissao.percentual}% s/ adesão` : "fixo") : "15% s/ adesão", color: "#059669", icon: DollarSign },
         ].map(c => (
           <Card key={c.label} className="rounded-none border-t-2" style={{ borderTopColor: c.color }}>
             <CardContent className="p-4 space-y-1">
@@ -236,42 +207,6 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
         )}
       </fieldset>
 
-      {/* Split de Pagamento */}
-      <fieldset className="space-y-3">
-        <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">SPLIT DE PAGAMENTO (ADESÃO + COMISSÃO)</legend>
-        <div className="p-4 rounded border bg-muted/30 space-y-2">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-3 rounded bg-background border">
-              <p className="text-[10px] text-muted-foreground uppercase">Valor Total Adesão</p>
-              <p className="text-lg font-bold text-[#1A3A5C]">{fmt(taxaAdesao)}</p>
-            </div>
-            <div className="text-center p-3 rounded bg-blue-50 dark:bg-blue-950/20 border border-blue-200">
-              <p className="text-[10px] text-muted-foreground uppercase">Repasse Consultor ({percentualAdesao}%)</p>
-              <p className="text-lg font-bold text-blue-600">{fmt(taxaAdesao * percentualAdesao / 100)}</p>
-              <p className="text-[10px] text-blue-500">Adesão: {percentualAdesao}% → {deal.consultor}</p>
-            </div>
-            <div className="text-center p-3 rounded bg-emerald-50 dark:bg-emerald-950/20 border border-success/20 dark:border-emerald-800">
-              <p className="text-[10px] text-muted-foreground uppercase">Comissão por Venda</p>
-              <p className="text-lg font-bold text-success dark:text-emerald-400">{fmt(valorComissao)}</p>
-              <p className="text-[10px] text-emerald-600">{configComissao ? (configComissao.tipo === "percentual" ? `${configComissao.percentual}% s/ adesão ${fmt(adesaoReal)}` : `Fixo ${fmt(configComissao.valor_fixo)}`) : `15% s/ adesão ${fmt(adesaoReal)}`} — {deal.consultor}</p>
-            </div>
-            <div className="text-center p-3 rounded bg-background border">
-              <p className="text-[10px] text-muted-foreground uppercase">Líquido Associação</p>
-              <p className="text-lg font-bold text-[#1A3A5C]">{fmt(taxaAdesao * (100 - percentualAdesao) / 100)}</p>
-              <p className="text-[10px] text-muted-foreground">{100 - percentualAdesao}% retido</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <span className="inline-block w-2 h-2 rounded-full bg-blue-500" />
-            Adesão: {percentualAdesao}% consultor / {100 - percentualAdesao}% associação
-          </div>
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
-            Comissão por venda: aplicada sobre valor de adesão
-          </div>
-        </div>
-      </fieldset>
-
       {/* Tabela de faturas — apenas adesão/rastreador/cota */}
       <fieldset className="space-y-3">
         <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">PAGAMENTOS DA CONTRATAÇÃO</legend>
@@ -334,20 +269,6 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
         <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => toast.info("Registrando pagamento manual...")}>
           <Plus className="h-3.5 w-3.5 mr-1" />Registrar Pagamento Manual
         </Button>
-        {!comissaoPaga && valorComissao > 0 && (
-          <Button size="sm" className="rounded-none bg-emerald-600 hover:bg-emerald-700 text-white" onClick={async () => {
-            await supabase.from("negociacoes").update({ comissao_paga: true, comissao_valor: valorComissao, comissao_data: new Date().toISOString() } as any).eq("id", deal.id);
-            setComissaoPaga(true);
-            toast.success(`Baixa de comissão registrada: ${fmt(valorComissao)} para ${deal.consultor}`);
-          }}>
-            <DollarSign className="h-3.5 w-3.5 mr-1" />Baixa Pgto. Comissão
-          </Button>
-        )}
-        {comissaoPaga && (
-          <Badge className="rounded-none border border-green-300 bg-green-50 text-green-700 text-xs self-center px-3 py-1.5">
-            <CheckCircle className="h-3 w-3 mr-1 inline" />Comissão paga: {fmt(valorComissao)}
-          </Badge>
-        )}
       </div>
     </div>
   );

@@ -53,9 +53,6 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
   const { profile } = useAuth();
   const [percentualAdesao, setPercentualAdesao] = React.useState<number | null>(null);
 
-  const [comissaoPct, setComissaoPct] = React.useState<number>(15);
-  const [comissaoTipo, setComissaoTipo] = React.useState<string>("percentual");
-  const [comissaoFixo, setComissaoFixo] = React.useState<number>(0);
   const [mensalidadeCalc, setMensalidadeCalc] = React.useState<number>(0);
   const [adesaoCalc, setAdesaoCalc] = React.useState<number>(0);
 
@@ -112,16 +109,13 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
     onUpdate?.();
   };
 
-  // Buscar percentual_adesao e comissão do consultor
+  // Buscar percentual_adesao do consultor
   React.useEffect(() => {
     if (!deal.consultor) return;
-    supabase.from("usuarios" as any).select("percentual_adesao, comissao_percentual, comissao_tipo, comissao_valor_fixo").eq("nome", deal.consultor).maybeSingle()
+    supabase.from("usuarios" as any).select("percentual_adesao").eq("nome", deal.consultor).maybeSingle()
       .then(({ data }: any) => {
         if (data) {
           setPercentualAdesao(data.percentual_adesao ?? 100);
-          setComissaoPct(Number(data.comissao_percentual || 15));
-          setComissaoTipo(data.comissao_tipo || "percentual");
-          setComissaoFixo(Number(data.comissao_valor_fixo || 0));
         }
       });
   }, [deal.consultor]);
@@ -460,21 +454,8 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
               )}
             </div>
 
-            {/* Comissão e Adesão */}
+            {/* Adesão e Mensalidade */}
             <div className="space-y-1 border-t pt-3">
-              <div className="flex items-center gap-2">
-                <Wallet className="h-4 w-4 text-success" />
-                <div>
-                  <span className="text-[10px] text-muted-foreground">Comissão {comissaoTipo === "fixo" ? "(fixo)" : `(${comissaoPct}% s/ adesão)`}</span>
-                  <p className="text-sm font-semibold text-success">
-                    {comissaoTipo === "fixo"
-                      ? `R$ ${comissaoFixo.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
-                      : adesaoCalc > 0
-                        ? `R$ ${(adesaoCalc * comissaoPct / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
-                        : "—"}
-                  </p>
-                </div>
-              </div>
               <div className="flex items-center gap-2">
                 <Wallet className="h-4 w-4 text-primary" />
                 <div>

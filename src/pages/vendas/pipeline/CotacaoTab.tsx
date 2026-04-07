@@ -1097,8 +1097,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
               const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
               if (!precoPlano) return null;
               const mensalidadePlano = Number(precoPlano.cota);
-              const rastreadorMensal = (form.tipoVeiculo === "Caminhão" || form.tipoVeiculo === "Van/Utilitário") ? 150 : 100;
-              const mensalidade = mensalidadePlano + totalOpcionais + rastreadorMensal;
+              const mensalidade = mensalidadePlano + totalOpcionais;
               const proporcional = Math.round((mensalidade / 30) * diasAteVenc * 100) / 100;
 
               const automatico = diasAteVenc > 40;
@@ -1355,7 +1354,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
                       <ul className="space-y-1">
                         {coberturasPlano.filter((c: any) => c.inclusa).map((c: any) => (
                           <li key={c.cobertura} className="text-[11px] text-muted-foreground flex items-start gap-1">
-                            <CheckCircle className="h-3 w-3 text-success mt-0.5 shrink-0" />{c.cobertura}{c.valor ?? c.detalhe ? ` — ${c.valor ?? c.detalhe}` : ""}
+                            <CheckCircle className="h-3 w-3 text-success mt-0.5 shrink-0" />{c.cobertura}{(() => { const v = c.valor ?? c.detalhe; return (v && v !== "0" && v !== "R$ 0,00" && v !== "0,00" && Number(v) !== 0) ? ` — ${v}` : ""; })()}
                           </li>
                         ))}
                       </ul>
@@ -1426,10 +1425,8 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
             const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
             const mensalPlanoOnly = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
             const mensalOriginal = mensalPlanoOnly + totalOpcionais;
-            const adesaoOriginal = precoPlano ? Number(precoPlano.adesao) : 400;
             const descMensalPct = descontoMensal && mensalOriginal > 0 ? ((mensalOriginal - Number(descontoMensal)) / mensalOriginal) * 100 : 0;
-            const descAdesaoPct = descontoAdesao && adesaoOriginal > 0 ? ((adesaoOriginal - Number(descontoAdesao)) / adesaoOriginal) * 100 : 0;
-            const maiorDesconto = Math.max(descMensalPct, descAdesaoPct);
+            const maiorDesconto = descMensalPct;
             const precisaIA = maiorDesconto > 5;
 
             if (!precisaIA) return null;
@@ -1662,10 +1659,8 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
           const mensalPlanoOnly2 = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
           const mensalOriginal = mensalPlanoOnly2 + totalOpcionais;
-          const adesaoOriginal = precoPlano ? Number(precoPlano.adesao) : 400;
           const descMensalPct = descontoMensal && mensalOriginal > 0 ? ((mensalOriginal - Number(descontoMensal)) / mensalOriginal) * 100 : 0;
-          const descAdesaoPct = descontoAdesao && adesaoOriginal > 0 ? ((adesaoOriginal - Number(descontoAdesao)) / adesaoOriginal) * 100 : 0;
-          const maiorDesconto = Math.max(descMensalPct, descAdesaoPct);
+          const maiorDesconto = descMensalPct;
           const dt = new Date().getDate();
           const diaPadrao = (dt >= 26 || dt <= 5) ? 1 : (dt >= 6 && dt <= 15) ? 10 : 20;
           const diaVenc = parseInt(form.diaVencimento) || diaPadrao;

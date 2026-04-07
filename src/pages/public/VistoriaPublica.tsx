@@ -18,6 +18,7 @@ import imgRodas from "@/assets/vistoria/rodas-pneus.jpg";
 import imgChave from "@/assets/vistoria/chave.jpg";
 import imgChassi from "@/assets/vistoria/chassi.jpg";
 import imgQuilometragem from "@/assets/vistoria/quilometragem.jpg";
+import imgParaBrisa from "@/assets/vistoria/para-brisa.jpg";
 // Moto
 import imgMotoGuidao from "@/assets/vistoria/moto/guidao.jpg";
 import imgMotoPainel from "@/assets/vistoria/moto/painel.jpg";
@@ -51,7 +52,7 @@ const TODAS_CATEGORIAS: Record<string, { label: string; img: string; obs?: strin
   carenagem: { label: "Carenagem / Tanque", img: imgMotoCarenagem },
   escapamento: { label: "Escapamento", img: imgMotoEscapamento },
   // Caminhão (fotos reais de caminhão)
-  para_brisa: { label: "Para-brisa", img: imgCamParabrisa },
+  para_brisa: { label: "Para-brisa", img: imgParaBrisa },
   cabine: { label: "Cabine", img: imgCamCabine },
   carroceria: { label: "Carroceria / Baú", img: imgCamCarroceria },
   eixos: { label: "Eixos / Suspensão", img: imgCamEixos },
