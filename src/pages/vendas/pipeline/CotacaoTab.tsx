@@ -770,7 +770,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           });
           return planosFiltrados.map((p: any) => {
             const nome = p.plano_normalizado || p.plano;
-            return { nome, valor_mensal: p.cota, adesao: p.adesao, rastreador: p.rastreador, franquia: p.valor_franquia, valor_fipe: valorFipe, coberturas: cobMap[nome] || [], produtos: prodMap[nome] || [] };
+            return { nome, valor_mensal: p.cota, adesao: p.adesao, rastreador: p.rastreador, franquia: p.valor_franquia, valor_fipe: valorFipe, implemento_valor: implementoCotaAdicional, coberturas: cobMap[nome] || [], produtos: prodMap[nome] || [] };
           });
         })(),
         desconto_aplicado: 0,
@@ -1095,7 +1095,8 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
               }
               const diasAteVenc = Math.max(1, Math.round((proxVenc.getTime() - hoje.getTime()) / 86400000));
               const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
-              const mensalidadePlano = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
+              if (!precoPlano) return null;
+              const mensalidadePlano = Number(precoPlano.cota);
               const rastreadorMensal = (form.tipoVeiculo === "Caminhão" || form.tipoVeiculo === "Van/Utilitário") ? 150 : 100;
               const mensalidade = mensalidadePlano + totalOpcionais + rastreadorMensal;
               const proporcional = Math.round((mensalidade / 30) * diasAteVenc * 100) / 100;
@@ -1379,15 +1380,17 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           <span className="text-sm text-muted-foreground">Plano selecionado:</span>
           <Badge className="rounded-none bg-[#1A3A5C] text-white">{planoSelecionado}</Badge>
           {(() => {
-            const pl = planosConfig.find(p => p.nome === planoSelecionado);
+            const pl = planosConfig.find(p => p.nome === planoSelecionado || planoSelecionado.startsWith(p.nome) || p.nome.startsWith(planoSelecionado));
             const mensalVal = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : Math.round(valorFipe * (pl?.percentual || 0));
-            const mensalidadeTotal = mensalVal + totalOpcionais;
+            const rastreadorMensal = (form.tipoVeiculo === "Caminhão" || form.tipoVeiculo === "Van/Utilitário") ? 150 : 100;
+            const mensalidadeTotal = mensalVal + totalOpcionais + rastreadorMensal;
             const adesaoVal = (pl as any)?.adesao || 400;
             const instVal = valorInstalacaoEdit ? Number(valorInstalacaoEdit) : ((pl as any)?.instalacao || 100);
             return (
               <>
                 <span className="text-sm font-semibold">{formatCurrency(mensalidadeTotal)}/mês</span>
                 {totalOpcionais > 0 && <span className="text-[10px] text-muted-foreground">(plano {formatCurrency(mensalVal)} + opcionais {formatCurrency(totalOpcionais)})</span>}
+                <span className="text-[10px] text-muted-foreground">rastreador {formatCurrency(rastreadorMensal)}</span>
                 <span className="text-xs text-muted-foreground">|</span>
                 <span className="text-sm text-muted-foreground">Adesão: <strong>{formatCurrency(adesaoVal)}</strong></span>
                 <span className="text-xs text-muted-foreground">|</span>

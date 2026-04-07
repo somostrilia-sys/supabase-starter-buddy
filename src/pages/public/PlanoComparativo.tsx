@@ -209,7 +209,7 @@ export default function PlanoComparativo() {
         if (negData) {
           setNeg(negData as any);
           if ((negData as any).consultor) {
-            const { data: usr } = await supabase.from("usuarios" as any).select("nome, whatsapp, telefone, email, avatar_url")
+            const { data: usr } = await supabase.from("usuarios" as any).select("nome, celular, telefone, email, avatar_url")
               .eq("nome", (negData as any).consultor).limit(1).maybeSingle();
             if (usr) setConsultorData(usr);
           }
@@ -228,12 +228,12 @@ export default function PlanoComparativo() {
   const estado = (cotacao as any)?.estado_circulacao || neg?.estado_circulacao || "";
   const createdAt = (cotacao as any)?.created_at || "";
   const consultor = neg?.consultor || "Consultor";
-  const consultorTel = consultorData?.whatsapp || consultorData?.telefone || neg?.telefone || "";
+  const consultorTel = consultorData?.celular || consultorData?.telefone || neg?.telefone || "";
   const consultorEmail = consultorData?.email || neg?.email || "";
   const consultorAvatar = consultorData?.avatar_url || "";
 
   const waLink = (msg: string) => {
-    const tel = consultorTel.replace(/\D/g, "");
+    const tel = (consultorTel || "").replace(/\D/g, "");
     return tel ? `https://wa.me/${tel.startsWith("55") ? tel : `55${tel}`}?text=${encodeURIComponent(msg)}` : "#";
   };
 
