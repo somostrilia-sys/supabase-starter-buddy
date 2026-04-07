@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,7 @@ import {
   DollarSign, FileText, Settings, Users, MapPin, Package,
   Printer, Clock, Eye, History, RefreshCw, LayoutGrid, FolderOpen,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const SelectWithAdd = ({ label, value, onValueChange, options, placeholder, required }: {
   label: string; value: string; onValueChange: (v: string) => void;
@@ -48,35 +49,50 @@ const SelectWithAdd = ({ label, value, onValueChange, options, placeholder, requ
 
 const ufs = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
 
-// No agregados table exists - empty arrays
-const mockAgregados: any[] = [];
-const mockVistorias: any[] = [];
-const mockObservacoes: { data: string; descricao: string; usuario: string }[] = [];
-const mockFinanceiro: any[] = [];
-const produtosRegional: any[] = [];
+// Real data will be fetched from Supabase
 
 // statusColor replaced by StatusBadge component
 
 export default function ConsultarAgregado() {
   const [searchPlaca, setSearchPlaca] = useState("");
-  const [selected, setSelected] = useState<typeof mockAgregados[0] | null>(null);
+  const [selected, setSelected] = useState<any>(null);
   const [form, setForm] = useState<Record<string, any>>({});
   const [novaObs, setNovaObs] = useState("");
-  const [observacoes, setObservacoes] = useState(mockObservacoes);
-  const [produtosVinculados, setProdutosVinculados] = useState([
-    { nome: "Proteção Roubo/Furto", valor: "45,00" },
-    { nome: "Assistência 24h", valor: "30,00" },
-  ]);
-  const [selectedProdutos, setSelectedProdutos] = useState(["1", "3"]);
-  const [documentos, setDocumentos] = useState([
-    { nome: "crlv_agregado.pdf", tipo: "CRLV", data: "01/03/2025" },
-    { nome: "vistoria_adesao.jpg", tipo: "Vistoria de Adesão", data: "15/03/2025" },
-  ]);
+  const [observacoes, setObservacoes] = useState<{ data: string; descricao: string; usuario: string }[]>([]);
+  const [produtosVinculados, setProdutosVinculados] = useState<{ nome: string; valor: string }[]>([]);
+  const [selectedProdutos, setSelectedProdutos] = useState<string[]>([]);
+  const [documentos, setDocumentos] = useState<{ nome: string; tipo: string; data: string }[]>([]);
+  const [cooperativasDb, setCooperativasDb] = useState<{ id: string; nome: string }[]>([]);
+  const [regionaisDb, setRegionaisDb] = useState<{ id: string; nome: string }[]>([]);
+  const [voluntariosDb, setVoluntariosDb] = useState<{ id: string; nome: string }[]>([]);
 
-  const buscar = () => {
-    const found = mockAgregados.find(a => a.placa.toLowerCase().replace("-", "").includes(searchPlaca.toLowerCase().replace("-", "")));
-    if (found) { setSelected(found); setForm({ ...found }); toast.success("Agregado encontrado!"); }
-    else toast.error("Agregado não encontrado.");
+  useEffect(() => {
+    Promise.all([
+      supabase.from("cooperativas").select("id, nome").eq("ativo", true).order("nome"),
+      supabase.from("regionais").select("id, nome").eq("ativo", true).order("nome"),
+      supabase.from("voluntarios").select("id, nome").eq("ativo", true).order("nome"),
+    ]).then(([coopRes, regRes, volRes]) => {
+      if (coopRes.data) setCooperativasDb(coopRes.data);
+      if (regRes.data) setRegionaisDb(regRes.data);
+      if (volRes.data) setVoluntariosDb(volRes.data);
+    }).catch(e => console.warn("Erro ao carregar dados:", e));
+  }, []);
+
+  const buscar = async () => {
+    if (!searchPlaca.trim()) return;
+    const { data, error } = await supabase
+      .from("veiculos")
+      .select("*, associados(nome, cpf, telefone, regional_id, cooperativa_id)")
+      .ilike("placa", `%${searchPlaca.replace("-", "")}%`)
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) {
+      toast.error("Agregado não encontrado.");
+      return;
+    }
+    setSelected(data);
+    setForm({ ...data });
+    toast.success("Veículo encontrado!");
   };
 
   const set = (f: string, v: any) => setForm((p: any) => ({ ...p, [f]: v }));
@@ -150,9 +166,28 @@ export default function ConsultarAgregado() {
             <span className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /> Cooperativa / Voluntário</span>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SelectWithAdd label="Cooperativa" value={form.cooperativa || ""} onValueChange={v => set("cooperativa", v)} options={["Cooperativa São Paulo", "Cooperativa Rio", "Cooperativa Minas", "Cooperativa Sul"]} />
-              <SelectWithAdd label="Voluntário" value={form.voluntario || ""} onValueChange={v => set("voluntario", v)} options={["João Voluntário", "Maria Voluntária", "Pedro Auxiliar"]} />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label className="text-xs">Regional <span className="text-destructive">*</span></Label>
+                <Select value={form.regional_id || ""} onValueChange={v => set("regional_id", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione a regional" /></SelectTrigger>
+                  <SelectContent>{regionaisDb.map(r => <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Cooperativa <span className="text-destructive">*</span></Label>
+                <Select value={form.cooperativa_id || ""} onValueChange={v => set("cooperativa_id", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione a cooperativa" /></SelectTrigger>
+                  <SelectContent>{cooperativasDb.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Voluntário (Consultor) <span className="text-destructive">*</span></Label>
+                <Select value={form.voluntario_id || ""} onValueChange={v => set("voluntario_id", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o voluntário" /></SelectTrigger>
+                  <SelectContent>{voluntariosDb.map(v => <SelectItem key={v.id} value={v.id}>{v.nome}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
             </div>
           </AccordionContent>
         </AccordionItem>

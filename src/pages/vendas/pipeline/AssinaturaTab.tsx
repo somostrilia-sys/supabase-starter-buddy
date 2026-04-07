@@ -62,7 +62,7 @@ export default function AssinaturaTab({ deal, onUpdate }: Props) {
       const { data, error } = await supabase
         .from("contratos" as any)
         .select("*")
-        .eq("associado_id", (deal as any).associado_id || deal.id)
+        .eq("negociacao_id", deal.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data || []).map((c: any) => ({

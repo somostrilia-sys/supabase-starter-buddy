@@ -252,6 +252,31 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
           automatica: true,
         } as any);
       }
+      // Inativação automática de placa substituída (VEN-001)
+      if (leadId && !leadId.startsWith("p")) {
+        const { data: negData } = await supabase
+          .from("negociacoes")
+          .select("placa_substituida")
+          .eq("id", leadId)
+          .maybeSingle();
+        if (negData?.placa_substituida) {
+          await supabase
+            .from("veiculos")
+            .update({
+              status: "inativo",
+              motivo_inativacao: `Substituição — Venda concluída ${numero}`,
+            } as any)
+            .ilike("placa", negData.placa_substituida);
+          // Registrar no audit_log
+          const { registrarAuditoria } = await import("@/lib/auditoria");
+          registrarAuditoria(supabase, {
+            entidade: "veiculo", entidade_id: negData.placa_substituida,
+            campo_alterado: "status", valor_antigo: "ativo",
+            valor_novo: "inativo", origem_modulo: "vendas",
+          }).catch(e => console.warn("Erro auditoria substituição:", e));
+        }
+      }
+
       await queryClient.invalidateQueries({ queryKey: ["leads"] });
       await queryClient.invalidateQueries({ queryKey: ["associados"] });
       await queryClient.invalidateQueries({ queryKey: ["veiculos"] });

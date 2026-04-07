@@ -120,10 +120,10 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
   const taxaAdesao = adesaoReal > 0 ? adesaoReal : 400;
   const totalPago = faturas.filter(f => f.status === "pago").reduce((s, f) => s + f.valor, 0);
   const totalPendente = faturas.filter(f => f.status !== "pago").reduce((s, f) => s + f.valor, 0);
-  // Comissão sobre mensalidade (não sobre adesão)
+  // Comissão sobre adesão (por venda, não recorrente)
   const valorComissao = configComissao
-    ? (configComissao.tipo === "percentual" ? (mensalidadeReal * configComissao.percentual / 100) : configComissao.valor_fixo)
-    : (mensalidadeReal * 0.15);
+    ? (configComissao.tipo === "percentual" ? (adesaoReal * configComissao.percentual / 100) : configComissao.valor_fixo)
+    : (adesaoReal * 0.15);
 
   return (
     <div className="space-y-5">
@@ -134,7 +134,7 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
           { label: "Total Pago", valor: totalPago, sub: "", color: "#16a34a", icon: CreditCard },
           { label: "Pendente", valor: totalPendente > 0 ? totalPendente : Math.max(0, taxaAdesao - totalPago), sub: "", color: "#dc2626", icon: Receipt },
           { label: "Mensalidade", valor: mensalidadeReal, sub: deal.plano || "", color: "#7c3aed", icon: Banknote },
-          { label: "Comissão", valor: valorComissao, sub: configComissao ? (configComissao.tipo === "percentual" ? `${configComissao.percentual}% s/ mensal` : "fixo") : "15% s/ mensal", color: "#059669", icon: DollarSign },
+          { label: "Comissão", valor: valorComissao, sub: configComissao ? (configComissao.tipo === "percentual" ? `${configComissao.percentual}% s/ adesão` : "fixo") : "15% s/ adesão", color: "#059669", icon: DollarSign },
         ].map(c => (
           <Card key={c.label} className="rounded-none border-t-2" style={{ borderTopColor: c.color }}>
             <CardContent className="p-4 space-y-1">
@@ -251,9 +251,9 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
               <p className="text-[10px] text-blue-500">Adesão: {percentualAdesao}% → {deal.consultor}</p>
             </div>
             <div className="text-center p-3 rounded bg-emerald-50 dark:bg-emerald-950/20 border border-success/20 dark:border-emerald-800">
-              <p className="text-[10px] text-muted-foreground uppercase">Comissão Mensal</p>
+              <p className="text-[10px] text-muted-foreground uppercase">Comissão por Venda</p>
               <p className="text-lg font-bold text-success dark:text-emerald-400">{fmt(valorComissao)}</p>
-              <p className="text-[10px] text-emerald-600">{configComissao ? (configComissao.tipo === "percentual" ? `${configComissao.percentual}% s/ mensal ${fmt(mensalidadeReal)}` : `Fixo ${fmt(configComissao.valor_fixo)}`) : `15% s/ mensal ${fmt(mensalidadeReal)}`} — {deal.consultor}</p>
+              <p className="text-[10px] text-emerald-600">{configComissao ? (configComissao.tipo === "percentual" ? `${configComissao.percentual}% s/ adesão ${fmt(adesaoReal)}` : `Fixo ${fmt(configComissao.valor_fixo)}`) : `15% s/ adesão ${fmt(adesaoReal)}`} — {deal.consultor}</p>
             </div>
             <div className="text-center p-3 rounded bg-background border">
               <p className="text-[10px] text-muted-foreground uppercase">Líquido Associação</p>
@@ -267,7 +267,7 @@ export default function FinanceiroNegociacaoTab({ deal }: Props) {
           </div>
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
-            Comissão mensal: aplicada sobre mensalidade recorrente
+            Comissão por venda: aplicada sobre valor de adesão
           </div>
         </div>
       </fieldset>

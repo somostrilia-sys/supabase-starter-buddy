@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { supabase, callEdge } from "@/integrations/supabase/client";
+import { supabase, callEdgePublic } from "@/integrations/supabase/client";
 import {
   Phone, MessageSquare, Instagram, Camera, ChevronRight, ChevronLeft,
   Car, Shield, CheckCircle, Loader2, MapPin, Star, Zap, ChevronDown,
@@ -141,7 +141,7 @@ export default function ConsultorLanding() {
     if (clean.length < 7) return;
     setBuscando(true); setBuscaErro("");
     try {
-      const res = await callEdge("gia-buscar-placa", { acao: "placa", placa: clean });
+      const res = await callEdgePublic("gia-buscar-placa", { body: { acao: "placa", placa: clean } });
       if (res.sucesso && res.resultado) {
         setVeiculo(res.resultado);
         const modelo = (res.resultado.modelo || "").toLowerCase();
@@ -162,9 +162,9 @@ export default function ConsultorLanding() {
     try {
       // Edge function pipeline (non-blocking)
       try {
-        await callEdge("gia-consultor-page", {
-          acao: "capturar_lead_cotacao", slug,
-          dados: { nome, telefone: telefone.replace(/\D/g, ""), email, veiculo: veiculo ? `${veiculo.marca} ${veiculo.modelo}` : "", estado, cidade_circulacao: cidade },
+        await callEdgePublic("gia-consultor-page", {
+          body: { acao: "capturar_lead_cotacao", slug,
+          dados: { nome, telefone: telefone.replace(/\D/g, ""), email, veiculo: veiculo ? `${veiculo.marca} ${veiculo.modelo}` : "", estado, cidade_circulacao: cidade } },
         });
       } catch { /* fallback below */ }
 

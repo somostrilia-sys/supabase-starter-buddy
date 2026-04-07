@@ -9,9 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ArrowLeft, Download, Upload, Save, Plus, Trash2, AlertTriangle,
-  CheckCircle2, Loader2, FileSpreadsheet, Edit,
+  CheckCircle2, Loader2, FileSpreadsheet, Edit, Link2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -106,6 +108,92 @@ export default function TabelaCotas({ onBack }: { onBack: () => void }) {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Vinculação de regionais/cooperativas
+  const [vinculoModal, setVinculoModal] = useState(false);
+  const [vinculoFaixaId, setVinculoFaixaId] = useState<string | null>(null);
+  const [vinculoRegionais, setVinculoRegionais] = useState<string[]>([]);
+  const [vinculoCooperativas, setVinculoCooperativas] = useState<string[]>([]);
+  const [vinculoSaving, setVinculoSaving] = useState(false);
+  const [faixaVinculos, setFaixaVinculos] = useState<Record<string, { regionais: string[]; cooperativas: string[] }>>({});
+
+  const { data: regionaisDb = [] } = useQuery({
+    queryKey: ["regionais-cotas"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("regionais").select("id, nome").eq("ativo", true).order("nome");
+      return data || [];
+    },
+  });
+
+  const { data: cooperativasDb = [] } = useQuery({
+    queryKey: ["cooperativas-cotas"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("cooperativas").select("id, nome").eq("ativo", true).order("nome");
+      return data || [];
+    },
+  });
+
+  // Carregar vínculos existentes
+  const { data: vinculosDb = [] } = useQuery({
+    queryKey: ["faixa-vinculos"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("faixa_regional").select("faixa_id, regional_id, cooperativa_id");
+      return data || [];
+    },
+  });
+
+  useEffect(() => {
+    if (vinculosDb.length > 0) {
+      const map: Record<string, { regionais: string[]; cooperativas: string[] }> = {};
+      vinculosDb.forEach((v: any) => {
+        const fid = String(v.faixa_id);
+        if (!map[fid]) map[fid] = { regionais: [], cooperativas: [] };
+        if (v.regional_id) map[fid].regionais.push(v.regional_id);
+        if (v.cooperativa_id) map[fid].cooperativas.push(v.cooperativa_id);
+      });
+      setFaixaVinculos(map);
+    }
+  }, [vinculosDb]);
+
+  const abrirVinculo = (faixaId: string) => {
+    setVinculoFaixaId(faixaId);
+    const existing = faixaVinculos[faixaId] || { regionais: [], cooperativas: [] };
+    setVinculoRegionais([...existing.regionais]);
+    setVinculoCooperativas([...existing.cooperativas]);
+    setVinculoModal(true);
+  };
+
+  const salvarVinculo = async () => {
+    if (!vinculoFaixaId) return;
+    setVinculoSaving(true);
+    try {
+      // Deletar vínculos antigos
+      await (supabase as any).from("faixa_regional").delete().eq("faixa_id", vinculoFaixaId);
+      // Inserir novos
+      const inserts: any[] = [];
+      vinculoRegionais.forEach(rid => inserts.push({ faixa_id: vinculoFaixaId, regional_id: rid, cooperativa_id: null }));
+      vinculoCooperativas.forEach(cid => inserts.push({ faixa_id: vinculoFaixaId, regional_id: null, cooperativa_id: cid }));
+      if (inserts.length > 0) {
+        const { error } = await (supabase as any).from("faixa_regional").insert(inserts);
+        if (error) throw error;
+      }
+      setFaixaVinculos(prev => ({ ...prev, [vinculoFaixaId!]: { regionais: [...vinculoRegionais], cooperativas: [...vinculoCooperativas] } }));
+      toast.success("Vínculos salvos com sucesso!");
+      setVinculoModal(false);
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao salvar vínculos");
+    } finally {
+      setVinculoSaving(false);
+    }
+  };
+
+  const getVinculoLabel = (faixaId: string) => {
+    const v = faixaVinculos[faixaId];
+    if (!v || (v.regionais.length === 0 && v.cooperativas.length === 0)) return "Sem vínculo";
+    const rNames = v.regionais.map(rid => regionaisDb.find((r: any) => r.id === rid)?.nome || "").filter(Boolean);
+    const cNames = v.cooperativas.map(cid => cooperativasDb.find((c: any) => c.id === cid)?.nome || "").filter(Boolean);
+    return [...rNames, ...cNames].join(", ") || "Sem vínculo";
+  };
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ success: number; errors: string[] } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -258,7 +346,7 @@ export default function TabelaCotas({ onBack }: { onBack: () => void }) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-base">Faixas de Cota por Valor FIPE</CardTitle>
-              <CardDescription>Edite inline clicando no ícone de lápis. Faixas não podem se sobrepor.</CardDescription>
+              <CardDescription>Vincule regionais/cooperativas clicando no ícone de vínculo. Faixas não podem se sobrepor.</CardDescription>
             </div>
             <Button variant="outline" size="sm" className="gap-1.5" onClick={addFaixa}>
               <Plus className="h-3.5 w-3.5" />Nova Faixa
@@ -275,7 +363,8 @@ export default function TabelaCotas({ onBack }: { onBack: () => void }) {
                   <TableHead className="text-xs">Fator</TableHead>
                   <TableHead className="text-xs">Taxa Admin</TableHead>
                   <TableHead className="text-xs">Descrição</TableHead>
-                  <TableHead className="text-xs w-20"></TableHead>
+                  <TableHead className="text-xs">Regionais / Cooperativas</TableHead>
+                  <TableHead className="text-xs w-24"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -312,19 +401,20 @@ export default function TabelaCotas({ onBack }: { onBack: () => void }) {
                         )}
                       </TableCell>
                       <TableCell>
-                        {isEditing ? (
-                          <Input value={c.descricao} onChange={e => updateCota(c.id, "descricao", e.target.value)} className="h-8 text-xs" />
-                        ) : (
-                          <span className="text-sm">{c.descricao || "—"}</span>
-                        )}
+                        <span className="text-sm">{c.descricao || "—"}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs text-muted-foreground max-w-[200px] truncate block" title={getVinculoLabel(c.id)}>
+                          {getVinculoLabel(c.id)}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
                           <Button
-                            variant="ghost" size="icon" className="h-7 w-7"
-                            onClick={() => setEditingId(isEditing ? null : c.id)}
+                            variant="ghost" size="icon" className="h-7 w-7" title="Vincular Regionais/Cooperativas"
+                            onClick={() => abrirVinculo(c.id)}
                           >
-                            {isEditing ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <Edit className="h-3.5 w-3.5" />}
+                            <Link2 className="h-3.5 w-3.5 text-primary" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeFaixa(c.id)}>
                             <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -339,6 +429,66 @@ export default function TabelaCotas({ onBack }: { onBack: () => void }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal de Vinculação Regional/Cooperativa */}
+      <Dialog open={vinculoModal} onOpenChange={setVinculoModal}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="h-5 w-5 text-primary" /> Vincular Regionais e Cooperativas
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-semibold mb-2 block">Regionais</Label>
+              <ScrollArea className="max-h-40 border rounded-md p-2">
+                <div className="space-y-2">
+                  {regionaisDb.map((r: any) => (
+                    <div key={r.id} className="flex items-center gap-2">
+                      <Checkbox
+                        checked={vinculoRegionais.includes(r.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) setVinculoRegionais(prev => [...prev, r.id]);
+                          else setVinculoRegionais(prev => prev.filter(id => id !== r.id));
+                        }}
+                      />
+                      <span className="text-sm">{r.nome}</span>
+                    </div>
+                  ))}
+                  {regionaisDb.length === 0 && <p className="text-xs text-muted-foreground">Nenhuma regional cadastrada</p>}
+                </div>
+              </ScrollArea>
+            </div>
+            <div>
+              <Label className="text-sm font-semibold mb-2 block">Cooperativas</Label>
+              <ScrollArea className="max-h-40 border rounded-md p-2">
+                <div className="space-y-2">
+                  {cooperativasDb.map((c: any) => (
+                    <div key={c.id} className="flex items-center gap-2">
+                      <Checkbox
+                        checked={vinculoCooperativas.includes(c.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) setVinculoCooperativas(prev => [...prev, c.id]);
+                          else setVinculoCooperativas(prev => prev.filter(id => id !== c.id));
+                        }}
+                      />
+                      <span className="text-sm">{c.nome}</span>
+                    </div>
+                  ))}
+                  {cooperativasDb.length === 0 && <p className="text-xs text-muted-foreground">Nenhuma cooperativa cadastrada</p>}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVinculoModal(false)}>Cancelar</Button>
+            <Button onClick={salvarVinculo} disabled={vinculoSaving}>
+              {vinculoSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+              Salvar Vínculos
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Info card */}
       <Card className="border-muted bg-muted/20">

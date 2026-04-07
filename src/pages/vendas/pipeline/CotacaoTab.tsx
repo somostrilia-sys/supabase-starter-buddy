@@ -1096,7 +1096,8 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
               const diasAteVenc = Math.max(1, Math.round((proxVenc.getTime() - hoje.getTime()) / 86400000));
               const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
               const mensalidadePlano = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
-              const mensalidade = mensalidadePlano + totalOpcionais;
+              const rastreadorMensal = (form.tipoVeiculo === "Caminhão" || form.tipoVeiculo === "Van/Utilitário") ? 150 : 100;
+              const mensalidade = mensalidadePlano + totalOpcionais + rastreadorMensal;
               const proporcional = Math.round((mensalidade / 30) * diasAteVenc * 100) / 100;
 
               const automatico = diasAteVenc > 40;
@@ -1710,6 +1711,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           <OpcionaisSection
             negociacaoId={deal.id}
             tipoVeiculo={form.tipoVeiculo}
+            plano={planoSelecionado}
             selected={opcionaisSelecionados}
             onChange={handleOpcionaisChange}
           />

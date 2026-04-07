@@ -80,7 +80,7 @@ export default function ProdutosPorCooperativa() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Cód. SGA</TableHead>
+                    <TableHead>COD.</TableHead>
                     <TableHead>Nome</TableHead>
                     <TableHead>Classificação</TableHead>
                     <TableHead>Fornecedor</TableHead>

@@ -183,7 +183,7 @@ export default function ListagemProdutos() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cód. SGA</TableHead>
+                  <TableHead>COD.</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead>Fornecedor</TableHead>
                   <TableHead>Classificação</TableHead>

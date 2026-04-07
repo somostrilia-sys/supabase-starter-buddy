@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -91,6 +91,25 @@ export default function CadastrarAgregado() {
   const [selectedProdutos, setSelectedProdutos] = useState<string[]>([]);
   const [documentos, setDocumentos] = useState<{ nome: string; tipo: string; data: string }[]>([]);
   const [grupoProduto, setGrupoProduto] = useState("");
+
+  const [cooperativasDb, setCooperativasDb] = useState<{ id: string; nome: string }[]>([]);
+  const [regionaisDb, setRegionaisDb] = useState<{ id: string; nome: string }[]>([]);
+  const [voluntariosDb, setVoluntariosDb] = useState<{ id: string; nome: string }[]>([]);
+  const [cooperativaId, setCooperativaId] = useState("");
+  const [voluntarioId, setVoluntarioId] = useState("");
+  const [regionalId, setRegionalId] = useState("");
+
+  useEffect(() => {
+    Promise.all([
+      supabase.from("cooperativas").select("id, nome").eq("ativo", true).order("nome"),
+      supabase.from("regionais").select("id, nome").eq("ativo", true).order("nome"),
+      supabase.from("voluntarios").select("id, nome").eq("ativo", true).order("nome"),
+    ]).then(([coopRes, regRes, volRes]) => {
+      if (coopRes.data) setCooperativasDb(coopRes.data);
+      if (regRes.data) setRegionaisDb(regRes.data);
+      if (volRes.data) setVoluntariosDb(volRes.data);
+    }).catch(e => console.warn("Erro ao carregar dados:", e));
+  }, []);
 
   const set = (f: string, v: any) => setForm(p => ({ ...p, [f]: v }));
 
@@ -208,9 +227,28 @@ export default function CadastrarAgregado() {
             <span className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /> 2. Cooperativa / Voluntário</span>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SelectWithAdd label="Cooperativa" value="" onValueChange={() => {}} options={["Cooperativa São Paulo", "Cooperativa Rio", "Cooperativa Minas", "Cooperativa Sul"]} />
-              <SelectWithAdd label="Voluntário" value="" onValueChange={() => {}} options={["João Voluntário", "Maria Voluntária", "Pedro Auxiliar"]} />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label className="text-xs">Regional <span className="text-destructive">*</span></Label>
+                <Select value={regionalId} onValueChange={setRegionalId}>
+                  <SelectTrigger><SelectValue placeholder="Selecione a regional" /></SelectTrigger>
+                  <SelectContent>{regionaisDb.map(r => <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Cooperativa <span className="text-destructive">*</span></Label>
+                <Select value={cooperativaId} onValueChange={setCooperativaId}>
+                  <SelectTrigger><SelectValue placeholder="Selecione a cooperativa" /></SelectTrigger>
+                  <SelectContent>{cooperativasDb.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Voluntário (Consultor) <span className="text-destructive">*</span></Label>
+                <Select value={voluntarioId} onValueChange={setVoluntarioId}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o voluntário" /></SelectTrigger>
+                  <SelectContent>{voluntariosDb.map(v => <SelectItem key={v.id} value={v.id}>{v.nome}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
             </div>
           </AccordionContent>
         </AccordionItem>

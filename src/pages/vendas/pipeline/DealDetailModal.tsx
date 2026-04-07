@@ -22,9 +22,11 @@ import TagsInline from "@/components/TagsInline";
 import PedirLiberacaoButton from "@/components/PedirLiberacaoButton";
 import { supabase, callEdge } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   FileText, User, Car, ClipboardCheck, Activity, PenTool, Wallet,
   Mail, MessageSquare, Plus, Send, Image, Archive, Paperclip, CheckCircle, X,
+  ArrowLeftRight, AlertTriangle, Loader2,
 } from "lucide-react";
 
 interface Props {
@@ -56,6 +58,59 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
   const [comissaoFixo, setComissaoFixo] = React.useState<number>(0);
   const [mensalidadeCalc, setMensalidadeCalc] = React.useState<number>(0);
   const [adesaoCalc, setAdesaoCalc] = React.useState<number>(0);
+
+  // Substituição de placa (VEN-001)
+  const [showSubstituicao, setShowSubstituicao] = useState(false);
+  const [placasAssociado, setPlacasAssociado] = useState<any[]>([]);
+  const [loadingPlacas, setLoadingPlacas] = useState(false);
+  const [placaSelecionada, setPlacaSelecionada] = useState<any>(null);
+  const [substituicaoAtiva, setSubstituicaoAtiva] = useState(!!deal.placa_substituida);
+
+  const buscarPlacasAssociado = async () => {
+    if (!deal.cpf_cnpj) { toast.error("CPF/CNPJ não informado na negociação."); return; }
+    setLoadingPlacas(true);
+    setPlacaSelecionada(null);
+    try {
+      const { data: assocs } = await supabase
+        .from("associados")
+        .select("id")
+        .eq("cpf", deal.cpf_cnpj.replace(/\D/g, ""))
+        .limit(1)
+        .maybeSingle();
+      if (!assocs) { setPlacasAssociado([]); return; }
+      const { data: veiculos } = await supabase
+        .from("veiculos")
+        .select("id, placa, modelo, status")
+        .eq("associado_id", assocs.id);
+      setPlacasAssociado(veiculos || []);
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao buscar placas");
+    } finally {
+      setLoadingPlacas(false);
+    }
+  };
+
+  const selecionarPlacaSubstituicao = async (v: any) => {
+    // Validação de trava (ERR inadimplência / pendência)
+    if (v.status === "Inadimplente" || v.status === "inadimplente") {
+      toast.error("Esta placa está inadimplente e não pode ser substituída. Regularize a situação antes.");
+      return;
+    }
+    if (v.status === "Inativo - Com Pendência" || v.status === "inativo_pendencia") {
+      toast.error("Esta placa possui pendência ativa e não pode ser substituída. Regularize antes.");
+      return;
+    }
+    // Salvar placa substituída na negociação
+    const { error } = await supabase
+      .from("negociacoes")
+      .update({ placa_substituida: v.placa, tipo_venda: "substituicao" } as any)
+      .eq("id", deal.id);
+    if (error) { toast.error(error.message); return; }
+    setPlacaSelecionada(v);
+    setSubstituicaoAtiva(true);
+    toast.success(`Placa ${v.placa} selecionada para substituição.`);
+    onUpdate?.();
+  };
 
   // Buscar percentual_adesao e comissão do consultor
   React.useEffect(() => {
@@ -363,17 +418,59 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
               )}
             </div>
 
+            {/* Substituição de Placa (VEN-001) */}
+            <div className="border-t pt-3">
+              {substituicaoAtiva && (
+                <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded p-2 mb-2">
+                  <ArrowLeftRight className="h-3.5 w-3.5 text-amber-600" />
+                  <span className="text-[10px] text-amber-700 font-medium">
+                    Substituição: {deal.placa_substituida || placaSelecionada?.placa}
+                  </span>
+                </div>
+              )}
+              {showSubstituicao ? (
+                <div className="space-y-2 p-2 border rounded bg-muted/30">
+                  {loadingPlacas ? (
+                    <div className="flex justify-center py-3"><Loader2 className="h-4 w-4 animate-spin" /></div>
+                  ) : placasAssociado.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-2">Nenhuma placa cadastrada para este associado.</p>
+                  ) : (
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                      {placasAssociado.map(v => (
+                        <div key={v.id} className="flex items-center justify-between p-1.5 rounded hover:bg-muted/50 cursor-pointer border text-xs" onClick={() => selecionarPlacaSubstituicao(v)}>
+                          <div>
+                            <span className="font-mono font-bold">{v.placa}</span>
+                            <span className="text-muted-foreground ml-2">{v.modelo}</span>
+                          </div>
+                          <Badge variant="outline" className={
+                            v.status === "Inadimplente" || v.status === "inadimplente" ? "border-destructive text-destructive" :
+                            v.status === "inativo_pendencia" ? "border-amber-500 text-amber-600" :
+                            "border-emerald-500 text-emerald-600"
+                          }>{v.status}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <Button size="sm" variant="ghost" className="rounded-none text-[10px] h-6 w-full" onClick={() => setShowSubstituicao(false)}>Cancelar</Button>
+                </div>
+              ) : (
+                <Button size="sm" variant="ghost" className="rounded-none text-[10px] h-6 text-muted-foreground hover:text-foreground w-full gap-1" onClick={() => { setShowSubstituicao(true); buscarPlacasAssociado(); }}>
+                  <ArrowLeftRight className="h-3 w-3" /> Substituição de Placa
+                </Button>
+              )}
+            </div>
+
             {/* Comissão e Adesão */}
             <div className="space-y-1 border-t pt-3">
               <div className="flex items-center gap-2">
                 <Wallet className="h-4 w-4 text-success" />
                 <div>
-                  <span className="text-[10px] text-muted-foreground">Comissão {comissaoTipo === "fixo" ? "(fixo)" : `(${comissaoPct}% s/ mensal)`}</span>
+                  <span className="text-[10px] text-muted-foreground">Comissão {comissaoTipo === "fixo" ? "(fixo)" : `(${comissaoPct}% s/ adesão)`}</span>
                   <p className="text-sm font-semibold text-success">
                     {comissaoTipo === "fixo"
                       ? `R$ ${comissaoFixo.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
-                      : mensalidadeCalc > 0
-                        ? `R$ ${(mensalidadeCalc * comissaoPct / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                      : adesaoCalc > 0
+                        ? `R$ ${(adesaoCalc * comissaoPct / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
                         : "—"}
                   </p>
                 </div>

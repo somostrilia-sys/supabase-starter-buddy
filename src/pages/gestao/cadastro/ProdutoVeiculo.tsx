@@ -236,7 +236,7 @@ export default function ProdutoVeiculo() {
         <CardContent className="p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nome, classificação ou código SGA" className="pl-10" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nome, classificação ou código" className="pl-10" />
           </div>
         </CardContent>
       </Card>
@@ -249,7 +249,7 @@ export default function ProdutoVeiculo() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cód. SGA</TableHead>
+                  <TableHead>COD.</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead>Classificação</TableHead>
                   <TableHead>Tipo Veículo</TableHead>
@@ -305,7 +305,7 @@ export default function ProdutoVeiculo() {
               </div>
 
               <div>
-                <Label>Código SGA</Label>
+                <Label>COD.</Label>
                 <Input value={form.codigo_sga} onChange={e => set("codigo_sga", e.target.value)} placeholder="Ex: 54" />
               </div>
 

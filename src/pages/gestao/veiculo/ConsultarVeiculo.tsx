@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase, callEdge } from "@/integrations/supabase/client";
+import PosVendaSection from "./PosVendaSection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -113,7 +114,7 @@ export default function ConsultarVeiculo() {
       id: v.id, nome: v.associados?.nome ?? "—", placa: v.placa ?? "", chassi: v.chassi ?? "",
       idExterno: v.renavam ?? "", modelo: v.modelo ?? "", marca: v.marca ?? "",
       anoFab: v.ano ?? 0, anoMod: v.ano ?? 0, cor: v.cor ?? "",
-      valorFipe: v.valor_fipe ?? 0, cota: "", combustivel: v.combustivel ?? "", km: v.quilometragem ?? 0,
+      valorFipe: v.valor_fipe ?? 0, cota: v.cota || "", combustivel: v.combustivel ?? "", km: v.quilometragem ?? 0,
       regional: v.associados?.regionais?.nome ?? "", cooperativa: v.associados?.cooperativas?.nome ?? "", tipoAdesao: "",
       dataCadastro: v.created_at?.split("T")[0] ?? "", dataContrato: "", diaVenc: v.dia_vencimento ?? 0,
       sitVeiculo: v.status ?? "Ativo", sitAssociado: v.associados?.status ?? "",
@@ -237,9 +238,25 @@ export default function ConsultarVeiculo() {
   };
 
   const selectVehicle = async (v: Veiculo) => {
-    setSelected(v);
     setContratoData(null);
     setCotacaoData(null);
+
+    // Auto-preencher cota via FIPE + faixa + regional (ERR-015)
+    if (v.valorFipe > 0 && !v.cota) {
+      try {
+        const { data: faixa } = await (supabase as any)
+          .from("faixas_fipe")
+          .select("descricao, fipe_inicial, fipe_final, fator, taxa_adm")
+          .lte("fipe_inicial", v.valorFipe)
+          .gte("fipe_final", v.valorFipe)
+          .limit(1);
+        if (faixa && faixa.length > 0) {
+          v = { ...v, cota: faixa[0].descricao || `${faixa[0].fipe_inicial}-${faixa[0].fipe_final}` };
+        }
+      } catch (e) { console.warn("Erro auto-fill cota:", e); }
+    }
+    setSelected(v);
+
     // Fetch contract/plan info and cotacao for the vehicle
     const [contratoRes, cotacaoRes] = await Promise.all([
       supabase
@@ -419,12 +436,12 @@ export default function ConsultarVeiculo() {
             <TabsTrigger value="condutores" className="text-xs gap-1"><Users className="h-3 w-3" />Condutores</TabsTrigger>
             <TabsTrigger value="financeiro" className="text-xs gap-1"><DollarSign className="h-3 w-3" />Financeiro</TabsTrigger>
             <TabsTrigger value="agregados" className="text-xs gap-1"><Package className="h-3 w-3" />Agregados</TabsTrigger>
-            <TabsTrigger value="produtos" className="text-xs gap-1"><Package className="h-3 w-3" />Produtos</TabsTrigger>
             <TabsTrigger value="vistorias" className="text-xs gap-1"><ClipboardCheck className="h-3 w-3" />Vistorias</TabsTrigger>
             <TabsTrigger value="documentos" className="text-xs gap-1"><FileText className="h-3 w-3" />Documentos</TabsTrigger>
             <TabsTrigger value="observacoes" className="text-xs gap-1"><FileText className="h-3 w-3" />Obs</TabsTrigger>
             <TabsTrigger value="fornecedores" className="text-xs gap-1"><PhoneIcon className="h-3 w-3" />Fornecedores</TabsTrigger>
             <TabsTrigger value="contratos" className="text-xs gap-1"><FileSignature className="h-3 w-3" />Contratos</TabsTrigger>
+            <TabsTrigger value="pos-venda" className="text-xs gap-1"><ClipboardCheck className="h-3 w-3" />Pós-Venda</TabsTrigger>
           </TabsList>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
@@ -731,10 +748,6 @@ export default function ConsultarVeiculo() {
 
         {/* TAB 5 - VISTORIAS */}
         {/* TAB - PRODUTOS DO VEÍCULO */}
-        <TabsContent value="produtos" className="mt-4">
-          <VeiculoProdutosTab veiculoId={sel.id} />
-        </TabsContent>
-
         <TabsContent value="vistorias" className="mt-4">
           <VistoriaTabReal placa={sel.placa} veiculoId={sel.id} />
         </TabsContent>
@@ -856,6 +869,11 @@ export default function ConsultarVeiculo() {
               </TableBody>
             </Table>
           </CardContent></Card>
+        </TabsContent>
+
+        {/* TAB PÓS-VENDA (VEI-001) */}
+        <TabsContent value="pos-venda" className="mt-4">
+          <PosVendaSection veiculoId={sel.id} />
         </TabsContent>
       </Tabs>
     </div>
@@ -990,6 +1008,26 @@ function VistoriaTabReal({ placa, veiculoId }: { placa?: string; veiculoId?: str
           fotos: fotos || [],
           origem: "negociacao",
         });
+      }
+      // Também buscar vistorias diretas do módulo de gestão
+      if (veiculoId) {
+        const { data: vistoriasGestao } = await (supabase as any)
+          .from("vistorias")
+          .select("id, status, data_vistoria, tipo, observacoes, created_at, vistoria_fotos(id, tipo, url, created_at, status)")
+          .eq("veiculo_id", veiculoId);
+        for (const vg of (vistoriasGestao || [])) {
+          resultado.push({
+            id: vg.id,
+            data: vg.data_vistoria || vg.created_at,
+            tipo: vg.tipo || "Vistoria de Gestão",
+            cliente: "-",
+            veiculo: placa || "",
+            aprovada: vg.status === "aprovada",
+            observacoes: vg.observacoes,
+            fotos: vg.vistoria_fotos || [],
+            origem: "gestao",
+          });
+        }
       }
       return resultado.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
     },

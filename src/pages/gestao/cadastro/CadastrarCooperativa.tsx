@@ -164,7 +164,7 @@ export default function CadastrarCooperativa() {
                 </div>
                 <div className="space-y-1.5 text-xs text-muted-foreground mb-3">
                   <div className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /> {c.cidade}/{c.estado}</div>
-                  {c.codigo_sga && <div className="flex items-center gap-1.5"><Users className="h-3 w-3" /> SGA: {c.codigo_sga}</div>}
+                  {c.codigo_sga && <div className="flex items-center gap-1.5"><Users className="h-3 w-3" /> COD: {c.codigo_sga}</div>}
                   {c.cpf_cnpj && <div className="flex items-center gap-1.5"><Building2 className="h-3 w-3" /> {c.cpf_cnpj}</div>}
                   {c.telefone && <div className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> {c.telefone}</div>}
                   {c.email && <div className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> {c.email}</div>}
@@ -201,7 +201,7 @@ export default function CadastrarCooperativa() {
                   <SelectContent>{ufs.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div><Label>Codigo SGA</Label><Input value={form.codigo_sga} onChange={e => set("codigo_sga", e.target.value)} /></div>
+              <div><Label>COD.</Label><Input value={form.codigo_sga} onChange={e => set("codigo_sga", e.target.value)} /></div>
               <div><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={e => set("cpf_cnpj", e.target.value)} /></div>
               <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => set("email", e.target.value)} /></div>
               <div><Label>Telefone</Label><Input value={form.telefone} onChange={e => set("telefone", e.target.value)} /></div>

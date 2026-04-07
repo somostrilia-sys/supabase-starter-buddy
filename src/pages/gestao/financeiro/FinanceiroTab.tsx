@@ -11,6 +11,7 @@ import HistoricoFinanceiro from "./HistoricoFinanceiro";
 import CalculadoraMensalidade from "./CalculadoraMensalidade";
 import TabelaPlanos from "./TabelaPlanos";
 import FechamentoMensal from "./FechamentoMensal";
+import BoletoAvulso from "./BoletoAvulso";
 
 const actions = [
   { id: "boletos", title: "Boletos / Fechamento", icon: FileText, desc: "Simular, gerar e cancelar lotes de boletos" },
@@ -21,6 +22,7 @@ const actions = [
   { id: "calculadora", title: "Calculadora de Mensalidade", icon: Calculator, desc: "Simular mensalidade com taxa admin e rateio" },
   { id: "tabela-planos", title: "Tabela de Planos", icon: Table2, desc: "Planos com filtro por região e tipo de veículo" },
   { id: "fechamento-mensal", title: "Fechamento Mensal", icon: CalendarCheck, desc: "Ciclo financeiro mensal — boletos, rateio e relatórios" },
+  { id: "boleto-avulso", title: "Boleto Avulso", icon: Landmark, desc: "Gerar boleto individual por placa com desconto automático de 15%" },
 ];
 
 export default function FinanceiroTab() {
@@ -34,6 +36,7 @@ export default function FinanceiroTab() {
   if (view === "calculadora") return <CalculadoraMensalidade onBack={() => setView(null)} />;
   if (view === "tabela-planos") return <TabelaPlanos onBack={() => setView(null)} />;
   if (view === "fechamento-mensal") return <FechamentoMensal onBack={() => setView(null)} />;
+  if (view === "boleto-avulso") return <BoletoAvulso onBack={() => setView(null)} />;
 
   return (
     <div className="p-6 lg:px-8 flex flex-col min-h-[calc(100vh-7.5rem)]">

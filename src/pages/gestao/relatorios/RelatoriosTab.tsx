@@ -194,6 +194,7 @@ const allColumns = [
   { key: "modelo", label: "Modelo" }, { key: "ano", label: "Ano" }, { key: "tipo", label: "Tipo" },
   { key: "categoria", label: "Categoria" }, { key: "cota", label: "Cota" }, { key: "cooperativa", label: "Cooperativa" },
   { key: "regional", label: "Regional" }, { key: "dataCadastro", label: "Data Cadastro" }, { key: "situacao", label: "Situação" },
+  { key: "consultor", label: "Consultor Responsável" }, { key: "posVenda", label: "Pós-Venda" },
 ];
 
 // Map associado_status enum values to filter display labels
@@ -334,6 +335,14 @@ export default function RelatoriosTab() {
   const [selTipoVeiculo, setSelTipoVeiculo] = useState<Set<string>>(new Set(tiposVeiculo));
   const [selCota, setSelCota] = useState<Set<string>>(new Set(cotasVeiculo));
   const [selCategoria, setSelCategoria] = useState<Set<string>>(new Set(categoriasVeiculo));
+  const [selConsultor, setSelConsultor] = useState("__todos__");
+
+  // Lista de consultores extraída dos associados
+  const consultoresLista = useMemo(() => {
+    const set = new Set<string>();
+    realAssociados.forEach((a: any) => { if (a.consultor_responsavel) set.add(a.consultor_responsavel); });
+    return Array.from(set).sort();
+  }, [realAssociados]);
 
   // Auto-select all regionais/cooperativas when they load from Supabase
   useEffect(() => {
@@ -406,8 +415,10 @@ export default function RelatoriosTab() {
     if (selSitAssociado.size < situacoesAssociado.length) {
       const displayLabel = statusEnumToLabel[a.status as string];
       if (displayLabel && !selSitAssociado.has(displayLabel)) return false;
-      // If status is unknown/unmapped, keep the row
     }
+
+    // Filter by consultor responsável (REL-002)
+    if (selConsultor !== "__todos__" && a.consultor_responsavel !== selConsultor) return false;
 
     return true;
   });
@@ -558,6 +569,18 @@ export default function RelatoriosTab() {
             <FilterSection title="Regional do Veículo" items={regionaisLista} selected={selRegional} onToggle={(item) => toggleInSet(selRegional, setSelRegional, item)} columns={2} color="primary" />
             <FilterSection title="Cooperativa do Veículo" items={cooperativasLista} selected={selCooperativa} onToggle={(item) => toggleInSet(selCooperativa, setSelCooperativa, item)} color="warning" />
             <FilterSection title="Situação do Associado" items={situacoesAssociado} selected={selSitAssociado} onToggle={(item) => toggleInSet(selSitAssociado, setSelSitAssociado, item)} color="destructive" />
+            <div className="border border-border">
+              <div className="bg-primary px-4 py-2"><h4 className="text-sm font-bold text-white uppercase tracking-wider">Consultor Responsável</h4></div>
+              <div className="px-4 py-3 bg-card">
+                <Select value={selConsultor} onValueChange={setSelConsultor}>
+                  <SelectTrigger className="w-64"><SelectValue placeholder="Todos os consultores" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__todos__">Todos</SelectItem>
+                    {consultoresLista.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <FilterSection title="Tipo de Veículo" items={tiposVeiculo} selected={selTipoVeiculo} onToggle={(item) => toggleInSet(selTipoVeiculo, setSelTipoVeiculo, item)} columns={3} color="primary" />
             <FilterSection title="Faixa de Cota" items={cotasVeiculo} selected={selCota} onToggle={(item) => toggleInSet(selCota, setSelCota, item)} columns={4} color="success" />
             <FilterSection title="Categoria do Veículo" items={categoriasVeiculo} selected={selCategoria} onToggle={(item) => toggleInSet(selCategoria, setSelCategoria, item)} columns={3} color="warning" />
@@ -601,6 +624,8 @@ export default function RelatoriosTab() {
                             <TableCell key={k} className="">
                               {k === "situacao" ? <Badge className={situacaoColor[a.situacao]}>{a.situacao}</Badge>
                                : k === "dataCadastro" ? new Date(a.dataCadastro).toLocaleDateString("pt-BR")
+                               : k === "consultor" ? String(a.consultor_responsavel || "Não Identificado")
+                               : k === "posVenda" ? String(a.pos_venda_status || "Não Realizado")
                                : String((a as Record<string, unknown>)[k] ?? "")}
                             </TableCell>
                           ))}

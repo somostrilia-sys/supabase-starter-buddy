@@ -234,12 +234,6 @@ export default function PlanosProtecao({ onBack }: { onBack: () => void }) {
                   </Button>
                 </div>
 
-                {/* Valor */}
-                <div>
-                  <span className="text-3xl font-bold">R$ {p.valorBase.toFixed(2).replace(".", ",")}</span>
-                  <span className="text-xs text-muted-foreground">/mês</span>
-                </div>
-
                 <p className="text-xs text-muted-foreground">{p.descricao}</p>
 
                 <Separator />

@@ -121,7 +121,7 @@ export default function AlterarAssociado() {
     try {
       const { data, error } = await supabase
         .from("veiculos")
-        .select("*, contratos(*, planos(nome))")
+        .select("*, contratos(*, planos(nome)), associados(nome, cpf, regional_id, cooperativa_id)")
         .ilike("placa", placa)
         .limit(1)
         .maybeSingle();
@@ -136,7 +136,14 @@ export default function AlterarAssociado() {
         chassi: data.chassi || "",
         cor: data.cor || "",
         status: data.status || "Ativo",
-        plano: data.contratos?.[0]?.planos?.nome || "",
+        plano: data.contratos?.[0]?.planos?.nome || "Sem plano vinculado",
+        renavam: data.renavam || "",
+        combustivel: data.combustivel || "",
+        categoria: data.categoria || "",
+        cota: data.cota || "",
+        valor_fipe: data.valor_fipe || "",
+        taxa_adm: data.taxa_adm || "",
+        rateio: data.rateio || "",
       });
     } catch (e: any) {
       toast.error(e.message || "Erro ao buscar veículo");
@@ -231,12 +238,12 @@ export default function AlterarAssociado() {
           codigo: a.id.slice(0, 6).toUpperCase(),
           nome: a.nome,
           cpf: a.cpf,
-          rg: "",
+          rg: a.rg || "",
           dataNasc: a.data_nascimento || "",
           sexo: "",
           estadoCivil: "",
           profissao: "",
-          cnh: "",
+          cnh: a.cnh || "",
           categoriaCnh: "",
           escolaridade: "",
           celular: a.telefone || "",
@@ -257,11 +264,11 @@ export default function AlterarAssociado() {
           nomeMae: "",
           regional: a.regionais?.nome || (a.regional_id ? regionaisMap[a.regional_id] : "") || "",
           cooperativa: a.cooperativas?.nome || (a.cooperativa_id ? cooperativasMap[a.cooperativa_id]?.nome : "") || "",
-          consultorResp: "",
+          consultorResp: a.consultor_responsavel || "Não Identificado",
           banco: "",
           agencia: "",
           contaCorrente: "",
-          diaVencimento: "10",
+          diaVencimento: a.dia_vencimento ? String(a.dia_vencimento) : (a.veiculos?.[0]?.dia_vencimento ? String(a.veiculos[0].dia_vencimento) : "10"),
           observacoes: "",
           status: a.status === "ativo" ? "Ativo" : a.status === "suspenso" ? "Suspenso" : a.status === "cancelado" ? "Cancelado" : (a.status === "inativo" || a.status === "inativo_pendencia") ? "Inadimplente" : "Ativo",
           plano: a.contratos?.[0]?.planos?.nome || "",
@@ -300,7 +307,7 @@ export default function AlterarAssociado() {
     setSearched(false);
   };
 
-  const openEdit = (a: Associado) => {
+  const openEdit = async (a: Associado) => {
     setSelected(a);
     setEditForm({
       nome: a.nome, cpf: a.cpf, rg: a.rg, dataNasc: a.dataNasc, sexo: a.sexo,
@@ -314,12 +321,45 @@ export default function AlterarAssociado() {
       banco: a.banco, agencia: a.agencia, contaCorrente: a.contaCorrente,
       diaVencimento: a.diaVencimento, observacoes: a.observacoes, status: a.status, plano: a.plano,
     });
+    // Carregar histórico do audit_log (ERR-010)
+    const isRealId = a.id.includes("-") && a.id.length > 10;
+    if (isRealId) {
+      try {
+        const { data: logs } = await supabase
+          .from("audit_log")
+          .select("campo_alterado, acao, created_at, dados_anteriores, dados_novos, usuario_nome, usuario_id")
+          .or(`entidade_id.eq.${a.id},associado_id.eq.${a.id}`)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        if (logs && logs.length > 0) {
+          const hist = logs.map((l: any) => ({
+            campo: l.campo_alterado || l.acao || "Alteração",
+            dataHora: new Date(l.created_at).toLocaleString("pt-BR"),
+            anterior: l.dados_anteriores?.valor ?? l.valor_antigo ?? "",
+            novo: l.dados_novos?.valor ?? l.valor_novo ?? "",
+            usuario: l.usuario_nome || l.usuario_id?.slice(0, 8) || "Sistema",
+          }));
+          setSelected(prev => prev ? { ...prev, historico: hist } : prev);
+        }
+      } catch (e) { console.warn("Erro ao carregar histórico:", e); }
+    }
   };
 
   const setE = (k: string, v: string) => setEditForm(p => ({ ...p, [k]: v }));
 
   const handleSave = async () => {
     if (!selected) return;
+    const isRealId = selected.id.includes("-") && selected.id.length > 10;
+    // Validação: Telefone obrigatório (ERR-003)
+    if (!editForm.celular?.trim()) {
+      toast.error("O campo Telefone Principal é obrigatório.");
+      return;
+    }
+    // Validação: Consultor Responsável obrigatório (ERR-004)
+    if (!editForm.consultorResp?.trim() || editForm.consultorResp === "Não Identificado") {
+      toast.error("O campo Consultor Responsável é obrigatório. Informe o consultor vinculado.");
+      return;
+    }
     setSaving(true);
     try {
       // Only attempt Supabase save if it looks like a real UUID
@@ -340,9 +380,44 @@ export default function AlterarAssociado() {
             endereco_uf: editForm.estado || null,
             endereco_cep: editForm.cep || null,
             status: (statusDbMap[editForm.status] || "ativo") as any,
+            rg: editForm.rg || null,
+            cnh: editForm.cnh || null,
+            consultor_responsavel: editForm.consultorResp || "Não Identificado",
+            dia_vencimento: editForm.diaVencimento ? parseInt(editForm.diaVencimento) : null,
           })
           .eq("id", selected.id);
         if (error) throw error;
+      }
+      // Registrar alterações no histórico (ERR-010) - batch
+      if (isRealId) {
+        const camposParaAuditar: [string, string, string][] = [
+          ["nome", selected.nome, editForm.nome],
+          ["telefone", selected.celular, editForm.celular],
+          ["email", selected.email, editForm.email],
+          ["rg", selected.rg, editForm.rg],
+          ["cnh", selected.cnh, editForm.cnh],
+          ["status", selected.status, editForm.status],
+          ["consultor_responsavel", selected.consultorResp, editForm.consultorResp],
+          ["dia_vencimento", selected.diaVencimento || "", editForm.diaVencimento || ""],
+          ["endereco_cidade", selected.cidade, editForm.cidade],
+          ["endereco_uf", selected.estado, editForm.estado],
+          ["endereco_cep", selected.cep, editForm.cep],
+        ];
+        const { data: { user } } = await supabase.auth.getUser();
+        const auditRows = camposParaAuditar
+          .filter(([, antigo, novo]) => (antigo || "") !== (novo || ""))
+          .map(([campo, antigo, novo]) => ({
+            entidade: "associado", entidade_id: selected.id, associado_id: selected.id,
+            campo_alterado: campo, valor_antigo: antigo || "", valor_novo: novo || "",
+            origem_modulo: "gestao", usuario_id: user?.id,
+            dados_anteriores: { valor: antigo || "" }, dados_novos: { valor: novo || "" },
+            acao: "UPDATE_ASSOCIADO", tabela: "associado", registro_id: selected.id,
+          }));
+        if (auditRows.length > 0) {
+          supabase.from("audit_log").insert(auditRows as any).then(({ error }) => {
+            if (error) console.warn("Erro ao registrar auditoria:", error);
+          });
+        }
       }
       toast.success("Alterações salvas com sucesso!", { description: `${editForm.nome} - Histórico registrado automaticamente.` });
     } catch (err: any) {
@@ -587,7 +662,7 @@ export default function AlterarAssociado() {
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-                  <div><Label className="text-xs">Telefone Principal</Label><Input value={editForm.celular||""} onChange={e => setE("celular", e.target.value)} placeholder="(00) 00000-0000" /></div>
+                  <div><Label className="text-xs">Telefone Principal <span className="text-destructive">*</span></Label><Input value={editForm.celular||""} onChange={e => setE("celular", e.target.value)} placeholder="(00) 00000-0000" /></div>
                   <div><Label className="text-xs">Tel. Residencial</Label><Input value={editForm.telResidencial||""} onChange={e => setE("telResidencial", e.target.value)} placeholder="(00) 0000-0000" /></div>
                   <div><Label className="text-xs">Tel. Comercial</Label><Input value={editForm.telComercial||""} onChange={e => setE("telComercial", e.target.value)} placeholder="(00) 0000-0000" /></div>
                 </div>
@@ -644,7 +719,7 @@ export default function AlterarAssociado() {
                       <SelectContent>{cooperativasOpts.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <div><Label className="text-xs">Consultor Responsável</Label><Input value={editForm.consultorResp||""} onChange={e => setE("consultorResp", e.target.value)} placeholder="Nome do consultor" /></div>
+                  <div><Label className="text-xs">Consultor Responsável <span className="text-destructive">*</span></Label><Input value={editForm.consultorResp||""} onChange={e => setE("consultorResp", e.target.value)} placeholder="Nome do consultor" /></div>
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -661,7 +736,7 @@ export default function AlterarAssociado() {
                   <div><Label className="text-xs">Dia de Vencimento</Label>
                     <Select value={editForm.diaVencimento} onValueChange={v => setE("diaVencimento", v)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{Array.from({length:31},(_,i)=>i+1).map(d => <SelectItem key={d} value={String(d)}>Dia {d}</SelectItem>)}</SelectContent>
+                      <SelectContent>{[1, 10, 20].map(d => <SelectItem key={d} value={String(d)}>Dia {d}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                 </div>
@@ -753,7 +828,11 @@ export default function AlterarAssociado() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {selected.lancamentos.map((l, i) => (
+                  {selected.lancamentos.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">Nenhum valor gerado</TableCell>
+                    </TableRow>
+                  ) : selected.lancamentos.map((l, i) => (
                     <TableRow key={i}>
                       <TableCell className="text-sm">{new Date(l.data).toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell className="text-sm">{l.tipo}</TableCell>
@@ -812,6 +891,9 @@ export default function AlterarAssociado() {
           <Card>
             <CardContent className="p-4">
               <div className="space-y-4">
+                {selected.historico.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-6">Nenhuma alteração registrada no histórico.</p>
+                )}
                 {selected.historico.map((h, i) => (
                   <div key={i} className="flex gap-4 items-start">
                     <div className="flex flex-col items-center">
@@ -945,7 +1027,19 @@ export default function AlterarAssociado() {
                     <SelectContent>{["Ativo","Inativo","Pendente","Negado"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label className="text-xs">Plano</Label><Input value={veicForm.plano || ""} disabled className="bg-muted/50" /></div>
+                <div><Label className="text-xs">Renavam</Label><Input value={veicForm.renavam || ""} onChange={e => setVeicForm(p => ({ ...p, renavam: e.target.value }))} /></div>
+                <div><Label className="text-xs">Combustível</Label><Input value={veicForm.combustivel || ""} onChange={e => setVeicForm(p => ({ ...p, combustivel: e.target.value }))} /></div>
+                <div><Label className="text-xs">Categoria</Label><Input value={veicForm.categoria || ""} onChange={e => setVeicForm(p => ({ ...p, categoria: e.target.value }))} /></div>
+              </div>
+              <div className="border-t pt-3">
+                <p className="text-sm font-semibold mb-2">Plano e Valores</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div><Label className="text-xs">Plano</Label><Input value={veicForm.plano || ""} disabled className="bg-muted/50" /></div>
+                  <div><Label className="text-xs">Cota</Label><Input value={veicForm.cota || "Não encontrado"} disabled className="bg-muted/50" /></div>
+                  <div><Label className="text-xs">Taxa Administrativa</Label><Input value={veicForm.taxa_adm || "-"} disabled className="bg-muted/50" /></div>
+                  <div><Label className="text-xs">Rateio</Label><Input value={veicForm.rateio || "-"} disabled className="bg-muted/50" /></div>
+                  <div><Label className="text-xs">Valor FIPE</Label><Input value={veicForm.valor_fipe ? `R$ ${String(veicForm.valor_fipe).replace(".", ",")}` : "-"} disabled className="bg-muted/50" /></div>
+                </div>
               </div>
 
               {/* Upload de Arquivos */}
