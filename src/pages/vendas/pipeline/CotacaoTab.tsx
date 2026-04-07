@@ -136,18 +136,19 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
   const [fipeModeloCod, setFipeModeloCod] = useState("");
   const [fipeAnoCod, setFipeAnoCod] = useState("");
 
-  // Detectar tipo do veículo
+  // Detectar tipo do veículo (sugestão inicial, usuário deve confirmar)
   const detectTipo = () => {
     const m = dealModelo.toLowerCase();
     const p = ((deal as any).plano || "").toLowerCase();
-    const motos = ["cg ", "cb ", "xre", "pcx", "nmax", "fazer", "twister", "titan", "fan ", "biz", "bros", "lander", "mt-", "yzf", "ninja", "duke", "moto"];
-    const pesados = ["scania", "volvo fh", "iveco", "man ", "daf", "sprinter", "daily", "accelo", "cargo", "worker", "constellation", "pesado", "van"];
+    const motos = ["cg ", "cb ", "xre", "pcx", "nmax", "fazer", "twister", "titan", "fan ", "biz", "bros", "lander", "mt-", "yzf", "ninja", "duke", "moto", "honda cg", "yamaha", "suzuki", "dafra", "shineray", "haojue", "kasinski", "traxx", "kawasaki", "bmw gs", "bmw r", "harley", "triumph", "royal enfield", "pop ", "sahara", "crosser", "tenere", "burgman", "neo ", "fluo", "factor", "ybr"];
+    const pesados = ["scania", "volvo fh", "iveco", "man ", "daf", "sprinter", "daily", "accelo", "cargo", "worker", "constellation", "pesado", "van", "vuc", "caminhão", "caminhao", "ônibus", "onibus", "micro-ônibus", "tector", "atego", "axor", "actros", "delivery", "volkswagen 24", "volkswagen 17", "volkswagen 13", "volkswagen 11", "volkswagen 8", "ford f-4000", "ford f-350"];
     if (motos.some(x => m.includes(x)) || p.includes("moto")) return "Motocicleta";
     if (pesados.some(x => m.includes(x)) || p.includes("pesado") || p.includes("van")) return "Caminhão";
-    return "Automóvel";
+    return "";
   };
 
   const d = deal as any;
+  const [tipoConfirmado, setTipoConfirmado] = useState(false);
   const [form, setForm] = useState({
     tipoVeiculo: detectTipo(),
     placa: d.veiculo_placa || "",
@@ -727,6 +728,10 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       }
       return;
     }
+    if (!form.tipoVeiculo) {
+      toast.error("Selecione o Tipo do Veículo antes de enviar a cotação.");
+      return;
+    }
     if (!form.estadoCirc || !form.cidadeCirc.trim()) {
       toast.error("Preencha Estado e Cidade de Circulação antes de enviar a cotação.");
       return;
@@ -959,11 +964,14 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         <legend className="text-sm font-bold text-[#1A3A5C] border-b-2 border-[#747474] pb-1 w-full">DADOS DO VEÍCULO</legend>
         <div className="grid grid-cols-3 gap-x-4 gap-y-3">
           <div className="space-y-1">
-            <Label className={lbl}>Tipo do Veículo</Label>
-            <Select value={form.tipoVeiculo} onValueChange={v => set("tipoVeiculo", v)}>
-              <SelectTrigger className="rounded-none border border-gray-300"><SelectValue /></SelectTrigger>
+            <Label className={lbl}>Tipo do Veículo <span className="text-destructive">*</span></Label>
+            <Select value={form.tipoVeiculo} onValueChange={v => { set("tipoVeiculo", v); setTipoConfirmado(true); if (valorFipe > 0) setTimeout(() => carregarPrecos(valorFipe, v), 100); }}>
+              <SelectTrigger className={`rounded-none border ${!form.tipoVeiculo ? "border-destructive bg-destructive/5" : "border-gray-300"}`}>
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
               <SelectContent>{tiposVeiculo.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
             </Select>
+            {!form.tipoVeiculo && <p className="text-[10px] text-destructive font-medium">Selecione o tipo antes de prosseguir</p>}
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Placa</Label>
