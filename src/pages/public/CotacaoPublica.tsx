@@ -11,6 +11,8 @@ import {
   Car,
   Clock,
   MapPin,
+  Info,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,16 +40,86 @@ function daysSince(dateStr: string | null | undefined): number {
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 }
 
+interface CoberturaObj {
+  cobertura: string;
+  tipo?: string;
+  inclusa?: boolean;
+  detalhe?: string;
+  ordem?: number;
+}
+
 interface Plano {
   nome: string;
   preco_mensal?: number;
   valor_mensal?: number;
   valor_fipe?: number;
-  coberturas?: string[];
+  coberturas?: (string | CoberturaObj)[];
   assistencias?: string[];
-  franquia?: string;
+  franquia?: number | string;
+  tipo_franquia?: string;
+  valor_franquia?: number | string;
+  adesao?: number;
+  rastreador?: string;
   recomendado?: boolean;
   [key: string]: unknown;
+}
+
+// Descrições padrão das coberturas (fallback)
+const coberturaDescFallback: Record<string, string> = {
+  "colisão": "Cobertura para danos por colisão, capotamento ou tombamento",
+  "colisao": "Cobertura para danos por colisão, capotamento ou tombamento",
+  "incêndio": "Proteção contra incêndio, explosão e queda de raio",
+  "incendio": "Proteção contra incêndio, explosão e queda de raio",
+  "perda total": "Indenização integral quando reparo ultrapassa 75% do valor FIPE",
+  "roubo": "Indenização de 100% da tabela FIPE em caso de roubo",
+  "furto": "Indenização de 100% da tabela FIPE em caso de furto",
+  "danos a terceiros": "Cobertura para danos materiais e corporais causados a terceiros",
+  "terceiros": "Cobertura para danos materiais e corporais causados a terceiros",
+  "vidros": "Cobertura para para-brisas, vidros laterais e traseiro",
+  "retrovisor": "Cobertura para retrovisores danificados",
+  "danos da natureza": "Cobertura para enchentes, granizo, queda de árvore",
+  "carro reserva": "Veículo reserva por até 15 dias em caso de sinistro",
+  "assistência 24h": "Socorro mecânico e guincho 24h, 7 dias por semana",
+  "assistencia 24h": "Socorro mecânico e guincho 24h, 7 dias por semana",
+  "guincho": "Serviço de guincho ilimitado em território nacional",
+  "reboque": "Serviço de reboque/guincho ilimitado em território nacional",
+  "chaveiro": "Serviço de chaveiro para abertura do veículo",
+  "recarga de bateria": "Recarga ou troca de bateria no local",
+  "auxílio combustível": "Envio de combustível em caso de pane seca",
+  "troca de pneus": "Troca de pneu furado pelo estepe do veículo",
+  "hospedagem": "Diárias de hotel em caso de sinistro fora do domicílio",
+  "clube": "Acesso ao clube de benefícios e descontos exclusivos",
+};
+
+function getCoberturaDesc(nome: string, detalheOriginal?: string): string {
+  if (detalheOriginal) return detalheOriginal;
+  const lower = nome.toLowerCase();
+  for (const [key, desc] of Object.entries(coberturaDescFallback)) {
+    if (lower.includes(key)) return desc;
+  }
+  return "";
+}
+
+function parseCoberturas(raw: (string | CoberturaObj)[] | undefined): { nome: string; desc: string; tipo: string }[] {
+  if (!raw || raw.length === 0) return [];
+  return raw.map(c => {
+    if (typeof c === "string") return { nome: c, desc: getCoberturaDesc(c), tipo: "cobertura" };
+    return { nome: c.cobertura, desc: getCoberturaDesc(c.cobertura, c.detalhe), tipo: c.tipo || "cobertura" };
+  });
+}
+
+function formatFranquia(plano: Plano): string | null {
+  if (plano.tipo_franquia && plano.valor_franquia != null) {
+    const val = plano.valor_franquia;
+    if (plano.tipo_franquia === "%" || plano.tipo_franquia === "% FIPE") return `${val}% da tabela FIPE`;
+    if (plano.tipo_franquia === "R$") return `${formatBRL(Number(val))} fixo`;
+    return `${plano.tipo_franquia} ${val}`;
+  }
+  if (plano.franquia != null && plano.franquia !== "" && plano.franquia !== 0) {
+    if (typeof plano.franquia === "string") return plano.franquia;
+    if (typeof plano.franquia === "number") return plano.franquia > 1 ? formatBRL(plano.franquia) : `${plano.franquia * 100}% da tabela FIPE`;
+  }
+  return null;
 }
 
 interface Negociacao {
@@ -145,9 +217,13 @@ export default function CotacaoPublica() {
   )}`;
 
   // Collect all unique coberturas and assistencias across plans
-  const allCoberturas = Array.from(
-    new Set(planos.flatMap((p) => p.coberturas ?? []))
-  );
+  const allCoberturasRaw = planos.flatMap((p) => parseCoberturas(p.coberturas));
+  const seenCob = new Set<string>();
+  const allCoberturas = allCoberturasRaw.filter(c => {
+    if (seenCob.has(c.nome)) return false;
+    seenCob.add(c.nome);
+    return true;
+  });
   const allAssistencias = Array.from(
     new Set(planos.flatMap((p) => p.assistencias ?? []))
   );
@@ -277,36 +353,69 @@ export default function CotacaoPublica() {
                         </span>
                         <span className="text-gray-500 text-sm">/mês</span>
                       </div>
-                      {plano.franquia && (
-                        <p className="text-sm text-gray-500 mb-4">
-                          Franquia: {plano.franquia}
-                        </p>
-                      )}
-                      {plano.coberturas && plano.coberturas.length > 0 && (
-                        <ul className="text-left space-y-2 mb-4">
-                          {plano.coberturas.map((c, i) => (
-                            <li
-                              key={i}
-                              className="flex items-start gap-2 text-sm text-gray-700"
-                            >
-                              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                              {c}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+
+                      {/* Franquia */}
+                      {(() => {
+                        const franquiaStr = formatFranquia(plano);
+                        return franquiaStr ? (
+                          <div className="flex items-center justify-center gap-1.5 mb-4 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                            <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                            <p className="text-sm text-amber-800 font-medium">
+                              Participação: {franquiaStr}
+                            </p>
+                          </div>
+                        ) : null;
+                      })()}
+
+                      {/* Adesão e Rastreador */}
+                      <div className="flex justify-center gap-4 mb-4 text-xs text-gray-500">
+                        {plano.adesao != null && Number(plano.adesao) > 0 && (
+                          <span>Adesão: <strong className="text-gray-700">{formatBRL(Number(plano.adesao))}</strong></span>
+                        )}
+                        {plano.rastreador && plano.rastreador !== "Não" && (
+                          <span>Rastreador: <strong className="text-gray-700">Incluso</strong></span>
+                        )}
+                      </div>
+
+                      {/* Coberturas com descrição detalhada */}
+                      {(() => {
+                        const cobs = parseCoberturas(plano.coberturas);
+                        return cobs.length > 0 ? (
+                          <div className="text-left mb-4">
+                            <p className="text-xs font-semibold text-[#002b5e] uppercase tracking-wider mb-2">Coberturas</p>
+                            <ul className="space-y-3">
+                              {cobs.map((c, i) => (
+                                <li key={i} className="flex items-start gap-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-800">{c.nome}</p>
+                                    {c.desc && (
+                                      <p className="text-xs text-gray-500 leading-relaxed">{c.desc}</p>
+                                    )}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null;
+                      })()}
+
+                      {/* Assistências */}
                       {plano.assistencias && plano.assistencias.length > 0 && (
-                        <ul className="text-left space-y-2">
-                          {plano.assistencias.map((a, i) => (
-                            <li
-                              key={i}
-                              className="flex items-start gap-2 text-sm text-gray-600"
-                            >
-                              <CheckCircle className="w-4 h-4 text-[#7ed6f1] mt-0.5 flex-shrink-0" />
-                              {a}
-                            </li>
-                          ))}
-                        </ul>
+                        <div className="text-left">
+                          <p className="text-xs font-semibold text-[#002b5e] uppercase tracking-wider mb-2">Assistências</p>
+                          <ul className="space-y-2">
+                            {plano.assistencias.map((a, i) => (
+                              <li
+                                key={i}
+                                className="flex items-start gap-2 text-sm text-gray-600"
+                              >
+                                <CheckCircle className="w-4 h-4 text-[#7ed6f1] mt-0.5 flex-shrink-0" />
+                                {a}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       )}
                     </CardContent>
                   </Card>
@@ -322,16 +431,21 @@ export default function CotacaoPublica() {
         <section className="py-10 px-4 bg-white">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-2xl font-bold text-[#002b5e] text-center mb-6">
-              Coberturas Incluídas
+              Detalhes das Coberturas
             </h2>
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {allCoberturas.map((c, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-2 bg-[#002b5e]/5 rounded-full px-4 py-2"
+                  className="flex items-start gap-3 bg-[#002b5e]/5 rounded-xl px-4 py-3"
                 >
-                  <ShieldCheck className="w-4 h-4 text-[#003572]" />
-                  <span className="text-sm font-medium text-[#002b5e]">{c}</span>
+                  <ShieldCheck className="w-5 h-5 text-[#003572] mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-[#002b5e]">{c.nome}</p>
+                    {c.desc && (
+                      <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">{c.desc}</p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
