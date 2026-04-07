@@ -100,6 +100,43 @@ function getCoberturaDesc(nome: string, detalheOriginal?: string): string {
   return "";
 }
 
+// Descrições padrão das assistências (fallback)
+const assistenciaDescFallback: Record<string, string> = {
+  "guincho": "Serviço de guincho ilimitado em território nacional",
+  "reboque": "Serviço de reboque/guincho ilimitado em território nacional",
+  "chaveiro": "Serviço de chaveiro para abertura do veículo",
+  "recarga de bateria": "Recarga ou troca de bateria no local",
+  "bateria": "Recarga ou troca de bateria no local",
+  "auxílio combustível": "Envio de combustível em caso de pane seca",
+  "combustível": "Envio de combustível em caso de pane seca",
+  "combustivel": "Envio de combustível em caso de pane seca",
+  "pane seca": "Envio de combustível em caso de pane seca",
+  "troca de pneus": "Troca de pneu furado pelo estepe do veículo",
+  "pneu": "Troca de pneu furado pelo estepe do veículo",
+  "hospedagem": "Diárias de hotel em caso de sinistro fora do domicílio",
+  "hotel": "Diárias de hotel em caso de sinistro fora do domicílio",
+  "táxi": "Transporte por táxi em caso de pane ou sinistro",
+  "taxi": "Transporte por táxi em caso de pane ou sinistro",
+  "transporte alternativo": "Transporte alternativo em caso de pane ou sinistro",
+  "carro reserva": "Veículo reserva por até 15 dias em caso de sinistro",
+  "assistência 24h": "Socorro mecânico e guincho 24h, 7 dias por semana",
+  "assistencia 24h": "Socorro mecânico e guincho 24h, 7 dias por semana",
+  "socorro": "Socorro mecânico no local 24h",
+  "mecânico": "Socorro mecânico no local 24h",
+  "mecanico": "Socorro mecânico no local 24h",
+  "elétrico": "Assistência para pane elétrica no local",
+  "eletrico": "Assistência para pane elétrica no local",
+  "vidro": "Cobertura para para-brisas, vidros laterais e traseiro",
+};
+
+function getAssistenciaDesc(nome: string): string {
+  const lower = nome.toLowerCase();
+  for (const [key, desc] of Object.entries(assistenciaDescFallback)) {
+    if (lower.includes(key)) return desc;
+  }
+  return "";
+}
+
 function parseCoberturas(raw: (string | CoberturaObj)[] | undefined): { nome: string; desc: string; tipo: string }[] {
   if (!raw || raw.length === 0) return [];
   return raw.map(c => {
@@ -224,9 +261,10 @@ export default function CotacaoPublica() {
     seenCob.add(c.nome);
     return true;
   });
-  const allAssistencias = Array.from(
+  const allAssistenciasRaw = Array.from(
     new Set(planos.flatMap((p) => p.assistencias ?? []))
   );
+  const allAssistencias = allAssistenciasRaw.map(a => ({ nome: a, desc: getAssistenciaDesc(a) }));
 
   const validadeDias = 15 - daysSince(cotacao?.created_at);
 
@@ -405,15 +443,23 @@ export default function CotacaoPublica() {
                         <div className="text-left">
                           <p className="text-xs font-semibold text-[#002b5e] uppercase tracking-wider mb-2">Assistências</p>
                           <ul className="space-y-2">
-                            {plano.assistencias.map((a, i) => (
-                              <li
-                                key={i}
-                                className="flex items-start gap-2 text-sm text-gray-600"
-                              >
-                                <CheckCircle className="w-4 h-4 text-[#7ed6f1] mt-0.5 flex-shrink-0" />
-                                {a}
-                              </li>
-                            ))}
+                            {plano.assistencias.map((a, i) => {
+                              const desc = getAssistenciaDesc(a);
+                              return (
+                                <li
+                                  key={i}
+                                  className="flex items-start gap-2 text-sm text-gray-600"
+                                >
+                                  <CheckCircle className="w-4 h-4 text-[#7ed6f1] mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-800">{a}</p>
+                                    {desc && (
+                                      <p className="text-xs text-gray-500 leading-relaxed">{desc}</p>
+                                    )}
+                                  </div>
+                                </li>
+                              );
+                            })}
                           </ul>
                         </div>
                       )}
@@ -460,14 +506,19 @@ export default function CotacaoPublica() {
             <h2 className="text-2xl font-bold text-[#002b5e] text-center mb-6">
               Assistencias 24h
             </h2>
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {allAssistencias.map((a, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-2 bg-[#7ed6f1]/10 rounded-full px-4 py-2"
+                  className="flex items-start gap-3 bg-[#7ed6f1]/10 rounded-xl px-4 py-3"
                 >
-                  <CheckCircle className="w-4 h-4 text-[#7ed6f1]" />
-                  <span className="text-sm font-medium text-[#002b5e]">{a}</span>
+                  <CheckCircle className="w-5 h-5 text-[#7ed6f1] mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-[#002b5e]">{a.nome}</p>
+                    {a.desc && (
+                      <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">{a.desc}</p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

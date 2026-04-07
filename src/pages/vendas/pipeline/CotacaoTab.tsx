@@ -104,28 +104,13 @@ async function fipeValor(tipo: string, marcaCod: string, modeloCod: string, anoC
   return resp.json() as Promise<{ Valor: string; Marca: string; Modelo: string; AnoModelo: number; Combustivel: string; CodigoFipe: string }>;
 }
 
-// Lookup na tabela_precos real por valor FIPE, filtrado por tipo_veiculo e regional
-async function buscarPrecosReais(valorFipe: number, tipoVeiculo?: string, regionalId?: string): Promise<any[]> {
-  let query = supabase.from("tabela_precos" as any)
-    .select("*")
-    .lte("valor_menor", valorFipe)
-    .gte("valor_maior", valorFipe);
-  // Filtrar por tipo_veiculo mapeado
-  const TIPO_VEICULO_MAP: Record<string, string[]> = {
-    "Automóvel": ["Carros e Utilitários Pequenos"],
-    "Motocicleta": ["Motos"],
-    "Caminhão": ["Caminhões e Pesados"],
-    "Van/Utilitário": ["Caminhões e Pesados"],
-  };
-  if (tipoVeiculo && TIPO_VEICULO_MAP[tipoVeiculo]) {
-    query = query.in("tipo_veiculo", TIPO_VEICULO_MAP[tipoVeiculo]);
-  }
-  if (regionalId) {
-    query = query.eq("regional_id", regionalId);
-  }
-  const { data } = await query.order("plano");
-  return (data || []) as any[];
-}
+// Mapa de tipo de veículo para filtro na tabela_precos
+const TIPO_VEICULO_MAP: Record<string, string[]> = {
+  "Automóvel": ["Carros e Utilitários Pequenos"],
+  "Motocicleta": ["Motos"],
+  "Caminhão": ["Caminhões e Pesados"],
+  "Van/Utilitário": ["Caminhões e Pesados"],
+};
 
 interface Props { deal: PipelineDeal; onUpdate?: () => void; }
 
@@ -456,6 +441,11 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       .select("*")
       .lte("valor_menor", vFipe)
       .gte("valor_maior", vFipe);
+    // Filtrar por tipo_veiculo mapeado
+    const tipoReal = tipoVeiculo || form.tipoVeiculo;
+    if (tipoReal && TIPO_VEICULO_MAP[tipoReal]) {
+      query = query.in("tipo_veiculo", TIPO_VEICULO_MAP[tipoReal]);
+    }
     if (regionalId) {
       query = query.eq("regional_id", regionalId);
     }
@@ -530,13 +520,34 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       }
     };
 
+    // Validar planos aceitos via modelos_veiculo (usado pelo cache)
+    const validarPlanosCache = async (precos: any[]) => {
+      const cf = (deal as any).cod_fipe || (deal as any).cache_fipe?.codFipe;
+      if (!cf) return precos;
+      const { data: modelo } = await supabase.from("modelos_veiculo" as any)
+        .select("planos, aceito")
+        .eq("cod_fipe", cf)
+        .eq("aceito", true)
+        .maybeSingle();
+      if (!modelo) return precos;
+      const permitidos = (modelo.planos || "").split(",").map((p: string) => p.trim()).filter(Boolean);
+      if (permitidos.length === 0) return precos;
+      const filtered = precos.filter((t: any) => {
+        const plano = (t.plano_normalizado || t.plano || "").toLowerCase();
+        return permitidos.some((pp: string) => plano.includes(pp.toLowerCase()) || pp.toLowerCase().includes(plano));
+      });
+      return filtered.length > 0 ? filtered : precos;
+    };
+
     // 1. Cache de preços direto no deal (instantâneo, sem query)
     const cachePrecos = (deal as any).cache_precos;
     if (cachePrecos && Array.isArray(cachePrecos) && cachePrecos.length > 0) {
-      setPrecosReais(cachePrecos);
-      aplicarDescontoDiretor(cachePrecos);
-      setFipeFetched(true);
-      setPrecosCarregadosDaCotacao(true);
+      validarPlanosCache(cachePrecos).then(validados => {
+        setPrecosReais(validados);
+        aplicarDescontoDiretor(validados);
+        setFipeFetched(true);
+        setPrecosCarregadosDaCotacao(true);
+      });
       return;
     }
 
@@ -561,10 +572,12 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       supabase.from("negociacoes" as any).select("cache_precos, cache_fipe, cotacao_id").eq("id", deal.id).maybeSingle()
         .then(({ data: negData }: any) => {
           if (negData?.cache_precos && Array.isArray(negData.cache_precos) && negData.cache_precos.length > 0) {
-            setPrecosReais(negData.cache_precos);
-            if (negData.cache_fipe?.valorFipe) setValorFipeReal(negData.cache_fipe.valorFipe);
-            setFipeFetched(true);
-            setPrecosCarregadosDaCotacao(true);
+            validarPlanosCache(negData.cache_precos).then(validados => {
+              setPrecosReais(validados);
+              if (negData.cache_fipe?.valorFipe) setValorFipeReal(negData.cache_fipe.valorFipe);
+              setFipeFetched(true);
+              setPrecosCarregadosDaCotacao(true);
+            });
             return;
           }
           // 3. Tentar cotação salva
