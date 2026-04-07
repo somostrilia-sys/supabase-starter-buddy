@@ -719,17 +719,21 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     if (tipo === "PDF") {
       await handleBaixarPdf();
       // Auto-transição mesmo ao baixar PDF
-      const { data: negPdf } = await (supabase as any).from("negociacoes").select("stage").eq("id", deal.id).maybeSingle();
-      const stagePdf = negPdf?.stage || deal.stage;
-      if (stagePdf === "novo_lead" || stagePdf === "em_contato") {
-        await (supabase as any).from("negociacoes").update({ stage: "em_negociacao", updated_at: new Date().toISOString() }).eq("id", deal.id);
-        await (supabase as any).from("pipeline_transicoes").insert({
-          negociacao_id: deal.id, stage_anterior: stagePdf, stage_novo: "em_negociacao",
-          motivo: "Cotação PDF baixada", automatica: true,
-        });
-        toast.info("Card movido para Em Negociação");
-        onUpdate?.();
-      }
+      if (!deal.id || deal.id.startsWith("p")) return;
+      try {
+        const { data: negPdf } = await (supabase as any).from("negociacoes").select("stage").eq("id", deal.id).maybeSingle();
+        const stagePdf = negPdf?.stage || deal.stage;
+        if (stagePdf === "novo_lead" || stagePdf === "em_contato") {
+          const { error: errUpd } = await (supabase as any).from("negociacoes").update({ stage: "em_negociacao", updated_at: new Date().toISOString() }).eq("id", deal.id);
+          if (errUpd) { console.error("Erro ao mover stage:", errUpd); return; }
+          await (supabase as any).from("pipeline_transicoes").insert({
+            negociacao_id: deal.id, stage_anterior: stagePdf, stage_novo: "em_negociacao",
+            motivo: "Cotação PDF baixada", automatica: true,
+          }).then(({ error: e }: any) => e && console.error("Erro transição:", e));
+          toast.info("Card movido para Em Negociação");
+          onUpdate?.();
+        }
+      } catch (e) { console.error("Erro ao mover card:", e); }
       return;
     }
     if (!form.tipoVeiculo) {
