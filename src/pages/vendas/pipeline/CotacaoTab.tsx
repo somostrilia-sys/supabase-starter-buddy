@@ -1341,7 +1341,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
                       </div>
                       {totalOpcionais > 0 && (
                         <div className="text-xs text-muted-foreground mt-1 p-2 rounded bg-emerald-50 border border-emerald-200">
-                          Plano <strong>{formatCurrency(mensalBase)}</strong> + Opcionais <strong>{formatCurrency(totalOpcionais)}</strong> = <strong className="text-[#1A3A5C]">{formatCurrency(totalComOpc)}/mês</strong>
+                          Plano <strong>{formatCurrency(mensalBase)}</strong> + Serviços <strong>{formatCurrency(totalOpcionais)}</strong> = <strong className="text-[#1A3A5C]">{formatCurrency(totalComOpc)}/mês</strong>
                         </div>
                       )}
                       {totalComOpc > 0 && <div className="text-[10px] text-emerald-600 font-medium mt-1">15% pontualidade: {formatCurrency(pontualidade15)}/mês se pagar em dia</div>}
@@ -1389,7 +1389,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
             return (
               <>
                 <span className="text-sm font-semibold">{formatCurrency(mensalidadeTotal)}/mês</span>
-                {totalOpcionais > 0 && <span className="text-[10px] text-muted-foreground">(plano {formatCurrency(mensalVal)} + opcionais {formatCurrency(totalOpcionais)})</span>}
+                {totalOpcionais > 0 && <span className="text-[10px] text-muted-foreground">(plano {formatCurrency(mensalVal)} + serviços {formatCurrency(totalOpcionais)})</span>}
                 <span className="text-[10px] text-muted-foreground">rastreador {formatCurrency(rastreadorMensal)}</span>
                 <span className="text-xs text-muted-foreground">|</span>
                 <span className="text-sm text-muted-foreground">Adesão: <strong>{formatCurrency(adesaoVal)}</strong></span>
@@ -1410,9 +1410,9 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label className="text-xs font-semibold">Desconto Mensalidade (valor final c/ opcionais)</Label>
+              <Label className="text-xs font-semibold">Desconto Mensalidade (valor final c/ serviços)</Label>
               <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60" : ""}`} type="number" placeholder={totalOpcionais > 0 ? `Sem desconto = ${(() => { const pl = planosConfig.find(p => p.nome === planoSelecionado); const mv = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : Math.round(valorFipe * (pl?.percentual || 0)); return formatCurrency(mv + totalOpcionais); })()}` : "Deixe vazio = sem desconto"} value={descontoMensal} disabled={descontoBloqueado} onChange={e => { setDescontoMensal(e.target.value); setDescontoIaResult(null); }} />
-              <p className="text-[10px] text-muted-foreground">Valor final já inclui plano + opcionais. Se preencher, o PDF mostrará desconto.</p>
+              <p className="text-[10px] text-muted-foreground">Valor final já inclui plano + serviços. Se preencher, o PDF mostrará desconto.</p>
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Desconto Adesão (valor final)</Label>
@@ -1720,7 +1720,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           />
           {totalOpcionais > 0 && (
             <div className="flex items-center gap-2 p-2 rounded border border-emerald-300 bg-emerald-50">
-              <span className="text-sm font-semibold text-emerald-800">Total opcionais: {formatCurrency(totalOpcionais)}/mês</span>
+              <span className="text-sm font-semibold text-emerald-800">Total serviços: {formatCurrency(totalOpcionais)}/mês</span>
               <span className="text-xs text-emerald-600">({opcionaisSelecionados.length} item{opcionaisSelecionados.length > 1 ? "s" : ""})</span>
             </div>
           )}

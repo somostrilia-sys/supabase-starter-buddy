@@ -27,9 +27,9 @@ type Group = "produtos" | "financeiros" | "veiculo" | "evento" | "cooperativa" |
 
 const groups = [
   { id: "produtos" as Group, label: "Grupo de Produtos", icon: Package },
-  { id: "financeiros" as Group, label: "Opcionais Financeiros", icon: DollarSign },
-  { id: "veiculo" as Group, label: "Opcionais de Veículo", icon: Car },
-  { id: "evento" as Group, label: "Opcionais de Evento", icon: AlertTriangle },
+  { id: "financeiros" as Group, label: "Serviços Financeiros", icon: DollarSign },
+  { id: "veiculo" as Group, label: "Serviços de Veículo", icon: Car },
+  { id: "evento" as Group, label: "Serviços de Evento", icon: AlertTriangle },
   { id: "cooperativa" as Group, label: "Cooperativa", icon: Building2 },
   { id: "regional" as Group, label: "Regional", icon: MapPin },
   { id: "voluntarios" as Group, label: "Voluntários", icon: Users },
@@ -371,7 +371,7 @@ function GrupoProdutos({ subView, setSubView }: { subView: number; setSubView: (
             ["Rastreamento", "Equipamentos de rastreamento veicular", "Ativo"],
             ["Assistência 24h", "Serviço de assistência em emergências", "Ativo"],
             ["Carro Reserva", "Veículo substituto durante reparo", "Ativo"],
-            ["Produto Adicional", "Coberturas extras opcionais", "Ativo"],
+            ["Produto Adicional", "Coberturas extras de serviços", "Ativo"],
           ])}
           fieldOptions={{ Status: ["Ativo", "Inativo"] }}
         />
@@ -548,7 +548,7 @@ function CartaoCreditoSub() {
 // ═══════════════════════════════════════════════════════════
 
 function OpcionaisVeiculoSection({ subView, setSubView }: { subView: number; setSubView: (v: number) => void }) {
-  const subs = ["Opcionais de Veículo", "Categoria", "Cota Veículo", "Cor", "Montadora", "Modelo", "Combustível", "Alienação", "Tipo Carga", "Tipo Carroceria", "Cat. Assoc./Veíc."];
+  const subs = ["Serviços de Veículo", "Categoria", "Cota Veículo", "Cor", "Montadora", "Modelo", "Combustível", "Alienação", "Tipo Carga", "Tipo Carroceria", "Cat. Assoc./Veíc."];
 
   // Supabase-backed CRUD for opcionais_veiculos
   const [opcionais, setOpcionais] = useState<any[]>([]);
@@ -567,16 +567,16 @@ function OpcionaisVeiculoSection({ subView, setSubView }: { subView: number; set
   const openOpcNew = () => { setOpcEditId(null); setOpcForm({ nome: "", valor: "", descricao: "", ativo: true }); setOpcModal(true); };
   const openOpcEdit = (row: any) => { setOpcEditId(row.id); setOpcForm({ nome: row.nome, valor: String(row.valor || ""), descricao: row.descricao || "", ativo: row.ativo }); setOpcModal(true); };
   const saveOpc = async () => {
-    if (!opcForm.nome) { toast.error("Informe o nome do opcional"); return; }
+    if (!opcForm.nome) { toast.error("Informe o nome do serviço"); return; }
     const payload = { nome: opcForm.nome, valor: opcForm.valor ? parseFloat(opcForm.valor) : null, descricao: opcForm.descricao, ativo: opcForm.ativo };
     if (opcEditId) {
       const { error } = await supabase.from("opcionais_veiculos").update(payload).eq("id", opcEditId);
       if (error) { toast.error("Erro ao atualizar"); return; }
-      toast.success("Opcional atualizado!");
+      toast.success("Serviço atualizado!");
     } else {
       const { error } = await supabase.from("opcionais_veiculos").insert(payload);
       if (error) { toast.error("Erro ao criar"); return; }
-      toast.success("Opcional criado!");
+      toast.success("Serviço criado!");
     }
     setOpcModal(false);
     loadOpcionais();
@@ -585,7 +585,7 @@ function OpcionaisVeiculoSection({ subView, setSubView }: { subView: number; set
     if (!opcDeleteId) return;
     const { error } = await supabase.from("opcionais_veiculos").delete().eq("id", opcDeleteId);
     if (error) { toast.error("Erro ao excluir"); return; }
-    toast.success("Opcional removido!");
+    toast.success("Serviço removido!");
     setOpcDeleteId(null);
     loadOpcionais();
   };
@@ -597,7 +597,7 @@ function OpcionaisVeiculoSection({ subView, setSubView }: { subView: number; set
       {subView === 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold">Opcionais de Veículo</h4>
+            <h4 className="text-sm font-semibold">Serviços de Veículo</h4>
             <Button size="sm" className="h-7 text-xs gap-1" onClick={openOpcNew}><Plus className="h-3 w-3" />Adicionar</Button>
           </div>
           <div className="border rounded-lg border-border overflow-x-auto">
@@ -622,11 +622,11 @@ function OpcionaisVeiculoSection({ subView, setSubView }: { subView: number; set
 
           <Dialog open={opcModal} onOpenChange={setOpcModal}>
             <DialogContent>
-              <DialogHeader><DialogTitle>{opcEditId ? "Editar" : "Novo"} Opcional de Veículo</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{opcEditId ? "Editar" : "Novo"} Serviço de Veículo</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div><Label className="text-xs">Nome</Label><Input value={opcForm.nome} onChange={e => setOpcForm(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Ar condicionado" /></div>
                 <div><Label className="text-xs">Valor (R$)</Label><Input type="number" step="0.01" value={opcForm.valor} onChange={e => setOpcForm(p => ({ ...p, valor: e.target.value }))} placeholder="0.00" /></div>
-                <div><Label className="text-xs">Descrição</Label><Textarea value={opcForm.descricao} onChange={e => setOpcForm(p => ({ ...p, descricao: e.target.value }))} placeholder="Descrição do opcional" /></div>
+                <div><Label className="text-xs">Descrição</Label><Textarea value={opcForm.descricao} onChange={e => setOpcForm(p => ({ ...p, descricao: e.target.value }))} placeholder="Descrição do serviço" /></div>
                 <div><Label className="text-xs">Status</Label>
                   <Select value={opcForm.ativo ? "Ativo" : "Inativo"} onValueChange={v => setOpcForm(p => ({ ...p, ativo: v === "Ativo" }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -644,7 +644,7 @@ function OpcionaisVeiculoSection({ subView, setSubView }: { subView: number; set
           <Dialog open={opcDeleteId !== null} onOpenChange={o => !o && setOpcDeleteId(null)}>
             <DialogContent>
               <DialogHeader><DialogTitle>Confirmar Exclusão</DialogTitle></DialogHeader>
-              <p className="text-sm text-muted-foreground">Tem certeza que deseja excluir este opcional?</p>
+              <p className="text-sm text-muted-foreground">Tem certeza que deseja excluir este serviço?</p>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpcDeleteId(null)}>Cancelar</Button>
                 <Button variant="destructive" onClick={deleteOpc}>Excluir</Button>

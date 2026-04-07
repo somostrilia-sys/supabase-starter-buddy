@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Badge } from "@/components/ui/badge";
 import { Bold, Italic, Underline, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -44,10 +44,7 @@ export default function ContratoAdesaoTab() {
   const [conteudo, setConteudo] = useState(defaultContrato);
   const [observacoes, setObservacoes] = useState("");
   const [envioAutomatico, setEnvioAutomatico] = useState(true);
-  const [powerSignHabilitado, setPowerSignHabilitado] = useState(false);
-  const [tipoDocumento, setTipoDocumento] = useState("simples");
-  const [envioMultiplo, setEnvioMultiplo] = useState(false);
-  const [tokenPowerSign, setTokenPowerSign] = useState("");
+
   const [saving, setSaving] = useState(false);
   const [templateId, setTemplateId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -62,9 +59,7 @@ export default function ContratoAdesaoTab() {
         setConteudo(data.conteudo_html || defaultContrato);
         setObservacoes(data.observacoes || "");
         setEnvioAutomatico(data.envio_automatico ?? true);
-        setPowerSignHabilitado(data.power_sign_ativo ?? false);
-        setTokenPowerSign(data.power_sign_token || "");
-        setTipoDocumento(data.power_sign_tipo || "simples");
+
       }
     })();
   }, []);
@@ -76,9 +71,7 @@ export default function ContratoAdesaoTab() {
       conteudo_html: conteudo,
       observacoes,
       envio_automatico: envioAutomatico,
-      power_sign_ativo: powerSignHabilitado,
-      power_sign_token: tokenPowerSign || null,
-      power_sign_tipo: tipoDocumento,
+
       updated_at: new Date().toISOString(),
     };
     if (templateId) {
@@ -161,38 +154,6 @@ export default function ContratoAdesaoTab() {
             <Switch checked={envioAutomatico} onCheckedChange={setEnvioAutomatico} />
             <Label>Envio automático por email ao concretizar venda</Label>
           </div>
-
-          {/* Power Sign */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Power Sign</CardTitle>
-                <Switch checked={powerSignHabilitado} onCheckedChange={setPowerSignHabilitado} />
-              </div>
-            </CardHeader>
-            {powerSignHabilitado && (
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Tipo</Label>
-                  <Select value={tipoDocumento} onValueChange={setTipoDocumento}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="simples">Documento Simples</SelectItem>
-                      <SelectItem value="envelope">Envelope</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-2 p-3 rounded-lg border">
-                  <Switch checked={envioMultiplo} onCheckedChange={setEnvioMultiplo} />
-                  <Label>Envio múltiplo mesmo contrato</Label>
-                </div>
-                <div>
-                  <Label>Token Power Sign</Label>
-                  <Input type="password" value={tokenPowerSign} onChange={e => setTokenPowerSign(e.target.value)} placeholder="Cole o token aqui" />
-                </div>
-              </CardContent>
-            )}
-          </Card>
 
           <Button className="gap-2" onClick={salvarContrato} disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Salvar Contrato

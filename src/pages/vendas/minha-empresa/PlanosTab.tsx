@@ -49,7 +49,7 @@ function getTipoServico(classificacao: string | null): { label: string; color: s
     return { label: "Benefício", color: "bg-emerald-500/10 text-emerald-600", icon: Gift };
   }
   if (c.includes("PRODUTO ADICIONAL") || c.includes("RASTREADOR") || c.includes("TAXA")) {
-    return { label: "Opcional", color: "bg-amber-500/10 text-amber-600", icon: ListChecks };
+    return { label: "Serviço", color: "bg-amber-500/10 text-amber-600", icon: ListChecks };
   }
   return { label: "Outro", color: "bg-muted text-muted-foreground", icon: Package };
 }

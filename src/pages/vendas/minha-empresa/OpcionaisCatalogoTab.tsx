@@ -93,9 +93,9 @@ export default function OpcionaisCatalogoTab() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["opcionais_catalogo"] });
-      toast.success("Opcional criado com sucesso");
+      toast.success("Serviço criado com sucesso");
     },
-    onError: () => toast.error("Erro ao criar opcional"),
+    onError: () => toast.error("Erro ao criar serviço"),
   });
 
   const updateMutation = useMutation({
@@ -105,9 +105,9 @@ export default function OpcionaisCatalogoTab() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["opcionais_catalogo"] });
-      toast.success("Opcional atualizado");
+      toast.success("Serviço atualizado");
     },
-    onError: () => toast.error("Erro ao atualizar opcional"),
+    onError: () => toast.error("Erro ao atualizar serviço"),
   });
 
   const deleteMutation = useMutation({
@@ -117,9 +117,9 @@ export default function OpcionaisCatalogoTab() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["opcionais_catalogo"] });
-      toast.success("Opcional removido");
+      toast.success("Serviço removido");
     },
-    onError: () => toast.error("Erro ao remover opcional"),
+    onError: () => toast.error("Erro ao remover serviço"),
   });
 
   const toggleAtivoMutation = useMutation({
@@ -194,7 +194,7 @@ export default function OpcionaisCatalogoTab() {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        <span className="ml-2 text-muted-foreground">Carregando opcionais...</span>
+        <span className="ml-2 text-muted-foreground">Carregando serviços...</span>
       </div>
     );
   }
@@ -203,13 +203,13 @@ export default function OpcionaisCatalogoTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-[#1A3A5C]">Opcionais do Catálogo</h3>
+          <h3 className="text-lg font-semibold text-[#1A3A5C]">Serviços do Catálogo</h3>
           <p className="text-xs text-muted-foreground">
-            {opcionais.length} opcionais em {categorias.length} categorias
+            {opcionais.length} serviços em {categorias.length} categorias
           </p>
         </div>
         <Button onClick={openCreate} className="gap-2 rounded-none">
-          <Plus className="h-4 w-4" /> Novo Opcional
+          <Plus className="h-4 w-4" /> Novo Serviço
         </Button>
       </div>
 
@@ -217,7 +217,7 @@ export default function OpcionaisCatalogoTab() {
         <Card className="rounded-none">
           <CardContent className="py-12 text-center">
             <ListChecks className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">Nenhum opcional cadastrado.</p>
+            <p className="text-sm text-muted-foreground">Nenhum serviço cadastrado.</p>
           </CardContent>
         </Card>
       ) : (
@@ -316,7 +316,7 @@ export default function OpcionaisCatalogoTab() {
         <DialogContent className="rounded-none">
           <DialogHeader>
             <DialogTitle className="text-[#1A3A5C]">
-              {editingId ? "Editar Opcional" : "Novo Opcional"}
+              {editingId ? "Editar Serviço" : "Novo Serviço"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -417,7 +417,7 @@ export default function OpcionaisCatalogoTab() {
             <DialogTitle className="text-[#1A3A5C]">Confirmar exclusão</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground py-2">
-            Tem certeza que deseja remover este opcional? Esta ação não pode ser desfeita.
+            Tem certeza que deseja remover este serviço? Esta ação não pode ser desfeita.
           </p>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" className="rounded-none" onClick={() => setDeleteConfirm(null)}>

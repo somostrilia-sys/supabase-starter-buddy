@@ -86,7 +86,7 @@ export default function PersonalizacaoTab() {
     { label: "Habilitar Implementos na Cotacao", key: "habImplementos" },
     { label: "Integracao App Visto", key: "integAppVisto" },
     { label: "Bloquear Placa Duplicada", key: "bloquearPlacaDup" },
-    { label: "Esconder Valor Opcionais", key: "esconderOpcionais" },
+    { label: "Esconder Valor Serviços", key: "esconderOpcionais" },
     { label: "Envio Automatico Laudo Vistoria", key: "envioLaudo" },
     { label: "Troca Titularidade Cotacao", key: "trocaTitularidade" },
     { label: "Selecao Conta Bancaria no envio Gestao", key: "selecaoConta" },

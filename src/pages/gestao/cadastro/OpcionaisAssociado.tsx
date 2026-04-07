@@ -39,17 +39,17 @@ export default function OpcionaisAssociado() {
     if (!form.nome) { toast.error("Informe o nome"); return; }
     if (editId) {
       setOpcionais(prev => prev.map(o => o.id === editId ? { ...o, nome: form.nome, categoria: form.categoria } : o));
-      toast.success("Opcional atualizado!");
+      toast.success("Serviço atualizado!");
     } else {
       setOpcionais(prev => [...prev, { id: `oa${Date.now()}`, nome: form.nome, categoria: form.categoria, ativo: true }]);
-      toast.success("Opcional cadastrado!");
+      toast.success("Serviço cadastrado!");
     }
     setModalOpen(false);
   };
 
   const handleDelete = (id: string) => {
     setOpcionais(prev => prev.filter(o => o.id !== id));
-    toast.success("Opcional removido!");
+    toast.success("Serviço removido!");
   };
 
   const grouped = categorias.map(cat => ({
@@ -60,15 +60,15 @@ export default function OpcionaisAssociado() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-bold">Opcionais do Associado</h2>
-        <Button onClick={openNew} className="gap-2"><Plus className="h-4 w-4" /> Novo Opcional</Button>
+        <h2 className="text-lg font-bold">Serviços do Associado</h2>
+        <Button onClick={openNew} className="gap-2"><Plus className="h-4 w-4" /> Novo Serviço</Button>
       </div>
 
       <div className="space-y-4">
         {grouped.length === 0 && (
           <Card>
             <CardContent className="p-8 text-center">
-              <p className="text-sm text-muted-foreground">Nenhum opcional cadastrado. Clique em "Novo Opcional" para adicionar.</p>
+              <p className="text-sm text-muted-foreground">Nenhum serviço cadastrado. Clique em "Novo Serviço" para adicionar.</p>
             </CardContent>
           </Card>
         )}
@@ -98,11 +98,11 @@ export default function OpcionaisAssociado() {
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{editId ? "Editar Opcional" : "Novo Opcional"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editId ? "Editar Serviço" : "Novo Serviço"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
               <Label>Nome *</Label>
-              <Input value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} placeholder="Nome do opcional" />
+              <Input value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} placeholder="Nome do serviço" />
             </div>
             <div>
               <Label>Categoria</Label>

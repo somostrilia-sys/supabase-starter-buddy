@@ -30,7 +30,7 @@ export default function MinhaEmpresa() {
           <TabsTrigger value="permissoes" className="gap-2"><Shield className="h-4 w-4" /> Permissões</TabsTrigger>
           <TabsTrigger value="personalizacao" className="gap-2"><Palette className="h-4 w-4" /> Personalização</TabsTrigger>
           <TabsTrigger value="contrato" className="gap-2"><FileText className="h-4 w-4" /> Contrato de Adesão</TabsTrigger>
-          <TabsTrigger value="opcionais" className="gap-2"><ListChecks className="h-4 w-4" /> Opcionais</TabsTrigger>
+          <TabsTrigger value="opcionais" className="gap-2"><ListChecks className="h-4 w-4" /> Serviços</TabsTrigger>
           <TabsTrigger value="integracoes" className="gap-2"><Plug className="h-4 w-4" /> Integrações</TabsTrigger>
         </TabsList>
 

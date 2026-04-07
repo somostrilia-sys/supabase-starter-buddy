@@ -106,7 +106,7 @@ export default function OpcionaisSection({ negociacaoId, tipoVeiculo, plano, sel
   if (isLoading) {
     return (
       <div className="text-xs text-muted-foreground py-4 text-center">
-        Carregando opcionais...
+        Carregando serviços...
       </div>
     );
   }
@@ -114,14 +114,14 @@ export default function OpcionaisSection({ negociacaoId, tipoVeiculo, plano, sel
   if (categorias.length === 0) {
     return (
       <div className="text-xs text-muted-foreground py-4 text-center">
-        Nenhum opcional disponível para este tipo de veículo.
+        Nenhum serviço disponível para este tipo de veículo.
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-[#1A3A5C]">Opcionais</h3>
+      <h3 className="text-sm font-semibold text-[#1A3A5C]">Serviços</h3>
 
       {categorias.map((cat) => {
         const isOpen = openCats[cat] ?? false;
@@ -186,7 +186,7 @@ export default function OpcionaisSection({ negociacaoId, tipoVeiculo, plano, sel
       {/* Running total */}
       <div className="flex items-center justify-between border rounded-none px-3 py-2 bg-muted/30">
         <span className="text-xs font-medium text-[#1A3A5C]">
-          Total opcionais ({selected.length} selecionado{selected.length !== 1 ? "s" : ""})
+          Total serviços ({selected.length} selecionado{selected.length !== 1 ? "s" : ""})
         </span>
         <span className="text-sm font-semibold text-[#1A3A5C]">
           +{formatBRL(total)}/mês

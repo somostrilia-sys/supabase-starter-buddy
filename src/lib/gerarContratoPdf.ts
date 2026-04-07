@@ -144,8 +144,8 @@ function buildPage1(d: DadosContrato, hash: string): string {
       </div>
 
       ${d.opcionais && d.opcionais.length > 0 ? `
-      <div class="section-title">Opcionais Contratados</div>
-      <div class="products-grid"><div class="product-col"><h4>Opcionais</h4><ul>${d.opcionais.map(o => `<li>${o}</li>`).join("")}</ul></div></div>` : ""}
+      <div class="section-title">Serviços Contratados</div>
+      <div class="products-grid"><div class="product-col"><h4>Serviços</h4><ul>${d.opcionais.map(o => `<li>${o}</li>`).join("")}</ul></div></div>` : ""}
 
       <div class="section-title">Dados do Consultor</div>
       <div class="data-grid cols-3">
@@ -155,7 +155,7 @@ function buildPage1(d: DadosContrato, hash: string): string {
       </div>
 
       <div class="footer">
-        <div class="qr">QR PowerSign: ${hash}</div>
+        <div class="qr">Autenticação GIA: ${hash}</div>
         <div>Página 1 de 3</div>
       </div>
     </div>
@@ -187,7 +187,7 @@ function buildPage2(d: DadosContrato, hash: string): string {
         <div class="header-right"><div class="cnpj-label">CNPJ</div><div class="cnpj">${d.empresa.cnpj}</div></div>
       </div>
       ${sections.map(s => `<div class="contract-section"><h3>${s.t}</h3><p>${s.p}</p></div>`).join("")}
-      <div class="footer"><div class="qr">QR PowerSign: ${hash}</div><div>Página 2 de 3</div></div>
+      <div class="footer"><div class="qr">Autenticação GIA: ${hash}</div><div>Página 2 de 3</div></div>
     </div>
     <div class="watermark">OBJETIVO</div>
   </div>`;
@@ -233,7 +233,7 @@ function buildPage3(d: DadosContrato, hash: string): string {
         <div class="sig-block"><div class="sig-line"><div class="name">${d.empresa.nome}</div><div class="doc">CNPJ: ${d.empresa.cnpj}</div></div></div>
       </div>
 
-      <div class="footer"><div class="qr">QR PowerSign: ${hash}</div><div>Página 3 de 3</div></div>
+      <div class="footer"><div class="qr">Autenticação GIA: ${hash}</div><div>Página 3 de 3</div></div>
     </div>
     <div class="watermark">OBJETIVO</div>
   </div>`;

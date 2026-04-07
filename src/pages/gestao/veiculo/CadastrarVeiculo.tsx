@@ -1056,7 +1056,7 @@ export default function CadastrarVeiculo() {
                             )}
                             {produtosOpcionais.length > 0 && (
                               <div>
-                                <p className="text-xs font-medium mb-1 text-muted-foreground">Opcionais</p>
+                                <p className="text-xs font-medium mb-1 text-muted-foreground">Serviços</p>
                                 {produtosOpcionais.map(p => (
                                   <div key={p.id} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
                                     <div className="flex items-center gap-2">

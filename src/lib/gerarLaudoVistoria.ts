@@ -106,7 +106,7 @@ function buildPage1(d: DadosLaudo, hash: string): string {
       </div>
 
       <div class="footer">
-        <div class="qr">QR PowerSign: ${hash}</div>
+        <div class="qr">Autenticação GIA: ${hash}</div>
         <div>Página 1 de ${Math.ceil(d.fotos.length / 6) + 2}</div>
       </div>
     </div>
@@ -145,7 +145,7 @@ function buildPhotoPage(fotos: DadosLaudo["fotos"], pageNum: number, totalPages:
       </div>
 
       <div class="footer">
-        <div class="qr">QR PowerSign: ${hash}</div>
+        <div class="qr">Autenticação GIA: ${hash}</div>
         <div>Página ${pageNum} de ${totalPages}</div>
       </div>
     </div>
@@ -172,7 +172,7 @@ function buildAuthPage(d: DadosLaudo, hash: string, totalPages: number): string 
         <div class="auth-card">
           <div class="doc-id">Código de Autenticação</div>
           <div class="doc-code">${hash}</div>
-          <div class="qr-placeholder"><span>QR Code<br>PowerSign</span></div>
+          <div class="qr-placeholder"><span>QR Code<br>GIA</span></div>
           <hr class="auth-divider">
           <div class="auth-row"><span class="lbl">Documento</span><span class="val">Laudo de Vistoria Veicular</span></div>
           <div class="auth-row"><span class="lbl">Placa</span><span class="val">${d.veiculo.placa}</span></div>
@@ -188,7 +188,7 @@ function buildAuthPage(d: DadosLaudo, hash: string, totalPages: number): string 
             <div class="stamp-sub">Documento gerado eletronicamente pelo Sistema GIA</div>
           </div>
         </div>
-        <div class="auth-legal">Este documento foi gerado eletronicamente pelo sistema GIA (Gestão Inteligente de Associados) e possui validade digital conforme assinatura eletrônica PowerSign. A autenticidade pode ser verificada através do código QR acima ou pelo código de autenticação <strong>${hash}</strong>.</div>
+        <div class="auth-legal">Este documento foi gerado eletronicamente pelo sistema GIA (Gestão Inteligente de Associados) e possui validade digital conforme assinatura eletrônica GIA. A autenticidade pode ser verificada através do código QR acima ou pelo código de autenticação <strong>${hash}</strong>.</div>
       </div>
 
       <div class="footer">

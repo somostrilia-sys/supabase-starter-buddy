@@ -133,12 +133,12 @@ function buildPage3HTML(dados: DadosCotacao): string {
       <div class="benefits-section-inner" style="background:linear-gradient(135deg,#1a4a2e 0%,#1e5a36 100%);">
         <div class="benefits-title">
           <div class="line" style="background:linear-gradient(90deg,rgba(46,204,113,0.4),transparent);"></div>
-          <h3 style="color:#2ecc71;">✦ Opcionais Contratados ✦</h3>
+          <h3 style="color:#2ecc71;">✦ Serviços Contratados ✦</h3>
           <div class="line line-r" style="background:linear-gradient(270deg,rgba(46,204,113,0.4),transparent);"></div>
         </div>
         <div class="benefits-grid">${opcItems}</div>
         <div style="text-align:right;margin-top:8px;padding-right:14px;">
-          <span style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:13px;color:#2ecc71;">Total opcionais: ${fmtBRL(totalOpc)}/mês</span>
+          <span style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:13px;color:#2ecc71;">Total serviços: ${fmtBRL(totalOpc)}/mês</span>
         </div>
       </div>
     </div>`;

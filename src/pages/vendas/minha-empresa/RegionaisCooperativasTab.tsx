@@ -96,43 +96,75 @@ export default function RegionaisCooperativasTab() {
     },
   });
 
-  // Cidades vinculadas à regional expandida
+  // Cidades vinculadas à regional expandida (paginated to handle >1000 rows)
   const { data: cidadesVinculadas = [], isLoading: loadingCidades } = useQuery({
     queryKey: ["regional-cidades", expandedRegionalId],
     enabled: !!expandedRegionalId,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("regional_cidades")
-        .select("id, regional_id, municipio_id, municipios(id, nome, uf)")
-        .eq("regional_id", expandedRegionalId)
-        .order("municipios(nome)");
-      if (error) throw error;
-      return (data || []) as RegionalCidade[];
+      const PAGE_SIZE = 1000;
+      let allData: RegionalCidade[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await (supabase as any)
+          .from("regional_cidades")
+          .select("id, regional_id, municipio_id, municipios(id, nome, uf)")
+          .eq("regional_id", expandedRegionalId)
+          .order("municipios(nome)")
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data as RegionalCidade[]);
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+      return allData;
     },
   });
 
-  // Municípios disponíveis para adicionar (filtrados)
+  // Municípios disponíveis para adicionar (paginated to handle >1000 rows)
   const { data: municipios = [] } = useQuery({
     queryKey: ["municipios-lista"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("municipios")
-        .select("id, nome, uf")
-        .order("nome");
-      if (error) throw error;
-      return (data || []) as Municipio[];
+      const PAGE_SIZE = 1000;
+      let allData: Municipio[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await (supabase as any)
+          .from("municipios")
+          .select("id, nome, uf")
+          .order("nome")
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data as Municipio[]);
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+      return allData;
     },
   });
 
-  // Todas as cidades já vinculadas a qualquer regional (para checar conflitos)
+  // Todas as cidades já vinculadas a qualquer regional (para checar conflitos + contagem)
+  // Supabase default limit is 1000 rows — must paginate since we have 5000+ rows
   const { data: todasCidadesVinculadas = [] } = useQuery({
     queryKey: ["todas-regional-cidades"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("regional_cidades")
-        .select("municipio_id, regional_id, regionais(nome)");
-      if (error) throw error;
-      return (data || []) as Array<{ municipio_id: number; regional_id: string; regionais: { nome: string } | null }>;
+      type Row = { municipio_id: number; regional_id: string; regionais: { nome: string } | null };
+      const PAGE_SIZE = 1000;
+      let allData: Row[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await (supabase as any)
+          .from("regional_cidades")
+          .select("municipio_id, regional_id, regionais(nome)")
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data as Row[]);
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+      return allData;
     },
   });
 

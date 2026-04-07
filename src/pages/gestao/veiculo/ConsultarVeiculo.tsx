@@ -916,7 +916,7 @@ function VeiculoProdutosTab({ veiculoId }: { veiculoId: string }) {
         <CardContent className="p-4 flex justify-between items-center">
           <div>
             <p className="text-xs text-muted-foreground">Total de produtos ativos</p>
-            <p className="text-lg font-bold">{produtos.length} <span className="text-xs font-normal text-muted-foreground">({obrigatorios.length} obrigatórios · {opcionais.length} opcionais)</span></p>
+            <p className="text-lg font-bold">{produtos.length} <span className="text-xs font-normal text-muted-foreground">({obrigatorios.length} obrigatórios · {opcionais.length} serviços)</span></p>
           </div>
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Total mensal</p>
@@ -948,7 +948,7 @@ function VeiculoProdutosTab({ veiculoId }: { veiculoId: string }) {
 
       {opcionais.length > 0 && (
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2">+ Produtos Opcionais ({opcionais.length})</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2">+ Serviços ({opcionais.length})</CardTitle></CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Classificação</TableHead><TableHead>Desde</TableHead><TableHead className="text-right">Valor</TableHead></TableRow></TableHeader>
