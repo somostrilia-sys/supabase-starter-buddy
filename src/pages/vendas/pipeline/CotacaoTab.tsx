@@ -461,12 +461,14 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         });
         if (filtered.length > 0) resultado = filtered;
       }
-      // Deduplicar: 1 faixa por plano (pegar a mais específica = valor_menor mais alto)
+      // Deduplicar: 1 faixa por plano (pegar a mais específica = menor range FIPE)
       const planoMap = new Map<string, any>();
       for (const r of resultado) {
         const nome = r.plano_normalizado || r.plano;
         const existing = planoMap.get(nome);
-        if (!existing || Number(r.valor_menor) > Number(existing.valor_menor)) {
+        const range = Number(r.valor_maior) - Number(r.valor_menor);
+        const existingRange = existing ? Number(existing.valor_maior) - Number(existing.valor_menor) : Infinity;
+        if (!existing || range < existingRange) {
           planoMap.set(nome, r);
         }
       }
@@ -717,7 +719,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     if (!precoPlano) {
       console.warn("[PDF] precoPlano não encontrado para:", planoSelecionado, "precosReais:", precosReais.map((p: any) => p.plano_normalizado || p.plano));
     }
-    const mensalPlano = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
+    const mensalPlano = precoPlano ? Number(precoPlano.cota) : 0;
     const mensal = mensalPlano + totalOpcionais;
     const adesaoReal = precoPlano ? Number(precoPlano.adesao) : 400;
     if (coberturasPlano.length === 0) {
@@ -807,7 +809,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         estado_circulacao: form.estadoCirc,
         regional_precos: regionalCot,
         todos_planos: await (async () => {
-          if (planosFiltrados.length === 0) return [{ nome: planoSelecionado, valor_mensal: valorFipe * 0.015 }];
+          if (planosFiltrados.length === 0) return [{ nome: planoSelecionado, valor_mensal: 0 }];
           // Buscar coberturas + produtos reais para snapshot
           const nomesPlanos = [...new Set(planosFiltrados.map((p: any) => p.plano_normalizado || p.plano))];
           const { data: cobSnap } = await supabase.from("coberturas_plano" as any).select("*").in("plano", nomesPlanos);
@@ -1364,7 +1366,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
                 </SelectTrigger>
                 <SelectContent>
                   {planosConfig.map(p => {
-                    const mensal = (p as any).valorReal > 0 ? (p as any).valorReal : (fipeFetched && precosReais.length === 0 ? 0 : Math.round(valorFipe * p.percentual));
+                    const mensal = (p as any).valorReal > 0 ? (p as any).valorReal : 0;
                     const totalComOpc = mensal + totalOpcionais;
                     const precoReal = precosReais.find((pr: any) => (pr.plano_normalizado || pr.plano) === p.nome);
                     return (
@@ -1388,7 +1390,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
             {(() => {
               const p = planosConfig.find(pl => pl.nome === planoSelecionado || planoSelecionado.startsWith(pl.nome) || pl.nome.startsWith(planoSelecionado));
               if (!p) return null;
-              const mensal = (p as any).valorReal > 0 ? (p as any).valorReal : (fipeFetched && precosReais.length === 0 ? 0 : Math.round(valorFipe * p.percentual));
+              const mensal = (p as any).valorReal > 0 ? (p as any).valorReal : 0;
               if (fipeFetched && precosReais.length === 0) return null;
               const pctDesc = Number((deal as any).desconto_percentual || 0);
               const temDesconto = pctDesc > 0 && descontoAprovadoPorDiretor && mensal > 0;
@@ -1468,7 +1470,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           <Badge className="rounded-none bg-[#1A3A5C] text-white">{planoSelecionado}</Badge>
           {(() => {
             const pl = planosConfig.find(p => p.nome === planoSelecionado || planoSelecionado.startsWith(p.nome) || p.nome.startsWith(planoSelecionado));
-            const mensalVal = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : Math.round(valorFipe * (pl?.percentual || 0));
+            const mensalVal = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : 0;
             const rastreadorMensal = (form.tipoVeiculo === "Caminhão" || form.tipoVeiculo === "Van/Utilitário") ? 150 : 100;
             const mensalidadeTotal = mensalVal + totalOpcionais + rastreadorMensal;
             const adesaoVal = (pl as any)?.adesao || 400;
@@ -1498,7 +1500,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Desconto Mensalidade (valor final c/ serviços)</Label>
-              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60" : ""}`} type="number" placeholder={totalOpcionais > 0 ? `Sem desconto = ${(() => { const pl = planosConfig.find(p => p.nome === planoSelecionado); const mv = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : Math.round(valorFipe * (pl?.percentual || 0)); return formatCurrency(mv + totalOpcionais); })()}` : "Deixe vazio = sem desconto"} value={descontoMensal} disabled={descontoBloqueado} onChange={e => { setDescontoMensal(e.target.value); setDescontoIaResult(null); }} />
+              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60" : ""}`} type="number" placeholder={totalOpcionais > 0 ? `Sem desconto = ${(() => { const pl = planosConfig.find(p => p.nome === planoSelecionado); const mv = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : 0; return formatCurrency(mv + totalOpcionais); })()}` : "Deixe vazio = sem desconto"} value={descontoMensal} disabled={descontoBloqueado} onChange={e => { setDescontoMensal(e.target.value); setDescontoIaResult(null); }} />
               <p className="text-[10px] text-muted-foreground">Valor final já inclui plano + serviços. Se preencher, o PDF mostrará desconto.</p>
             </div>
             <div className="space-y-1">
@@ -1511,7 +1513,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           {/* IA Desconto — análise automática para descontos > 5% */}
           {(() => {
             const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
-            const mensalPlanoOnly = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
+            const mensalPlanoOnly = precoPlano ? Number(precoPlano.cota) : 0;
             const mensalOriginal = mensalPlanoOnly + totalOpcionais;
             const descMensalPct = descontoMensal && mensalOriginal > 0 ? ((mensalOriginal - Number(descontoMensal)) / mensalOriginal) * 100 : 0;
             const maiorDesconto = descMensalPct;
@@ -1745,7 +1747,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         {/* 1.3 + 1.6 — Análise IA unificada + Pedir Liberação na cotação */}
         {(() => {
           const precoPlano = precosReais.find((p: any) => (p.plano_normalizado || p.plano) === planoSelecionado);
-          const mensalPlanoOnly2 = precoPlano ? Number(precoPlano.cota) : Math.round(valorFipe * (planosConfig.find(p => p.nome === planoSelecionado)?.percentual || 0));
+          const mensalPlanoOnly2 = precoPlano ? Number(precoPlano.cota) : 0;
           const mensalOriginal = mensalPlanoOnly2 + totalOpcionais;
           const descMensalPct = descontoMensal && mensalOriginal > 0 ? ((mensalOriginal - Number(descontoMensal)) / mensalOriginal) * 100 : 0;
           const maiorDesconto = descMensalPct;
