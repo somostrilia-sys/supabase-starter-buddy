@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -26,8 +27,21 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   FileText, User, Car, ClipboardCheck, Activity, PenTool, Wallet,
   Mail, MessageSquare, Plus, Send, Image, Archive, Paperclip, CheckCircle, X,
-  ArrowLeftRight, AlertTriangle, Loader2,
+  ArrowLeftRight, AlertTriangle, Loader2, Clock, Eye, RotateCcw,
 } from "lucide-react";
+
+const atividadeIcons: Record<string, React.ElementType> = {
+  criacao: FileText, envio: Send, visualizacao: Eye, vistoria: ClipboardCheck,
+  assinatura: CheckCircle, expiracao: AlertTriangle, reenvio: RotateCcw,
+  cotacao: FileText, transferencia: ArrowLeftRight, arquivamento: Archive,
+};
+const atividadeCores: Record<string, string> = {
+  criacao: "bg-[#1A3A5C] text-white", envio: "bg-primary/60 text-white",
+  visualizacao: "bg-warning/80 text-white", vistoria: "bg-orange-500 text-white",
+  assinatura: "bg-success/80 text-white", expiracao: "bg-destructive/80 text-white",
+  reenvio: "bg-primary/60 text-white", cotacao: "bg-blue-500 text-white",
+  transferencia: "bg-purple-500 text-white", arquivamento: "bg-gray-500 text-white",
+};
 
 interface Props {
   deal: PipelineDeal;
@@ -43,7 +57,7 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
   const isConcluido = deal.stage === "concluido";
   const bloqueado = isConsultor && isConcluido;
   const [activeTab, setActiveTab] = useState("cotacao");
-  const [historicoReal, setHistoricoReal] = useState<any[]>([]);
+  // historicoReal replaced by useQuery below
   const [showArquivar, setShowArquivar] = useState(false);
   const [motivoArquivar, setMotivoArquivar] = useState("");
   const [showTransferir, setShowTransferir] = useState(false);
@@ -201,11 +215,19 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
     onOpenChange(false);
   }
 
-  React.useEffect(() => {
-    if (!deal.id || deal.id.startsWith("p")) return;
-    supabase.from("pipeline_transicoes" as any).select("*").eq("negociacao_id", deal.id)
-      .order("created_at", { ascending: false }).then(({ data }) => setHistoricoReal(data || []));
-  }, [deal.id]);
+  const { data: historicoReal = [], isLoading: historicoLoading } = useQuery({
+    queryKey: ["atividades-timeline", deal.id],
+    enabled: !!deal.id && !deal.id.startsWith("p"),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pipeline_transicoes" as any)
+        .select("*")
+        .eq("negociacao_id", deal.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
 
   // Carregar consultores para transferência
   React.useEffect(() => {
@@ -350,27 +372,33 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
             {/* TAB - Atividades */}
             <TabsContent value="atividades" className="mt-0 space-y-4">
               <Button size="sm" className="rounded-none"><Plus className="h-3.5 w-3.5 mr-1" />Nova Atividade</Button>
-              {historicoReal.length === 0 ? (
+              {historicoLoading ? (
+                <div className="flex items-center gap-2 py-4 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Carregando atividades...</div>
+              ) : historicoReal.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-4 text-center">Nenhuma atividade registrada</p>
               ) : (
-                <div className="space-y-3">
+                <div className="relative pl-6 space-y-0">
                   {historicoReal.map((a: any, i: number) => {
-                    const desc = `${a.stage_anterior || "—"} → ${a.stage_novo}${a.motivo ? ` — ${a.motivo}` : ""}`;
-                    const data = a.created_at;
+                    const tipo = a.tipo || (a.automatica ? "criacao" : "envio");
+                    const Icon = atividadeIcons[tipo] || Activity;
+                    const iconColor = atividadeCores[tipo] || "bg-gray-400 text-white";
+                    const isLast = i === historicoReal.length - 1;
+                    const desc = a.descricao || a.motivo || `${a.stage_anterior || "—"} → ${a.stage_novo}`;
                     const usuario = a.automatica ? "Sistema" : "Consultor";
-                    const tipo = a.automatica ? "Auto" : "Manual";
                     return (
-                      <div key={a.id || i} className="flex gap-3 items-start">
-                        <div className="mt-1 w-8 h-8 bg-primary/10 flex items-center justify-center shrink-0">
-                          <Activity className="h-4 w-4 text-primary" />
+                      <div key={a.id || i} className="relative pb-4">
+                        {!isLast && <div className="absolute left-[-14px] top-6 bottom-0 w-px bg-border" />}
+                        <div className={`absolute left-[-22px] top-1 h-5 w-5 rounded-full flex items-center justify-center ${iconColor}`}>
+                          <Icon className="h-3 w-3" />
                         </div>
-                        <div className="flex-1 border-b-2 border-[#747474] pb-3">
+                        <div>
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-[10px] rounded-none">{tipo}</Badge>
-                            <span className="text-xs text-muted-foreground">{new Date(data).toLocaleDateString("pt-BR")} {new Date(data).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                            <span className="text-xs font-mono text-muted-foreground">
+                              {new Date(a.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                            <Badge variant="outline" className="text-[10px] rounded-none">{usuario}</Badge>
                           </div>
-                          <p className="text-sm mt-1">{desc}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">por {usuario}</p>
+                          <p className="text-sm mt-0.5">{desc}</p>
                         </div>
                       </div>
                     );

@@ -700,7 +700,11 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         instalacao: precoPlano ? Number(precoPlano.instalacao || 0) : 0,
       },
       coberturas: coberturasPlano.length > 0
-        ? coberturasPlano.map((c: any) => ({ nome: c.cobertura, inclusa: c.inclusa, tipo: c.tipo, detalhe: c.valor ?? c.detalhe }))
+        ? coberturasPlano.map((c: any) => {
+          const raw = c.valor ?? c.detalhe;
+          const detalhe = (raw && raw !== "0" && raw !== "0,00" && raw !== "R$ 0,00" && Number(raw) !== 0) ? String(raw) : "";
+          return { nome: c.cobertura, inclusa: c.inclusa, tipo: c.tipo, detalhe };
+        })
         : (planosConfigDefault.find(p => planoSelecionado.includes(p.nome) || p.nome.includes(planoSelecionado))?.coberturas || ["Colisão", "Incêndio", "Roubo", "Furto", "Perda Total", "Assistência 24H"]).map(c => ({ nome: c, inclusa: true, tipo: "cobertura", detalhe: "" })),
       consultor: { nome: deal.consultor || "Consultor", telefone: "", email: "" },
       opcionais: [
@@ -759,7 +763,9 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           const cobMap: Record<string, any[]> = {};
           if (cobSnap) (cobSnap as any[]).forEach((c: any) => {
             if (!cobMap[c.plano]) cobMap[c.plano] = [];
-            cobMap[c.plano].push({ cobertura: c.cobertura, tipo: c.tipo, inclusa: c.inclusa, detalhe: c.valor ?? c.detalhe, ordem: c.ordem });
+            const rawDet = c.valor ?? c.detalhe;
+            const detFilt = (rawDet && rawDet !== "0" && rawDet !== "0,00" && rawDet !== "R$ 0,00" && Number(rawDet) !== 0) ? String(rawDet) : "";
+            cobMap[c.plano].push({ cobertura: c.cobertura, tipo: c.tipo, inclusa: c.inclusa, detalhe: detFilt, ordem: c.ordem });
           });
           // Buscar nomes reais de produtos (grupo_produto_itens → produtos_gia)
           const { data: grupoItens } = await supabase.from("grupo_produto_itens" as any).select("grupo_produto, produto_id, produtos_gia(nome)").in("grupo_produto", nomesPlanos);

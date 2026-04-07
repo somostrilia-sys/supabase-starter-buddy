@@ -97,7 +97,8 @@ function buildPage3HTML(dados: DadosCotacao): string {
     beneficiosHTML = coberturas.map(c => {
       const meta = getBenefMeta(c.nome);
       const isClube = c.nome.toLowerCase().includes("clube");
-      const desc = c.detalhe || ""; // usar detalhe real do banco
+      const rawDesc = c.detalhe || "";
+      const desc = (rawDesc === "0" || rawDesc === "0,00" || rawDesc === "R$ 0,00" || Number(rawDesc) === 0) ? "" : rawDesc;
       return `<div class="benefit-item ${isClube ? "benefit-full " : ""}${meta.cat}">
         <div class="benefit-icon ${meta.ico}">${meta.emoji}</div>
         <div class="benefit-text-wrap">
