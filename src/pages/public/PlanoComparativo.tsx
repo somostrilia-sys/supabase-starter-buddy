@@ -105,6 +105,19 @@ const SECTION_VALORES: TableRow[] = [
   },
 ];
 
+const COBERTURA_DESCRICOES: Record<string, string> = {
+  "roubo": "Indenização de 100% da tabela FIPE em caso de roubo do veículo",
+  "furto": "Indenização de 100% da tabela FIPE em caso de furto do veículo",
+  "colisao": "Cobertura para danos causados por colisão, capotamento ou tombamento",
+  "incendio": "Proteção contra incêndio, explosão e queda de raio",
+  "danos a terceiros 30": "Cobertura de até R$ 30.000 para danos materiais e corporais causados a terceiros",
+  "perda total": "Indenização integral quando o reparo ultrapassa 75% do valor FIPE",
+  "danos da natureza": "Cobertura para enchentes, granizo, queda de árvore e outros eventos naturais",
+  "danos a terceiros 70": "Cobertura ampliada de até R$ 70.000 para danos materiais e corporais a terceiros",
+  "carro reserva": "Veículo reserva por até 15 dias em caso de sinistro coberto",
+  "vidros": "Cobertura de 60% para para-brisas, vidros laterais e traseiro",
+};
+
 const SECTION_COBERTURAS: TableRow[] = [
   { label: "Roubo", kind: "check", cobKey: "roubo" },
   { label: "Furto", kind: "check", cobKey: "furto" },
@@ -117,6 +130,20 @@ const SECTION_COBERTURAS: TableRow[] = [
   { label: "Carro Reserva 15 dias", kind: "check", cobKey: "carro reserva" },
   { label: "Vidros Completos (60%)", kind: "check", cobKey: "vidros" },
 ];
+
+const ASSISTENCIA_DESCRICOES: Record<string, string> = {
+  "assistencia 24h": "Socorro mecânico e guincho disponível 24 horas por dia, 7 dias por semana",
+};
+
+const BENEFICIO_DESCRICOES: Record<string, string> = {
+  "auxilio combustivel": "Envio de combustível ao local em caso de pane seca",
+  "recarga de bateria": "Recarga ou troca de bateria no local do veículo",
+  "hospedagem": "Diárias de hotel em caso de sinistro fora do domicílio",
+  "retorno ao domicilio": "Transporte de retorno ao domicílio em caso de sinistro em viagem",
+  "chaveiro": "Serviço de chaveiro para abertura do veículo",
+  "reboque": "Serviço de reboque/guincho ilimitado em todo o território nacional",
+  "troca de pneus": "Troca de pneu furado pelo estepe do próprio veículo",
+};
 
 const SECTION_ASSISTENCIA: TableRow[] = [
   { label: "Assistência 24H", kind: "assist", cobKey: "assistencia 24h" },
@@ -379,13 +406,19 @@ export default function PlanoComparativo() {
                         </td>
                       </tr>
                       {/* Rows */}
-                      {section.rows.map((row, ri) => (
+                      {section.rows.map((row, ri) => {
+                        const descMap = row.kind === "check" ? COBERTURA_DESCRICOES
+                          : row.kind === "assist" ? ASSISTENCIA_DESCRICOES
+                          : row.kind === "benefit" ? BENEFICIO_DESCRICOES : {};
+                        const desc = row.cobKey ? descMap[row.cobKey] : undefined;
+                        return (
                         <tr
                           key={`${si}-${ri}`}
                           className={ri % 2 === 0 ? "bg-white" : "bg-gray-50"}
                         >
-                          <td className="px-4 py-3 text-sm text-gray-700 font-medium border-t border-gray-200">
-                            {row.label}
+                          <td className="px-4 py-3 border-t border-gray-200">
+                            <div className="text-sm text-gray-700 font-medium">{row.label}</div>
+                            {desc && <div className="text-[11px] text-gray-400 mt-0.5 leading-snug">{desc}</div>}
                           </td>
                           {planos.map((p, pi) => (
                             <td
@@ -396,7 +429,8 @@ export default function PlanoComparativo() {
                             </td>
                           ))}
                         </tr>
-                      ))}
+                        );
+                      })}
                     </React.Fragment>
                   ))}
 

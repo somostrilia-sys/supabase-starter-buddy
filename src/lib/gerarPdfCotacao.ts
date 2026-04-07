@@ -49,6 +49,40 @@ function fmtBRLParts(v: number): { currency: string; integer: string; decimals: 
   return { currency: "R$", integer: parts[0], decimals: `,${parts[1]}` };
 }
 
+// Descrições padrão das coberturas (fallback quando detalhe do banco está vazio)
+const coberturaDescFallback: Record<string, string> = {
+  "colisão": "Cobertura para danos por colisão, capotamento ou tombamento",
+  "incêndio": "Proteção contra incêndio, explosão e queda de raio",
+  "perda total": "Indenização integral quando reparo ultrapassa 75% do valor FIPE",
+  "roubo": "Indenização de 100% da tabela FIPE em caso de roubo",
+  "furto": "Indenização de 100% da tabela FIPE em caso de furto",
+  "danos a terceiros": "Cobertura para danos materiais e corporais causados a terceiros",
+  "terceiros": "Cobertura para danos materiais e corporais causados a terceiros",
+  "vidros": "Cobertura para para-brisas, vidros laterais e traseiro",
+  "retrovisor": "Cobertura para retrovisores danificados",
+  "danos da natureza": "Cobertura para enchentes, granizo, queda de árvore",
+  "carro reserva": "Veículo reserva por até 15 dias em caso de sinistro",
+  "assistência 24h": "Socorro mecânico e guincho 24h, 7 dias por semana",
+  "guincho": "Serviço de guincho ilimitado em território nacional",
+  "reboque": "Serviço de reboque/guincho ilimitado em território nacional",
+  "chaveiro": "Serviço de chaveiro para abertura do veículo",
+  "recarga de bateria": "Recarga ou troca de bateria no local",
+  "auxílio combustível": "Envio de combustível em caso de pane seca",
+  "troca de pneus": "Troca de pneu furado pelo estepe do veículo",
+  "hospedagem": "Diárias de hotel em caso de sinistro fora do domicílio",
+  "retorno ao domicílio": "Transporte de retorno ao domicílio em caso de sinistro",
+  "clube": "Acesso ao clube de benefícios e descontos exclusivos",
+};
+
+function getCoberturaDesc(nome: string, detalheOriginal: string): string {
+  if (detalheOriginal) return detalheOriginal;
+  const lower = nome.toLowerCase();
+  for (const [key, desc] of Object.entries(coberturaDescFallback)) {
+    if (lower.includes(key)) return desc;
+  }
+  return "";
+}
+
 // Map de emojis/ícones e categorias para benefícios (sem desc hardcoded — usar detalhe do banco)
 const beneficiosMeta: Record<string, { emoji: string; cat: string; ico: string }> = {
   "Colisão": { emoji: "💥", cat: "cat-colisao", ico: "ico-red" },
@@ -98,7 +132,8 @@ function buildPage3HTML(dados: DadosCotacao): string {
       const meta = getBenefMeta(c.nome);
       const isClube = c.nome.toLowerCase().includes("clube");
       const rawDesc = c.detalhe || "";
-      const desc = (rawDesc === "0" || rawDesc === "0,00" || rawDesc === "R$ 0,00" || Number(rawDesc) === 0) ? "" : rawDesc;
+      const cleanDesc = (rawDesc === "0" || rawDesc === "0,00" || rawDesc === "R$ 0,00" || Number(rawDesc) === 0) ? "" : rawDesc;
+      const desc = getCoberturaDesc(c.nome, cleanDesc);
       return `<div class="benefit-item ${isClube ? "benefit-full " : ""}${meta.cat}">
         <div class="benefit-icon ${meta.ico}">${meta.emoji}</div>
         <div class="benefit-text-wrap">
