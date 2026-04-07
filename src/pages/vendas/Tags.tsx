@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +37,7 @@ export default function Tags() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(["Status","Prioridade","Ação","Origem","Sistema","Geral"]));
 
   // Fetch tags from Supabase
-  const { data: tags = [], isLoading } = useQuery<TagItem[]>({
+  const { data: tags = [], isLoading, isError, error: queryError } = useQuery<TagItem[]>({
     queryKey: ["vendas-tags"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -52,6 +52,8 @@ export default function Tags() {
         grupo: t.grupo || "Geral",
       }));
     },
+    retry: 1,
+    staleTime: 30_000,
   });
 
   // Seed default tags if table is empty
@@ -67,15 +69,10 @@ export default function Tags() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendas-tags"] });
+      toast.success("Tags padrão criadas");
     },
+    onError: () => toast.error("Erro ao criar tags padrão"),
   });
-
-  useEffect(() => {
-    if (!isLoading && tags.length === 0) {
-      seedMutation.mutate();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, tags.length]);
 
   // Create tag
   const createMutation = useMutation({
@@ -163,6 +160,17 @@ export default function Tags() {
     );
   }
 
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-3">
+        <p className="text-sm text-destructive">Erro ao carregar tags{queryError instanceof Error ? `: ${queryError.message}` : ""}</p>
+        <Button size="sm" variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ["vendas-tags"] })}>
+          Tentar novamente
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -217,6 +225,25 @@ export default function Tags() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {tags.length === 0 && !seedMutation.isPending && (
+        <Card className="border border-dashed border-border/50">
+          <CardContent className="flex flex-col items-center justify-center py-10 gap-3">
+            <TagIcon className="h-8 w-8 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Nenhuma tag cadastrada</p>
+            <Button size="sm" variant="outline" onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending}>
+              Criar tags padrão
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {seedMutation.isPending && (
+        <div className="flex items-center justify-center py-10 gap-2">
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Criando tags padrão…</span>
+        </div>
+      )}
 
       <div className="space-y-3">
         {grupos.map(grupo => {

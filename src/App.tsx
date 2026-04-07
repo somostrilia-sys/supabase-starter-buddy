@@ -1,3 +1,4 @@
+import React, { Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,64 +9,75 @@ import { BrandProvider } from "@/hooks/useBrand";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ModuleLayout } from "@/components/ModuleLayout";
 
+// Eager imports — small, frequently used, first-paint critical
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
+// Loading spinner for Suspense fallback
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+  </div>
+);
+
+// --- Lazy imports: heavy pages split into separate chunks ---
+
 // Gestão - New module
-import GestaoModule from "./pages/gestao/GestaoModule";
+const GestaoModule = React.lazy(() => import("./pages/gestao/GestaoModule"));
 
 // Financeiro - New module
-import FinanceiroModule from "./pages/financeiro-module/FinanceiroModule";
+const FinanceiroModule = React.lazy(() => import("./pages/financeiro-module/FinanceiroModule"));
 
 // Gestão (legacy)
-import Associados from "./pages/Associados";
-import Veiculos from "./pages/Veiculos";
-import Sinistros from "./pages/Sinistros";
-import Regionais from "./pages/Regionais";
-import Cooperativas from "./pages/Cooperativas";
-import Documentacao from "./pages/Documentacao";
-import Vistorias from "./pages/Vistorias";
-import Produtos from "./pages/Produtos";
-import Usuarios from "./pages/Usuarios";
-import Parametros from "./pages/Parametros";
+const Associados = React.lazy(() => import("./pages/Associados"));
+const Veiculos = React.lazy(() => import("./pages/Veiculos"));
+const Sinistros = React.lazy(() => import("./pages/Sinistros"));
+const Regionais = React.lazy(() => import("./pages/Regionais"));
+const Cooperativas = React.lazy(() => import("./pages/Cooperativas"));
+const Documentacao = React.lazy(() => import("./pages/Documentacao"));
+const Vistorias = React.lazy(() => import("./pages/Vistorias"));
+const Produtos = React.lazy(() => import("./pages/Produtos"));
+const Usuarios = React.lazy(() => import("./pages/Usuarios"));
+const Parametros = React.lazy(() => import("./pages/Parametros"));
 
 // Financeiro
-import FluxoDiario from "./pages/financeiro/FluxoDiario";
-import Boletos from "./pages/financeiro/Boletos";
-import Conciliacao from "./pages/financeiro/Conciliacao";
-import RelatoriosFinanceiro from "./pages/financeiro/RelatoriosFinanceiro";
+const FluxoDiario = React.lazy(() => import("./pages/financeiro/FluxoDiario"));
+const Boletos = React.lazy(() => import("./pages/financeiro/Boletos"));
+const Conciliacao = React.lazy(() => import("./pages/financeiro/Conciliacao"));
+const RelatoriosFinanceiro = React.lazy(() => import("./pages/financeiro/RelatoriosFinanceiro"));
 
 // Vendas
-import DashboardVendas from "./pages/vendas/DashboardVendas";
-import Pipeline from "./pages/vendas/Pipeline";
-import VendasLista from "./pages/vendas/VendasLista";
-import Contatos from "./pages/vendas/Contatos";
+const DashboardVendas = React.lazy(() => import("./pages/vendas/DashboardVendas"));
+const Pipeline = React.lazy(() => import("./pages/vendas/Pipeline"));
+const VendasLista = React.lazy(() => import("./pages/vendas/VendasLista"));
+const Contatos = React.lazy(() => import("./pages/vendas/Contatos"));
+const NegociacaoDetalhe = React.lazy(() => import("./pages/vendas/NegociacaoDetalhe"));
+const Atividades = React.lazy(() => import("./pages/vendas/Atividades"));
+const Calendario = React.lazy(() => import("./pages/vendas/Calendario"));
+const Afiliados = React.lazy(() => import("./pages/vendas/Afiliados"));
+const VistoriasVendas = React.lazy(() => import("./pages/vendas/VistoriasVendas"));
+const LandingPages = React.lazy(() => import("./pages/vendas/LandingPages"));
+const RelatoriosVendas = React.lazy(() => import("./pages/vendas/RelatoriosVendas"));
+const FinanceiroVendas = React.lazy(() => import("./pages/vendas/Financeiro"));
+const FerramentasVendas = React.lazy(() => import("./pages/vendas/FerramentasVendas"));
+const Metas = React.lazy(() => import("./pages/vendas/Metas"));
+const Tags = React.lazy(() => import("./pages/vendas/Tags"));
+const ImportarLeads = React.lazy(() => import("./pages/vendas/ImportarLeads"));
+const MinhaEmpresa = React.lazy(() => import("./pages/vendas/MinhaEmpresa"));
+const MinhaConta = React.lazy(() => import("./pages/vendas/MinhaConta"));
+const ConfigComissoes = React.lazy(() => import("./pages/vendas/ConfigComissoes"));
 
-import NegociacaoDetalhe from "./pages/vendas/NegociacaoDetalhe";
-import Atividades from "./pages/vendas/Atividades";
-import Calendario from "./pages/vendas/Calendario";
-import Afiliados from "./pages/vendas/Afiliados";
-import VistoriasVendas from "./pages/vendas/VistoriasVendas";
-import LandingPages from "./pages/vendas/LandingPages";
-import RelatoriosVendas from "./pages/vendas/RelatoriosVendas";
-import FinanceiroVendas from "./pages/vendas/Financeiro";
-import FerramentasVendas from "./pages/vendas/FerramentasVendas";
-import Metas from "./pages/vendas/Metas";
-import Tags from "./pages/vendas/Tags";
-import ImportarLeads from "./pages/vendas/ImportarLeads";
-import MinhaEmpresa from "./pages/vendas/MinhaEmpresa";
-import MinhaConta from "./pages/vendas/MinhaConta";
-import ConfigComissoes from "./pages/vendas/ConfigComissoes";
-import LandingPagePublica from "./pages/public/LandingPagePublica";
-import VistoriaPublica from "./pages/public/VistoriaPublica";
-import CotacaoPublica from "./pages/public/CotacaoPublica";
-import CotacaoFormPublica from "./pages/public/CotacaoFormPublica";
-import PlanoComparativo from "./pages/public/PlanoComparativo";
-import ConsultorLanding from "./pages/public/ConsultorLanding";
-import ExcecaoAprovacao from "./pages/public/ExcecaoAprovacao";
-import PortalAfiliado from "./pages/public/PortalAfiliado";
-import AuditLog from "./pages/gestao/AuditLog";
+// Public pages
+const LandingPagePublica = React.lazy(() => import("./pages/public/LandingPagePublica"));
+const VistoriaPublica = React.lazy(() => import("./pages/public/VistoriaPublica"));
+const CotacaoPublica = React.lazy(() => import("./pages/public/CotacaoPublica"));
+const CotacaoFormPublica = React.lazy(() => import("./pages/public/CotacaoFormPublica"));
+const PlanoComparativo = React.lazy(() => import("./pages/public/PlanoComparativo"));
+const ConsultorLanding = React.lazy(() => import("./pages/public/ConsultorLanding"));
+const ExcecaoAprovacao = React.lazy(() => import("./pages/public/ExcecaoAprovacao"));
+const PortalAfiliado = React.lazy(() => import("./pages/public/PortalAfiliado"));
+const AuditLog = React.lazy(() => import("./pages/gestao/AuditLog"));
 
 const queryClient = new QueryClient();
 
@@ -100,6 +112,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <BrandProvider>
+          <Suspense fallback={<LoadingSpinner />}>
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/lp/:slug" element={<LandingPagePublica />} />
@@ -159,6 +172,7 @@ const App = () => (
 
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
           </BrandProvider>
         </AuthProvider>
       </BrowserRouter>
