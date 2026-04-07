@@ -167,10 +167,11 @@ export default function VistoriaTab({ deal, onUpdate }: Props) {
     const stageAtual = (negAtual as any)?.stage || deal.stage;
     if (["em_negociacao", "novo_lead", "em_contato"].includes(stageAtual)) {
       await supabase.from("negociacoes").update({ stage: "aguardando_vistoria", updated_at: new Date().toISOString() } as any).eq("id", deal.id);
-      await supabase.from("pipeline_transicoes").insert({
+      const { error: errTrans } = await supabase.from("pipeline_transicoes").insert({
         negociacao_id: deal.id, stage_anterior: stageAtual, stage_novo: "aguardando_vistoria",
         motivo: "Vistoria enviada ao cliente", automatica: true,
       } as any);
+      if (errTrans) console.error("Erro ao registrar transição:", errTrans);
       onUpdate?.();
     }
   };
@@ -250,13 +251,15 @@ export default function VistoriaTab({ deal, onUpdate }: Props) {
 
   const handleAprovar = async () => {
     if (vistoriaId) {
+      const stageAnterior = deal.stage; // capture before any update
       await supabase.from("vistorias" as any).update({ status: "aprovada" } as any).eq("id", vistoriaId);
       // Move deal stage forward
       await supabase.from("negociacoes").update({ stage: "vistoria_aprovada", updated_at: new Date().toISOString() } as any).eq("id", deal.id);
-      await supabase.from("pipeline_transicoes").insert({
-        negociacao_id: deal.id, stage_anterior: deal.stage, stage_novo: "vistoria_aprovada",
+      const { error: errTrans } = await supabase.from("pipeline_transicoes").insert({
+        negociacao_id: deal.id, stage_anterior: stageAnterior, stage_novo: "vistoria_aprovada",
         motivo: "Vistoria aprovada", automatica: false,
       } as any);
+      if (errTrans) console.error("Erro ao registrar transição:", errTrans);
     }
     setStatus("aprovada");
     toast.success("Vistoria aprovada!");
@@ -265,13 +268,15 @@ export default function VistoriaTab({ deal, onUpdate }: Props) {
 
   const handleReprovar = async () => {
     if (vistoriaId) {
+      const stageAnterior = deal.stage; // capture before any update
       await supabase.from("vistorias" as any).update({ status: "reprovada" } as any).eq("id", vistoriaId);
       // Move deal stage to reprovada
       await supabase.from("negociacoes").update({ stage: "vistoria_reprovada", updated_at: new Date().toISOString() } as any).eq("id", deal.id);
-      await supabase.from("pipeline_transicoes").insert({
-        negociacao_id: deal.id, stage_anterior: deal.stage, stage_novo: "vistoria_reprovada",
+      const { error: errTrans } = await supabase.from("pipeline_transicoes").insert({
+        negociacao_id: deal.id, stage_anterior: stageAnterior, stage_novo: "vistoria_reprovada",
         motivo: "Vistoria reprovada", automatica: false,
       } as any);
+      if (errTrans) console.error("Erro ao registrar transição:", errTrans);
     }
     setStatus("reprovada");
     toast.error("Vistoria reprovada.");
@@ -323,25 +328,27 @@ export default function VistoriaTab({ deal, onUpdate }: Props) {
     }
 
     // Registrar transição no pipeline
-    await supabase.from("pipeline_transicoes").insert({
+    const { error: errTrans1 } = await supabase.from("pipeline_transicoes").insert({
       negociacao_id: deal.id,
       stage_anterior: deal.stage,
       stage_novo: deal.stage,
       motivo: `Vistoria solicitada — código ${token}`,
       automatica: false,
     } as any);
+    if (errTrans1) console.error("Erro ao registrar transição:", errTrans1);
 
     // Auto-transição para aguardando_vistoria se aplicável
     const stagesPermitidos = ["em_negociacao", "novo_lead", "em_contato"];
     if (stagesPermitidos.includes(deal.stage)) {
       await supabase.from("negociacoes").update({ stage: "aguardando_vistoria" } as any).eq("id", deal.id);
-      await supabase.from("pipeline_transicoes").insert({
+      const { error: errTrans2 } = await supabase.from("pipeline_transicoes").insert({
         negociacao_id: deal.id,
         stage_anterior: deal.stage,
         stage_novo: "aguardando_vistoria",
         motivo: "Vistoria solicitada automaticamente",
         automatica: true,
       } as any);
+      if (errTrans2) console.error("Erro ao registrar transição:", errTrans2);
       onUpdate?.();
     }
 

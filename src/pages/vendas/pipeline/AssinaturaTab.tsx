@@ -218,26 +218,26 @@ export default function AssinaturaTab({ deal, onUpdate }: Props) {
       const base64 = (reader.result as string).split(",")[1];
       const result = await callEdge("gia-gerar-contrato", { negociacao_id: deal.id, canal, pdf_base64: base64, telefone_associado: deal.telefone });
       setGerando(false);
-      setEnviado(true);
-      setStatus("enviado");
       if (result.sucesso === false) {
         toast.error(result.error || "Erro ao gerar contrato");
-      } else {
-        if (result.link_assinatura) setLinkAssinatura(result.link_assinatura);
-        toast.success("Contrato enviado para assinatura via e-mail!");
+        return;
+      }
+      setEnviado(true);
+      setStatus("enviado");
+      if (result.link_assinatura) setLinkAssinatura(result.link_assinatura);
+      toast.success("Contrato enviado para assinatura via e-mail!");
 
-        // Notificar associado via Email
-        const linkAss = result.link_assinatura || "";
-        const msgNotif = `Olá ${deal.lead_nome}! Seu contrato de proteção veicular está pronto para assinatura.\n\n${linkAss ? `Assine aqui: ${linkAss}\n\n` : ""}Objetivo Auto Benefícios`;
-        if (deal.email) {
-          callEdge("gia-enviar-notificacao", {
-            tipo: "email",
-            email: deal.email,
-            nome: deal.lead_nome,
-            assunto: `Contrato para Assinatura - ${deal.veiculo_placa}`,
-            mensagem: msgNotif,
-          }).catch((e) => { console.error("Erro ao enviar notificação:", e); });
-        }
+      // Notificar associado via Email
+      const linkAss = result.link_assinatura || "";
+      const msgNotif = `Olá ${deal.lead_nome}! Seu contrato de proteção veicular está pronto para assinatura.\n\n${linkAss ? `Assine aqui: ${linkAss}\n\n` : ""}Objetivo Auto Benefícios`;
+      if (deal.email) {
+        callEdge("gia-enviar-notificacao", {
+          tipo: "email",
+          email: deal.email,
+          nome: deal.lead_nome,
+          assunto: `Contrato para Assinatura - ${deal.veiculo_placa}`,
+          mensagem: msgNotif,
+        }).catch((e) => { console.error("Erro ao enviar notificação:", e); });
       }
     };
     reader.readAsDataURL(pdfBlob);

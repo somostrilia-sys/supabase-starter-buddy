@@ -196,7 +196,7 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
 
       const vencimento = new Date(today.getFullYear(), today.getMonth() + 1, 10);
 
-      await supabase.from("boletos").insert({
+      const { error: errBoleto } = await supabase.from("boletos").insert({
         associado_id: assoc.id,
         valor: valorProporcional,
         vencimento: vencimento.toISOString().split("T")[0],
@@ -204,23 +204,26 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
         referencia: `${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()} (proporcional)`,
         tipo: 'proporcional', // observacoes: `Proporcional: ${daysRemaining} dias de ${daysInMonth}`,
       });
+      if (errBoleto) throw new Error(`Erro ao criar boleto: ${errBoleto.message}`);
 
       // 6. Create vistoria
-      await supabase.from("vistorias").insert({
+      const { error: errVistoria } = await supabase.from("vistorias").insert({
         associado_id: assoc.id,
         veiculo_id: veic.id,
         contrato_id: contrato.id,
         status: "pendente",
         observacoes: "Vistoria criada automaticamente na concretização da venda",
       } as any);
+      if (errVistoria) throw new Error(`Erro ao criar vistoria: ${errVistoria.message}`);
 
       // 7. Audit log
-      await supabase.from("audit_log").insert({
+      const { error: errAudit } = await supabase.from("audit_log").insert({
         acao: "concretizar_venda",
         tabela: "contratos",
         registro_id: contrato.id,
         dados_novos: { associado_id: assoc.id, veiculo_id: veic.id, numero },
       } as any);
+      if (errAudit) throw new Error(`Erro ao registrar auditoria: ${errAudit.message}`);
 
       // 8. Registrar no SGA
       try {
@@ -243,19 +246,25 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
 
       // Atualizar negociação
       if (leadId && !leadId.startsWith("p")) {
-        await supabase.from("negociacoes").update({
+        // Fetch current stage before updating
+        const { data: negStage } = await supabase.from("negociacoes").select("stage").eq("id", leadId).maybeSingle();
+        const stageAnterior = (negStage as any)?.stage || "em_negociacao";
+
+        const { error: errNeg } = await supabase.from("negociacoes").update({
           stage: "concluido",
           contrato_id: contrato.id,
           venda_concluida_em: new Date().toISOString(),
         } as any).eq("id", leadId);
+        if (errNeg) throw new Error(`Erro ao atualizar negociação: ${errNeg.message}`);
         // Registrar transição
-        await supabase.from("pipeline_transicoes").insert({
+        const { error: errTrans } = await supabase.from("pipeline_transicoes").insert({
           negociacao_id: leadId,
-          stage_anterior: "liberado_cadastro",
+          stage_anterior: stageAnterior,
           stage_novo: "concluido",
           motivo: `Venda concretizada — Contrato ${numero}`,
           automatica: true,
         } as any);
+        if (errTrans) console.error("Erro ao registrar transição:", errTrans);
       }
       // Inativação automática de placa substituída (VEN-001)
       if (leadId && !leadId.startsWith("p")) {
@@ -265,13 +274,14 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
           .eq("id", leadId)
           .maybeSingle();
         if (negData?.placa_substituida) {
-          await supabase
+          const { error: errVeicInativ } = await supabase
             .from("veiculos")
             .update({
               status: "inativo",
               motivo_inativacao: `Substituição — Venda concluída ${numero}`,
             } as any)
             .ilike("placa", negData.placa_substituida);
+          if (errVeicInativ) console.error("Erro ao inativar veículo substituído:", errVeicInativ);
           // Registrar no audit_log
           const { registrarAuditoria } = await import("@/lib/auditoria");
           registrarAuditoria(supabase, {

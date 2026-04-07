@@ -103,12 +103,17 @@ export default function CotacaoPublica() {
         setCotacao(cot);
 
         if (cot.negociacao_id) {
-          const { data: negData } = await supabase
+          const { data: negData, error: negError } = await supabase
             .from("negociacoes" as any)
             .select("*")
             .eq("id", cot.negociacao_id)
             .single();
-          if (negData) setNegociacao(negData as unknown as Negociacao);
+          if (negError || !negData) {
+            setError("Cotação não encontrada ou expirada.");
+            setLoading(false);
+            return;
+          }
+          setNegociacao(negData as unknown as Negociacao);
         }
       } catch {
         setError("Erro ao carregar cotação.");

@@ -748,7 +748,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       ? precosReais.filter((p: any) => !regionalCot || p.regional_id === regionalCot)
       : precosReais;
 
-    const { data: cotacao } = await supabase
+    const { data: cotacao, error: errCot } = await supabase
       .from("cotacoes")
       .insert({
         negociacao_id: deal.id,
@@ -784,6 +784,10 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       .select()
       .single();
 
+    if (errCot) {
+      toast.error("Erro ao salvar cotação: " + errCot.message);
+      return;
+    }
     if (cotacao) {
       const cotId = (cotacao as any).id;
       await supabase.from("negociacoes").update({
