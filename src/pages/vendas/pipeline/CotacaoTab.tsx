@@ -433,32 +433,43 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     return fallback ? fallback.regional_id : "";
   };
 
-  // Buscar preços reais por valor FIPE + tipo veículo + cidade/UF circulação
+  // Buscar preços reais por valor FIPE + cod_fipe + cidade/UF circulação
   const carregarPrecos = async (vFipe: number, tipoVeiculo?: string, ufOverride?: string, cidadeOverride?: string) => {
-    const tipoMap: Record<string, string> = {
-      "Automóvel": "Carros e Utilitários Pequenos",
-      "Motocicleta": "Motos",
-      "Caminhão": "Caminhões e Pesados",
-      "Van/Utilitário": "Carros e Utilitários Pequenos",
-      "Ônibus": "Caminhões e Pesados",
-    };
-    const tipoDb = tipoMap[tipoVeiculo || form.tipoVeiculo] || "Carros e Utilitários Pequenos";
+    // Buscar regional pela cidade/UF de circulação
+    const regionalId = await buscarRegionalPrecos(ufOverride || form.estadoCirc || "", cidadeOverride || form.cidadeCirc || "");
 
-    // Buscar faixas que cobrem este valor FIPE + tipo veículo
-    const { data: todos } = await supabase.from("tabela_precos" as any)
+    // Se temos cod_fipe, consultar modelos_veiculo pra saber quais planos esse veículo aceita
+    let planosPermitidos: string[] | null = null;
+    if (codFipe) {
+      const { data: modelo } = await supabase.from("modelos_veiculo" as any)
+        .select("planos, tabela_precos, aceito")
+        .eq("cod_fipe", codFipe)
+        .eq("aceito", true)
+        .maybeSingle();
+      if (modelo) {
+        planosPermitidos = (modelo.planos || "").split(",").map((p: string) => p.trim()).filter(Boolean);
+      }
+    }
+
+    // Buscar faixas que cobrem este valor FIPE
+    let query = supabase.from("tabela_precos" as any)
       .select("*")
       .lte("valor_menor", vFipe)
-      .gte("valor_maior", vFipe)
-      .eq("tipo_veiculo", tipoDb)
-      .order("plano_normalizado");
+      .gte("valor_maior", vFipe);
+    if (regionalId) {
+      query = query.eq("regional_id", regionalId);
+    }
+    const { data: todos } = await query.order("plano_normalizado");
 
     if (todos && todos.length > 0) {
-      // Buscar regional pela cidade/UF de circulação do veículo (retorna regional_id)
-      const regionalId = await buscarRegionalPrecos(ufOverride || form.estadoCirc || "", cidadeOverride || form.cidadeCirc || "");
       let resultado = todos;
-      if (regionalId) {
-        const filtered = todos.filter((t: any) => t.regional_id === regionalId);
-        resultado = filtered.length > 0 ? filtered : todos;
+      // Filtrar por planos que o veículo aceita (se temos cod_fipe)
+      if (planosPermitidos && planosPermitidos.length > 0) {
+        const filtered = resultado.filter((t: any) => {
+          const plano = (t.plano_normalizado || t.plano || "").toLowerCase();
+          return planosPermitidos!.some(pp => plano.includes(pp.toLowerCase()) || pp.toLowerCase().includes(plano));
+        });
+        if (filtered.length > 0) resultado = filtered;
       }
       // Deduplicar: 1 faixa por plano (pegar a mais específica = valor_menor mais alto)
       const planoMap = new Map<string, any>();
@@ -718,7 +729,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         mensalOriginal: descontoMensal ? mensal : undefined,
         adesao: descontoAdesao ? Number(descontoAdesao) : adesaoReal,
         adesaoOriginal: descontoAdesao ? adesaoReal : undefined,
-        participacao: precoPlano ? `${precoPlano.tipo_franquia} ${precoPlano.valor_franquia}` : "5% FIPE",
+        participacao: precoPlano ? (precoPlano.tipo_franquia === '%' ? `${precoPlano.valor_franquia}% FIPE` : `R$ ${Number(precoPlano.valor_franquia).toLocaleString("pt-BR", {minimumFractionDigits:2})}`) : "5% FIPE",
         rastreador: precoPlano?.rastreador || "Não",
         instalacao: precoPlano ? Number(precoPlano.instalacao || 0) : 0,
       },
