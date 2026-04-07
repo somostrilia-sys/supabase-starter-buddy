@@ -148,9 +148,9 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
   };
 
   const d = deal as any;
-  const [tipoConfirmado, setTipoConfirmado] = useState(false);
+  const [tipoConfirmado, setTipoConfirmado] = useState(!!d.tipo_veiculo);
   const [form, setForm] = useState({
-    tipoVeiculo: detectTipo(),
+    tipoVeiculo: d.tipo_veiculo || detectTipo(),
     placa: d.veiculo_placa || "",
     chassi: d.chassi || "",
     renavam: d.renavam || "",

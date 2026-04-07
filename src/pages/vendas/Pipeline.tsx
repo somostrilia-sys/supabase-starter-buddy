@@ -97,7 +97,7 @@ export default function Pipeline() {
   const [perPage, setPerPage] = useState(10);
 
   // New deal form
-  const [form, setForm] = useState({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", anoModelo: "", anoFab: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "", cidadeCirc: "", estadoCirc: "", origem: "" });
+  const [form, setForm] = useState({ lead_nome: "", cpf_cnpj: "", telefone: "", email: "", placa: "", modelo: "", anoModelo: "", anoFab: "", tipoVeiculo: "", plano: "", cooperativa: "", regional: "", consultor: "", observacoes: "", cidadeCirc: "", estadoCirc: "", origem: "" });
   const [formTouched, setFormTouched] = useState({ lead_nome: false, telefone: false });
   const [cidadesCircOptions, setCidadesCircOptions] = useState<string[]>([]);
 
@@ -253,6 +253,7 @@ export default function Pipeline() {
   const createLead = useMutation({
     mutationFn: async (data: typeof form) => {
       // Criar na tabela negociacoes (nova)
+      if (!data.tipoVeiculo) throw new Error("Selecione o Tipo do Veículo");
       const { error: negError } = await createNegociacao({
         lead_nome: data.lead_nome,
         telefone: data.telefone,
@@ -260,6 +261,7 @@ export default function Pipeline() {
         cpf_cnpj: data.cpf_cnpj || undefined,
         veiculo_modelo: data.modelo || undefined,
         veiculo_placa: data.placa ? data.placa.toUpperCase().replace(/\s/g, "") : undefined,
+        tipo_veiculo: data.tipoVeiculo,
         plano: data.plano || undefined,
         cooperativa: data.cooperativa || undefined,
         regional: data.regional || undefined,
@@ -890,6 +892,21 @@ export default function Pipeline() {
               </div>
             </div>
             <div className="space-y-1.5"><Label>E-mail</Label><Input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+            <div className="space-y-1.5">
+              <Label>Tipo do Veículo <span className="text-destructive">*</span></Label>
+              <Select value={form.tipoVeiculo} onValueChange={v => setForm({ ...form, tipoVeiculo: v })}>
+                <SelectTrigger className={!form.tipoVeiculo ? "border-destructive bg-destructive/5" : ""}>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Automóvel">Automóvel</SelectItem>
+                  <SelectItem value="Motocicleta">Motocicleta</SelectItem>
+                  <SelectItem value="Caminhão">Caminhão</SelectItem>
+                  <SelectItem value="Van/Utilitário">Van/Utilitário</SelectItem>
+                </SelectContent>
+              </Select>
+              {!form.tipoVeiculo && <p className="text-[10px] text-destructive">Obrigatório para precificação correta</p>}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Placa do Veículo</Label><Input value={form.placa} maxLength={8} onChange={e => {
                 const v = maskPlaca(e.target.value);
