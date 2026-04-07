@@ -19,6 +19,8 @@ export function ProtectedRoute({
 
   // Profile is still loading if session exists but profile hasn't resolved yet
   const profileLoading = !loading && !!session && profile === null && !profileTimeout;
+  // Wait for useUsuario to finish loading before evaluating permissions
+  const permLoading = !loading && !!session && !!profile && perms.loading;
   const hasPermission = !permission || perms[permission];
 
   // Timeout: se profile não carrega em 3s, redireciona para login
@@ -35,7 +37,7 @@ export function ProtectedRoute({
     }
   }, [loading, profileLoading, session, permission, hasPermission]);
 
-  if (loading || profileLoading) {
+  if (loading || profileLoading || permLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />

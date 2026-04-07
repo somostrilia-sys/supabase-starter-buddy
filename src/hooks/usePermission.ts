@@ -4,6 +4,7 @@ import { UserRole } from "./useAuth";
 export function usePermission() {
   const {
     usuario,
+    loading: usuarioLoading,
     isConsultor,
     isGestor,
     isDiretor,
@@ -41,6 +42,7 @@ export function usePermission() {
     canVerFinanceiro: canAcessarFinanceiro,
     canVerRelatorios: ['admin', 'diretor', 'gestor'].includes(role),
     canViewGestao: ['admin', 'cadastro', 'diretor'].includes(role),
+    loading: usuarioLoading,
   };
 }
 
