@@ -108,8 +108,8 @@ async function fipeValor(tipo: string, marcaCod: string, modeloCod: string, anoC
 const TIPO_VEICULO_MAP: Record<string, string[]> = {
   "Automóvel": ["Carros e Utilitários Pequenos"],
   "Motocicleta": ["Motos"],
-  "Caminhão": ["Caminhões e Pesados"],
-  "Van/Utilitário": ["Caminhões e Pesados"],
+  "Caminhão": ["Pesados e Vans"],
+  "Van/Utilitário": ["Pesados e Vans"],
 };
 
 interface Props { deal: PipelineDeal; onUpdate?: () => void; }
