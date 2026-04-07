@@ -144,11 +144,11 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     const pesados = ["scania", "volvo fh", "iveco", "man ", "daf", "sprinter", "daily", "accelo", "cargo", "worker", "constellation", "pesado", "van", "vuc", "caminhão", "caminhao", "ônibus", "onibus", "micro-ônibus", "tector", "atego", "axor", "actros", "delivery", "volkswagen 24", "volkswagen 17", "volkswagen 13", "volkswagen 11", "volkswagen 8", "ford f-4000", "ford f-350"];
     if (motos.some(x => m.includes(x)) || p.includes("moto")) return "Motocicleta";
     if (pesados.some(x => m.includes(x)) || p.includes("pesado") || p.includes("van")) return "Caminhão";
-    return "";
+    return "Automóvel";
   };
 
   const d = deal as any;
-  const [tipoConfirmado, setTipoConfirmado] = useState(!!d.tipo_veiculo);
+  const [tipoConfirmado, setTipoConfirmado] = useState(true);
   const [form, setForm] = useState({
     tipoVeiculo: d.tipo_veiculo || detectTipo(),
     placa: d.veiculo_placa || "",
