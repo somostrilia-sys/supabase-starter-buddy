@@ -104,13 +104,26 @@ async function fipeValor(tipo: string, marcaCod: string, modeloCod: string, anoC
   return resp.json() as Promise<{ Valor: string; Marca: string; Modelo: string; AnoModelo: number; Combustivel: string; CodigoFipe: string }>;
 }
 
-// Lookup na tabela_precos real por valor FIPE
-async function buscarPrecosReais(valorFipe: number): Promise<{ plano: string; cota: number; adesao: number; rastreador: string; instalacao: number; tipo_franquia: string; valor_franquia: number }[]> {
-  const { data } = await supabase.from("tabela_precos" as any)
+// Lookup na tabela_precos real por valor FIPE, filtrado por tipo_veiculo e regional
+async function buscarPrecosReais(valorFipe: number, tipoVeiculo?: string, regionalId?: string): Promise<any[]> {
+  let query = supabase.from("tabela_precos" as any)
     .select("*")
     .lte("valor_menor", valorFipe)
-    .gte("valor_maior", valorFipe)
-    .order("plano");
+    .gte("valor_maior", valorFipe);
+  // Filtrar por tipo_veiculo mapeado
+  const TIPO_VEICULO_MAP: Record<string, string[]> = {
+    "Automóvel": ["Carros e Utilitários Pequenos"],
+    "Motocicleta": ["Motos"],
+    "Caminhão": ["Caminhões e Pesados"],
+    "Van/Utilitário": ["Caminhões e Pesados"],
+  };
+  if (tipoVeiculo && TIPO_VEICULO_MAP[tipoVeiculo]) {
+    query = query.in("tipo_veiculo", TIPO_VEICULO_MAP[tipoVeiculo]);
+  }
+  if (regionalId) {
+    query = query.eq("regional_id", regionalId);
+  }
+  const { data } = await query.order("plano");
   return (data || []) as any[];
 }
 
@@ -447,9 +460,19 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         const filtered = todos.filter((t: any) => t.regional_id === regionalId);
         resultado = filtered.length > 0 ? filtered : todos;
       }
-      setPrecosReais(resultado);
+      // Deduplicar: 1 faixa por plano (pegar a mais específica = valor_menor mais alto)
+      const planoMap = new Map<string, any>();
+      for (const r of resultado) {
+        const nome = r.plano_normalizado || r.plano;
+        const existing = planoMap.get(nome);
+        if (!existing || Number(r.valor_menor) > Number(existing.valor_menor)) {
+          planoMap.set(nome, r);
+        }
+      }
+      const resultadoDedup = Array.from(planoMap.values());
+      setPrecosReais(resultadoDedup);
       // Auto-selecionar plano se nome atual não bate exatamente com os planos reais
-      const nomesReais = [...new Set(resultado.map((p: any) => p.plano_normalizado || p.plano))];
+      const nomesReais = [...new Set(resultadoDedup.map((p: any) => p.plano_normalizado || p.plano))];
       if (nomesReais.length > 0 && !nomesReais.includes(planoSelecionado)) {
         const match = nomesReais.find(n => n.startsWith(planoSelecionado) || planoSelecionado.startsWith(n));
         const novoPlano = match || nomesReais[0];
@@ -778,10 +801,16 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
             if (!prodMap[gi.grupo_produto]) prodMap[gi.grupo_produto] = [];
             if (gi.produtos_gia?.nome) prodMap[gi.grupo_produto].push(gi.produtos_gia.nome);
           });
-          return planosFiltrados.map((p: any) => {
+          // Deduplicar por nome do plano — cada plano aparece 1 vez no comparativo
+          const seen = new Set<string>();
+          const dedupPlanos: any[] = [];
+          for (const p of planosFiltrados) {
             const nome = p.plano_normalizado || p.plano;
-            return { nome, valor_mensal: p.cota, adesao: p.adesao, rastreador: p.rastreador, franquia: p.valor_franquia, valor_fipe: valorFipe, implemento_valor: implementoCotaAdicional, coberturas: cobMap[nome] || [], produtos: prodMap[nome] || [] };
-          });
+            if (seen.has(nome)) continue;
+            seen.add(nome);
+            dedupPlanos.push({ nome, valor_mensal: p.cota, adesao: p.adesao, rastreador: p.rastreador, franquia: p.valor_franquia, valor_fipe: valorFipe, implemento_valor: implementoCotaAdicional, coberturas: cobMap[nome] || [], produtos: prodMap[nome] || [] });
+          }
+          return dedupPlanos;
         })(),
         desconto_aplicado: 0,
       } as any)
