@@ -55,6 +55,106 @@ export default function AssinaturaTab({ deal, onUpdate }: Props) {
   const [docSelecionado, setDocSelecionado] = useState("");
   const [enviado, setEnviado] = useState(false);
 
+  // Query cache_precos + cotação para dados reais do plano/coberturas
+  const { data: dadosReais } = useQuery({
+    queryKey: ["assinatura-cache-precos", deal.id],
+    queryFn: async () => {
+      if (!deal.id || deal.id.startsWith("p")) return null;
+      // 1. cache_precos da negociação
+      const { data: neg } = await supabase
+        .from("negociacoes" as any)
+        .select("cache_precos, plano, consultor_id")
+        .eq("id", deal.id)
+        .maybeSingle();
+      // 2. cotação com todos_planos (tem coberturas e produtos)
+      const { data: cotacao } = await supabase
+        .from("cotacoes" as any)
+        .select("todos_planos")
+        .eq("negociacao_id", deal.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      // 3. dados do consultor
+      let consultorData: any = null;
+      if (deal.consultor) {
+        const { data: usr } = await supabase
+          .from("usuarios" as any)
+          .select("nome, email, telefone")
+          .eq("nome", deal.consultor)
+          .maybeSingle();
+        consultorData = usr;
+      }
+      return { neg, cotacao, consultorData };
+    },
+    staleTime: 60_000,
+  });
+
+  // Extrair plano real do cache
+  const getPlanoReal = () => {
+    const precos = dadosReais?.neg?.cache_precos;
+    if (!precos || !Array.isArray(precos) || precos.length === 0) return null;
+    const planoNome = dadosReais?.neg?.plano || deal.plano || "";
+    return precos.find((p: any) =>
+      (p.plano_normalizado || p.plano) === planoNome ||
+      planoNome.startsWith(p.plano_normalizado || p.plano) ||
+      (p.plano_normalizado || p.plano || "").startsWith(planoNome)
+    ) || precos[0];
+  };
+
+  // Extrair coberturas/produtos da cotação
+  const getCoberturasEProdutos = () => {
+    const todosPlanos = dadosReais?.cotacao?.todos_planos;
+    if (!todosPlanos || !Array.isArray(todosPlanos) || todosPlanos.length === 0) return null;
+    const planoNome = dadosReais?.neg?.plano || deal.plano || "";
+    const planoMatch = todosPlanos.find((p: any) =>
+      p.nome === planoNome || planoNome.startsWith(p.nome) || (p.nome || "").startsWith(planoNome)
+    ) || todosPlanos[0];
+    return planoMatch;
+  };
+
+  // Montar params do PDF com dados reais (fallback para hardcoded)
+  const buildPdfParams = () => {
+    const planoReal = getPlanoReal();
+    const cotacaoPlano = getCoberturasEProdutos();
+    const consultorUsr = dadosReais?.consultorData;
+
+    const planoNome = planoReal
+      ? (planoReal.plano_normalizado || planoReal.plano)
+      : (deal.plano || "Completo");
+    const valorMensal = planoReal ? Number(planoReal.cota) : (deal.valor_plano || 0);
+    const adesao = planoReal ? Number(planoReal.adesao) : 400;
+    const participacao = planoReal
+      ? `${planoReal.tipo_franquia || ""} ${planoReal.valor_franquia || ""}`.trim() || "5% FIPE"
+      : "5% FIPE";
+
+    // Coberturas: preferir da cotação, senão fallback hardcoded
+    let produtos: string[];
+    if (cotacaoPlano?.coberturas && Array.isArray(cotacaoPlano.coberturas) && cotacaoPlano.coberturas.length > 0) {
+      produtos = cotacaoPlano.coberturas
+        .filter((c: any) => c.inclusa !== false)
+        .map((c: any) => c.cobertura || c.nome);
+      // Adicionar produtos do grupo se houver
+      if (cotacaoPlano.produtos && Array.isArray(cotacaoPlano.produtos) && cotacaoPlano.produtos.length > 0) {
+        produtos = [...produtos, ...cotacaoPlano.produtos.filter((p: string) => !produtos.includes(p))];
+      }
+    } else {
+      produtos = ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Assistência 24H", "Reboque", "Chaveiro", "Hospedagem"];
+    }
+
+    return {
+      empresa: { nome: "Objetivo Auto Benefícios", cnpj: "58.506.161/0001-31" },
+      associado: { nome: deal.lead_nome, cpf: deal.cpf_cnpj || "", rg: "", cnh: "", sexo: "", nascimento: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "", cep: "", email: deal.email || "", celular: deal.telefone || "" },
+      veiculo: { placa: deal.veiculo_placa, modelo: deal.veiculo_modelo, marca: "", anoFab: "", anoModelo: "", cor: "", combustivel: "", chassi: "", renavam: "", codFipe: "", valorFipe: deal.valor_plano || 0, valorProtegido: deal.valor_plano || 0, diaVencimento: "10", veiculoTrabalho: "Não" },
+      plano: { nome: planoNome, valorMensal, adesao, participacao },
+      produtos,
+      consultor: {
+        nome: consultorUsr?.nome || deal.consultor || "",
+        celular: consultorUsr?.telefone || "",
+        email: consultorUsr?.email || "",
+      },
+    };
+  };
+
   // Query real documents for this deal
   const { data: documentos, isLoading: docsLoading } = useQuery({
     queryKey: ["assinatura-docs", deal.id],
@@ -109,15 +209,8 @@ export default function AssinaturaTab({ deal, onUpdate }: Props) {
 
   const handleEnviar = async (canal: "email" | "whatsapp" | "ambos") => {
     setGerando(true);
-    // Gerar PDF do contrato
-    const pdfBlob = await gerarContratoPdf({
-      empresa: { nome: "Objetivo Auto Benefícios", cnpj: "58.506.161/0001-31" },
-      associado: { nome: deal.lead_nome, cpf: deal.cpf_cnpj || "", rg: "", cnh: "", sexo: "", nascimento: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "", cep: "", email: deal.email || "", celular: deal.telefone || "" },
-      veiculo: { placa: deal.veiculo_placa, modelo: deal.veiculo_modelo, marca: "", anoFab: "", anoModelo: "", cor: "", combustivel: "", chassi: "", renavam: "", codFipe: "", valorFipe: deal.valor_plano || 0, valorProtegido: deal.valor_plano || 0, diaVencimento: "10", veiculoTrabalho: "Não" },
-      plano: { nome: deal.plano || "Completo", valorMensal: deal.valor_plano || 0, adesao: 400, participacao: "5% FIPE" },
-      produtos: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Assistência 24H", "Reboque", "Chaveiro", "Hospedagem"],
-      consultor: { nome: deal.consultor || "", celular: "", email: "" },
-    });
+    // Gerar PDF do contrato com dados reais do cache
+    const pdfBlob = await gerarContratoPdf(buildPdfParams());
 
     // Converter blob pra base64
     const reader = new FileReader();
@@ -151,14 +244,7 @@ export default function AssinaturaTab({ deal, onUpdate }: Props) {
   };
 
   const handleBaixarContrato = async () => {
-    const blob = await gerarContratoPdf({
-      empresa: { nome: "Objetivo Auto Benefícios", cnpj: "58.506.161/0001-31" },
-      associado: { nome: deal.lead_nome, cpf: deal.cpf_cnpj || "", rg: "", cnh: "", sexo: "", nascimento: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "", cep: "", email: deal.email || "", celular: deal.telefone || "" },
-      veiculo: { placa: deal.veiculo_placa, modelo: deal.veiculo_modelo, marca: "", anoFab: "", anoModelo: "", cor: "", combustivel: "", chassi: "", renavam: "", codFipe: "", valorFipe: deal.valor_plano || 0, valorProtegido: deal.valor_plano || 0, diaVencimento: "10", veiculoTrabalho: "Não" },
-      plano: { nome: deal.plano || "Completo", valorMensal: deal.valor_plano || 0, adesao: 400, participacao: "5% FIPE" },
-      produtos: ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Assistência 24H", "Reboque", "Chaveiro", "Hospedagem"],
-      consultor: { nome: deal.consultor || "", celular: "", email: "" },
-    });
+    const blob = await gerarContratoPdf(buildPdfParams());
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

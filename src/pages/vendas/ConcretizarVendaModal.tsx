@@ -135,6 +135,11 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
 
       if (e1) throw new Error(`Erro ao cadastrar associado: ${e1.message}`);
 
+      // 1.5 Link associado to negociação
+      if (leadId && !leadId.startsWith("p")) {
+        await supabase.from("negociacoes").update({ associado_id: assoc.id } as any).eq("id", leadId);
+      }
+
       // 2. Insert veiculo
       const { data: veic, error: e2 } = await supabase
         .from("veiculos")
@@ -187,7 +192,7 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
       const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
       const daysRemaining = daysInMonth - today.getDate() + 1;
       const valorMensal = parseFloat(contratoData.valor_mensal.replace(/[^0-9.,]/g, "").replace(",", "."));
-      const valorProporcional = parseFloat(((valorMensal / 30) * daysRemaining).toFixed(2));
+      const valorProporcional = parseFloat(((valorMensal / daysInMonth) * daysRemaining).toFixed(2));
 
       const vencimento = new Date(today.getFullYear(), today.getMonth() + 1, 10);
 
@@ -491,11 +496,11 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
                   const today = new Date();
                   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
                   const daysRemaining = daysInMonth - today.getDate() + 1;
-                  const proporcional = ((vm / 30) * daysRemaining).toFixed(2);
+                  const proporcional = ((vm / daysInMonth) * daysRemaining).toFixed(2);
                   return (
                     <div className="p-3 bg-primary/6 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900 text-xs text-primary dark:text-blue-300 space-y-1">
                       <p><strong>Cálculo proporcional (1º boleto):</strong></p>
-                      <p>R$ {vm.toFixed(2).replace(".", ",")} / 30 dias × {daysRemaining} dias restantes = <strong>R$ {Number(proporcional).toFixed(2).replace(".", ",")}</strong></p>
+                      <p>R$ {vm.toFixed(2).replace(".", ",")} / {daysInMonth} dias × {daysRemaining} dias restantes = <strong>R$ {Number(proporcional).toFixed(2).replace(".", ",")}</strong></p>
                       <p className="text-blue-600">Vencimento: dia 10 do próximo mês</p>
                     </div>
                   );

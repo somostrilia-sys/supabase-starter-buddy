@@ -251,25 +251,31 @@ export default function VistoriaTab({ deal, onUpdate }: Props) {
   const handleAprovar = async () => {
     if (vistoriaId) {
       await supabase.from("vistorias" as any).update({ status: "aprovada" } as any).eq("id", vistoriaId);
+      // Move deal stage forward
+      await supabase.from("negociacoes").update({ stage: "vistoria_aprovada", updated_at: new Date().toISOString() } as any).eq("id", deal.id);
       await supabase.from("pipeline_transicoes").insert({
-        negociacao_id: deal.id, stage_anterior: deal.stage, stage_novo: deal.stage,
+        negociacao_id: deal.id, stage_anterior: deal.stage, stage_novo: "vistoria_aprovada",
         motivo: "Vistoria aprovada", automatica: false,
       } as any);
     }
     setStatus("aprovada");
     toast.success("Vistoria aprovada!");
+    onUpdate?.();
   };
 
   const handleReprovar = async () => {
     if (vistoriaId) {
       await supabase.from("vistorias" as any).update({ status: "reprovada" } as any).eq("id", vistoriaId);
+      // Move deal stage to reprovada
+      await supabase.from("negociacoes").update({ stage: "vistoria_reprovada", updated_at: new Date().toISOString() } as any).eq("id", deal.id);
       await supabase.from("pipeline_transicoes").insert({
-        negociacao_id: deal.id, stage_anterior: deal.stage, stage_novo: deal.stage,
+        negociacao_id: deal.id, stage_anterior: deal.stage, stage_novo: "vistoria_reprovada",
         motivo: "Vistoria reprovada", automatica: false,
       } as any);
     }
     setStatus("reprovada");
     toast.error("Vistoria reprovada.");
+    onUpdate?.();
   };
 
   const st = statusConfig[status];
