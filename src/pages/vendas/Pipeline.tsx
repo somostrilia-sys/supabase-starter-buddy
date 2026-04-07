@@ -325,6 +325,7 @@ export default function Pipeline() {
     desconto_aprovado_por: (n as any).desconto_aprovado_por || null,
     desconto_ia_aprovado: (n as any).desconto_ia_aprovado || false,
     desconto_percentual: (n as any).desconto_percentual || 0,
+    auto_cotacao_gerada: (n as any).auto_cotacao_gerada || false,
     created_at: n.created_at,
     updated_at: n.updated_at,
   } as any)), [negociacoes]);
@@ -350,7 +351,10 @@ export default function Pipeline() {
     }
     callEdge("gia-concluir-venda", { negociacao_id: dealId }).then(res => {
       if (res?.sucesso) toast.success(`Venda concluída: ${dealNome}`);
-    }).catch(() => {});
+    }).catch((err) => {
+      console.error("Erro ao concluir venda:", err);
+      toast.error("Erro ao concluir venda. Tente novamente.");
+    });
   }, []);
   // --- Fim cash sound ---
 
@@ -435,10 +439,14 @@ export default function Pipeline() {
         const { error } = await updateNegociacao(draggedId, { stage });
         if (error) { toast.error("Erro ao mover negociação"); }
         else {
-          await supabase.from("pipeline_transicoes").insert({
+          const { error: transError } = await supabase.from("pipeline_transicoes").insert({
             negociacao_id: draggedId, stage_anterior: source.stage, stage_novo: stage,
             motivo: "Movido manualmente no pipeline", automatica: false,
           } as any);
+          if (transError) {
+            console.error("Erro ao registrar transição:", transError);
+            toast.error("Negociação movida, mas erro ao registrar transição.");
+          }
           // Reload imediato para refletir mudança no kanban
           reloadNegociacoes();
         }
@@ -471,7 +479,10 @@ export default function Pipeline() {
       } else if (res?.pendencias) {
         toast.info(`Pendências: ${res.pendencias.join(", ")}`, { duration: 8000 });
       }
-    }).catch(() => {});
+    }).catch((err) => {
+      console.error("Erro na conferência final:", err);
+      toast.error("Erro na conferência automática. Verifique manualmente.");
+    });
   }
 
   const formNomeInvalid = formTouched.lead_nome && !form.lead_nome.trim();
@@ -750,7 +761,30 @@ export default function Pipeline() {
             <div className="flex items-center justify-between p-3 border-b-2 border-[#747474]">
               <span className="text-sm font-medium">{sorted.length} registros</span>
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline"><Download className="h-3.5 w-3.5 mr-1" />Exportar Excel</Button>
+                <Button size="sm" variant="outline" onClick={() => {
+                  try {
+                    const headers = ["ID","Lead","Veículo","Placa","Plano","Etapa","Consultor","Cooperativa","Regional","Origem","Data Criação","Última Mov."];
+                    const rows = sorted.map(d => [
+                      d.id, d.lead_nome, d.veiculo_modelo, d.veiculo_placa, d.plano,
+                      stageLabel(d.stage), d.consultor, d.cooperativa, d.regional, d.origem,
+                      new Date(d.created_at).toLocaleDateString("pt-BR"),
+                      new Date(d.updated_at).toLocaleDateString("pt-BR"),
+                    ]);
+                    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c || "").replace(/"/g, '""')}"`).join(",")).join("\n");
+                    const bom = "\uFEFF";
+                    const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `pipeline_${new Date().toISOString().split("T")[0]}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast.success("Exportação concluída!");
+                  } catch (err) {
+                    console.error("Erro ao exportar:", err);
+                    toast.error("Erro ao exportar dados.");
+                  }
+                }}><Download className="h-3.5 w-3.5 mr-1" />Exportar Excel</Button>
                 <Select value={String(perPage)} onValueChange={v => { setPerPage(Number(v)); setPage(1); }}>
                   <SelectTrigger className="h-8 w-24 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="10">10/pág</SelectItem><SelectItem value="25">25/pág</SelectItem><SelectItem value="50">50/pág</SelectItem></SelectContent>

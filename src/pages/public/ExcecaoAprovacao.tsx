@@ -1,17 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, callEdgePublic } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle, XCircle, AlertTriangle, Image, FileText, Lock, Shield, Car, User, MapPin, DollarSign } from "lucide-react";
-
-// Senhas dos diretores
-const SENHAS_DIRETORES: Record<string, string> = {
-  "Lissandra Donato": "LD@obj2026",
-  "Carlos alberto": "CA@obj2026",
-  "Rafael Gelinske da Silva": "RG@obj2026",
-  "Thainá": "TH@obj2026",
-};
 
 function fmt(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -31,6 +23,8 @@ export default function ExcecaoAprovacao() {
   const [diretorNome, setDiretorNome] = useState("");
   const [senha, setSenha] = useState("");
   const [senhaErro, setSenhaErro] = useState("");
+  const [diretores, setDiretores] = useState<string[]>([]);
+  const [validando, setValidando] = useState(false);
 
   // Ações
   const [comentario, setComentario] = useState("");
@@ -87,12 +81,32 @@ export default function ExcecaoAprovacao() {
       });
   }, [token]);
 
-  const handleLogin = () => {
+  // Carregar lista de diretores do servidor
+  useEffect(() => {
+    callEdgePublic("gia-validar-diretor", { body: { action: "listar" } })
+      .then((res: any) => { if (res.diretores) setDiretores(res.diretores); })
+      .catch(() => {});
+  }, []);
+
+  const handleLogin = async () => {
     setSenhaErro("");
-    const senhaCorreta = SENHAS_DIRETORES[diretorNome];
-    if (!senhaCorreta) { setSenhaErro("Selecione um diretor."); return; }
-    if (senha !== senhaCorreta) { setSenhaErro("Senha incorreta."); return; }
-    setAutenticado(true);
+    if (!diretorNome) { setSenhaErro("Selecione um diretor."); return; }
+    if (!senha) { setSenhaErro("Digite sua senha."); return; }
+    setValidando(true);
+    try {
+      const res = await callEdgePublic("gia-validar-diretor", {
+        body: { diretor_nome: diretorNome, senha },
+      });
+      if (res.valido) {
+        setAutenticado(true);
+      } else {
+        setSenhaErro(res.erro || "Senha incorreta.");
+      }
+    } catch {
+      setSenhaErro("Erro ao validar. Tente novamente.");
+    } finally {
+      setValidando(false);
+    }
   };
 
   const handleAcao = async (acao: "aprovado" | "rejeitado") => {
@@ -192,7 +206,7 @@ export default function ExcecaoAprovacao() {
             <label className="text-sm font-semibold text-gray-700 block mb-1">Diretor</label>
             <select className="w-full border rounded-lg px-3 py-2.5 text-sm" value={diretorNome} onChange={e => setDiretorNome(e.target.value)}>
               <option value="">Selecione seu nome</option>
-              {Object.keys(SENHAS_DIRETORES).map(nome => <option key={nome} value={nome}>{nome}</option>)}
+              {diretores.map(nome => <option key={nome} value={nome}>{nome}</option>)}
             </select>
           </div>
           <div>
@@ -203,7 +217,7 @@ export default function ExcecaoAprovacao() {
             </div>
           </div>
           {senhaErro && <p className="text-sm text-red-500">{senhaErro}</p>}
-          <button onClick={handleLogin} disabled={!diretorNome || !senha} className="w-full py-3 rounded-lg font-bold text-white bg-[#1A3A5C] hover:bg-[#15304D] disabled:bg-gray-300">Acessar</button>
+          <button onClick={handleLogin} disabled={!diretorNome || !senha || validando} className="w-full py-3 rounded-lg font-bold text-white bg-[#1A3A5C] hover:bg-[#15304D] disabled:bg-gray-300">{validando ? "Validando..." : "Acessar"}</button>
         </div>
       </div>
     </div>
