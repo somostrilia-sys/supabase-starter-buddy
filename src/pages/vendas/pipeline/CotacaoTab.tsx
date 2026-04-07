@@ -819,7 +819,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
             const nome = p.plano_normalizado || p.plano;
             if (seen.has(nome)) continue;
             seen.add(nome);
-            dedupPlanos.push({ nome, valor_mensal: p.cota, adesao: p.adesao, rastreador: p.rastreador, franquia: p.valor_franquia, valor_fipe: valorFipe, implemento_valor: implementoCotaAdicional, coberturas: cobMap[nome] || [], produtos: prodMap[nome] || [] });
+            dedupPlanos.push({ nome, valor_mensal: p.cota, adesao: p.adesao, rastreador: p.rastreador, franquia: p.valor_franquia, tipo_franquia: p.tipo_franquia, valor_fipe: valorFipe, implemento_valor: implementoCotaAdicional, coberturas: cobMap[nome] || [], produtos: prodMap[nome] || [] });
           }
           return dedupPlanos;
         })(),
@@ -1353,9 +1353,17 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
                   {planosConfig.map(p => {
                     const mensal = (p as any).valorReal > 0 ? (p as any).valorReal : (fipeFetched && precosReais.length === 0 ? 0 : Math.round(valorFipe * p.percentual));
                     const totalComOpc = mensal + totalOpcionais;
+                    const precoReal = precosReais.find((pr: any) => (pr.plano_normalizado || pr.plano) === p.nome);
                     return (
                       <SelectItem key={p.nome} value={p.nome}>
-                        {p.nome} — {formatCurrency(totalComOpc)}/mês
+                        <span>{p.nome} — {formatCurrency(totalComOpc)}/mês</span>
+                        {precoReal?.tipo_franquia && (
+                          <span className="text-[10px] text-muted-foreground ml-2">
+                            (Participação: {precoReal.tipo_franquia === '%'
+                              ? `${precoReal.valor_franquia}% da FIPE`
+                              : `R$ ${Number(precoReal.valor_franquia).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`})
+                          </span>
+                        )}
                       </SelectItem>
                     );
                   })}
@@ -1400,6 +1408,19 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
                       {totalComOpc > 0 && <div className="text-[10px] text-emerald-600 font-medium mt-1">15% pontualidade: {formatCurrency(pontualidade15)}/mês se pagar em dia</div>}
                     </div>
                     <div className="text-xs text-muted-foreground">Adesão: <span className="font-semibold text-[#1A3A5C]">{formatCurrency((p as any).adesao || 400)}</span></div>
+                    {(() => {
+                      const precoPlano = precosReais.find((pr: any) => (pr.plano_normalizado || pr.plano) === planoSelecionado);
+                      if (!precoPlano?.tipo_franquia) return null;
+                      return (
+                        <div className="text-xs text-muted-foreground">
+                          Participação: <span className="font-semibold text-[#1A3A5C]">
+                            {precoPlano.tipo_franquia === '%'
+                              ? `${precoPlano.valor_franquia}% FIPE (${formatCurrency(valorFipe * Number(precoPlano.valor_franquia) / 100)})`
+                              : formatCurrency(Number(precoPlano.valor_franquia))}
+                          </span>
+                        </div>
+                      );
+                    })()}
                     <div className="flex items-center gap-1 p-1.5 rounded border border-amber-300 bg-amber-50">
                       <span className="text-[10px] text-amber-800 font-medium">Instalação Rastreador: R$</span>
                       <input type="number" className="w-16 text-[10px] border border-amber-300 rounded px-1 py-0.5 bg-white font-semibold" value={valorInstalacaoEdit || String((p as any).instalacao || 100)} onChange={e => setValorInstalacaoEdit(e.target.value)} onClick={e => e.stopPropagation()} />

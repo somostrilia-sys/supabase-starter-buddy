@@ -28,8 +28,9 @@ function matchCobertura(coberturas: any[], target: string): { found: boolean; de
   for (const c of coberturas) {
     const nome = normalizeStr(typeof c === "string" ? c : c.cobertura || c.nome || "");
     if (keywords.every(k => nome.includes(k)) || keywords.some(k => nome.includes(k) && nome.length < 40)) {
-      const detalhe = typeof c === "object" ? (c.detalhe || c.valor || "") : "";
-      return { found: typeof c === "object" ? c.inclusa !== false : true, detalhe: String(detalhe) };
+      const raw = typeof c === "object" ? (c.detalhe || c.valor || "") : "";
+      const detalhe = (raw && String(raw) !== "0" && String(raw) !== "0,00" && String(raw) !== "R$ 0,00" && Number(raw) !== 0) ? String(raw) : "";
+      return { found: typeof c === "object" ? c.inclusa !== false : true, detalhe };
     }
   }
   return { found: false };
@@ -40,8 +41,9 @@ function matchAssistencia(assistencias: any[], target: string): { found: boolean
   for (const a of assistencias) {
     const nome = normalizeStr(typeof a === "string" ? a : a.cobertura || a.nome || "");
     if (nome.includes(t) || t.includes(nome) || t.split("/").some(k => nome.includes(k.trim()))) {
-      const detalhe = typeof a === "object" ? (a.detalhe || a.valor || "") : "";
-      return { found: true, detalhe: String(detalhe) };
+      const raw = typeof a === "object" ? (a.detalhe || a.valor || "") : "";
+      const detalhe = (raw && String(raw) !== "0" && String(raw) !== "0,00" && String(raw) !== "R$ 0,00" && Number(raw) !== 0) ? String(raw) : "";
+      return { found: true, detalhe };
     }
   }
   return { found: false };
@@ -89,7 +91,13 @@ const SECTION_VALORES: TableRow[] = [
   {
     label: "Cota de participação", kind: "value",
     getValue: (p) => {
-      if (p.tipo_franquia && p.valor_franquia) return `${p.valor_franquia}% FIPE`;
+      if (p.tipo_franquia && p.valor_franquia != null) {
+        if (p.tipo_franquia === '%') {
+          const calc = p.valor_fipe ? ` (${fmtBRL(Number(p.valor_fipe) * Number(p.valor_franquia) / 100)})` : "";
+          return `${p.valor_franquia}% FIPE${calc}`;
+        }
+        return fmtBRL(Number(p.valor_franquia));
+      }
       if (p.franquia) return typeof p.franquia === "number" ? `${p.franquia}% FIPE` : String(p.franquia);
       return "";
     },
