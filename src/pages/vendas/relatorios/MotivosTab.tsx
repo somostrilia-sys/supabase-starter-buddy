@@ -17,7 +17,7 @@ export default function MotivosTab({ filters }: { filters?: { cooperativa: strin
       if (filters?.cooperativa && filters.cooperativa !== "all") q = q.eq("cooperativa", filters.cooperativa);
       if (filters?.consultor && filters.consultor !== "all") q = q.eq("consultor", filters.consultor);
       if (filters?.dateStart) q = q.gte("updated_at", filters.dateStart.toISOString());
-      if (filters?.dateEnd) q = q.lte("updated_at", new Date(filters.dateEnd.getTime() + 86400000).toISOString());
+      if (filters?.dateEnd) q = q.lte("updated_at", new Date(filters.dateEnd.getFullYear(), filters.dateEnd.getMonth(), filters.dateEnd.getDate(), 23, 59, 59).toISOString());
       const { data } = await q;
 
       // Also get motivos from pipeline_transicoes

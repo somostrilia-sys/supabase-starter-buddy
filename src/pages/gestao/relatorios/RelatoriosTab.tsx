@@ -930,7 +930,7 @@ export default function RelatoriosTab() {
                       const { data } = await (supabase as any).from("audit_log").select("*").eq("tabela", "associados").order("created_at", { ascending: false }).limit(200);
                       result = data || [];
                     } else if (outroAtivo === "eventos") {
-                      const { data } = await (supabase as any).from("eventos_gia").select("*").eq("status", "aberto").order("created_at", { ascending: false }).limit(200);
+                      const { data } = await (supabase as any).from("eventos").select("*").eq("status", "aberto").order("created_at", { ascending: false }).limit(200);
                       result = data || [];
                     } else if (outroAtivo === "usuarios") {
                       const { data } = await (supabase as any).from("profiles").select("*").order("created_at", { ascending: false }).limit(200);

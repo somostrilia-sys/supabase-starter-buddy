@@ -56,6 +56,15 @@ export default function DashboardVendas() {
 
   const range = getDateRange(periodo, dataInicio, dataFim);
 
+  // Comissao por consultor (campo comissao_pct da tabela usuarios)
+  const { data: usuariosComissao } = useQuery({
+    queryKey: ["dash_usuarios_comissao"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("usuarios").select("nome, comissao_pct").eq("status", "ativo");
+      return (data || []) as { nome: string; comissao_pct: number | null }[];
+    },
+  });
+
   // Cooperativas reais
   const { data: coopsDb } = useQuery({
     queryKey: ["dash_coops"],
@@ -116,7 +125,15 @@ export default function DashboardVendas() {
   const contratos = negs.filter(n => n.stage === "concluido").length;
   const faturamento = negs.reduce((s: number, n: any) => s + (Number(n.valor_plano) || 0), 0);
   const conversao = totalLeads > 0 ? ((contratos / totalLeads) * 100).toFixed(1) : "0";
-  const comissoes = faturamento * 0.15;
+  // Calcula comissoes usando comissao_pct real de cada consultor (fallback 10%)
+  const comissoes = (() => {
+    const pctMap: Record<string, number> = {};
+    (usuariosComissao || []).forEach((u) => { pctMap[u.nome] = Number(u.comissao_pct) || 10; });
+    return negs.reduce((acc: number, n: any) => {
+      const pct = pctMap[n.consultor] ?? 10;
+      return acc + (Number(n.valor_plano) || 0) * (pct / 100);
+    }, 0);
+  })();
 
   // Funil
   const funilData = [

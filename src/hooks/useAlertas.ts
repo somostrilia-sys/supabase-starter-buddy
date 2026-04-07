@@ -16,7 +16,7 @@ export function useAlertas() {
         .select("id, valor, data_vencimento, referencia, associados(nome, cpf)")
         .gte("data_vencimento", hoje)
         .lte("data_vencimento", em3dias)
-        .not("status", "in", '("pago","cancelado")')
+        .not("status", "in", "(pago,cancelado)")
         .order("data_vencimento") as any);
       if (error) throw error;
       return data || [];

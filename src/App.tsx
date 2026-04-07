@@ -113,10 +113,6 @@ const App = () => (
             <Route path="/afiliado/:token" element={<PortalAfiliado />} />
             <Route path="/" element={<D><Dashboard /></D>} />
 
-            {/* Gestão - New */}
-            <Route path="/gestao/*" element={<ProtectedRoute permission="canViewGestao"><GestaoModule /></ProtectedRoute>} />
-            <Route path="/financeiro/*" element={<ProtectedRoute permission="canVerFinanceiro"><FinanceiroModule /></ProtectedRoute>} />
-
             {/* Gestão (legacy) — admin/diretor only */}
             <Route path="/associados" element={<G><Associados /></G>} />
             <Route path="/veiculos" element={<G><Veiculos /></G>} />
@@ -130,11 +126,15 @@ const App = () => (
             <Route path="/parametros" element={<G><Parametros /></G>} />
             <Route path="/gestao/auditoria" element={<G><AuditLog /></G>} />
 
-            {/* Financeiro — admin/diretor only */}
+            {/* Financeiro — specific routes before wildcard */}
             <Route path="/financeiro/fluxo-diario" element={<G><FluxoDiario /></G>} />
             <Route path="/financeiro/boletos" element={<G><Boletos /></G>} />
             <Route path="/financeiro/conciliacao" element={<G><Conciliacao /></G>} />
             <Route path="/financeiro/relatorios" element={<G><RelatoriosFinanceiro /></G>} />
+
+            {/* Gestão & Financeiro modules (wildcard — must come after specific routes) */}
+            <Route path="/gestao/*" element={<ProtectedRoute permission="canViewGestao"><GestaoModule /></ProtectedRoute>} />
+            <Route path="/financeiro/*" element={<ProtectedRoute permission="canVerFinanceiro"><FinanceiroModule /></ProtectedRoute>} />
 
             {/* Vendas */}
             <Route path="/vendas/dashboard" element={<M><DashboardVendas /></M>} />

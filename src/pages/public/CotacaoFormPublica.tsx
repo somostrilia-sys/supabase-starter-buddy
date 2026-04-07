@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { supabase, callEdge } from "@/integrations/supabase/client";
+import { supabase, callEdgePublic } from "@/integrations/supabase/client";
 import { CheckCircle, Loader2, ChevronRight, ChevronLeft, Car, Shield, Phone, MessageSquare } from "lucide-react";
 
 const LOGO_URL = "https://objetivoauto.com.br/wp-content/uploads/2025/11/IMG_1299.png";
@@ -64,7 +64,7 @@ export default function CotacaoFormPublica() {
     setBuscando(true);
     setBuscaErro("");
     try {
-      const res = await callEdge("gia-buscar-placa", { acao: "placa", placa: clean });
+      const res = await callEdgePublic("gia-buscar-placa", { body: { acao: "placa", placa: clean } });
       if (res.sucesso && res.resultado) {
         setVeiculo(res.resultado);
         // Auto-detectar tipo
@@ -179,7 +179,7 @@ export default function CotacaoFormPublica() {
         desconto_aplicado: 0,
         cidade_circulacao: cidade,
         estado_circulacao: estado,
-        regional_precos: regionalPrecos,
+        regional_precos: regionalId,
       } as any).select().single();
 
       if (cot) {
