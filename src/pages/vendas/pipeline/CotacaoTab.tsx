@@ -425,9 +425,9 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     const tipoMap: Record<string, string> = {
       "Automóvel": "Carros e Utilitários Pequenos",
       "Motocicleta": "Motos",
-      "Caminhão": "Caminhões e Micro-Ônibus",
+      "Caminhão": "Caminhões e Pesados",
       "Van/Utilitário": "Carros e Utilitários Pequenos",
-      "Ônibus": "Caminhões e Micro-Ônibus",
+      "Ônibus": "Caminhões e Pesados",
     };
     const tipoDb = tipoMap[tipoVeiculo || form.tipoVeiculo] || "Carros e Utilitários Pequenos";
 

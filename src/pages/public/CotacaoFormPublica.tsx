@@ -131,7 +131,7 @@ export default function CotacaoFormPublica() {
       const tipoMap: Record<string, string> = {
         "Carro": "Carros e Utilitários Pequenos",
         "Moto": "Motos",
-        "Caminhão": "Caminhões e Micro-Ônibus",
+        "Caminhão": "Caminhões e Pesados",
         "Van/Utilitário": "Carros e Utilitários Pequenos",
       };
       // Buscar regional pela cidade/estado via regional_cidades

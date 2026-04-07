@@ -201,7 +201,7 @@ export default function ConsultorLanding() {
       if (!neg) throw new Error("Erro ao criar negociação");
 
       const vFipe = veiculo?.valorFipe || 0;
-      const tipoMap: Record<string, string> = { Carro: "Carros e Utilitários Pequenos", Moto: "Motos", Caminhao: "Caminhões e Micro-Ônibus", "Van/Utilitario": "Carros e Utilitários Pequenos" };
+      const tipoMap: Record<string, string> = { Carro: "Carros e Utilitários Pequenos", Moto: "Motos", Caminhao: "Caminhões e Pesados", "Van/Utilitario": "Carros e Utilitários Pequenos" };
       const { data: regMatch } = await supabase.from("uf_regional_precos" as any).select("regional_precos").eq("uf", estado).ilike("cidade", cidade || "___NONE___").limit(1).maybeSingle();
       const { data: regDefault } = !regMatch ? await supabase.from("uf_regional_precos" as any).select("regional_precos").eq("uf", estado).is("cidade", null).limit(1).maybeSingle() : { data: null };
       const regionalPrecos = (regMatch as any)?.regional_precos || (regDefault as any)?.regional_precos || "";

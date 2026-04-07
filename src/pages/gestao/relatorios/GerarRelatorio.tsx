@@ -27,18 +27,18 @@ const TIPOS_RELATORIO = [
 ];
 
 const REGIONAIS = [
-  "1 - OBJETIVO PATRIMONIAL MUTUALISTA",
-  "2 - MATO GROSSO DO SUL",
+  "1 - Regional Sao Paulo",
+  "2 - REGIONAL MATO GROSSO SUL",
   "3 - REGIONAL NORTE",
   "4 - REGIONAL ALAGOAS",
-  "5 - REGIONAL NORTE, MINAS E SUL",
-  "6 - REGIONAL SP INTERIOR",
+  "5 - Regional Norte/Minas/Sul",
+  "6 - Regional Interior São Paulo",
   "7 - REGIONAL CEARÁ",
   "8 - REGIONAL NATAL",
-  "9 - REGIONAL MINAS INTERIOR",
+  "9 - REGIONAL MINAS (INTERIOR)",
   "10 - REGIONAL BAHIA",
   "11 - REGIONAL PARANÁ",
-  "12 - REGIONAL SUL (INTERIOR)",
+  "12 - REGIONAL RIO GRANDE DO SUL",
 ];
 
 const FORMATOS = [
@@ -59,8 +59,8 @@ const CSV_TEMPLATES: Record<string, { headers: string; rows: string[] }> = {
   associados_ativos: {
     headers: "CPF;Nome;Placa;Plano;Regional;Status;Data Cadastro",
     rows: [
-      "123.456.789-00;João Silva;ABC-1234;PLANO OURO;1 - OBJETIVO PATRIMONIAL MUTUALISTA;ATIVO;2024-01-15",
-      "987.654.321-00;Maria Santos;DEF-5678;PLANO PRATA;2 - MATO GROSSO DO SUL;ATIVO;2024-02-20",
+      "123.456.789-00;João Silva;ABC-1234;PLANO OURO;1 - Regional Sao Paulo;ATIVO;2024-01-15",
+      "987.654.321-00;Maria Santos;DEF-5678;PLANO PRATA;2 - REGIONAL MATO GROSSO SUL;ATIVO;2024-02-20",
       "456.789.123-00;Carlos Oliveira;GHI-9012;PLANO BRONZE;3 - REGIONAL NORTE;ATIVO;2024-03-10",
     ],
   },
@@ -68,8 +68,8 @@ const CSV_TEMPLATES: Record<string, { headers: string; rows: string[] }> = {
     headers: "CPF;Nome;Placa;Plano;Regional;Parcelas Em Atraso;Valor Total;Último Pagamento",
     rows: [
       "111.222.333-44;Ana Costa;JKL-3456;PLANO OURO;4 - REGIONAL ALAGOAS;3;R$ 450,00;2024-10-05",
-      "555.666.777-88;Pedro Lima;MNO-7890;PLANO PRATA;5 - REGIONAL NORTE, MINAS E SUL;2;R$ 280,00;2024-11-10",
-      "999.000.111-22;Lucia Ferreira;PQR-1234;PLANO BRONZE;6 - REGIONAL SP INTERIOR;5;R$ 620,00;2024-09-15",
+      "555.666.777-88;Pedro Lima;MNO-7890;PLANO PRATA;5 - Regional Norte/Minas/Sul;2;R$ 280,00;2024-11-10",
+      "999.000.111-22;Lucia Ferreira;PQR-1234;PLANO BRONZE;6 - Regional Interior São Paulo;5;R$ 620,00;2024-09-15",
     ],
   },
   novos_cadastros: {
@@ -77,7 +77,7 @@ const CSV_TEMPLATES: Record<string, { headers: string; rows: string[] }> = {
     rows: [
       "222.333.444-55;Roberto Alves;STU-5678;PLANO OURO;7 - REGIONAL CEARÁ;2025-01-02;Carlos Vendedor",
       "666.777.888-99;Fernanda Souza;VWX-9012;PLANO PRATA;8 - REGIONAL NATAL;2025-01-08;Ana Consultora",
-      "000.111.222-33;Marcos Rocha;YZA-3456;PLANO BRONZE;9 - REGIONAL MINAS INTERIOR;2025-01-14;João Agente",
+      "000.111.222-33;Marcos Rocha;YZA-3456;PLANO BRONZE;9 - REGIONAL MINAS (INTERIOR);2025-01-14;João Agente",
     ],
   },
   sinistros: {
@@ -91,8 +91,8 @@ const CSV_TEMPLATES: Record<string, { headers: string; rows: string[] }> = {
   financeiro_mensal: {
     headers: "Mês/Ano;Regional;Total Associados;Receita Bruta;Inadimplência;Sinistros Pagos;Resultado",
     rows: [
-      "01/2025;1 - OBJETIVO PATRIMONIAL MUTUALISTA;1250;R$ 187.500,00;R$ 8.400,00;R$ 45.000,00;R$ 134.100,00",
-      "01/2025;2 - MATO GROSSO DO SUL;890;R$ 133.500,00;R$ 5.200,00;R$ 28.000,00;R$ 100.300,00",
+      "01/2025;1 - Regional Sao Paulo;1250;R$ 187.500,00;R$ 8.400,00;R$ 45.000,00;R$ 134.100,00",
+      "01/2025;2 - REGIONAL MATO GROSSO SUL;890;R$ 133.500,00;R$ 5.200,00;R$ 28.000,00;R$ 100.300,00",
       "01/2025;3 - REGIONAL NORTE;640;R$ 96.000,00;R$ 3.800,00;R$ 18.500,00;R$ 73.700,00",
     ],
   },
