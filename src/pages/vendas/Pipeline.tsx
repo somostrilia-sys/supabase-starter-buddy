@@ -611,7 +611,7 @@ export default function Pipeline() {
                 className={`flex flex-col rounded-xl overflow-hidden min-w-[300px] w-[300px] shrink-0 transition-all bg-muted/40 border border-border/50 ${isOver ? "ring-2 shadow-lg" : "shadow-sm"}`}
                 onDragOver={e => handleDragOver(e, col.key)}
                 onDragLeave={() => setDragOverStage(null)}
-                onDrop={() => handleDrop(col.key)}
+                onDrop={e => { e.preventDefault(); handleDrop(col.key); }}
               >
                 <div className="px-0 pt-0 pb-2">
                   <div className="flex items-center justify-between rounded-t-xl px-4 py-2.5" style={{ backgroundColor: col.color }}>
@@ -619,8 +619,8 @@ export default function Pipeline() {
                     <Badge className="text-[10px] h-5 px-1.5 bg-white/20 text-white border-white/30">{allColDeals.length}</Badge>
                   </div>
                 </div>
-                <ScrollArea className="flex-1 px-2 pb-2" style={{ maxHeight: "calc(100vh - 300px)" }}>
-                  <div className="space-y-2">
+                <ScrollArea className="flex-1 px-2 pb-2" style={{ maxHeight: "calc(100vh - 300px)", minHeight: "200px" }}>
+                  <div className="space-y-2" style={{ minHeight: "180px" }}>
                     {colDeals.map(deal => {
                       const days = daysStalled(deal.updated_at);
                       const si = deal.status_icons;
