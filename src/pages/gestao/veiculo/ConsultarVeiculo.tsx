@@ -234,31 +234,49 @@ export default function ConsultarVeiculo() {
         setLapsAjusteValor("");
       }
 
+      // Buscar taxa_adm e rateio da faixas_fipe por regional + valor FIPE + tipo veículo
+      let taxaAdm = 0;
+      let rateioVal = 0;
+      if (regId && veiculo.valorFipe > 0) {
+        // Mapear tipo veículo para nomenclatura do SGA
+        let tipoSga = "AUTOMOVEL";
+        const modelo = (veiculo.modelo || "").toLowerCase();
+        if (modelo.includes("moto") || modelo.includes("cg ") || modelo.includes("cb ") || modelo.includes("honda cg")) tipoSga = "MOTOCICLETA";
+        else if (modelo.includes("scania") || modelo.includes("volvo fh") || modelo.includes("iveco") || modelo.includes("cargo") || modelo.includes("constellation")) tipoSga = "PESADOS";
+        else if (modelo.includes("sprinter") || modelo.includes("daily") || modelo.includes("ducato") || modelo.includes("master")) tipoSga = "VANS E PESADOS P.P";
+        else if (modelo.includes("fiorino") || modelo.includes("kangoo") || modelo.includes("doblo") || modelo.includes("strada") || modelo.includes("saveiro")) tipoSga = "UTILITARIOS";
+
+        const { data: faixa } = await (supabase as any)
+          .from("faixas_fipe")
+          .select("taxa_administrativa, rateio")
+          .eq("regional_id", regId)
+          .eq("tipo_veiculo", tipoSga)
+          .lte("fipe_min", veiculo.valorFipe)
+          .gte("fipe_max", veiculo.valorFipe)
+          .limit(1)
+          .maybeSingle();
+        if (faixa) {
+          taxaAdm = Number(faixa.taxa_administrativa) || 0;
+          rateioVal = Number(faixa.rateio) || 0;
+        }
+      }
+
       // Calcular mensalidade
-      await calcularMensalidadeLaps(veiculo, sel);
+      await calcularMensalidadeLaps(veiculo, sel, taxaAdm, rateioVal);
     } catch (err: any) {
       toast.error("Erro ao carregar LAPS: " + err.message);
     }
     setLapsLoading(false);
   };
 
-  const calcularMensalidadeLaps = async (veiculo: Veiculo, selecionados: Record<string, boolean>) => {
-    try {
-      const produtoIds = Object.entries(selecionados).filter(([, v]) => v).map(([k]) => k);
-      const ajusteNum = parseFloat(lapsAjusteValor) || 0;
-      const res = await callEdge("gia-calculo-mensalidade", {
-        veiculo_id: veiculo.id,
-        produto_ids: produtoIds,
-        ajuste_avulso: ajusteNum,
-      });
-      setLapsCalculo(res);
-    } catch {
-      // fallback: cálculo local simples
-      const produtoIds = Object.entries(selecionados).filter(([, v]) => v).map(([k]) => k);
-      const subtotal = lapsProdutosDisponiveis.filter(p => produtoIds.includes(p.id)).reduce((s, p) => s + (p.valor || 0), 0);
-      const ajusteNum = parseFloat(lapsAjusteValor) || 0;
-      setLapsCalculo({ subtotal_produtos: subtotal, taxa_administrativa: 0, rateio: 0, ajuste_avulso: ajusteNum, total_mensalidade: subtotal + ajusteNum });
-    }
+  const calcularMensalidadeLaps = async (veiculo: Veiculo, selecionados: Record<string, boolean>, taxaAdm?: number, rateioVal?: number) => {
+    const produtoIds = Object.entries(selecionados).filter(([, v]) => v).map(([k]) => k);
+    const subtotal = lapsProdutosDisponiveis.filter(p => produtoIds.includes(p.id)).reduce((s, p) => s + (p.valor || 0), 0);
+    const ajusteNum = parseFloat(lapsAjusteValor) || 0;
+    const taxa = taxaAdm ?? lapsCalculo?.taxa_administrativa ?? 0;
+    const rateio = rateioVal ?? lapsCalculo?.rateio ?? 0;
+    const total = subtotal + taxa + rateio + ajusteNum;
+    setLapsCalculo({ subtotal_produtos: subtotal, taxa_administrativa: taxa, rateio, ajuste_avulso: ajusteNum, total_mensalidade: total });
   };
 
   const salvarLaps = async () => {

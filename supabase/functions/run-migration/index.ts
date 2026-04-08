@@ -67,6 +67,66 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "import-faixas-fipe") {
+      // Limpar vínculos e importar faixas_fipe
+      await sql`UPDATE veiculos SET cota_id = NULL WHERE cota_id IS NOT NULL`;
+      await sql`DELETE FROM faixas_fipe`;
+      // Dropar FK de veiculos e recriar tabela
+      await sql`ALTER TABLE veiculos DROP CONSTRAINT IF EXISTS veiculos_cota_id_fkey`;
+      await sql`ALTER TABLE veiculos DROP COLUMN IF EXISTS cota_id`;
+      await sql`DROP TABLE IF EXISTS faixas_fipe CASCADE`;
+      await sql`
+        CREATE TABLE faixas_fipe (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          regional_id UUID REFERENCES regionais(id),
+          fipe_min DECIMAL(12,2) DEFAULT 0,
+          fipe_max DECIMAL(12,2) DEFAULT 0,
+          taxa_administrativa DECIMAL(10,2) DEFAULT 0,
+          rateio DECIMAL(10,2) DEFAULT 0,
+          cota_fator DECIMAL(6,2) DEFAULT 1,
+          tipo_veiculo TEXT,
+          created_at TIMESTAMPTZ DEFAULT now()
+        )
+      `;
+      let inserted = 0;
+      if (Array.isArray(data)) {
+        for (const r of data) {
+          await sql`INSERT INTO faixas_fipe (regional_id, fipe_min, fipe_max, taxa_administrativa, rateio, cota_fator, tipo_veiculo)
+            VALUES (${r.regional_id}, ${r.fipe_min}, ${r.fipe_max}, ${r.taxa_administrativa}, ${r.rateio}, ${r.cota_fator}, ${r.tipo_veiculo})`;
+          inserted++;
+        }
+      }
+      // Atualizar taxa_administrativa na tabela_precos
+      await sql`
+        UPDATE tabela_precos tp SET taxa_administrativa = ff.taxa_administrativa
+        FROM faixas_fipe ff
+        WHERE tp.regional_id = ff.regional_id
+        AND tp.valor_menor >= ff.fipe_min AND tp.valor_maior <= ff.fipe_max
+        AND (
+          (ff.tipo_veiculo = 'AUTOMOVEL' AND tp.tipo_veiculo = 'Carros e Utilitários Pequenos')
+          OR (ff.tipo_veiculo = 'MOTOCICLETA' AND tp.tipo_veiculo = 'Motos')
+          OR (ff.tipo_veiculo = 'PESADOS' AND tp.tipo_veiculo = 'Pesados e Vans' AND tp.plano_normalizado LIKE '%pesado%')
+          OR (ff.tipo_veiculo = 'VANS E PESADOS P.P' AND tp.tipo_veiculo = 'Pesados e Vans' AND tp.plano_normalizado LIKE '%van%')
+          OR (ff.tipo_veiculo = 'UTILITARIOS' AND tp.tipo_veiculo = 'Carros e Utilitários Pequenos')
+        )
+      `;
+      // Enable RLS policies
+      await sql`
+        DO $$ BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'faixas_fipe' AND policyname = 'auth_select_faixas_fipe') THEN
+            ALTER TABLE faixas_fipe ENABLE ROW LEVEL SECURITY;
+            CREATE POLICY "auth_select_faixas_fipe" ON public.faixas_fipe FOR SELECT TO authenticated USING (true);
+            CREATE POLICY "anon_select_faixas_fipe" ON public.faixas_fipe FOR SELECT TO anon USING (true);
+          END IF;
+        END $$
+      `;
+      const count = await sql`SELECT COUNT(*) as c FROM faixas_fipe`;
+      await sql.end();
+      return new Response(JSON.stringify({ status: "ok", inserted, total: count[0].c }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "fix-regional-ids") {
       // Popular regional_id com matching flexível
       const updates = [
