@@ -907,9 +907,9 @@ export default function Pipeline() {
                 <SelectContent>
                   <SelectItem value="Automóvel">Automóvel</SelectItem>
                   <SelectItem value="Motocicleta">Motocicleta</SelectItem>
+                  <SelectItem value="Utilitários">Utilitários</SelectItem>
+                  <SelectItem value="Vans e Pesados Pequenos">Vans e Pesados Pequenos</SelectItem>
                   <SelectItem value="Pesados">Pesados</SelectItem>
-                  <SelectItem value="Van">Van</SelectItem>
-                  <SelectItem value="Utilitário">Utilitário</SelectItem>
                 </SelectContent>
               </Select>
               {!form.tipoVeiculo && <p className="text-[10px] text-destructive">Obrigatório para precificação correta</p>}

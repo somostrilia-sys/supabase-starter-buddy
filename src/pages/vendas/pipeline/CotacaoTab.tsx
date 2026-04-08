@@ -34,7 +34,7 @@ const lookupPlaca = async (placa: string) => {
 const cores = ["Branco", "Prata", "Preto", "Cinza", "Vermelho", "Azul", "Marrom"];
 const cambios = ["Automático", "Manual", "CVT", "Automatizado"];
 const combustiveis = ["Flex", "Gasolina", "Etanol", "Diesel", "Elétrico", "Híbrido"];
-const tiposVeiculo = ["Automóvel", "Motocicleta", "Pesados", "Van", "Utilitário"];
+const tiposVeiculo = ["Automóvel", "Motocicleta", "Utilitários", "Vans e Pesados Pequenos", "Pesados"];
 
 const UFS = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA",
@@ -80,7 +80,7 @@ const planosConfigDefault: PlanoConfig[] = [
 
 // ─── FIPE API ───
 const FIPE_BASE = "https://parallelum.com.br/fipe/api/v1";
-const FIPE_TIPO_MAP: Record<string, string> = { "Automóvel": "carros", "Motocicleta": "motos", "Pesados": "caminhoes", "Van": "caminhoes", "Utilitário": "carros", "Ônibus": "caminhoes", "Caminhão": "caminhoes" };
+const FIPE_TIPO_MAP: Record<string, string> = { "Automóvel": "carros", "Motocicleta": "motos", "Utilitários": "carros", "Vans e Pesados Pequenos": "caminhoes", "Pesados": "caminhoes", "Caminhão": "caminhoes", "Van": "caminhoes", "Utilitário": "carros", "Ônibus": "caminhoes" };
 
 async function fipeMarcas(tipo: string) {
   const t = FIPE_TIPO_MAP[tipo] || "carros";
@@ -108,13 +108,15 @@ async function fipeValor(tipo: string, marcaCod: string, modeloCod: string, anoC
 const TIPO_VEICULO_MAP: Record<string, string[]> = {
   "Automóvel": ["Carros e Utilitários Pequenos"],
   "Motocicleta": ["Motos"],
+  "Utilitários": ["Carros e Utilitários Pequenos"],
+  "Vans e Pesados Pequenos": ["Pesados e Vans"],
   "Pesados": ["Pesados e Vans"],
-  "Van": ["Pesados e Vans"],
-  "Utilitário": ["Carros e Utilitários Pequenos"],
-  "Ônibus": ["Pesados e Vans"],
   // Compatibilidade com registros antigos
   "Caminhão": ["Pesados e Vans"],
   "Van/Utilitário": ["Pesados e Vans"],
+  "Van": ["Pesados e Vans"],
+  "Utilitário": ["Carros e Utilitários Pequenos"],
+  "Ônibus": ["Pesados e Vans"],
 };
 
 interface Props { deal: PipelineDeal; onUpdate?: () => void; }
@@ -151,8 +153,8 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     if (motos.some(x => m.includes(x)) || p.includes("moto")) return "Motocicleta";
     if (onibus.some(x => m.includes(x))) return "Pesados";
     if (pesados.some(x => m.includes(x)) || p.includes("pesado")) return "Pesados";
-    if (vans.some(x => m.includes(x)) || p.includes("van")) return "Van";
-    if (utilitarios.some(x => m.includes(x))) return "Utilitário";
+    if (vans.some(x => m.includes(x)) || p.includes("van")) return "Vans e Pesados Pequenos";
+    if (utilitarios.some(x => m.includes(x))) return "Utilitários";
     return "Automóvel";
   };
 
@@ -1244,7 +1246,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         </div>
 
         {/* Implemento / Agregado — selecionável com valor declarado e cota automática */}
-        {(["Pesados", "Van", "Ônibus", "Caminhão", "Van/Utilitário"].includes(form.tipoVeiculo)) && (
+        {(["Pesados", "Vans e Pesados Pequenos", "Van", "Ônibus", "Caminhão", "Van/Utilitário"].includes(form.tipoVeiculo)) && (
           <div className="p-3 border-2 border-blue-200 rounded bg-blue-50/50 space-y-3">
             <Label className="text-sm font-bold text-[#1A3A5C]">Implemento / Agregado</Label>
             <div className="grid grid-cols-3 gap-3">
@@ -1284,7 +1286,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
             )}
           </div>
         )}
-        {(!["Pesados", "Van", "Ônibus", "Caminhão", "Van/Utilitário"].includes(form.tipoVeiculo)) && (
+        {(!["Pesados", "Vans e Pesados Pequenos", "Van", "Ônibus", "Caminhão", "Van/Utilitário"].includes(form.tipoVeiculo)) && (
           <div className="grid grid-cols-2 gap-4 pt-2">
             <div className="space-y-1">
               <Label className={lbl}>Implemento / Agregado (opcional)</Label>
