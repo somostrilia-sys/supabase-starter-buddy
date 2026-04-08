@@ -871,7 +871,24 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
             const nome = p.plano_normalizado || p.plano;
             if (seen.has(nome)) continue;
             seen.add(nome);
-            dedupPlanos.push({ nome, valor_mensal: p.cota, adesao: p.adesao, rastreador: p.rastreador, franquia: p.valor_franquia, tipo_franquia: p.tipo_franquia, valor_fipe: valorFipe, implemento_valor: implementoCotaAdicional, coberturas: cobMap[nome] || [], produtos: prodMap[nome] || [] });
+            const isPlanoSel = nome === planoSelecionado;
+            const mensalBase = Number(p.cota) + totalOpcionais;
+            const adesaoBase = Number(p.adesao || 400);
+            dedupPlanos.push({
+              nome,
+              valor_mensal: isPlanoSel && descontoMensal ? Number(descontoMensal) : mensalBase,
+              valor_mensal_original: isPlanoSel && descontoMensal ? mensalBase : undefined,
+              adesao: isPlanoSel && descontoAdesao ? Number(descontoAdesao) : adesaoBase,
+              adesao_original: isPlanoSel && descontoAdesao ? adesaoBase : undefined,
+              rastreador: p.rastreador,
+              franquia: p.valor_franquia,
+              tipo_franquia: p.tipo_franquia,
+              valor_fipe: valorFipe,
+              implemento_valor: implementoCotaAdicional,
+              coberturas: cobMap[nome] || [],
+              produtos: prodMap[nome] || [],
+              instalacao: Number(p.instalacao || 0),
+            });
           }
           return dedupPlanos;
         })(),

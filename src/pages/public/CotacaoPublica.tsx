@@ -386,6 +386,9 @@ export default function CotacaoPublica() {
                     </CardHeader>
                     <CardContent className="text-center">
                       <div className="mb-4">
+                        {(plano as any).valor_mensal_original && (plano as any).valor_mensal_original > price && (
+                          <div className="text-sm text-gray-400 line-through mb-1">{formatBRL((plano as any).valor_mensal_original)}</div>
+                        )}
                         <span className="text-3xl font-extrabold text-[#003572]">
                           {formatBRL(price)}
                         </span>
@@ -408,7 +411,12 @@ export default function CotacaoPublica() {
                       {/* Adesão e Rastreador */}
                       <div className="flex justify-center gap-4 mb-4 text-xs text-gray-500">
                         {plano.adesao != null && Number(plano.adesao) > 0 && (
-                          <span>Adesão: <strong className="text-gray-700">{formatBRL(Number(plano.adesao))}</strong></span>
+                          <span>
+                            Adesão: {(plano as any).adesao_original && (plano as any).adesao_original > Number(plano.adesao) && (
+                              <span className="line-through text-gray-400 mr-1">{formatBRL((plano as any).adesao_original)}</span>
+                            )}
+                            <strong className="text-gray-700">{formatBRL(Number(plano.adesao))}</strong>
+                          </span>
                         )}
                         {plano.rastreador && plano.rastreador !== "Não" && (
                           <span>Rastreador: <strong className="text-gray-700">Incluso</strong></span>
