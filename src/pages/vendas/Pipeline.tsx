@@ -426,7 +426,7 @@ export default function Pipeline() {
       const isNegociacao = negociacoes.some(n => n.id === draggedId);
       if (isNegociacao) {
         const { error } = await updateNegociacao(draggedId, { stage });
-        if (error) { toast.error("Erro ao mover negociação"); }
+        if (error) { console.error("Erro ao mover:", error); toast.error(`Erro ao mover negociação: ${error.message || JSON.stringify(error)}`); }
         else {
           const { error: transError } = await supabase.from("pipeline_transicoes").insert({
             negociacao_id: draggedId, stage_anterior: source.stage, stage_novo: stage,
