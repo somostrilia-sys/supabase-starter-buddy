@@ -13,17 +13,7 @@ const UFS = [
   "PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
 ];
 
-const cidadesPorUF: Record<string, string[]> = {
-  SP: ["São Paulo", "Campinas", "Ribeirão Preto", "Santos", "Sorocaba", "São José dos Campos"],
-  RJ: ["Rio de Janeiro", "Niterói", "Petrópolis", "Volta Redonda", "Campos dos Goytacazes"],
-  MG: ["Belo Horizonte", "Uberlândia", "Contagem", "Juiz de Fora", "Betim"],
-  PR: ["Curitiba", "Londrina", "Maringá", "Ponta Grossa", "Cascavel"],
-  RS: ["Porto Alegre", "Caxias do Sul", "Pelotas", "Canoas", "Santa Maria"],
-  SC: ["Florianópolis", "Joinville", "Blumenau", "Chapecó", "Itajaí"],
-  GO: ["Goiânia", "Aparecida de Goiânia", "Anápolis", "Rio Verde"],
-  BA: ["Salvador", "Feira de Santana", "Vitória da Conquista"],
-  DF: ["Brasília"],
-};
+// Cidades carregadas do banco por UF (substituído lista hardcoded)
 
 const CATEGORIAS_CNH = ["A", "B", "AB", "C", "D", "E"];
 
@@ -133,7 +123,13 @@ export default function AssociadoTab({ deal, dadosCnh }: Props) {
 
   const set = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
-  const cidades = cidadesPorUF[form.estado] || [];
+  const [cidades, setCidades] = useState<string[]>([]);
+  useEffect(() => {
+    if (!form.estado) { setCidades([]); return; }
+    (supabase as any).from("municipios").select("nome").eq("uf", form.estado).order("nome").then(({ data }: any) => {
+      setCidades((data || []).map((m: any) => m.nome));
+    });
+  }, [form.estado]);
 
   const handleCEPBlur = () => {
     // Auto-fill CEP via ViaCEP
