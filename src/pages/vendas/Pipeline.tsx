@@ -910,7 +910,6 @@ export default function Pipeline() {
                   <SelectItem value="Pesados">Pesados</SelectItem>
                   <SelectItem value="Van">Van</SelectItem>
                   <SelectItem value="Utilitário">Utilitário</SelectItem>
-                  <SelectItem value="Ônibus">Ônibus</SelectItem>
                 </SelectContent>
               </Select>
               {!form.tipoVeiculo && <p className="text-[10px] text-destructive">Obrigatório para precificação correta</p>}

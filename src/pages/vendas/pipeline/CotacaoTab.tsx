@@ -34,7 +34,7 @@ const lookupPlaca = async (placa: string) => {
 const cores = ["Branco", "Prata", "Preto", "Cinza", "Vermelho", "Azul", "Marrom"];
 const cambios = ["Automático", "Manual", "CVT", "Automatizado"];
 const combustiveis = ["Flex", "Gasolina", "Etanol", "Diesel", "Elétrico", "Híbrido"];
-const tiposVeiculo = ["Automóvel", "Motocicleta", "Pesados", "Van", "Utilitário", "Ônibus"];
+const tiposVeiculo = ["Automóvel", "Motocicleta", "Pesados", "Van", "Utilitário"];
 
 const UFS = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA",
