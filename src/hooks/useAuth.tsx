@@ -34,19 +34,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   async function loadProfile(userId: string) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-    if (data) {
-      setProfile({
-        id: data.id,
-        user_id: data.user_id,
-        full_name: data.full_name,
-        role: (data.role as UserRole) || 'consultor',
-        phone: data.phone,
-      });
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      if (data) {
+        setProfile({
+          id: data.id,
+          user_id: data.user_id,
+          full_name: data.full_name,
+          role: (data.role as UserRole) || 'consultor',
+          phone: data.phone,
+        });
+      }
+    } catch (e) {
+      console.error("[useAuth] loadProfile error:", e);
     }
     setLoading(false);
   }
