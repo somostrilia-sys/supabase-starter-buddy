@@ -122,7 +122,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
   const [marca, setMarca] = useState(inferredMarca);
   const [marcaReal, setMarcaReal] = useState(inferredMarca);
   const [modeloReal, setModeloReal] = useState(deal.veiculo_modelo || "");
-  const [valorFipeReal, setValorFipeReal] = useState(deal.valor_plano || 0);
+  const [valorFipeReal, setValorFipeReal] = useState((deal as any).cache_fipe?.valorFipe || 0);
   const [codFipeReal, setCodFipeReal] = useState("");
   const [modeloIdx, setModeloIdx] = useState(0);
 
@@ -807,6 +807,10 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     }
     if (!form.tipoVeiculo) {
       toast.error("Selecione o Tipo do Veículo antes de enviar a cotação.");
+      return;
+    }
+    if (!form.anoFab) {
+      toast.error("Selecione o Ano do Veículo antes de enviar a cotação.");
       return;
     }
     if (!form.estadoCirc || !form.cidadeCirc.trim()) {
@@ -1542,7 +1546,6 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
               <>
                 <span className="text-sm font-semibold">{formatCurrency(mensalidadeTotal)}/mês</span>
                 {totalOpcionais > 0 && <span className="text-[10px] text-muted-foreground">(plano {formatCurrency(mensalVal)} + serviços {formatCurrency(totalOpcionais)})</span>}
-                <span className="text-[10px] text-muted-foreground">rastreador {formatCurrency(instVal)}</span>
                 <span className="text-xs text-muted-foreground">|</span>
                 <span className="text-sm text-muted-foreground">Adesão: <strong>{formatCurrency(adesaoVal)}</strong></span>
                 <span className="text-xs text-muted-foreground">|</span>
