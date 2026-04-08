@@ -68,12 +68,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "import-faixas-fipe") {
-      // Limpar vínculos e importar faixas_fipe
-      await sql`UPDATE veiculos SET cota_id = NULL WHERE cota_id IS NOT NULL`;
-      await sql`DELETE FROM faixas_fipe`;
-      // Dropar FK de veiculos e recriar tabela
-      await sql`ALTER TABLE veiculos DROP CONSTRAINT IF EXISTS veiculos_cota_id_fkey`;
-      await sql`ALTER TABLE veiculos DROP COLUMN IF EXISTS cota_id`;
+      // Limpar e recriar tabela
       await sql`DROP TABLE IF EXISTS faixas_fipe CASCADE`;
       await sql`
         CREATE TABLE faixas_fipe (
