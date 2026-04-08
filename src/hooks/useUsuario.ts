@@ -38,11 +38,16 @@ export interface UseUsuarioReturn {
 }
 
 export function useUsuario(): UseUsuarioReturn {
-  const { profile } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Enquanto auth/profile ainda estiver carregando, mantém loading=true
+    if (authLoading) {
+      return;
+    }
+
     if (!profile?.user_id) {
       setUsuario(null);
       setLoading(false);
@@ -65,7 +70,7 @@ export function useUsuario(): UseUsuarioReturn {
       }
       setLoading(false);
     })();
-  }, [profile?.user_id]);
+  }, [profile?.user_id, authLoading]);
 
   return useMemo(() => {
     const contexto: ContextoIA = usuario?.contexto_ia || "comercial";

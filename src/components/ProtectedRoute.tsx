@@ -14,33 +14,28 @@ export function ProtectedRoute({
   children: React.ReactNode;
   permission?: PermissionKey;
 }) {
-  const { session, profile, loading } = useAuth();
+  const { session, loading } = useAuth();
   const { loading: usuarioLoading } = useUsuario();
   const perms = usePermission();
-  const [profileTimeout, setProfileTimeout] = useState(false);
+  const [timeout, setTimeout_] = useState(false);
 
-  // Profile is still loading if session exists but profile hasn't resolved yet
-  const profileLoading = !loading && !!session && profile === null && !profileTimeout;
-  // Wait for useUsuario to finish loading before evaluating permissions
-  const permLoading = !loading && !!session && !!profile && perms.loading;
   const hasPermission = !permission || perms[permission];
 
-  // Timeout: se profile não carrega em 8s, redireciona para login
+  // Timeout: se tudo não carrega em 10s, redireciona para login
   useEffect(() => {
-    if (!loading && !!session && profile === null) {
-      const timer = setTimeout(() => setProfileTimeout(true), 8000);
-      return () => clearTimeout(timer);
-    }
-  }, [loading, session, profile]);
+    const timer = setTimeout(() => setTimeout_(true), 10000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
-    if (!loading && !profileLoading && !usuarioLoading && session && permission && !hasPermission) {
+    if (!loading && !usuarioLoading && session && permission && !hasPermission) {
       toast.error("Sem permissão");
     }
-  }, [loading, profileLoading, usuarioLoading, session, permission, hasPermission]);
+  }, [loading, usuarioLoading, session, permission, hasPermission]);
 
-  // Aguarda auth, profile E usuario carregarem antes de verificar permissões
-  if (loading || profileLoading || permLoading || (!!session && !!profile && permission && usuarioLoading)) {
+  // Aguarda auth + profile + usuario carregarem
+  if (loading || (session && (usuarioLoading || perms.loading))) {
+    if (timeout) return <Navigate to="/auth" replace />;
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -48,7 +43,7 @@ export function ProtectedRoute({
     );
   }
 
-  if (!session || profileTimeout) {
+  if (!session) {
     return <Navigate to="/auth" replace />;
   }
 

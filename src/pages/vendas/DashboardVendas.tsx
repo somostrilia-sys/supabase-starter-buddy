@@ -45,12 +45,15 @@ export default function DashboardVendas() {
   const [cooperativa, setCooperativa] = useState("Todas");
   const [scopeApplied, setScopeApplied] = useState(false);
 
-  // Apply scope once usuario loads
+  // Apply scope once usuario loads — consultor/gestor não pode alterar para fora do escopo
   if (!scopeApplied && !_uLoading && _u) {
     if (_iC && _u.nome) { setConsultor(_u.nome); setScopeApplied(true); }
     else if (_iG && !_cA && _mC.length > 0) { setCooperativa(_mC[0]); setScopeApplied(true); }
     else { setScopeApplied(true); }
   }
+  // Enforce scope — impedir consultor/gestor de trocar filtro fora do escopo
+  const canChangeConsultor = !_iC;
+  const canChangeCooperativa = !_iG || _cA;
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
 
@@ -234,7 +237,7 @@ export default function DashboardVendas() {
         </div>
         <div>
           <Label className="text-xs font-semibold">Consultor</Label>
-          <Select value={consultor} onValueChange={setConsultor}>
+          <Select value={consultor} onValueChange={setConsultor} disabled={!canChangeConsultor}>
             <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>
               {(consultoresDb || ["Todos"]).map(c => (
@@ -245,7 +248,7 @@ export default function DashboardVendas() {
         </div>
         <div>
           <Label className="text-xs font-semibold">Cooperativa</Label>
-          <Select value={cooperativa} onValueChange={setCooperativa}>
+          <Select value={cooperativa} onValueChange={setCooperativa} disabled={!canChangeCooperativa}>
             <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>
               {(coopsDb || ["Todas"]).map(c => (

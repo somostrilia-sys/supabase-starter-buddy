@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { stageColumns, stageColumnPerdido, type PipelineStage } from "./pipeline/mockData";
 import { useQuery } from "@tanstack/react-query";
-import { useUsuario } from "@/hooks/useUsuario";
+import { useLeadScope } from "@/hooks/usePermission";
 import { supabase } from "@/integrations/supabase/client";
 
 interface NegociacaoRow {
@@ -72,13 +72,7 @@ async function fetchNegociacoes(scope?: { consultor?: string; cooperativas?: str
 }
 
 export default function VendasLista() {
-  const { usuario, isConsultor, isGestor, canViewAllData, cooperativas: minhasCoops } = useUsuario();
-  const scope = useMemo(() => {
-    if (canViewAllData) return undefined;
-    if (isGestor && minhasCoops.length > 0) return { cooperativas: minhasCoops };
-    if (isConsultor && usuario?.nome) return { consultor: usuario.nome };
-    return undefined;
-  }, [canViewAllData, isConsultor, isGestor, usuario?.nome, minhasCoops]);
+  const scope = useLeadScope();
   const [fEtapa, setFEtapa] = useState("all");
   const [fConsultor, setFConsultor] = useState("all");
   const [fCoop, setFCoop] = useState("all");

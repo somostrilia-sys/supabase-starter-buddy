@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Download, Loader2, Database } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useLeadScope } from "@/hooks/usePermission";
 import { toast } from "sonner";
 
 const campos = [
@@ -26,14 +27,18 @@ const campos = [
 ];
 
 export default function BancoDadosTab() {
+  const scope = useLeadScope();
   const [selected, setSelected] = useState<string[]>(["lead_nome", "telefone", "email", "stage", "consultor"]);
 
   const { data: preview = [], isLoading } = useQuery({
-    queryKey: ["banco-dados-preview"],
+    queryKey: ["banco-dados-preview", scope?.consultor, scope?.cooperativas?.join(",")],
     queryFn: async () => {
-      const { data } = await (supabase as any).from("negociacoes")
+      let q = (supabase as any).from("negociacoes")
         .select(campos.map(c => c.key).join(","))
         .order("created_at", { ascending: false }).limit(10);
+      if (scope?.consultor) q = q.eq("consultor", scope.consultor);
+      if (scope?.cooperativas && scope.cooperativas.length > 0) q = q.in("cooperativa", scope.cooperativas);
+      const { data } = await q;
       return data || [];
     },
   });
@@ -45,8 +50,11 @@ export default function BancoDadosTab() {
   async function exportCSV() {
     if (selected.length === 0) { toast.error("Selecione pelo menos 1 campo"); return; }
     toast.info("Exportando...");
-    const { data } = await (supabase as any).from("negociacoes")
+    let q = (supabase as any).from("negociacoes")
       .select(selected.join(",")).order("created_at", { ascending: false });
+    if (scope?.consultor) q = q.eq("consultor", scope.consultor);
+    if (scope?.cooperativas && scope.cooperativas.length > 0) q = q.in("cooperativa", scope.cooperativas);
+    const { data } = await q;
     if (!data || data.length === 0) { toast.error("Nenhum dado"); return; }
     const headers = selected.map(k => campos.find(c => c.key === k)?.label || k);
     const rows = data.map((r: any) => selected.map(k => String(r[k] ?? "").replace(/[,\n]/g, " ")));

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useUsuario } from "@/hooks/useUsuario";
+import { useLeadScope } from "@/hooks/usePermission";
 
 interface ContatoRow {
   id: string;
@@ -47,7 +47,7 @@ async function fetchContatos(scope?: { consultor?: string; cooperativas?: string
 }
 
 export default function Contatos() {
-  const { usuario, isConsultor, isGestor, canViewAllData, cooperativas: minhasCoops } = useUsuario();
+  const scope = useLeadScope();
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("todos");
   const [page, setPage] = useState(0);
@@ -56,13 +56,6 @@ export default function Contatos() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterConsultor, setFilterConsultor] = useState("all");
   const [filterCooperativa, setFilterCooperativa] = useState("all");
-
-  const scope = useMemo(() => {
-    if (canViewAllData) return undefined;
-    if (isGestor && minhasCoops.length > 0) return { cooperativas: minhasCoops };
-    if (isConsultor && usuario?.nome) return { consultor: usuario.nome };
-    return undefined;
-  }, [canViewAllData, isConsultor, isGestor, usuario?.nome, minhasCoops]);
 
   const { data: contatos = [], isLoading } = useQuery({
     queryKey: ["contatos-negociacoes", scope?.consultor, scope?.cooperativas?.join(",")],

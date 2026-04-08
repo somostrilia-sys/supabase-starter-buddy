@@ -31,9 +31,11 @@ export default function RelatoriosVendas() {
   const [fCoop, setFCoop] = useState("all");
   const [fConsultor, setFConsultor] = useState("all");
 
-  // Auto-scope for consultores
+  // Auto-scope: consultor sempre vê só os dele, gestor só da cooperativa
   const scopedConsultor = isConsultor && usuario?.nome ? usuario.nome : fConsultor;
-  const scopedCoop = isGestor && !canViewAllData && fCoop === "all" && minhasCoops.length > 0 ? minhasCoops[0] : fCoop;
+  const scopedCoop = isGestor && !canViewAllData
+    ? (fCoop === "all" && minhasCoops.length > 0 ? minhasCoops[0] : (minhasCoops.includes(fCoop) ? fCoop : minhasCoops[0] || "all"))
+    : fCoop;
   const [fDateStart, setFDateStart] = useState<Date | undefined>();
   const [fDateEnd, setFDateEnd] = useState<Date | undefined>();
   const [showFilters, setShowFilters] = useState(false);

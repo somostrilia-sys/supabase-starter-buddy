@@ -28,6 +28,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase, callEdge } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePermission, useLeadScope } from "@/hooks/usePermission";
+import { useUsuario } from "@/hooks/useUsuario";
 import ConcretizarVendaModal from "./ConcretizarVendaModal";
 import { useNegociacoes } from "@/hooks/useNegociacoes";
 
@@ -51,24 +52,10 @@ function StalledBadge({ days }: { days: number }) {
 type SortKey = "id" | "lead_nome" | "veiculo_modelo" | "plano" | "stage" | "consultor" | "cooperativa" | "regional" | "created_at" | "updated_at";
 
 export default function Pipeline() {
-  const { canLiberarCadastro, canConcretizarVenda, role, profile, isAdmin: isAdminHook } = usePermission();
-  const leadScope = useLeadScope();
+  const { canLiberarCadastro, canConcretizarVenda, role, profile, isAdmin } = usePermission();
+  const dataScope = useLeadScope();
   const queryClient = useQueryClient();
-  const { data: usuarioLogado } = useQuery({
-    queryKey: ["usuario_logado", profile?.id],
-    enabled: !!profile?.id,
-    queryFn: async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user?.user?.email) return null;
-      const { data } = await supabase.from("usuarios").select("nome, cooperativa, regional, funcao, grupo_permissao")
-        .eq("email", user.user.email).limit(1).maybeSingle();
-      return data as any;
-    },
-  });
-
-  // Cooperativas do usuário: split por vírgula (alguns têm múltiplas)
-  const minhasCooperativas = (usuarioLogado?.cooperativa || "").split(",").map((c: string) => c.trim()).filter(Boolean);
-  const isAdmin = isAdminHook;
+  const { usuario: usuarioLogado, cooperativas: minhasCooperativas } = useUsuario();
   const [concretizarDeal, setConcretizarDeal] = useState<PipelineDeal | null>(null);
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [newDealOpen, setNewDealOpen] = useState(false);
@@ -111,8 +98,8 @@ export default function Pipeline() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
 
-  // Hook de negociações (Supabase real)
-  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "30d");
+  // Hook de negociações (Supabase real) — filtrado por scope do usuário
+  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "30d", dataScope);
 
   // Dados reais de cooperativas com regional vinculada
   const { data: cooperativasDb } = useQuery({

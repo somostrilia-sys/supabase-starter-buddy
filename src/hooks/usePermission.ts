@@ -46,12 +46,13 @@ export function usePermission() {
   };
 }
 
-// CONSULTOR: só vê seus leads (usuario_id = user.id)
-// GESTOR: vê todos da sua unidade (unidade_id = user.unidade_id)
+// CONSULTOR: só vê seus leads (consultor = nome do usuario)
+// GESTOR: vê todos da sua cooperativa (cooperativa IN cooperativas do usuario)
 // ADMIN/DIRETOR: vê todos
-export function useLeadScope() {
-  const { role, profile } = usePermission();
-  if (role === 'consultor') return { usuario_id: (profile as any)?.id };
-  if (role === 'gestor') return { unidade_id: (profile as any)?.unidade_id };
-  return {} as Record<string, string | undefined>;
+export function useLeadScope(): { consultor?: string; cooperativas?: string[] } | undefined {
+  const { usuario, isConsultor, isGestor, canViewAllData, cooperativas } = useUsuario();
+  if (canViewAllData) return undefined;
+  if (isGestor && cooperativas.length > 0) return { cooperativas };
+  if (isConsultor && usuario?.nome) return { consultor: usuario.nome };
+  return undefined;
 }
