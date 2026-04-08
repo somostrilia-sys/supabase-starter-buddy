@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Search, Filter, Download, Plus, ChevronLeft, ChevronRight, Phone, Mail,
   MapPin, Car, CreditCard, User, MessageSquare, ExternalLink, Shield,
@@ -47,57 +49,11 @@ interface Associado {
   veiculos: number; inadimplente: boolean;
 }
 
-function gerarCPF(i: number) {
-  const n = String(11122233344 + i * 11111111).slice(0, 11);
-  return `${n.slice(0,3)}.${n.slice(3,6)}.${n.slice(6,9)}-${n.slice(9,11)}`;
-}
-
-const nomes = [
-  "Carlos Alberto Silva","Maria de Fátima Souza","José Roberto Santos","Ana Paula Oliveira","Francisco das Chagas Lima",
-  "Antônia Maria Ferreira","João Batista Costa","Rita de Cássia Pereira","Pedro Henrique Almeida","Lúcia Helena Ribeiro",
-  "Paulo César Cardoso","Sandra Regina Martins","Marcos Aurélio Dias","Rosângela Aparecida Nunes","Sebastião Carlos Barbosa",
-  "Teresa Cristina Gomes","Raimundo Nonato Araújo","Cláudia Maria Teixeira","Antônio Carlos Monteiro","Márcia Regina Castro",
-  "Luiz Fernando Correia","Sônia Maria Pinto","Fernando José Nascimento","Aparecida de Lourdes Mendes","Manoel Messias Rocha",
-  "Eliane Cristina Moreira","Roberto Carlos Vieira","Adriana Silva Campos","Wellington da Silva Borges","Patrícia Andrade Lopes",
-];
-
-const cidades = [
-  ["São Paulo","SP"],["Rio de Janeiro","RJ"],["Belo Horizonte","MG"],["Campinas","SP"],["Guarulhos","SP"],
-  ["Niterói","RJ"],["Uberlândia","MG"],["Santos","SP"],["São Bernardo","SP"],["Juiz de Fora","MG"],
-  ["Osasco","SP"],["Volta Redonda","RJ"],["Ribeirão Preto","SP"],["Petrópolis","RJ"],["Contagem","MG"],
-  ["Sorocaba","SP"],["Duque de Caxias","RJ"],["Uberaba","MG"],["Jundiaí","SP"],["Nova Iguaçu","RJ"],
-  ["Bauru","SP"],["Campos","RJ"],["Betim","MG"],["Piracicaba","SP"],["Macaé","RJ"],
-  ["Franca","SP"],["Angra dos Reis","RJ"],["Governador Valadares","MG"],["Limeira","SP"],["Resende","RJ"],
-];
-
 const now = Date.now();
 const day = 86400000;
 
-const mockAssociados: Associado[] = nomes.map((nome, i) => ({
-  id: `a${i}`, codigo: `ASS-${String(1000 + i).padStart(5, "0")}`, nome, cpf: gerarCPF(i),
-  rg: `${30 + i}.${100+i}.${200+i}-${i}`, nascimento: `${1965 + (i % 35)}-${String((i%12)+1).padStart(2,"0")}-${String((i%28)+1).padStart(2,"0")}`,
-  sexo: i % 3 === 0 ? "Feminino" : "Masculino", estadoCivil: ["Solteiro","Casado","Divorciado","Viúvo"][i%4],
-  telefone: `(${11 + (i%21)}) 9${String(8000+i*37).slice(0,4)}-${String(1000+i*53).slice(0,4)}`,
-  email: nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").split(" ").slice(0,2).join(".") + "@email.com",
-  cidade: cidades[i][0], estado: cidades[i][1], cep: `${String(1000+i*10).slice(0,5)}-${String(100+i).slice(0,3)}`,
-  endereco: `Rua ${["das Flores","dos Pinheiros","São José","XV de Novembro","Santos Dumont"][i%5]}, ${100+i*3}`,
-  bairro: ["Centro","Jardim América","Vila Nova","Boa Vista","Santa Cruz"][i%5],
-  plano: planos[i % 4], status: i < 20 ? "ativo" : i < 24 ? "inativo" : i < 27 ? "suspenso" : "cancelado",
-  dataAdesao: new Date(now - (i * 30 + 10) * day).toISOString().slice(0, 10),
-  diaVencimento: [5, 10, 15, 20, 25][i % 5], veiculos: (i % 3) + 1,
-  inadimplente: i % 7 === 0,
-}));
-
-const pagamentos = [
-  { ref: "Mar/2026", valor: 139.90, status: "pago", data: "05/03/2026" },
-  { ref: "Fev/2026", valor: 139.90, status: "pago", data: "05/02/2026" },
-  { ref: "Jan/2026", valor: 139.90, status: "pago", data: "07/01/2026" },
-  { ref: "Dez/2025", valor: 139.90, status: "atrasado", data: "—" },
-  { ref: "Nov/2025", valor: 139.90, status: "pago", data: "05/11/2025" },
-  { ref: "Out/2025", valor: 139.90, status: "pago", data: "06/10/2025" },
-];
-
 export default function Associados() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("todos");
   const [page, setPage] = useState(0);
@@ -106,6 +62,40 @@ export default function Associados() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [step, setStep] = useState(1);
+  const [associados, setAssociados] = useState<Associado[]>([]);
+  const [dbLoading, setDbLoading] = useState(true);
+  const [veiculosDoAssociado, setVeiculosDoAssociado] = useState<{placa: string; modelo: string; marca: string; status: string}[]>([]);
+
+  // Carregar associados do banco
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("associados").select("*, veiculos(id, placa, modelo, marca, status)").order("nome").limit(500);
+      const mapped: Associado[] = (data || []).map((a: any) => ({
+        id: a.id, codigo: a.codigo || a.id.slice(0, 8).toUpperCase(),
+        nome: a.nome || "—", cpf: a.cpf || "", rg: a.rg || "",
+        nascimento: a.data_nascimento || "", sexo: a.sexo || "", estadoCivil: a.estado_civil || "",
+        telefone: a.telefone || "", email: a.email || "",
+        cidade: a.cidade || "", estado: a.uf || "", cep: a.cep || "",
+        endereco: a.endereco || "", bairro: a.bairro || "",
+        plano: a.plano || "—", status: (a.status || "ativo").toLowerCase(),
+        dataAdesao: a.data_adesao || a.created_at?.split("T")[0] || "",
+        diaVencimento: a.dia_vencimento || 10,
+        veiculos: a.veiculos?.length || 0,
+        inadimplente: a.inadimplente || false,
+      }));
+      setAssociados(mapped);
+      setDbLoading(false);
+    })();
+  }, []);
+
+  // Carregar veículos ao selecionar um associado
+  useEffect(() => {
+    if (!selected) { setVeiculosDoAssociado([]); return; }
+    (async () => {
+      const { data } = await supabase.from("veiculos").select("placa, modelo, marca, status").eq("associado_id", selected.id);
+      setVeiculosDoAssociado((data || []).map((v: any) => ({ placa: v.placa || "", modelo: v.modelo || "", marca: v.marca || "", status: v.status || "Ativo" })));
+    })();
+  }, [selected?.id]);
 
   // SGA search state
   const [sgaOpen, setSgaOpen] = useState(false);
@@ -145,7 +135,7 @@ export default function Associados() {
   }
 
   const filtered = useMemo(() => {
-    let list = mockAssociados;
+    let list = associados;
     if (search) {
       const s = search.toLowerCase();
       list = list.filter(c => c.nome.toLowerCase().includes(s) || c.cpf.includes(s) || c.codigo.toLowerCase().includes(s));
@@ -167,7 +157,7 @@ export default function Associados() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Associados</h1>
-          <p className="text-sm text-muted-foreground">{filtered.length} associados · {mockAssociados.filter(a=>a.status==="ativo").length} ativos</p>
+          <p className="text-sm text-muted-foreground">{filtered.length} associados · {associados.filter(a=>a.status==="ativo").length} ativos</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1" /> CSV</Button>
@@ -356,7 +346,7 @@ export default function Associados() {
 
       <Tabs value={tab} onValueChange={v => { setTab(v); setPage(0); }}>
         <TabsList>
-          <TabsTrigger value="todos" className="text-xs">Todos ({mockAssociados.length})</TabsTrigger>
+          <TabsTrigger value="todos" className="text-xs">Todos ({associados.length})</TabsTrigger>
           <TabsTrigger value="ativos" className="text-xs">Ativos</TabsTrigger>
           <TabsTrigger value="inativos" className="text-xs">Inativos</TabsTrigger>
           <TabsTrigger value="inadimplentes" className="text-xs">Inadimplentes</TabsTrigger>
@@ -504,29 +494,25 @@ export default function Associados() {
               </div>
               <Separator />
               <div>
-                <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Car className="h-3 w-3" /> Veículos ({selected.veiculos})</p>
-                {Array.from({length: selected.veiculos}).map((_,i) => (
+                <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Car className="h-3 w-3" /> Veículos ({veiculosDoAssociado.length})</p>
+                {veiculosDoAssociado.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Nenhum veículo vinculado.</p>
+                ) : veiculosDoAssociado.map((v, i) => (
                   <div key={i} className="flex items-center justify-between p-2 rounded-lg border border-border/40 bg-card text-xs mb-1.5">
                     <div>
-                      <p className="font-medium">{["Honda Civic 2024","VW Gol 2022","Fiat Argo 2023"][i%3]}</p>
-                      <Badge variant="secondary" className="text-[8px] font-mono mt-0.5">{["ABC1D23","XYZ9K88","JKL4M56"][i%3]}</Badge>
+                      <p className="font-medium">{v.marca} {v.modelo}</p>
+                      <Badge variant="secondary" className="text-[8px] font-mono mt-0.5">{v.placa}</Badge>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-7 text-[10px]"><ExternalLink className="h-3 w-3" /></Button>
+                    <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={() => navigate(`/gestao/veiculos?placa=${v.placa}`)}><ExternalLink className="h-3 w-3" /></Button>
                   </div>
                 ))}
               </div>
               <Separator />
               <div>
-                <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-2 flex items-center gap-1"><CreditCard className="h-3 w-3" /> Últimos Pagamentos</p>
-                <div className="space-y-1">
-                  {pagamentos.map((p, i) => (
-                    <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded">
-                      <span>{p.ref}</span>
-                      <span className="font-mono">R$ {p.valor.toFixed(2)}</span>
-                      <Badge className={`text-[8px] border-0 ${p.status === "pago" ? "bg-emerald-500/15 text-emerald-400" : "bg-destructive/15 text-destructive"}`}>{p.status}</Badge>
-                      <span className="text-muted-foreground">{p.data}</span>
-                    </div>
-                  ))}
+                <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-2 flex items-center gap-1"><CreditCard className="h-3 w-3" /> Informações</p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div><span className="text-muted-foreground">Veículos:</span> {veiculosDoAssociado.length}</div>
+                  <div><span className="text-muted-foreground">Status:</span> <Badge className={`text-[8px] ${statusMap[selected.status]?.class || ""}`}>{statusMap[selected.status]?.label || selected.status}</Badge></div>
                 </div>
               </div>
             </div>

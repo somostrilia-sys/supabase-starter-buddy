@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase, callEdge } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import PosVendaSection from "./PosVendaSection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +63,7 @@ export default function ConsultarVeiculo() {
   const [results, setResults] = useState<Veiculo[]>([]);
   const [searched, setSearched] = useState(false);
   const [selected, setSelected] = useState<Veiculo | null>(null);
+  const { user } = useAuth();
   const [perPage, setPerPage] = useState(10);
   const [page, setPage] = useState(1);
   const [condutorModal, setCondutorModal] = useState(false);
@@ -152,8 +156,14 @@ export default function ConsultarVeiculo() {
       const { data: todosProdutos } = await produtosQuery;
 
       let produtosRegional = todosProdutos || [];
-      if (regionalId) {
-        const { data: regras } = await (supabase as any).from("produto_regras").select("produto_id").eq("regional_id", regionalId);
+      // Tentar buscar regional_id pelo nome da regional do veículo se não encontrou via associado
+      let regId = regionalId;
+      if (!regId && veiculo.regional) {
+        const { data: regMatch } = await supabase.from("regionais").select("id").ilike("nome", `%${veiculo.regional}%`).limit(1).maybeSingle();
+        if (regMatch) regId = regMatch.id;
+      }
+      if (regId) {
+        const { data: regras } = await (supabase as any).from("produto_regras").select("produto_id").eq("regional_id", regId);
         if (regras && regras.length > 0) {
           const idsPermitidos = new Set(regras.map((r: any) => r.produto_id));
           produtosRegional = produtosRegional.filter((p: any) => idsPermitidos.has(p.id));
@@ -263,7 +273,8 @@ export default function ConsultarVeiculo() {
         .from("contratos")
         .select("*, planos(nome)")
         .eq("veiculo_id", v.id)
-        .eq("status", "ativo")
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle(),
       supabase
         .from("cotacoes")
@@ -463,6 +474,16 @@ export default function ConsultarVeiculo() {
               <div><Label className="text-xs">Cota</Label><Input defaultValue={sel.cota} /></div>
               <div><Label className="text-xs">Regional</Label><Input defaultValue={sel.regional} /></div>
               <div><Label className="text-xs">Cooperativa</Label><Input defaultValue={sel.cooperativa} /></div>
+              <div><Label className="text-xs">Status Veículo</Label>
+                <Select defaultValue={sel.sitVeiculo} onValueChange={async (v) => {
+                  const { error } = await supabase.from("veiculos").update({ status: v } as any).eq("id", sel.id);
+                  if (error) toast.error("Erro: " + error.message);
+                  else { toast.success("Status atualizado!"); setSelected(prev => prev ? { ...prev, sitVeiculo: v } : prev); }
+                }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{["Ativo","Inativo","Pendente","Inadimplente","Negado"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
               <div><Label className="text-xs">Tipo Adesão</Label><Input defaultValue={sel.tipoAdesao} /></div>
               <div><Label className="text-xs">Dia Vencimento</Label><Input defaultValue={String(sel.diaVenc)} /></div>
               <div><Label className="text-xs">Data Reativação</Label><Input type="date" /></div>
@@ -638,18 +659,37 @@ export default function ConsultarVeiculo() {
           <div className="flex justify-end"><Button size="sm" className="gap-1.5" onClick={() => setCondutorModal(true)}><Plus className="h-3.5 w-3.5" />Adicionar Condutor</Button></div>
           <Card><CardContent className="p-0">
             <Table>
-              <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>CPF</TableHead><TableHead>CNH</TableHead><TableHead>Data Nasc</TableHead><TableHead>Idade</TableHead><TableHead>Situação</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>CPF</TableHead><TableHead>CNH</TableHead><TableHead>Data Nasc</TableHead><TableHead>Idade</TableHead><TableHead>Situação</TableHead><TableHead>Ações</TableHead></TableRow></TableHeader>
               <TableBody>
-                {sel.condutores.map((c, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="text-sm font-medium">{c.nome}</TableCell>
-                    <TableCell className="text-sm">{c.cpf}</TableCell>
-                    <TableCell className="text-sm">{c.cnh}</TableCell>
-                    <TableCell className="text-sm">{new Date(c.dataNasc).toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell className="text-sm">{calcIdade(c.dataNasc)} anos</TableCell>
-                    <TableCell><StatusBadge status={c.situacao} /></TableCell>
-                  </TableRow>
-                ))}
+                {sel.condutores.map((c, i) => {
+                  const dataValida = c.dataNasc && !isNaN(new Date(c.dataNasc).getTime());
+                  return (
+                    <TableRow key={i}>
+                      <TableCell className="text-sm font-medium">{c.nome}</TableCell>
+                      <TableCell className="text-sm">{c.cpf}</TableCell>
+                      <TableCell className="text-sm">{c.cnh}</TableCell>
+                      <TableCell className="text-sm">{dataValida ? new Date(c.dataNasc).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                      <TableCell className="text-sm">{dataValida ? calcIdade(c.dataNasc) + " anos" : "—"}</TableCell>
+                      <TableCell>
+                        <Select defaultValue={c.situacao || "Ativo"} onValueChange={async (v) => {
+                          const condutoresDb = await (supabase as any).from("condutores").select("id").eq("veiculo_id", sel.id).eq("nome", c.nome).eq("cpf", c.cpf).limit(1).maybeSingle();
+                          if (condutoresDb?.data?.id) {
+                            const { error } = await (supabase as any).from("condutores").update({ situacao: v }).eq("id", condutoresDb.data.id);
+                            if (error) toast.error("Erro: " + error.message);
+                            else {
+                              toast.success("Situação atualizada!");
+                              setSelected(prev => prev ? { ...prev, condutores: prev.condutores.map((cc, ci) => ci === i ? { ...cc, situacao: v } : cc) } : prev);
+                            }
+                          }
+                        }}>
+                          <SelectTrigger className="h-7 text-xs w-28"><SelectValue /></SelectTrigger>
+                          <SelectContent>{["Ativo","Pendente","Inativo","Removido"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell><Button variant="ghost" size="icon" className="h-7 w-7"><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent></Card>
@@ -669,11 +709,10 @@ export default function ConsultarVeiculo() {
                 const cnh = inputs[2]?.value || "";
                 const dataNasc = inputs[3]?.value || "";
                 if (!nome.trim()) { toast.error("Nome é obrigatório"); return; }
-                const { error } = await (supabase as any).from("condutores").insert({ veiculo_id: sel.id, nome, cpf, cnh, data_nascimento: dataNasc || null });
+                const { error } = await (supabase as any).from("condutores").insert({ veiculo_id: sel.id, nome, cpf, cnh, data_nascimento: dataNasc || null, situacao: "Ativo" });
                 if (error) { toast.error("Erro: " + error.message); return; }
                 toast.success("Condutor salvo no banco!");
                 setCondutorModal(false);
-                // Atualizar lista
                 setSelected(prev => prev ? { ...prev, condutores: [...prev.condutores, { nome, cpf, cnh, dataNasc, situacao: "Ativo" }] } : prev);
               }}>Salvar</Button></DialogFooter>
             </DialogContent>
@@ -800,10 +839,11 @@ export default function ConsultarVeiculo() {
               <Textarea value={newObs} onChange={e => setNewObs(e.target.value)} placeholder="Nova observação..." rows={2} className="flex-1" />
               <Button className="self-end" onClick={async () => {
                 if (!newObs.trim()) return;
-                const { error } = await (supabase as any).from("observacoes_veiculo").insert({ veiculo_id: sel.id, texto: newObs.trim(), usuario_nome: "Gestor" });
+                const emailUsuario = user?.email || "Gestor";
+                const { error } = await (supabase as any).from("observacoes_veiculo").insert({ veiculo_id: sel.id, texto: newObs.trim(), usuario_nome: emailUsuario });
                 if (error) { toast.error("Erro: " + error.message); return; }
                 toast.success("Observação salva no banco!");
-                setSelected(prev => prev ? { ...prev, observacoes: [{ data: new Date().toLocaleDateString("pt-BR"), descricao: newObs.trim(), usuario: "Gestor" }, ...prev.observacoes] } : prev);
+                setSelected(prev => prev ? { ...prev, observacoes: [{ data: new Date().toLocaleDateString("pt-BR"), descricao: newObs.trim(), usuario: emailUsuario }, ...prev.observacoes] } : prev);
                 setNewObs("");
               }}>Salvar</Button>
             </div>
@@ -852,23 +892,7 @@ export default function ConsultarVeiculo() {
 
         {/* TAB 9 - CONTRATOS */}
         <TabsContent value="contratos" className="mt-4">
-          <Card><CardContent className="p-0">
-            <Table>
-              <TableHeader><TableRow><TableHead>Contrato</TableHead><TableHead>Termo</TableHead><TableHead>Status</TableHead><TableHead>IP</TableHead><TableHead>Data/Hora Envio</TableHead><TableHead>Arquivo</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {sel.contratos.map((c, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-mono text-xs">{c.contrato}</TableCell>
-                    <TableCell className="text-sm">{c.termo}</TableCell>
-                    <TableCell><StatusBadge status={c.status} /></TableCell>
-                    <TableCell className="text-xs font-mono">{c.ip || "-"}</TableCell>
-                    <TableCell className="text-xs">{c.dataHoraEnvio || "-"}</TableCell>
-                    <TableCell>{c.arquivo ? <Button variant="ghost" size="sm" className="h-7 text-xs gap-1"><Download className="h-3 w-3" />{c.arquivo}</Button> : "-"}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent></Card>
+          <ContratosTabReal veiculoId={sel.id} />
         </TabsContent>
 
         {/* TAB PÓS-VENDA (VEI-001) */}
@@ -977,61 +1001,99 @@ function VeiculoProdutosTab({ veiculoId }: { veiculoId: string }) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// ContratosTabReal — carrega contratos do banco
+// ═══════════════════════════════════════════════════════════
+function ContratosTabReal({ veiculoId }: { veiculoId: string }) {
+  const [contratos, setContratos] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("contratos").select("*, planos(nome)").eq("veiculo_id", veiculoId).order("created_at", { ascending: false });
+      setContratos(data || []);
+      setIsLoading(false);
+    })();
+  }, [veiculoId]);
+
+  if (isLoading) return <Card><CardContent className="p-12 text-center text-sm text-muted-foreground">Carregando contratos...</CardContent></Card>;
+
+  if (contratos.length === 0) {
+    return <Card><CardContent className="p-12 text-center text-sm text-muted-foreground">Nenhum contrato encontrado para este veículo.</CardContent></Card>;
+  }
+
+  return (
+    <Card><CardContent className="p-0">
+      <Table>
+        <TableHeader><TableRow><TableHead>Plano</TableHead><TableHead>Valor Mensal</TableHead><TableHead>Status</TableHead><TableHead>Data Início</TableHead><TableHead>Data Fim</TableHead></TableRow></TableHeader>
+        <TableBody>
+          {contratos.map((c: any) => (
+            <TableRow key={c.id}>
+              <TableCell className="text-sm font-medium">{c.planos?.nome || c.plano_id || "—"}</TableCell>
+              <TableCell className="text-sm font-mono">R$ {c.valor_mensal ? Number(c.valor_mensal).toFixed(2).replace(".", ",") : "—"}</TableCell>
+              <TableCell><StatusBadge status={c.status || "—"} /></TableCell>
+              <TableCell className="text-xs">{c.data_inicio ? new Date(c.data_inicio).toLocaleDateString("pt-BR") : "—"}</TableCell>
+              <TableCell className="text-xs">{c.data_fim ? new Date(c.data_fim).toLocaleDateString("pt-BR") : "—"}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </CardContent></Card>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
 // VistoriaTabReal — vistorias do veículo a partir de negociacoes/vistoria_fotos
 // ═══════════════════════════════════════════════════════════
 function VistoriaTabReal({ placa, veiculoId }: { placa?: string; veiculoId?: string }) {
-  const { data: vistorias = [], isLoading } = useQuery({
-    queryKey: ["veiculo-vistorias", placa, veiculoId],
-    enabled: !!placa || !!veiculoId,
-    queryFn: async () => {
-      // Busca negociações por placa do veículo (vistoria de venda)
-      if (!placa) return [];
-      const { data: negs } = await (supabase as any)
-        .from("negociacoes")
-        .select("id, lead_nome, veiculo_modelo, veiculo_placa, created_at, stage, vistoria_aprovada, vistoria_observacoes")
-        .ilike("veiculo_placa", placa.toUpperCase());
+  const [vistorias, setVistorias] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-      const resultado: any[] = [];
-      for (const n of (negs || [])) {
-        const { data: fotos } = await (supabase as any)
-          .from("vistoria_fotos")
-          .select("id, tipo, url, created_at, status")
-          .eq("negociacao_id", n.id);
-        resultado.push({
-          id: n.id,
-          data: n.created_at,
-          tipo: "Vistoria de Venda",
-          cliente: n.lead_nome,
-          veiculo: n.veiculo_modelo,
-          aprovada: n.vistoria_aprovada,
-          observacoes: n.vistoria_observacoes,
-          fotos: fotos || [],
-          origem: "negociacao",
-        });
-      }
-      // Também buscar vistorias diretas do módulo de gestão
-      if (veiculoId) {
-        const { data: vistoriasGestao } = await (supabase as any)
-          .from("vistorias")
-          .select("id, status, data_vistoria, tipo, observacoes, created_at, vistoria_fotos(id, tipo, url, created_at, status)")
-          .eq("veiculo_id", veiculoId);
-        for (const vg of (vistoriasGestao || [])) {
-          resultado.push({
-            id: vg.id,
-            data: vg.data_vistoria || vg.created_at,
-            tipo: vg.tipo || "Vistoria de Gestão",
-            cliente: "-",
-            veiculo: placa || "",
-            aprovada: vg.status === "aprovada",
-            observacoes: vg.observacoes,
-            fotos: vg.vistoria_fotos || [],
-            origem: "gestao",
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const resultado: any[] = [];
+        // Busca negociações por placa
+        if (placa) {
+          const { data: negs } = await (supabase as any)
+            .from("negociacoes")
+            .select("id, lead_nome, veiculo_modelo, veiculo_placa, created_at, stage, vistoria_aprovada, vistoria_observacoes")
+            .ilike("veiculo_placa", placa.toUpperCase());
+          if (negs && negs.length > 0) {
+            // Batch query fotos
+            const negIds = negs.map((n: any) => n.id);
+            const { data: allFotos } = await (supabase as any)
+              .from("vistoria_fotos")
+              .select("id, tipo, url, created_at, status, negociacao_id")
+              .in("negociacao_id", negIds);
+            const fotosByNeg: Record<string, any[]> = {};
+            (allFotos || []).forEach((f: any) => { if (!fotosByNeg[f.negociacao_id]) fotosByNeg[f.negociacao_id] = []; fotosByNeg[f.negociacao_id].push(f); });
+            negs.forEach((n: any) => {
+              resultado.push({ id: n.id, data: n.created_at, tipo: "Vistoria de Venda", cliente: n.lead_nome, veiculo: n.veiculo_modelo, aprovada: n.vistoria_aprovada, observacoes: n.vistoria_observacoes, fotos: fotosByNeg[n.id] || [], origem: "negociacao" });
+            });
+          }
+        }
+        // Vistorias de gestão
+        if (veiculoId) {
+          const { data: vistoriasGestao } = await (supabase as any)
+            .from("vistorias")
+            .select("id, status, data_vistoria, tipo, observacoes, created_at, vistoria_fotos(id, tipo, url, created_at, status)")
+            .eq("veiculo_id", veiculoId);
+          (vistoriasGestao || []).forEach((vg: any) => {
+            resultado.push({ id: vg.id, data: vg.data_vistoria || vg.created_at, tipo: vg.tipo || "Vistoria de Gestão", cliente: "-", veiculo: placa || "", aprovada: vg.status === "aprovada", observacoes: vg.observacoes, fotos: vg.vistoria_fotos || [], origem: "gestao" });
           });
         }
+        if (!cancelled) {
+          setVistorias(resultado.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()));
+        }
+      } catch (err: any) {
+        console.error("Erro vistorias:", err);
+        if (!cancelled) setVistorias([]);
       }
-      return resultado.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
-    },
-  });
+      if (!cancelled) setIsLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [placa, veiculoId]);
 
   if (isLoading) {
     return <Card><CardContent className="p-12 text-center text-sm text-muted-foreground">Carregando vistorias...</CardContent></Card>;
@@ -1042,7 +1104,6 @@ function VistoriaTabReal({ placa, veiculoId }: { placa?: string; veiculoId?: str
       <Card><CardContent className="p-12 text-center">
         <ClipboardCheck className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
         <p className="text-sm text-muted-foreground">Nenhuma vistoria encontrada para este veículo.</p>
-        <p className="text-xs text-muted-foreground mt-1">Vistorias são criadas no módulo de Vendas durante o processo de cotação.</p>
       </CardContent></Card>
     );
   }
