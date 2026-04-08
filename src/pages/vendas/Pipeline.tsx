@@ -241,6 +241,25 @@ export default function Pipeline() {
     mutationFn: async (data: typeof form) => {
       // Criar na tabela negociacoes (nova)
       if (!data.tipoVeiculo) throw new Error("Selecione o Tipo do Veículo");
+      // Verificar placa duplicada em negociações ativas
+      const placaNorm = (data.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (placaNorm.length >= 7) {
+        const { data: existente } = await (supabase as any)
+          .from("negociacoes")
+          .select("id, consultor, lead_nome, stage")
+          .eq("veiculo_placa", placaNorm)
+          .not("stage", "in", "(concluido,perdido)")
+          .limit(1)
+          .maybeSingle();
+        if (existente) {
+          const mesmoConsultor = existente.consultor === (data.consultor || usuarioLogado?.nome);
+          if (mesmoConsultor) {
+            throw new Error(`Você já tem uma negociação ativa com essa placa (${existente.lead_nome})`);
+          } else {
+            throw new Error(`Essa placa já está em negociação com ${existente.consultor} (${existente.lead_nome})`);
+          }
+        }
+      }
       const { error: negError } = await createNegociacao({
         lead_nome: data.lead_nome,
         telefone: data.telefone,
