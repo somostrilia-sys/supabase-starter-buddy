@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase, callEdge } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import PosVendaSection from "./PosVendaSection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,11 +59,13 @@ const finBadge = (s: string) => {
 };
 
 export default function ConsultarVeiculo() {
+  const [searchParams] = useSearchParams();
   const [filters, setFilters] = useState({ placa: "", chassi: "", idExterno: "", proprietario: "", idVeiculo: "", sitVeiculo: "Todos", sitAssociado: "Todos", cooperativa: "Todos", regional: "Todos" });
   const [results, setResults] = useState<Veiculo[]>([]);
   const [searched, setSearched] = useState(false);
   const [selected, setSelected] = useState<Veiculo | null>(null);
   const { user } = useAuth();
+  const [autoTab, setAutoTab] = useState<string | null>(null);
   const [perPage, setPerPage] = useState(10);
   const [page, setPage] = useState(1);
   const [condutorModal, setCondutorModal] = useState(false);
@@ -91,6 +93,48 @@ export default function ConsultarVeiculo() {
       if (data) setRegionaisList(data as any);
     });
   }, []);
+
+  // Auto-buscar por placa via query params (atalho do Associado)
+  useEffect(() => {
+    const placaParam = searchParams.get("placa");
+    const tabParam = searchParams.get("tab");
+    if (placaParam && !searched) {
+      setFilters(prev => ({ ...prev, placa: placaParam }));
+      if (tabParam) setAutoTab(tabParam);
+      setTimeout(() => {
+        (async () => {
+          setLoading(true);
+          const { data } = await supabase.from("veiculos").select("*, associados(nome, cpf, status, telefone, email, regional_id, cooperativa_id, regionais(nome), cooperativas(nome))").ilike("placa", `%${placaParam.replace("-","")}%`).limit(10);
+          const [condutoresRes, obsRes] = await Promise.all([
+            (data ?? []).length > 0 ? (supabase as any).from("condutores").select("*").in("veiculo_id", (data ?? []).map((v: any) => v.id)) : { data: [] },
+            (data ?? []).length > 0 ? (supabase as any).from("observacoes_veiculo").select("*").in("veiculo_id", (data ?? []).map((v: any) => v.id)).order("created_at", { ascending: false }) : { data: [] },
+          ]);
+          const condutoresByVeiculo: Record<string, any[]> = {};
+          (condutoresRes.data || []).forEach((c: any) => { if (!condutoresByVeiculo[c.veiculo_id]) condutoresByVeiculo[c.veiculo_id] = []; condutoresByVeiculo[c.veiculo_id].push(c); });
+          const obsByVeiculo: Record<string, any[]> = {};
+          (obsRes.data || []).forEach((o: any) => { if (!obsByVeiculo[o.veiculo_id]) obsByVeiculo[o.veiculo_id] = []; obsByVeiculo[o.veiculo_id].push(o); });
+          const mapped = (data ?? []).map((v: any) => ({
+            id: v.id, nome: v.associados?.nome ?? "—", placa: v.placa ?? "", chassi: v.chassi ?? "",
+            idExterno: v.renavam ?? "", modelo: v.modelo ?? "", marca: v.marca ?? "",
+            anoFab: v.ano ?? 0, anoMod: v.ano ?? 0, cor: v.cor ?? "",
+            valorFipe: v.valor_fipe ?? 0, cota: v.cota || "", combustivel: v.combustivel ?? "", km: v.quilometragem ?? 0,
+            regional: v.associados?.regionais?.nome ?? "", cooperativa: v.associados?.cooperativas?.nome ?? "", tipoAdesao: "",
+            dataCadastro: v.created_at?.split("T")[0] ?? "", dataContrato: "", diaVenc: v.dia_vencimento ?? 0,
+            sitVeiculo: v.status ?? "Ativo", sitAssociado: v.associados?.status ?? "",
+            associado_id: v.associado_id,
+            condutores: (condutoresByVeiculo[v.id] || []).map((c: any) => ({ nome: c.nome, cpf: c.cpf || "", cnh: c.cnh || "", dataNasc: c.data_nascimento || "", situacao: c.situacao || "Ativo" })),
+            lancamentos: [], agregados: [], vistorias: [], documentos: [],
+            observacoes: (obsByVeiculo[v.id] || []).map((o: any) => ({ data: new Date(o.created_at).toLocaleDateString("pt-BR"), descricao: o.texto, usuario: o.usuario_nome || "" })),
+            fornecedores: [], contratos: [],
+          } as any));
+          setResults(mapped);
+          setSearched(true);
+          setLoading(false);
+          if (mapped.length === 1) selectVehicle(mapped[0]);
+        })();
+      }, 100);
+    }
+  }, [searchParams]);
 
   const setF = (k: string, v: string) => setFilters(p => ({ ...p, [k]: v }));
 
@@ -439,7 +483,7 @@ export default function ConsultarVeiculo() {
         </div>
       </div>
 
-      <Tabs defaultValue="dados">
+      <Tabs defaultValue={autoTab || "dados"} onValueChange={v => { if (v === "laps" && lapsProdutosDisponiveis.length === 0) carregarLaps(sel); }}>
         <ScrollArea className="w-full">
           <TabsList className="inline-flex w-auto">
             <TabsTrigger value="dados" className="text-xs gap-1"><Car className="h-3 w-3" />Dados</TabsTrigger>

@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import DocumentosVendaTab from "@/components/DocumentosVendaTab";
 import {
   Search, User, Car, DollarSign, FileText, Clock, AlertTriangle,
@@ -71,6 +72,7 @@ const ocBadge = (s: string) => {
 };
 
 export default function AlterarAssociado() {
+  const navigate = useNavigate();
   const [filters, setFilters] = useState({ cpf: "", nome: "", placa: "", situacao: "Todos", regional: "Todos", cooperativa: "Todos" });
   const [results, setResults] = useState<Associado[]>([]);
   const [searched, setSearched] = useState(false);
@@ -235,7 +237,7 @@ export default function AlterarAssociado() {
         // Map Supabase data to Associado format
         const mapped: Associado[] = supabaseData.map((a: any) => ({
           id: a.id,
-          codigo: a.id.slice(0, 6).toUpperCase(),
+          codigo: a.codigo || a.cpf || a.id.slice(0, 6).toUpperCase(),
           nome: a.nome,
           cpf: a.cpf,
           rg: a.rg || "",
@@ -797,6 +799,7 @@ export default function AlterarAssociado() {
                       <TableCell>
                         <div className="flex gap-1">
                           <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar" onClick={() => openVeicDetail(v.placa)}><Pencil className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="sm" className="h-7 text-[10px] text-primary" title="Ver LAPS / Produtos" onClick={() => navigate(`/gestao/veiculos?placa=${v.placa}&tab=laps`)}>LAPS</Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Desvincular"><X className="h-3.5 w-3.5" /></Button>
                         </div>
                       </TableCell>
@@ -1040,6 +1043,9 @@ export default function AlterarAssociado() {
                   <div><Label className="text-xs">Rateio</Label><Input value={veicForm.rateio || "-"} disabled className="bg-muted/50" /></div>
                   <div><Label className="text-xs">Valor FIPE</Label><Input value={veicForm.valor_fipe ? `R$ ${String(veicForm.valor_fipe).replace(".", ",")}` : "-"} disabled className="bg-muted/50" /></div>
                 </div>
+                <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={() => { setVeicModal(false); navigate(`/gestao/veiculos?placa=${veicForm.placa}&tab=laps`); }}>
+                  <Eye className="h-3.5 w-3.5" /> Ver Produtos (LAPS)
+                </Button>
               </div>
 
               {/* Upload de Arquivos */}
