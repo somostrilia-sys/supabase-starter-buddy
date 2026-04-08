@@ -39,13 +39,14 @@ const PERIODO_DIAS: Record<PeriodoFiltro, number> = {
   "todos": 0,
 };
 
-export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro = "30d", scope?: { consultor?: string; cooperativas?: string[] }) {
+export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro = "30d", scope?: { consultor?: string; cooperativas?: string[] }, enabled = true) {
   const [negociacoes, setNegociacoes] = useState<Negociacao[]>([]);
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState<PeriodoFiltro>(periodoPadrao);
   const [totalCount, setTotalCount] = useState(0);
 
   const load = useCallback(async () => {
+    if (!enabled) return;
     setLoading(true);
     try {
       // Buscar via fetch direto pra contornar limite de 1000 do supabase-js
@@ -107,7 +108,7 @@ export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro 
       console.error("[useNegociacoes] Exception:", err);
     }
     setLoading(false);
-  }, [companyId, periodo, scope?.consultor, scope?.cooperativas?.join(",")]);
+  }, [companyId, periodo, scope?.consultor, scope?.cooperativas?.join(","), enabled]);
 
   useEffect(() => {
     load();

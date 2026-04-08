@@ -72,7 +72,7 @@ async function fetchNegociacoes(scope?: { consultor?: string; cooperativas?: str
 }
 
 export default function VendasLista() {
-  const scope = useLeadScope();
+  const { scope, scopeReady } = useLeadScope();
   const [fEtapa, setFEtapa] = useState("all");
   const [fConsultor, setFConsultor] = useState("all");
   const [fCoop, setFCoop] = useState("all");
@@ -104,6 +104,7 @@ export default function VendasLista() {
   const { data: deals = [], isLoading } = useQuery({
     queryKey: ["negociacoes-lista", scope?.consultor, scope?.cooperativas?.join(",")],
     queryFn: () => fetchNegociacoes(scope),
+    enabled: scopeReady,
   });
 
   // Extract unique values for filters

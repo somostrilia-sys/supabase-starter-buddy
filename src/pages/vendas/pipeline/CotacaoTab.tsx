@@ -178,6 +178,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
   const descontoAplicadoRef = React.useRef(false);
   const [valorInstalacaoEdit, setValorInstalacaoEdit] = useState("");
   const [opcionaisSelecionados, setOpcionaisSelecionados] = useState<OpcionalItem[]>([]);
+  const [fipeCandidatos, setFipeCandidatos] = useState<any[]>([]);
 
   // Implementos / Agregados
   const [implementosCatalogo, setImplementosCatalogo] = useState<{ id: string; nome: string }[]>([]);
@@ -461,14 +462,14 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         });
         if (filtered.length > 0) resultado = filtered;
       }
-      // Deduplicar: 1 faixa por plano (pegar a mais específica = menor range FIPE)
+      // Deduplicar: 1 faixa por plano (menor range FIPE; se range igual, maior cota)
       const planoMap = new Map<string, any>();
       for (const r of resultado) {
         const nome = r.plano_normalizado || r.plano;
         const existing = planoMap.get(nome);
         const range = Number(r.valor_maior) - Number(r.valor_menor);
         const existingRange = existing ? Number(existing.valor_maior) - Number(existing.valor_menor) : Infinity;
-        if (!existing || range < existingRange) {
+        if (!existing || range < existingRange || (range === existingRange && Number(r.cota) > Number(existing.cota))) {
           planoMap.set(nome, r);
         }
       }
@@ -602,6 +603,16 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
 
   // Função que aplica dados FIPE no state (reutilizada pelo cache e API)
   const aplicarDadosFipe = React.useCallback(async (r: any, salvarCache: boolean) => {
+    // Se valorFipe é 0 mas existem candidatos FIPE, selecionar o melhor match e mostrar seletor
+    if (!r.valorFipe && r.raw?.fipe?.dados?.length > 0) {
+      setFipeCandidatos(r.raw.fipe.dados);
+      const bestMatch = [...r.raw.fipe.dados].sort((a: any, b: any) => (b.score || 0) - (a.score || 0))[0];
+      const valorStr = (bestMatch.texto_valor || "").replace(/[^\d,]/g, "").replace(",", ".");
+      r.valorFipe = parseFloat(valorStr) || 0;
+      r.codFipe = bestMatch.codigo_fipe || "";
+    } else {
+      setFipeCandidatos([]);
+    }
     setMarcaReal(r.marca || "");
     setModeloReal(r.modelo || "");
     setValorFipeReal(r.valorFipe || 0);
@@ -672,8 +683,9 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           aplicarDadosFipe(res.resultado, true); // salvar cache
         } else {
           setFipeLoading(false);
+          setFipeFetched(true);
         }
-      }).catch((e) => { console.error("Erro ao buscar placa:", e); setFipeLoading(false); });
+      }).catch((e) => { console.error("Erro ao buscar placa:", e); setFipeLoading(false); setFipeFetched(true); });
     }
   }, [deal.veiculo_placa, dadosReaisCarregados, precosCarregadosDaCotacao, aplicarDadosFipe]);
 
@@ -783,6 +795,14 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           onUpdate?.();
         }
       } catch (e) { console.error("Erro ao mover card:", e); }
+      return;
+    }
+    if (!valorFipeReal || valorFipeReal <= 0) {
+      toast.error("Valor FIPE não identificado. Selecione um modelo FIPE antes de enviar a cotação.");
+      return;
+    }
+    if (precosReais.length === 0) {
+      toast.error("Nenhum plano encontrado para este veículo. Verifique a tabela de preços.");
       return;
     }
     if (!form.tipoVeiculo) {
@@ -1328,7 +1348,51 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           </Card>
         )}
 
-        {fipeFetched && precosReais.length === 0 && (
+        {fipeCandidatos.length > 0 && (
+          <Card className="rounded-none border-2 border-warning/30 bg-warning/5">
+            <CardContent className="p-4 space-y-2">
+              <p className="text-sm font-semibold text-warning">Modelo FIPE não identificado automaticamente</p>
+              <p className="text-xs text-muted-foreground">Selecione o modelo mais próximo para usar o valor FIPE:</p>
+              <div className="space-y-1 max-h-[200px] overflow-y-auto">
+                {[...fipeCandidatos].sort((a: any, b: any) => (b.score || 0) - (a.score || 0)).map((c: any, i: number) => {
+                  const valorStr = (c.texto_valor || "").replace(/[^\d,]/g, "").replace(",", ".");
+                  const valor = parseFloat(valorStr) || 0;
+                  const isSelected = codFipeReal === c.codigo_fipe;
+                  return (
+                    <button key={i} onClick={async () => {
+                      setCodFipeReal(c.codigo_fipe || "");
+                      setValorFipeReal(valor);
+                      setFipeCandidatos([]);
+                      const uf = (deal as any).estado_circulacao || form.estadoCirc || "";
+                      const cidade = (deal as any).cidade_circulacao || form.cidadeCirc || "";
+                      await carregarPrecos(valor, undefined, uf, cidade);
+                      if (deal.id && !deal.id.startsWith("p")) {
+                        supabase.from("negociacoes").update({ cache_fipe: { ...(deal as any).cache_fipe, valorFipe: valor, codFipe: c.codigo_fipe } } as any).eq("id", deal.id);
+                      }
+                    }} className={`w-full text-left p-2 rounded text-xs border transition-colors ${isSelected ? "border-primary bg-primary/10 font-semibold" : "border-border hover:bg-muted/50"}`}>
+                      <span className="font-medium">{c.texto_modelo}</span>
+                      <span className="ml-2 text-muted-foreground">({c.ano_modelo} · {c.sigla_combustivel})</span>
+                      <span className="float-right font-semibold">{c.texto_valor}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {fipeFetched && valorFipeReal <= 0 && fipeCandidatos.length === 0 && (
+          <Card className="rounded-none border-2 border-destructive/30 bg-destructive/5">
+            <CardContent className="p-6 text-center space-y-2">
+              <AlertTriangle className="h-8 w-8 text-destructive mx-auto" />
+              <p className="text-sm font-semibold text-destructive">Veículo não identificado na tabela FIPE</p>
+              <p className="text-xs text-muted-foreground">Não foi possível encontrar este veículo na tabela FIPE. A cotação está bloqueada até que o valor FIPE seja identificado.</p>
+              <p className="text-xs text-muted-foreground">Verifique a placa ou consulte o gestor para liberação manual.</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {fipeFetched && valorFipeReal > 0 && precosReais.length === 0 && fipeCandidatos.length === 0 && (
           <Card className="rounded-none border-2 border-destructive/30 bg-destructive/5">
             <CardContent className="p-6 text-center space-y-2">
               <Search className="h-8 w-8 text-destructive mx-auto" />
@@ -1375,7 +1439,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
                         {precoReal?.tipo_franquia && (
                           <span className="text-[10px] text-muted-foreground ml-2">
                             (Participação: {precoReal.tipo_franquia === '%'
-                              ? `${precoReal.valor_franquia}% da FIPE`
+                              ? `${precoReal.valor_franquia}% FIPE (${formatCurrency(valorFipe * Number(precoReal.valor_franquia) / 100)})`
                               : `R$ ${Number(precoReal.valor_franquia).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`})
                           </span>
                         )}
@@ -1471,15 +1535,14 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           {(() => {
             const pl = planosConfig.find(p => p.nome === planoSelecionado || planoSelecionado.startsWith(p.nome) || p.nome.startsWith(planoSelecionado));
             const mensalVal = (pl as any)?.valorReal > 0 ? (pl as any).valorReal : 0;
-            const rastreadorMensal = (form.tipoVeiculo === "Caminhão" || form.tipoVeiculo === "Van/Utilitário") ? 150 : 100;
-            const mensalidadeTotal = mensalVal + totalOpcionais + rastreadorMensal;
-            const adesaoVal = (pl as any)?.adesao || 400;
             const instVal = valorInstalacaoEdit ? Number(valorInstalacaoEdit) : ((pl as any)?.instalacao || 100);
+            const mensalidadeTotal = mensalVal + totalOpcionais;
+            const adesaoVal = (pl as any)?.adesao || 400;
             return (
               <>
                 <span className="text-sm font-semibold">{formatCurrency(mensalidadeTotal)}/mês</span>
                 {totalOpcionais > 0 && <span className="text-[10px] text-muted-foreground">(plano {formatCurrency(mensalVal)} + serviços {formatCurrency(totalOpcionais)})</span>}
-                <span className="text-[10px] text-muted-foreground">rastreador {formatCurrency(rastreadorMensal)}</span>
+                <span className="text-[10px] text-muted-foreground">rastreador {formatCurrency(instVal)}</span>
                 <span className="text-xs text-muted-foreground">|</span>
                 <span className="text-sm text-muted-foreground">Adesão: <strong>{formatCurrency(adesaoVal)}</strong></span>
                 <span className="text-xs text-muted-foreground">|</span>
@@ -1504,9 +1567,9 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
               <p className="text-[10px] text-muted-foreground">Valor final já inclui plano + serviços. Se preencher, o PDF mostrará desconto.</p>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-semibold">Desconto Adesão (valor final)</Label>
-              <Input className={`rounded-none border border-gray-300 ${descontoBloqueado ? "bg-muted opacity-60" : ""}`} type="number" placeholder="Deixe vazio = sem desconto" value={descontoAdesao} disabled={descontoBloqueado} onChange={e => { setDescontoAdesao(e.target.value); setDescontoIaResult(null); }} />
-              <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF mostrará o valor original riscado + este valor</p>
+              <Label className="text-xs font-semibold">Valor Adesão (editável)</Label>
+              <Input className="rounded-none border border-gray-300" type="number" placeholder="Deixe vazio = valor padrão da tabela" value={descontoAdesao} onChange={e => { setDescontoAdesao(e.target.value); setDescontoIaResult(null); }} />
+              <p className="text-[10px] text-muted-foreground">Se preenchido, o PDF usará este valor. Vazio = valor da tabela de preços</p>
             </div>
           </div>
 

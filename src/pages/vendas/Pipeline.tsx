@@ -53,7 +53,7 @@ type SortKey = "id" | "lead_nome" | "veiculo_modelo" | "plano" | "stage" | "cons
 
 export default function Pipeline() {
   const { canLiberarCadastro, canConcretizarVenda, role, profile, isAdmin } = usePermission();
-  const dataScope = useLeadScope();
+  const { scope: dataScope, scopeReady } = useLeadScope();
   const queryClient = useQueryClient();
   const { usuario: usuarioLogado, cooperativas: minhasCooperativas } = useUsuario();
   const [concretizarDeal, setConcretizarDeal] = useState<PipelineDeal | null>(null);
@@ -99,7 +99,7 @@ export default function Pipeline() {
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
 
   // Hook de negociações (Supabase real) — filtrado por scope do usuário
-  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "30d", dataScope);
+  const { negociacoes, loading: negociacoesLoading, create: createNegociacao, update: updateNegociacao, reload: reloadNegociacoes, periodo, setPeriodo, totalCount } = useNegociacoes(undefined, "30d", dataScope, scopeReady);
 
   // Dados reais de cooperativas com regional vinculada
   const { data: cooperativasDb } = useQuery({

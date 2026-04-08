@@ -49,10 +49,11 @@ export function usePermission() {
 // CONSULTOR: só vê seus leads (consultor = nome do usuario)
 // GESTOR: vê todos da sua cooperativa (cooperativa IN cooperativas do usuario)
 // ADMIN/DIRETOR: vê todos
-export function useLeadScope(): { consultor?: string; cooperativas?: string[] } | undefined {
-  const { usuario, isConsultor, isGestor, canViewAllData, cooperativas } = useUsuario();
-  if (canViewAllData) return undefined;
-  if (isGestor && cooperativas.length > 0) return { cooperativas };
-  if (isConsultor && usuario?.nome) return { consultor: usuario.nome };
-  return undefined;
+export function useLeadScope(): { scope: { consultor?: string; cooperativas?: string[] } | undefined; scopeReady: boolean } {
+  const { usuario, isConsultor, isGestor, canViewAllData, cooperativas, loading } = useUsuario();
+  if (loading) return { scope: undefined, scopeReady: false };
+  if (canViewAllData) return { scope: undefined, scopeReady: true };
+  if (isGestor && cooperativas.length > 0) return { scope: { cooperativas }, scopeReady: true };
+  if (isConsultor && usuario?.nome) return { scope: { consultor: usuario.nome }, scopeReady: true };
+  return { scope: undefined, scopeReady: true };
 }

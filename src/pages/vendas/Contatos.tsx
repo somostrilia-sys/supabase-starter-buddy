@@ -47,7 +47,7 @@ async function fetchContatos(scope?: { consultor?: string; cooperativas?: string
 }
 
 export default function Contatos() {
-  const scope = useLeadScope();
+  const { scope, scopeReady } = useLeadScope();
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("todos");
   const [page, setPage] = useState(0);
@@ -60,6 +60,7 @@ export default function Contatos() {
   const { data: contatos = [], isLoading } = useQuery({
     queryKey: ["contatos-negociacoes", scope?.consultor, scope?.cooperativas?.join(",")],
     queryFn: () => fetchContatos(scope),
+    enabled: scopeReady,
   });
 
   // Deduplicate by cpf_cnpj or lead_nome to get unique contacts

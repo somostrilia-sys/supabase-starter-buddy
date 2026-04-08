@@ -27,7 +27,7 @@ const campos = [
 ];
 
 export default function BancoDadosTab() {
-  const scope = useLeadScope();
+  const { scope, scopeReady } = useLeadScope();
   const [selected, setSelected] = useState<string[]>(["lead_nome", "telefone", "email", "stage", "consultor"]);
 
   const { data: preview = [], isLoading } = useQuery({
@@ -41,6 +41,7 @@ export default function BancoDadosTab() {
       const { data } = await q;
       return data || [];
     },
+    enabled: scopeReady,
   });
 
   function toggle(key: string) {
