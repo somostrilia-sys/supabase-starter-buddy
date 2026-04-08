@@ -137,11 +137,11 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
   // Buscar mensalidade e adesão do cache_precos
   React.useEffect(() => {
     if (!deal.id || deal.id.startsWith("p")) return;
-    supabase.from("negociacoes" as any).select("cache_precos, plano").eq("id", deal.id).maybeSingle()
-      .then(({ data }: any) => {
+    supabase.from("negociacoes" as any).select("cache_precos, plano, cache_fipe, cidade_circulacao, estado_circulacao").eq("id", deal.id).maybeSingle()
+      .then(async ({ data }: any) => {
         const precos = data?.cache_precos;
+        const planoNome = data?.plano || deal.plano || "";
         if (precos && Array.isArray(precos) && precos.length > 0) {
-          const planoNome = data?.plano || deal.plano || "";
           const match = precos.find((p: any) =>
             (p.plano_normalizado || p.plano) === planoNome ||
             planoNome.startsWith(p.plano_normalizado || p.plano) ||
@@ -149,6 +149,27 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
           ) || precos[0];
           setMensalidadeCalc(Number(match?.cota || 0));
           setAdesaoCalc(Number(match?.adesao || 0));
+        } else if (data?.cache_fipe?.valorFipe > 0 && planoNome) {
+          // Fallback: buscar da tabela_precos pela FIPE + regional
+          const vFipe = data.cache_fipe.valorFipe;
+          const cidade = data.cidade_circulacao || "";
+          const estado = data.estado_circulacao || "";
+          let regionalId = "";
+          if (cidade) {
+            const { data: mun } = await (supabase as any).from("municipios").select("id").eq("uf", estado).ilike("nome", cidade).limit(1).maybeSingle();
+            if (mun) {
+              const { data: rc } = await (supabase as any).from("regional_cidades").select("regional_id").eq("municipio_id", mun.id).limit(1).maybeSingle();
+              if (rc) regionalId = rc.regional_id;
+            }
+          }
+          let q = (supabase as any).from("tabela_precos").select("cota, adesao, plano_normalizado").lte("valor_menor", vFipe).gte("valor_maior", vFipe);
+          if (regionalId) q = q.eq("regional_id", regionalId);
+          const { data: faixas } = await q;
+          if (faixas && faixas.length > 0) {
+            const match = faixas.find((f: any) => planoNome.toLowerCase().includes(f.plano_normalizado)) || faixas[0];
+            setMensalidadeCalc(Number(match?.cota || 0));
+            setAdesaoCalc(Number(match?.adesao || 0));
+          }
         }
       });
   }, [deal.id, deal.plano]);
