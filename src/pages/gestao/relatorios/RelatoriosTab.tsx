@@ -241,7 +241,7 @@ export default function RelatoriosTab() {
     },
   });
   const regionaisFullList = regionaisFullData || [];
-  const regionaisLista = regionaisFullList.length ? regionaisFullList.map(r => r.nome) : regionaisListaFallback;
+  const regionaisLista = useMemo(() => regionaisFullList.length ? regionaisFullList.map(r => r.nome) : regionaisListaFallback, [regionaisFullData]);
 
   // Fetch cooperativas from Supabase (id + nome for filter lookups)
   const { data: cooperativasFullData } = useQuery({
@@ -253,7 +253,7 @@ export default function RelatoriosTab() {
     },
   });
   const cooperativasFullList = cooperativasFullData || [];
-  const cooperativasLista = cooperativasFullList.length ? cooperativasFullList.map(c => c.nome) : cooperativasListaFallback;
+  const cooperativasLista = useMemo(() => cooperativasFullList.length ? cooperativasFullList.map(c => c.nome) : cooperativasListaFallback, [cooperativasFullData]);
 
   // Fetch associados from Supabase
   const { data: associadosData } = useQuery({
@@ -344,18 +344,23 @@ export default function RelatoriosTab() {
     return Array.from(set).sort();
   }, [realAssociados]);
 
-  // Auto-select all regionais/cooperativas when they load from Supabase
-  useEffect(() => {
-    if (regionaisLista.length > 0) {
-      setSelRegional(new Set(regionaisLista));
-    }
-  }, [regionaisLista]);
+  // Auto-select all regionais/cooperativas once when they first load from Supabase
+  const [regionaisInitialized, setRegionaisInitialized] = useState(false);
+  const [cooperativasInitialized, setCooperativasInitialized] = useState(false);
 
   useEffect(() => {
-    if (cooperativasLista.length > 0) {
-      setSelCooperativa(new Set(cooperativasLista));
+    if (!regionaisInitialized && regionaisLista.length > 0) {
+      setSelRegional(new Set(regionaisLista));
+      setRegionaisInitialized(true);
     }
-  }, [cooperativasLista]);
+  }, [regionaisLista, regionaisInitialized]);
+
+  useEffect(() => {
+    if (!cooperativasInitialized && cooperativasLista.length > 0) {
+      setSelCooperativa(new Set(cooperativasLista));
+      setCooperativasInitialized(true);
+    }
+  }, [cooperativasLista, cooperativasInitialized]);
 
   // Boleto advanced filters
   const [bolFiltroData, setBolFiltroData] = useState("vencimento");
