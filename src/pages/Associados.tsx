@@ -16,13 +16,15 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Search, Filter, Download, Plus, ChevronLeft, ChevronRight, Phone, Mail,
   MapPin, Car, CreditCard, User, MessageSquare, ExternalLink, Shield,
-  ArrowRight, Check, Loader2, DatabaseZap,
+  ArrowRight, Check, Loader2, DatabaseZap, Upload, FileSpreadsheet, AlertCircle,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import * as XLSX from "xlsx";
 
-const SGA_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gia-associado-buscar`;
-const SGA_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const BUSCA_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gia-associado-buscar`;
+const BUSCA_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-interface SgaResult {
+interface BuscaResult {
   nome?: string;
   cpf?: string;
   veiculo?: string;
@@ -97,41 +99,317 @@ export default function Associados() {
     })();
   }, [selected?.id]);
 
-  // SGA search state
-  const [sgaOpen, setSgaOpen] = useState(false);
-  const [sgaTerm, setSgaTerm] = useState("");
-  const [sgaLoading, setSgaLoading] = useState(false);
-  const [sgaResult, setSgaResult] = useState<SgaResult | null>(null);
-  const [sgaError, setSgaError] = useState<string | null>(null);
+  // Consulta externa state
+  const [buscaOpen, setSgaOpen] = useState(false);
+  const [buscaTerm, setSgaTerm] = useState("");
+  const [buscaLoading, setSgaLoading] = useState(false);
+  const [buscaResult, setBuscaResult] = useState<BuscaResult | null>(null);
+  const [buscaError, setSgaError] = useState<string | null>(null);
 
-  async function handleSgaBuscar() {
-    if (!sgaTerm.trim()) return;
+  async function handleBuscar() {
+    if (!buscaTerm.trim()) return;
     setSgaLoading(true);
-    setSgaResult(null);
+    setBuscaResult(null);
     setSgaError(null);
     try {
-      const res = await fetch(SGA_URL, {
+      const res = await fetch(BUSCA_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${SGA_ANON_KEY}`,
-          "apikey": SGA_ANON_KEY,
+          "Authorization": `Bearer ${BUSCA_KEY}`,
+          "apikey": BUSCA_KEY,
         },
-        body: JSON.stringify({ term: sgaTerm.trim() }),
+        body: JSON.stringify({ term: buscaTerm.trim() }),
       });
       if (!res.ok) {
         const text = await res.text();
         throw new Error(`Erro ${res.status}: ${text}`);
       }
       const json = await res.json();
-      setSgaResult(json);
+      setBuscaResult(json);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro desconhecido";
       setSgaError(msg);
-      toast.error("Erro ao buscar no SGA: " + msg);
+      toast.error("Erro ao consultar:" + msg);
     } finally {
       setSgaLoading(false);
     }
+  }
+
+  // === Importar XLS state ===
+  const [importOpen, setImportOpen] = useState(false);
+  const [importStep, setImportStep] = useState<"upload" | "preview" | "importing" | "done">("upload");
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<{
+    total: number;
+    cpfsUnicos: number;
+    duplicados: number;
+    statusMap: Record<string, number>;
+    regionais: Record<string, number>;
+    placas: number;
+    amostra: Record<string, string>[];
+  } | null>(null);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importResult, setImportResult] = useState<{ inseridos: number; atualizados: number; veiculos: number; erros: string[] } | null>(null);
+
+  const STATUS_MAP: Record<string, string> = {
+    "ATIVO": "ativo",
+    "ATIVO - (MIGRADO)": "ativo",
+    "INATIVO": "inativo",
+    "INATIVO - RETIRADA RASTREADOR": "inativo",
+    "INATIVO - COM PENDENCIA": "inativo_pendencia",
+    "INADIMPLENTE": "inativo_pendencia",
+    "INADIMPLENTE - (MIGRADO)": "inativo_pendencia",
+    "PENDENTE": "pendente",
+    "NEGADO": "cancelado",
+  };
+
+  function parseDate(raw: string | undefined): string | null {
+    if (!raw || raw === "00/00/0000") return null;
+    // Handle DD/MM/YYYY or DD/MM/YY
+    const parts = raw.split("/");
+    if (parts.length !== 3) return null;
+    let [d, m, y] = parts;
+    if (y.length === 2) y = Number(y) > 50 ? `19${y}` : `20${y}`;
+    const date = new Date(`${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`);
+    if (isNaN(date.getTime())) return null;
+    return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+
+  function cleanCpf(raw: string): string {
+    return (raw || "").replace(/[.\-\/\s]/g, "");
+  }
+
+  function cleanPhone(raw: string | undefined): string | null {
+    if (!raw) return null;
+    const digits = raw.replace(/\D/g, "");
+    if (digits.length < 10) return null;
+    return digits;
+  }
+
+  async function handleImportFile(file: File) {
+    setImportFile(file);
+    const ab = await file.arrayBuffer();
+    const wb = XLSX.read(ab, { type: "array" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
+
+    // Row 0 is the title, row 1 is headers, data starts at row 2
+    const headers = rows[1] || [];
+    const data = rows.slice(2).filter(r => r && r.length > 5);
+
+    // Index columns
+    const col = {
+      nome: 0, placa: 1, rg: 3, telefone: 10, telCelular: 32,
+      email: 15, logradouro: 17, cidade: 18, regional: 20,
+      dataCadastro: 22, matricula: 24, dataNasc: 28,
+      cpf: 31, bairro: 38, estado: 39, situacao: 41,
+    };
+
+    // Deduplicate by CPF — keep most recent by data cadastro
+    const cpfMap = new Map<string, string[]>();
+    for (const row of data) {
+      const cpf = cleanCpf(row[col.cpf]);
+      if (!cpf || cpf.length < 11) continue;
+      const existing = cpfMap.get(cpf);
+      if (!existing) { cpfMap.set(cpf, row); continue; }
+      const existDate = parseDate(existing[col.dataCadastro]);
+      const newDate = parseDate(row[col.dataCadastro]);
+      if (newDate && (!existDate || newDate > existDate)) cpfMap.set(cpf, row);
+    }
+
+    // Stats
+    const statusCount: Record<string, number> = {};
+    const regionalCount: Record<string, number> = {};
+    let placaCount = 0;
+    const placasSeen = new Set<string>();
+
+    // Count all rows (not just deduplicated) for placas
+    for (const row of data) {
+      const placa = (row[col.placa] || "").trim();
+      if (placa && !placasSeen.has(placa)) { placasSeen.add(placa); placaCount++; }
+    }
+
+    for (const [, row] of cpfMap) {
+      const sit = (row[col.situacao] || "N/A").trim();
+      statusCount[sit] = (statusCount[sit] || 0) + 1;
+      const reg = (row[col.regional] || "N/A").trim();
+      regionalCount[reg] = (regionalCount[reg] || 0) + 1;
+    }
+
+    // Sample 3 records
+    const amostra: Record<string, string>[] = [];
+    let count = 0;
+    for (const [cpf, row] of cpfMap) {
+      if (count >= 3) break;
+      amostra.push({ nome: row[col.nome], cpf, cidade: row[col.cidade], status: row[col.situacao], regional: row[col.regional] });
+      count++;
+    }
+
+    setImportPreview({
+      total: data.length,
+      cpfsUnicos: cpfMap.size,
+      duplicados: data.length - cpfMap.size,
+      statusMap: statusCount,
+      regionais: regionalCount,
+      placas: placaCount,
+      amostra,
+    });
+    setImportStep("preview");
+  }
+
+  async function handleImportConfirm() {
+    if (!importFile) return;
+    setImportStep("importing");
+    setImportProgress(0);
+
+    const ab = await importFile.arrayBuffer();
+    const wb = XLSX.read(ab, { type: "array" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
+    const data = rows.slice(2).filter(r => r && r.length > 5);
+
+    const col = {
+      nome: 0, placa: 1, rg: 3, telefone: 10, telCelular: 32,
+      email: 15, logradouro: 17, cidade: 18, regional: 20,
+      dataCadastro: 22, dataNasc: 28, cpf: 31, bairro: 38,
+      estado: 39, situacao: 41,
+    };
+
+    // Deduplicate
+    const cpfMap = new Map<string, string[]>();
+    const cpfPlacas = new Map<string, Set<string>>();
+    for (const row of data) {
+      const cpf = cleanCpf(row[col.cpf]);
+      if (!cpf || cpf.length < 11) continue;
+      // Track all placas per CPF
+      const placa = (row[col.placa] || "").trim();
+      if (placa) {
+        if (!cpfPlacas.has(cpf)) cpfPlacas.set(cpf, new Set());
+        cpfPlacas.get(cpf)!.add(placa);
+      }
+      const existing = cpfMap.get(cpf);
+      if (!existing) { cpfMap.set(cpf, row); continue; }
+      const existDate = parseDate(existing[col.dataCadastro]);
+      const newDate = parseDate(row[col.dataCadastro]);
+      if (newDate && (!existDate || newDate > existDate)) cpfMap.set(cpf, row);
+    }
+
+    // Load regionais from DB
+    const { data: regData } = await supabase.from("regionais").select("id, nome");
+    const regMap = new Map<string, string>();
+    for (const r of regData || []) {
+      regMap.set((r.nome || "").toUpperCase().trim(), r.id);
+    }
+
+    const entries = Array.from(cpfMap.entries());
+    const total = entries.length;
+    let inseridos = 0, atualizados = 0, veiculosCount = 0;
+    const erros: string[] = [];
+    const BATCH = 50;
+
+    for (let i = 0; i < total; i += BATCH) {
+      const batch = entries.slice(i, i + BATCH);
+      const associadosBatch = batch.map(([cpf, row]) => {
+        const endereco = [row[col.logradouro], row[col.bairro]].filter(Boolean).join(", ");
+        const situacao = (row[col.situacao] || "").trim();
+        const status = STATUS_MAP[situacao] || "ativo";
+        const regionalNome = (row[col.regional] || "").toUpperCase().trim();
+        const regional_id = regMap.get(regionalNome) || null;
+        const telefone = cleanPhone(row[col.telCelular]) || cleanPhone(row[col.telefone]);
+
+        return {
+          cpf,
+          nome: (row[col.nome] || "").trim(),
+          rg: (row[col.rg] || "").trim() || null,
+          email: (row[col.email] || "").trim() || null,
+          telefone: telefone || null,
+          endereco: endereco || null,
+          cidade: (row[col.cidade] || "").trim() || null,
+          estado: (row[col.estado] || "").trim() || null,
+          data_nascimento: parseDate(row[col.dataNasc]),
+          data_adesao: parseDate(row[col.dataCadastro]) || new Date().toISOString().split("T")[0],
+          status,
+          regional_id,
+        };
+      });
+
+      // Upsert associados
+      const { data: upserted, error } = await supabase
+        .from("associados")
+        .upsert(associadosBatch, { onConflict: "cpf", ignoreDuplicates: false })
+        .select("id, cpf");
+
+      if (error) {
+        erros.push(`Batch ${i}-${i + BATCH}: ${error.message}`);
+        setImportProgress(Math.round(((i + BATCH) / total) * 100));
+        continue;
+      }
+
+      // Map CPF → associado_id for veiculos
+      const cpfIdMap = new Map<string, string>();
+      for (const u of upserted || []) cpfIdMap.set(u.cpf, u.id);
+
+      // Check which were inserts vs updates (we count based on upsert result)
+      for (const a of associadosBatch) {
+        if (cpfIdMap.has(a.cpf)) atualizados++;
+      }
+
+      // Insert veiculos for this batch
+      const veiculosBatch: { placa: string; associado_id: string; marca: string; modelo: string }[] = [];
+      for (const [cpf] of batch) {
+        const assocId = cpfIdMap.get(cpf);
+        if (!assocId) continue;
+        const placas = cpfPlacas.get(cpf);
+        if (!placas) continue;
+        for (const placa of placas) {
+          veiculosBatch.push({ placa, associado_id: assocId, marca: "A DEFINIR", modelo: "A DEFINIR" });
+        }
+      }
+
+      if (veiculosBatch.length > 0) {
+        const { error: vErr, count: vCount } = await supabase
+          .from("veiculos")
+          .upsert(veiculosBatch, { onConflict: "placa", ignoreDuplicates: true, count: "exact" });
+        if (vErr) {
+          erros.push(`Veículos batch ${i}: ${vErr.message}`);
+        } else {
+          veiculosCount += vCount || veiculosBatch.length;
+        }
+      }
+
+      setImportProgress(Math.round(((i + BATCH) / total) * 100));
+    }
+
+    setImportResult({ inseridos, atualizados, veiculos: veiculosCount, erros });
+    setImportStep("done");
+    setImportProgress(100);
+
+    // Reload associados
+    const { data: reloadData } = await supabase.from("associados").select("*, veiculos(id, placa, modelo, marca, status)").order("nome").limit(500);
+    const mapped: Associado[] = (reloadData || []).map((a: any) => ({
+      id: a.id, codigo: a.codigo || a.id.slice(0, 8).toUpperCase(),
+      nome: a.nome || "—", cpf: a.cpf || "", rg: a.rg || "",
+      nascimento: a.data_nascimento || "", sexo: a.sexo || "", estadoCivil: a.estado_civil || "",
+      telefone: a.telefone || "", email: a.email || "",
+      cidade: a.cidade || "", estado: a.uf || "", cep: a.cep || "",
+      endereco: a.endereco || "", bairro: a.bairro || "",
+      plano: a.plano || "—", status: (a.status || "ativo").toLowerCase(),
+      dataAdesao: a.data_adesao || a.created_at?.split("T")[0] || "",
+      diaVencimento: a.dia_vencimento || 10,
+      veiculos: a.veiculos?.length || 0,
+      inadimplente: a.inadimplente || false,
+    }));
+    setAssociados(mapped);
+    toast.success(`Importação concluída: ${atualizados} associados, ${veiculosCount} veículos`);
+  }
+
+  function resetImport() {
+    setImportStep("upload");
+    setImportFile(null);
+    setImportPreview(null);
+    setImportProgress(0);
+    setImportResult(null);
   }
 
   const filtered = useMemo(() => {
@@ -162,86 +440,232 @@ export default function Associados() {
         <div className="flex gap-2">
           <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1" /> CSV</Button>
 
-          {/* Buscar no SGA */}
-          <Dialog open={sgaOpen} onOpenChange={o => { setSgaOpen(o); if (!o) { setSgaTerm(""); setSgaResult(null); setSgaError(null); } }}>
+          {/* Importar XLS */}
+          <Dialog open={importOpen} onOpenChange={o => { setImportOpen(o); if (!o) resetImport(); }}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10">
+                <Upload className="h-4 w-4 mr-1" /> Importar XLS
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <FileSpreadsheet className="h-4 w-4 text-emerald-400" /> Importar Relatório de Associados
+                </DialogTitle>
+              </DialogHeader>
+
+              {importStep === "upload" && (
+                <div className="space-y-4 mt-2">
+                  <p className="text-xs text-muted-foreground">Selecione o arquivo .xls com os dados dos associados.</p>
+                  <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border/60 rounded-lg p-8 cursor-pointer hover:border-emerald-500/40 transition-colors">
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Clique para selecionar ou arraste o arquivo</span>
+                    <span className="text-[10px] text-muted-foreground">.xls ou .xlsx</span>
+                    <input
+                      type="file"
+                      accept=".xls,.xlsx"
+                      className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) handleImportFile(f); }}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {importStep === "preview" && importPreview && (
+                <div className="space-y-4 mt-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-3 rounded-lg bg-card border border-border/40 text-center">
+                      <p className="text-lg font-bold text-emerald-400">{importPreview.cpfsUnicos.toLocaleString("pt-BR")}</p>
+                      <p className="text-[10px] text-muted-foreground">CPFs únicos</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-card border border-border/40 text-center">
+                      <p className="text-lg font-bold text-sky-400">{importPreview.placas.toLocaleString("pt-BR")}</p>
+                      <p className="text-[10px] text-muted-foreground">Placas</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-card border border-border/40 text-center">
+                      <p className="text-lg font-bold text-orange-400">{importPreview.duplicados.toLocaleString("pt-BR")}</p>
+                      <p className="text-[10px] text-muted-foreground">Linhas duplicadas</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-1.5">Mapeamento de Status</p>
+                    <div className="space-y-1">
+                      {Object.entries(importPreview.statusMap).map(([k, v]) => (
+                        <div key={k} className="flex items-center justify-between text-xs px-2 py-1 rounded bg-muted/30">
+                          <span>{k}</span>
+                          <div className="flex items-center gap-2">
+                            <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                            <Badge className="text-[9px]">{STATUS_MAP[k.trim()] || "ativo"}</Badge>
+                            <span className="text-muted-foreground font-mono text-[10px]">{v}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-1.5">Regionais</p>
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                      {Object.entries(importPreview.regionais).sort((a, b) => b[1] - a[1]).map(([k, v]) => (
+                        <div key={k} className="flex items-center justify-between text-xs px-2 py-1 rounded bg-muted/30">
+                          <span className="truncate">{k}</span>
+                          <span className="text-muted-foreground font-mono text-[10px]">{v}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-1.5">Amostra</p>
+                    {importPreview.amostra.map((a, i) => (
+                      <div key={i} className="text-xs p-2 rounded bg-muted/30 mb-1">
+                        <span className="font-medium">{a.nome}</span> · <span className="font-mono">{a.cpf}</span> · {a.cidade} · {a.status}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" size="sm" onClick={resetImport}>Cancelar</Button>
+                    <Button size="sm" onClick={handleImportConfirm} className="bg-emerald-600 hover:bg-emerald-700">
+                      <Check className="h-4 w-4 mr-1" /> Confirmar Importação
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {importStep === "importing" && (
+                <div className="space-y-4 mt-4 py-8">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
+                    <p className="text-sm font-medium">Importando associados...</p>
+                    <p className="text-xs text-muted-foreground">{importProgress}% concluído</p>
+                  </div>
+                  <Progress value={importProgress} className="h-2" />
+                </div>
+              )}
+
+              {importStep === "done" && importResult && (
+                <div className="space-y-4 mt-2">
+                  <div className="flex flex-col items-center gap-2 py-4">
+                    <div className="h-12 w-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                      <Check className="h-6 w-6 text-emerald-400" />
+                    </div>
+                    <p className="text-sm font-medium">Importação concluída!</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-3 rounded-lg bg-card border border-border/40 text-center">
+                      <p className="text-lg font-bold text-emerald-400">{importResult.atualizados.toLocaleString("pt-BR")}</p>
+                      <p className="text-[10px] text-muted-foreground">Associados processados</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-card border border-border/40 text-center">
+                      <p className="text-lg font-bold text-sky-400">{importResult.veiculos.toLocaleString("pt-BR")}</p>
+                      <p className="text-[10px] text-muted-foreground">Veículos vinculados</p>
+                    </div>
+                  </div>
+
+                  {importResult.erros.length > 0 && (
+                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+                      <p className="text-xs font-medium text-destructive flex items-center gap-1 mb-1">
+                        <AlertCircle className="h-3.5 w-3.5" /> {importResult.erros.length} erro(s)
+                      </p>
+                      <div className="space-y-1 max-h-24 overflow-y-auto">
+                        {importResult.erros.map((e, i) => (
+                          <p key={i} className="text-[10px] text-destructive/80">{e}</p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end">
+                    <Button size="sm" onClick={() => { setImportOpen(false); resetImport(); }}>Fechar</Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Consultar Associado */}
+          <Dialog open={buscaOpen} onOpenChange={o => { setSgaOpen(o); if (!o) { setSgaTerm(""); setBuscaResult(null); setSgaError(null); } }}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="border-sky-500/40 text-sky-400 hover:bg-sky-500/10">
-                <DatabaseZap className="h-4 w-4 mr-1" /> Buscar no SGA
+                <DatabaseZap className="h-4 w-4 mr-1" /> Consultar Associado
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
-              <DialogHeader><DialogTitle className="flex items-center gap-2"><DatabaseZap className="h-4 w-4 text-sky-400" /> Buscar no SGA</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle className="flex items-center gap-2"><DatabaseZap className="h-4 w-4 text-sky-400" /> Consultar Associado</DialogTitle></DialogHeader>
               <div className="space-y-3 mt-2">
-                <p className="text-xs text-muted-foreground">Informe CPF, placa ou telefone para consultar no SGA.</p>
+                <p className="text-xs text-muted-foreground">Informe CPF, placa ou telefone para consultar.</p>
                 <div className="flex gap-2">
                   <Input
                     className="h-9 text-xs flex-1"
                     placeholder="CPF, placa ou telefone..."
-                    value={sgaTerm}
+                    value={buscaTerm}
                     onChange={e => setSgaTerm(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && handleSgaBuscar()}
+                    onKeyDown={e => e.key === "Enter" && handleBuscar()}
                   />
-                  <Button size="sm" onClick={handleSgaBuscar} disabled={sgaLoading || !sgaTerm.trim()}>
-                    {sgaLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  <Button size="sm" onClick={handleBuscar} disabled={buscaLoading || !buscaTerm.trim()}>
+                    {buscaLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                   </Button>
                 </div>
 
-                {sgaError && (
+                {buscaError && (
                   <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-xs text-destructive">
-                    {sgaError}
+                    {buscaError}
                   </div>
                 )}
 
-                {sgaResult && !sgaError && (
+                {buscaResult && !buscaError && (
                   <div className="p-3 rounded-lg border border-border/50 bg-card space-y-2">
-                    <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-2">Resultado SGA</p>
-                    {sgaResult.nome && (
+                    <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-2">Resultado</p>
+                    {buscaResult.nome && (
                       <div className="flex items-center gap-2 text-xs">
                         <User className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="font-medium">{String(sgaResult.nome)}</span>
+                        <span className="font-medium">{String(buscaResult.nome)}</span>
                       </div>
                     )}
-                    {sgaResult.cpf && (
+                    {buscaResult.cpf && (
                       <div className="flex items-center gap-2 text-xs">
                         <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="font-mono">{String(sgaResult.cpf)}</span>
+                        <span className="font-mono">{String(buscaResult.cpf)}</span>
                       </div>
                     )}
-                    {sgaResult.veiculo && (
+                    {buscaResult.veiculo && (
                       <div className="flex items-center gap-2 text-xs">
                         <Car className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span>{String(sgaResult.veiculo)}</span>
+                        <span>{String(buscaResult.veiculo)}</span>
                       </div>
                     )}
-                    {sgaResult.situacao && (
+                    {buscaResult.situacao && (
                       <div className="flex items-center gap-2 text-xs">
                         <Shield className="h-3.5 w-3.5 text-muted-foreground" />
-                        <Badge className="text-[9px] bg-emerald-500/15 text-emerald-400 border-0">{String(sgaResult.situacao)}</Badge>
+                        <Badge className="text-[9px] bg-emerald-500/15 text-emerald-400 border-0">{String(buscaResult.situacao)}</Badge>
                       </div>
                     )}
-                    {sgaResult.valorFipe != null && (
+                    {buscaResult.valorFipe != null && (
                       <div className="flex items-center gap-2 text-xs">
                         <span className="text-muted-foreground">FIPE:</span>
                         <span className="font-mono text-emerald-400">
-                          {typeof sgaResult.valorFipe === "number"
-                            ? `R$ ${sgaResult.valorFipe.toLocaleString("pt-BR")}`
-                            : String(sgaResult.valorFipe)}
+                          {typeof buscaResult.valorFipe === "number"
+                            ? `R$ ${buscaResult.valorFipe.toLocaleString("pt-BR")}`
+                            : String(buscaResult.valorFipe)}
                         </span>
                       </div>
                     )}
                     {/* fallback: show all keys if standard fields are missing */}
-                    {!sgaResult.nome && !sgaResult.cpf && !sgaResult.veiculo && (
+                    {!buscaResult.nome && !buscaResult.cpf && !buscaResult.veiculo && (
                       <pre className="text-[10px] text-muted-foreground whitespace-pre-wrap break-all">
-                        {JSON.stringify(sgaResult, null, 2)}
+                        {JSON.stringify(buscaResult, null, 2)}
                       </pre>
                     )}
                   </div>
                 )}
 
-                {sgaLoading && (
+                {buscaLoading && (
                   <div className="flex items-center justify-center py-4">
                     <Loader2 className="h-5 w-5 animate-spin text-sky-400" />
-                    <span className="ml-2 text-xs text-muted-foreground">Consultando SGA...</span>
+                    <span className="ml-2 text-xs text-muted-foreground">Consultando...</span>
                   </div>
                 )}
               </div>
