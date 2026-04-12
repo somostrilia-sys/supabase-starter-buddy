@@ -28,12 +28,7 @@ export function ProtectedRoute({
     return () => clearTimeout(timer);
   }, []);
 
-  // Só mostra toast depois que TUDO carregou (evita falso "Sem permissão")
-  useEffect(() => {
-    if (isFullyLoaded && session && permission && !hasPermission) {
-      toast.error("Sem permissão");
-    }
-  }, [isFullyLoaded, session, permission, hasPermission]);
+  // Redirect silencioso — sem toast (o redirect já resolve)
 
   // Aguarda auth + profile + usuario carregarem
   if (loading || (session && (usuarioLoading || perms.loading))) {
