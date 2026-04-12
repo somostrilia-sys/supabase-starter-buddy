@@ -189,65 +189,77 @@ export default function ConsultarVeiculo() {
   const carregarLaps = async (veiculo: Veiculo) => {
     setLapsLoading(true);
     try {
-      // Buscar regional_id do associado + cidade/estado para resolver regional por cidade de circulação
-      const { data: assocData } = veiculo.associado_id
-        ? await supabase.from("associados").select("regional_id, endereco_cidade, endereco_uf").eq("id", veiculo.associado_id).maybeSingle()
-        : { data: null };
-      const regionalId = assocData?.regional_id;
-      const cidadeAssociado = assocData?.endereco_cidade || "";
-      const estadoAssociado = assocData?.endereco_uf || "";
+      // Queries paralelas: associado, produtos, veículo_produtos e ajuste — tudo ao mesmo tempo
+      const [assocRes, produtosRes, veicProdRes, ajusteRes] = await Promise.all([
+        veiculo.associado_id
+          ? supabase.from("associados").select("regional_id, endereco_cidade, endereco_uf").eq("id", veiculo.associado_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        supabase.from("produtos_gia").select("*").eq("ativo", true).order("nome"),
+        (supabase as any).from("veiculo_produtos").select("*").eq("veiculo_id", veiculo.id),
+        (supabase as any).from("veiculos").select("ajuste_avulso_valor, ajuste_avulso_desc").eq("id", veiculo.id).maybeSingle(),
+      ]);
 
-      // Resolver regional pela cidade de circulação do cadastro (via municipios → regional_cidades)
-      let regId = null as string | null;
-      if (cidadeAssociado && estadoAssociado) {
+      const assocData = assocRes.data;
+      const todosProdutos = produtosRes.data || [];
+      const veicProd = veicProdRes.data || [];
+      const ajusteData = ajusteRes.data;
+
+      // Resolver regional: cidade → municipios → regional_cidades (1-2 queries)
+      let regId = assocData?.regional_id || null;
+      const cidade = assocData?.endereco_cidade || "";
+      const uf = assocData?.endereco_uf || "";
+      if (cidade && uf && !regId) {
         const { data: mun } = await (supabase as any).from("municipios")
-          .select("id").eq("uf", estadoAssociado).ilike("nome", cidadeAssociado).limit(1).maybeSingle();
+          .select("id").eq("uf", uf).ilike("nome", cidade).limit(1).maybeSingle();
         if (mun) {
           const { data: rc } = await (supabase as any).from("regional_cidades")
             .select("regional_id").eq("municipio_id", mun.id).limit(1).maybeSingle();
           if (rc) regId = rc.regional_id;
         }
-        // Fallback: qualquer cidade da UF para pegar a regional padrão do estado
         if (!regId) {
           const { data: fb } = await (supabase as any).from("regional_cidades")
-            .select("regional_id, municipios!inner(uf)").eq("municipios.uf", estadoAssociado).limit(1).maybeSingle();
+            .select("regional_id, municipios!inner(uf)").eq("municipios.uf", uf).limit(1).maybeSingle();
           if (fb) regId = fb.regional_id;
         }
       }
-      // Fallback: usar regional_id direto do associado
-      if (!regId) regId = regionalId;
-      // Fallback: buscar pelo nome da regional do veículo
       if (!regId && veiculo.regional) {
         const { data: regMatch } = await supabase.from("regionais").select("id").ilike("nome", `%${veiculo.regional}%`).limit(1).maybeSingle();
         if (regMatch) regId = regMatch.id;
       }
 
-      // Buscar produtos disponíveis para a regional (via produto_regras)
-      let produtosQuery = supabase.from("produtos_gia").select("*").eq("ativo", true).order("nome");
-      const { data: todosProdutos } = await produtosQuery;
+      // Filtrar produtos por regional + buscar faixa FIPE — em paralelo
+      let tipoSga = "AUTOMOVEL";
+      const modelo = (veiculo.modelo || "").toLowerCase();
+      if (/moto|cg |cb |honda cg/i.test(modelo)) tipoSga = "MOTOCICLETA";
+      else if (/scania|volvo fh|iveco|cargo|constellation/i.test(modelo)) tipoSga = "PESADOS";
+      else if (/sprinter|daily|ducato|master/i.test(modelo)) tipoSga = "VANS E PESADOS P.P";
+      else if (/fiorino|kangoo|doblo|strada|saveiro/i.test(modelo)) tipoSga = "UTILITARIOS";
 
-      let produtosRegional = todosProdutos || [];
-      if (regId) {
-        const { data: regras } = await (supabase as any).from("produto_regras").select("produto_id").eq("regional_id", regId);
-        if (regras && regras.length > 0) {
-          const idsPermitidos = new Set(regras.map((r: any) => r.produto_id));
-          produtosRegional = produtosRegional.filter((p: any) => idsPermitidos.has(p.id));
-        }
+      const [regrasRes, faixaRes] = await Promise.all([
+        regId ? (supabase as any).from("produto_regras").select("produto_id").eq("regional_id", regId) : Promise.resolve({ data: null }),
+        regId && veiculo.valorFipe > 0
+          ? (supabase as any).from("faixas_fipe").select("taxa_administrativa, rateio")
+              .eq("regional_id", regId).eq("tipo_veiculo", tipoSga)
+              .lte("fipe_min", veiculo.valorFipe).gte("fipe_max", veiculo.valorFipe)
+              .limit(1).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+
+      // Filtrar produtos pela regional
+      let produtosRegional = todosProdutos;
+      if (regrasRes.data && regrasRes.data.length > 0) {
+        const idsPermitidos = new Set(regrasRes.data.map((r: any) => r.produto_id));
+        produtosRegional = todosProdutos.filter((p: any) => idsPermitidos.has(p.id));
       }
       setLapsProdutosDisponiveis(produtosRegional);
 
-      // Buscar produtos atuais do veículo
-      const { data: veicProd } = await (supabase as any).from("veiculo_produtos").select("*").eq("veiculo_id", veiculo.id);
-      setLapsVeiculoProdutos(veicProd || []);
-
       // Marcar selecionados
+      setLapsVeiculoProdutos(veicProd);
       const sel: Record<string, boolean> = {};
-      (veicProd || []).forEach((vp: any) => { sel[vp.produto_id] = true; });
+      veicProd.forEach((vp: any) => { sel[vp.produto_id] = true; });
       setLapsSelecionados(sel);
 
-      // Carregar ajuste avulso existente (salvo na tabela veiculos)
-      const { data: ajusteData } = await (supabase as any).from("veiculos")
-        .select("ajuste_avulso_valor, ajuste_avulso_desc").eq("id", veiculo.id).maybeSingle();
+      // Ajuste avulso
       if (ajusteData && (ajusteData.ajuste_avulso_valor || ajusteData.ajuste_avulso_desc)) {
         setLapsAjusteDesc(ajusteData.ajuste_avulso_desc || "");
         setLapsAjusteValor(String(ajusteData.ajuste_avulso_valor || ""));
@@ -256,34 +268,12 @@ export default function ConsultarVeiculo() {
         setLapsAjusteValor("");
       }
 
-      // Buscar taxa_adm e rateio da faixas_fipe por regional + valor FIPE + tipo veículo
-      let taxaAdm = 0;
-      let rateioVal = 0;
-      if (regId && veiculo.valorFipe > 0) {
-        // Mapear tipo veículo para nomenclatura do SGA
-        let tipoSga = "AUTOMOVEL";
-        const modelo = (veiculo.modelo || "").toLowerCase();
-        if (modelo.includes("moto") || modelo.includes("cg ") || modelo.includes("cb ") || modelo.includes("honda cg")) tipoSga = "MOTOCICLETA";
-        else if (modelo.includes("scania") || modelo.includes("volvo fh") || modelo.includes("iveco") || modelo.includes("cargo") || modelo.includes("constellation")) tipoSga = "PESADOS";
-        else if (modelo.includes("sprinter") || modelo.includes("daily") || modelo.includes("ducato") || modelo.includes("master")) tipoSga = "VANS E PESADOS P.P";
-        else if (modelo.includes("fiorino") || modelo.includes("kangoo") || modelo.includes("doblo") || modelo.includes("strada") || modelo.includes("saveiro")) tipoSga = "UTILITARIOS";
+      // Taxa e rateio
+      const faixa = faixaRes.data;
+      const taxaAdm = faixa ? Number(faixa.taxa_administrativa) || 0 : 0;
+      const rateioVal = faixa ? Number(faixa.rateio) || 0 : 0;
 
-        const { data: faixa } = await (supabase as any)
-          .from("faixas_fipe")
-          .select("taxa_administrativa, rateio")
-          .eq("regional_id", regId)
-          .eq("tipo_veiculo", tipoSga)
-          .lte("fipe_min", veiculo.valorFipe)
-          .gte("fipe_max", veiculo.valorFipe)
-          .limit(1)
-          .maybeSingle();
-        if (faixa) {
-          taxaAdm = Number(faixa.taxa_administrativa) || 0;
-          rateioVal = Number(faixa.rateio) || 0;
-        }
-      }
-
-      // Calcular mensalidade (passa produtosRegional pois o state ainda não atualizou)
+      // Calcular mensalidade
       await calcularMensalidadeLaps(sel, taxaAdm, rateioVal, produtosRegional);
     } catch (err: any) {
       toast.error("Erro ao carregar LAPS: " + err.message);
