@@ -307,17 +307,11 @@ export default function ConsultarVeiculo() {
     try {
       // Deletar produtos antigos
       await (supabase as any).from("veiculo_produtos").delete().eq("veiculo_id", selected.id);
-      // Inserir novos
+      // Inserir novos (colunas existentes: veiculo_id, produto_id, tipo)
       const produtoIds = Object.entries(lapsSelecionados).filter(([, v]) => v).map(([k]) => k);
-      const inserts = produtoIds.map(pid => {
-        const prod = lapsProdutosDisponiveis.find(p => p.id === pid);
-        return { veiculo_id: selected.id, produto_id: pid, valor: prod?.valor || 0, ativo: true };
-      });
-      // Adicionar ajuste avulso se houver
-      const ajusteNum = parseFloat(lapsAjusteValor) || 0;
-      if (ajusteNum !== 0 || lapsAjusteDesc.trim()) {
-        inserts.push({ veiculo_id: selected.id, produto_id: null as any, valor: ajusteNum, ativo: true, tipo: "ajuste_avulso", descricao: lapsAjusteDesc.trim() } as any);
-      }
+      const inserts = produtoIds.map(pid => ({
+        veiculo_id: selected.id, produto_id: pid, tipo: "principal",
+      }));
       if (inserts.length > 0) {
         const { error } = await (supabase as any).from("veiculo_produtos").insert(inserts);
         if (error) throw error;
@@ -713,8 +707,14 @@ export default function ConsultarVeiculo() {
                       <Label className="text-xs">Valor (negativo=desconto)</Label>
                       <Input
                         value={lapsAjusteValor}
-                        onChange={e => setLapsAjusteValor(e.target.value)}
-                        onBlur={() => calcularMensalidadeLaps(lapsSelecionados)}
+                        onChange={e => {
+                          setLapsAjusteValor(e.target.value);
+                          const ajuste = parseFloat(e.target.value) || 0;
+                          const sub = lapsCalculo?.subtotal_produtos ?? 0;
+                          const taxa = lapsCalculo?.taxa_administrativa ?? 0;
+                          const rat = lapsCalculo?.rateio ?? 0;
+                          setLapsCalculo((prev: any) => ({ ...prev, ajuste_avulso: ajuste, total_mensalidade: sub + taxa + rat + ajuste }));
+                        }}
                         placeholder="0,00"
                         className="text-sm font-mono"
                       />
