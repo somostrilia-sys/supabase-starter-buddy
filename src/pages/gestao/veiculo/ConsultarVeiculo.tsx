@@ -189,23 +189,44 @@ export default function ConsultarVeiculo() {
   const carregarLaps = async (veiculo: Veiculo) => {
     setLapsLoading(true);
     try {
-      // Buscar regional_id do associado
+      // Buscar regional_id do associado + cidade/estado para resolver regional por cidade de circulação
       const { data: assocData } = veiculo.associado_id
-        ? await supabase.from("associados").select("regional_id").eq("id", veiculo.associado_id).maybeSingle()
+        ? await supabase.from("associados").select("regional_id, endereco_cidade, estado").eq("id", veiculo.associado_id).maybeSingle()
         : { data: null };
       const regionalId = assocData?.regional_id;
+      const cidadeAssociado = assocData?.endereco_cidade || "";
+      const estadoAssociado = assocData?.estado || "";
+
+      // Resolver regional pela cidade de circulação do cadastro (via municipios → regional_cidades)
+      let regId = null as string | null;
+      if (cidadeAssociado && estadoAssociado) {
+        const { data: mun } = await (supabase as any).from("municipios")
+          .select("id").eq("uf", estadoAssociado).ilike("nome", cidadeAssociado).limit(1).maybeSingle();
+        if (mun) {
+          const { data: rc } = await (supabase as any).from("regional_cidades")
+            .select("regional_id").eq("municipio_id", mun.id).limit(1).maybeSingle();
+          if (rc) regId = rc.regional_id;
+        }
+        // Fallback: qualquer cidade da UF para pegar a regional padrão do estado
+        if (!regId) {
+          const { data: fb } = await (supabase as any).from("regional_cidades")
+            .select("regional_id, municipios!inner(uf)").eq("municipios.uf", estadoAssociado).limit(1).maybeSingle();
+          if (fb) regId = fb.regional_id;
+        }
+      }
+      // Fallback: usar regional_id direto do associado
+      if (!regId) regId = regionalId;
+      // Fallback: buscar pelo nome da regional do veículo
+      if (!regId && veiculo.regional) {
+        const { data: regMatch } = await supabase.from("regionais").select("id").ilike("nome", `%${veiculo.regional}%`).limit(1).maybeSingle();
+        if (regMatch) regId = regMatch.id;
+      }
 
       // Buscar produtos disponíveis para a regional (via produto_regras)
       let produtosQuery = supabase.from("produtos_gia").select("*").eq("ativo", true).order("nome");
       const { data: todosProdutos } = await produtosQuery;
 
       let produtosRegional = todosProdutos || [];
-      // Tentar buscar regional_id pelo nome da regional do veículo se não encontrou via associado
-      let regId = regionalId;
-      if (!regId && veiculo.regional) {
-        const { data: regMatch } = await supabase.from("regionais").select("id").ilike("nome", `%${veiculo.regional}%`).limit(1).maybeSingle();
-        if (regMatch) regId = regMatch.id;
-      }
       if (regId) {
         const { data: regras } = await (supabase as any).from("produto_regras").select("produto_id").eq("regional_id", regId);
         if (regras && regras.length > 0) {
