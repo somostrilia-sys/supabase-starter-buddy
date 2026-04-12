@@ -305,19 +305,29 @@ export default function ConsultarVeiculo() {
     if (!selected) return;
     setLapsSaving(true);
     try {
-      // Deletar produtos antigos
-      await (supabase as any).from("veiculo_produtos").delete().eq("veiculo_id", selected.id);
-      // Inserir novos (colunas existentes: veiculo_id, produto_id, tipo)
       const produtoIds = Object.entries(lapsSelecionados).filter(([, v]) => v).map(([k]) => k);
       const inserts = produtoIds.map(pid => ({
         veiculo_id: selected.id, produto_id: pid, tipo: "principal",
       }));
+      // Inserir primeiro para validar, só depois deletar os antigos (evita perda de dados)
       if (inserts.length > 0) {
-        const { error } = await (supabase as any).from("veiculo_produtos").insert(inserts);
-        if (error) throw error;
+        const { error: testErr } = await (supabase as any).from("veiculo_produtos").insert(inserts);
+        if (testErr) throw testErr;
+        // Insert ok — agora remover os registros antigos (que não são os recém-inseridos)
+        const { data: novos } = await (supabase as any).from("veiculo_produtos")
+          .select("id").eq("veiculo_id", selected.id).order("id", { ascending: false }).limit(inserts.length);
+        const novosIds = new Set((novos || []).map((n: any) => n.id));
+        const { data: todos } = await (supabase as any).from("veiculo_produtos")
+          .select("id").eq("veiculo_id", selected.id);
+        const idsParaDeletar = (todos || []).filter((t: any) => !novosIds.has(t.id)).map((t: any) => t.id);
+        if (idsParaDeletar.length > 0) {
+          await (supabase as any).from("veiculo_produtos").delete().in("id", idsParaDeletar);
+        }
+      } else {
+        // Nenhum produto selecionado — limpar tudo
+        await (supabase as any).from("veiculo_produtos").delete().eq("veiculo_id", selected.id);
       }
       toast.success("Composição do plano salva com sucesso!");
-      // Recarregar
       await carregarLaps(selected);
     } catch (err: any) {
       toast.error("Erro ao salvar: " + err.message);
