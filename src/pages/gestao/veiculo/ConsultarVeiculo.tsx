@@ -191,11 +191,11 @@ export default function ConsultarVeiculo() {
     try {
       // Buscar regional_id do associado + cidade/estado para resolver regional por cidade de circulação
       const { data: assocData } = veiculo.associado_id
-        ? await supabase.from("associados").select("regional_id, endereco_cidade, estado").eq("id", veiculo.associado_id).maybeSingle()
+        ? await supabase.from("associados").select("regional_id, endereco_cidade, endereco_uf").eq("id", veiculo.associado_id).maybeSingle()
         : { data: null };
       const regionalId = assocData?.regional_id;
       const cidadeAssociado = assocData?.endereco_cidade || "";
-      const estadoAssociado = assocData?.estado || "";
+      const estadoAssociado = assocData?.endereco_uf || "";
 
       // Resolver regional pela cidade de circulação do cadastro (via municipios → regional_cidades)
       let regId = null as string | null;

@@ -194,10 +194,12 @@ Deno.serve(async (req) => {
       await sql`ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS ajuste_avulso_valor DECIMAL(10,2) DEFAULT 0`;
       await sql`ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS ajuste_avulso_desc TEXT`;
 
-      // Limpar tabela de vínculos
-      await sql`DELETE FROM veiculo_produtos`;
-      // Limpar ajustes anteriores
-      await sql`UPDATE veiculos SET ajuste_avulso_valor = 0, ajuste_avulso_desc = NULL`;
+      // Limpar tabela de vínculos (apenas no primeiro lote)
+      const { clear } = body;
+      if (clear) {
+        await sql`DELETE FROM veiculo_produtos`;
+        await sql`UPDATE veiculos SET ajuste_avulso_valor = 0, ajuste_avulso_desc = NULL`;
+      }
 
       let totalInserido = 0;
       let placasNaoEncontradas = 0;
@@ -210,7 +212,7 @@ Deno.serve(async (req) => {
 
         // Buscar veículo + dados para cálculo de taxa/rateio
         const veic = await sql`
-          SELECT v.id, v.valor_fipe, v.modelo, a.regional_id, a.endereco_cidade, a.estado
+          SELECT v.id, v.valor_fipe, v.modelo, a.regional_id, a.endereco_cidade, a.endereco_uf
           FROM veiculos v
           LEFT JOIN associados a ON a.id = v.associado_id
           WHERE REPLACE(v.placa, '-', '') = ${placa.replace(/-/g, '')}
