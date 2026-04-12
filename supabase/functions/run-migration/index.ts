@@ -180,6 +180,123 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "restore-veiculo-produtos") {
+      // Restaurar produtos + ajuste para veículos a partir de dados do relatório SGA
+      // data = array de { placa, valor (mensalidade do relatório), codigos (codigo_sga) }
+      if (!Array.isArray(data) || data.length === 0) {
+        await sql.end();
+        return new Response(JSON.stringify({ error: "data deve ser array de {placa, valor, codigos}" }), {
+          status: 400, headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // Adicionar colunas de ajuste na tabela veiculos (idempotente)
+      await sql`ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS ajuste_avulso_valor DECIMAL(10,2) DEFAULT 0`;
+      await sql`ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS ajuste_avulso_desc TEXT`;
+
+      // Limpar tabela de vínculos
+      await sql`DELETE FROM veiculo_produtos`;
+      // Limpar ajustes anteriores
+      await sql`UPDATE veiculos SET ajuste_avulso_valor = 0, ajuste_avulso_desc = NULL`;
+
+      let totalInserido = 0;
+      let placasNaoEncontradas = 0;
+      let ajustesAplicados = 0;
+      let erros: string[] = [];
+
+      for (const item of data) {
+        const { placa, valor, codigos } = item;
+        if (!placa || !codigos || codigos.length === 0) continue;
+
+        // Buscar veículo + dados para cálculo de taxa/rateio
+        const veic = await sql`
+          SELECT v.id, v.valor_fipe, v.modelo, a.regional_id, a.endereco_cidade, a.estado
+          FROM veiculos v
+          LEFT JOIN associados a ON a.id = v.associado_id
+          WHERE REPLACE(v.placa, '-', '') = ${placa.replace(/-/g, '')}
+          LIMIT 1
+        `;
+        if (veic.length === 0) { placasNaoEncontradas++; continue; }
+        const v = veic[0];
+
+        // Buscar produto_ids pelos codigo_sga
+        const codigosStr = codigos.map((c: number) => String(c));
+        const prods = await sql`SELECT id, codigo_sga, valor FROM produtos_gia WHERE codigo_sga = ANY(${codigosStr})`;
+        if (prods.length === 0) continue;
+
+        // Inserir vínculos
+        for (const p of prods) {
+          try {
+            await sql`INSERT INTO veiculo_produtos (veiculo_id, produto_id, tipo) VALUES (${v.id}, ${p.id}, 'principal') ON CONFLICT DO NOTHING`;
+            totalInserido++;
+          } catch (e) {
+            erros.push(`${placa}/${p.codigo_sga}: ${e.message}`);
+          }
+        }
+
+        // Calcular subtotal produtos
+        const subtotalProd = prods.reduce((s: number, p: any) => s + (Number(p.valor) || 0), 0);
+
+        // Resolver regional (cidade → municipios → regional_cidades, fallback: regional_id)
+        let regId = v.regional_id;
+        if (v.endereco_cidade && v.estado && !regId) {
+          const mun = await sql`SELECT id FROM municipios WHERE uf = ${v.estado} AND LOWER(nome) = LOWER(${v.endereco_cidade}) LIMIT 1`;
+          if (mun.length > 0) {
+            const rc = await sql`SELECT regional_id FROM regional_cidades WHERE municipio_id = ${mun[0].id} LIMIT 1`;
+            if (rc.length > 0) regId = rc[0].regional_id;
+          }
+        }
+
+        // Buscar taxa + rateio da faixa FIPE
+        let taxa = 0, rateio = 0;
+        if (regId && v.valor_fipe > 0) {
+          const modelo = (v.modelo || "").toLowerCase();
+          let tipoSga = "AUTOMOVEL";
+          if (/moto|cg |cb |honda cg/i.test(modelo)) tipoSga = "MOTOCICLETA";
+          else if (/scania|volvo fh|iveco|cargo|constellation/i.test(modelo)) tipoSga = "PESADOS";
+          else if (/sprinter|daily|ducato|master/i.test(modelo)) tipoSga = "VANS E PESADOS P.P";
+          else if (/fiorino|kangoo|doblo|strada|saveiro/i.test(modelo)) tipoSga = "UTILITARIOS";
+
+          const faixa = await sql`
+            SELECT taxa_administrativa, rateio FROM faixas_fipe
+            WHERE regional_id = ${regId} AND tipo_veiculo = ${tipoSga}
+              AND fipe_min <= ${v.valor_fipe} AND fipe_max >= ${v.valor_fipe}
+            LIMIT 1
+          `;
+          if (faixa.length > 0) {
+            taxa = Number(faixa[0].taxa_administrativa) || 0;
+            rateio = Number(faixa[0].rateio) || 0;
+          }
+        }
+
+        // Calcular ajuste = valor_relatorio - (subtotal + taxa + rateio)
+        const calculado = subtotalProd + taxa + rateio;
+        const valorRelatorio = Number(valor) || 0;
+        const ajuste = Math.round((valorRelatorio - calculado) * 100) / 100;
+
+        if (Math.abs(ajuste) >= 0.01) {
+          await sql`UPDATE veiculos SET ajuste_avulso_valor = ${ajuste}, ajuste_avulso_desc = ${"Ajuste SGA (relatório)"} WHERE id = ${v.id}`;
+          ajustesAplicados++;
+        }
+      }
+
+      const stats = await sql`
+        SELECT
+          (SELECT COUNT(DISTINCT veiculo_id) FROM veiculo_produtos) as veiculos_com_produtos,
+          (SELECT COUNT(*) FROM veiculo_produtos) as total_registros,
+          (SELECT COUNT(*) FROM veiculos WHERE ajuste_avulso_valor != 0) as veiculos_com_ajuste
+      `;
+      await sql.end();
+      return new Response(JSON.stringify({
+        status: "ok",
+        total_inserido: totalInserido,
+        placas_nao_encontradas: placasNaoEncontradas,
+        ajustes_aplicados: ajustesAplicados,
+        erros_sample: erros.slice(0, 20),
+        stats: stats[0],
+      }), { headers: { "Content-Type": "application/json" } });
+    }
+
     if (action === "check") {
       const stats = await sql`
         SELECT regional, plano, COUNT(*) as faixas, MIN(mensalidade) as min_mensal, MAX(mensalidade) as max_mensal

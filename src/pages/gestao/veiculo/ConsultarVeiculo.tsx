@@ -245,11 +245,12 @@ export default function ConsultarVeiculo() {
       (veicProd || []).forEach((vp: any) => { sel[vp.produto_id] = true; });
       setLapsSelecionados(sel);
 
-      // Carregar ajuste avulso existente
-      const existingAjuste = (veicProd || []).find((vp: any) => vp.tipo === "ajuste_avulso");
-      if (existingAjuste) {
-        setLapsAjusteDesc(existingAjuste.descricao || "");
-        setLapsAjusteValor(String(existingAjuste.valor || ""));
+      // Carregar ajuste avulso existente (salvo na tabela veiculos)
+      const { data: ajusteData } = await (supabase as any).from("veiculos")
+        .select("ajuste_avulso_valor, ajuste_avulso_desc").eq("id", veiculo.id).maybeSingle();
+      if (ajusteData && (ajusteData.ajuste_avulso_valor || ajusteData.ajuste_avulso_desc)) {
+        setLapsAjusteDesc(ajusteData.ajuste_avulso_desc || "");
+        setLapsAjusteValor(String(ajusteData.ajuste_avulso_valor || ""));
       } else {
         setLapsAjusteDesc("");
         setLapsAjusteValor("");
@@ -327,6 +328,13 @@ export default function ConsultarVeiculo() {
         // Nenhum produto selecionado — limpar tudo
         await (supabase as any).from("veiculo_produtos").delete().eq("veiculo_id", selected.id);
       }
+      // Salvar ajuste avulso na tabela veiculos
+      const ajusteNum = parseFloat(lapsAjusteValor) || 0;
+      await (supabase as any).from("veiculos").update({
+        ajuste_avulso_valor: ajusteNum,
+        ajuste_avulso_desc: lapsAjusteDesc.trim() || null,
+      }).eq("id", selected.id);
+
       toast.success("Composição do plano salva com sucesso!");
       await carregarLaps(selected);
     } catch (err: any) {
