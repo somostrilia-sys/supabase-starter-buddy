@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import PhoneInput from "@/components/ui/phone-input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -529,10 +530,10 @@ export default function CadastrarAssociado() {
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-              <div><Label>Tel. Residencial</Label><Input value={form.telResidencial} onChange={e => set("telResidencial", maskTelFixo(e.target.value))} placeholder="(XX) XXXX-XXXX" /></div>
-              <div><Label>Tel. Comercial</Label><Input value={form.telComercial} onChange={e => set("telComercial", maskTelFixo(e.target.value))} placeholder="(XX) XXXX-XXXX" /></div>
-              <div><Label>Celular *</Label><Input value={form.celular} onChange={e => set("celular", maskCel(e.target.value))} placeholder="(XX) 9XXXX-XXXX" /></div>
-              <div><Label>Celular Aux</Label><Input value={form.celularAux} onChange={e => set("celularAux", maskCel(e.target.value))} placeholder="(XX) 9XXXX-XXXX" /></div>
+              <div><Label>Tel. Residencial</Label><PhoneInput value={form.telResidencial} onChange={v => set("telResidencial", v)} /></div>
+              <div><Label>Tel. Comercial</Label><PhoneInput value={form.telComercial} onChange={v => set("telComercial", v)} /></div>
+              <div><Label>Celular *</Label><PhoneInput value={form.celular} onChange={v => set("celular", v)} /></div>
+              <div><Label>Celular Aux</Label><PhoneInput value={form.celularAux} onChange={v => set("celularAux", v)} /></div>
               <SelectWithAdd label="Operadora" value={form.operadora} onValueChange={v => set("operadora", v)} options={["Vivo","Claro","Tim","Oi"]} />
               <SelectWithAdd label="Operadora Aux" value={form.operadoraAux} onValueChange={v => set("operadoraAux", v)} options={["Vivo","Claro","Tim","Oi"]} />
             </div>

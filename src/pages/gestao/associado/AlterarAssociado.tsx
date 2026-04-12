@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import PhoneInput from "@/components/ui/phone-input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -706,9 +707,9 @@ export default function AlterarAssociado() {
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-                  <div><Label className="text-xs">Telefone Principal <span className="text-destructive">*</span></Label><Input value={editForm.celular||""} onChange={e => setE("celular", e.target.value)} placeholder="(00) 00000-0000" /></div>
-                  <div><Label className="text-xs">Tel. Residencial</Label><Input value={editForm.telResidencial||""} onChange={e => setE("telResidencial", e.target.value)} placeholder="(00) 0000-0000" /></div>
-                  <div><Label className="text-xs">Tel. Comercial</Label><Input value={editForm.telComercial||""} onChange={e => setE("telComercial", e.target.value)} placeholder="(00) 0000-0000" /></div>
+                  <div><Label className="text-xs">Telefone Principal <span className="text-destructive">*</span></Label><PhoneInput value={editForm.celular||""} onChange={v => setE("celular", v)} /></div>
+                  <div><Label className="text-xs">Tel. Residencial</Label><PhoneInput value={editForm.telResidencial||""} onChange={v => setE("telResidencial", v)} /></div>
+                  <div><Label className="text-xs">Tel. Comercial</Label><PhoneInput value={editForm.telComercial||""} onChange={v => setE("telComercial", v)} /></div>
                 </div>
               </AccordionContent>
             </AccordionItem>
