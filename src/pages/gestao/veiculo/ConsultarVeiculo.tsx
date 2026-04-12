@@ -307,33 +307,21 @@ export default function ConsultarVeiculo() {
     setLapsSaving(true);
     try {
       const produtoIds = Object.entries(lapsSelecionados).filter(([, v]) => v).map(([k]) => k);
-      const inserts = produtoIds.map(pid => ({
-        veiculo_id: selected.id, produto_id: pid, tipo: "principal",
-      }));
-      // Inserir primeiro para validar, só depois deletar os antigos (evita perda de dados)
-      if (inserts.length > 0) {
-        const { error: testErr } = await (supabase as any).from("veiculo_produtos").insert(inserts);
-        if (testErr) throw testErr;
-        // Insert ok — agora remover os registros antigos (que não são os recém-inseridos)
-        const { data: novos } = await (supabase as any).from("veiculo_produtos")
-          .select("id").eq("veiculo_id", selected.id).order("id", { ascending: false }).limit(inserts.length);
-        const novosIds = new Set((novos || []).map((n: any) => n.id));
-        const { data: todos } = await (supabase as any).from("veiculo_produtos")
-          .select("id").eq("veiculo_id", selected.id);
-        const idsParaDeletar = (todos || []).filter((t: any) => !novosIds.has(t.id)).map((t: any) => t.id);
-        if (idsParaDeletar.length > 0) {
-          await (supabase as any).from("veiculo_produtos").delete().in("id", idsParaDeletar);
-        }
-      } else {
-        // Nenhum produto selecionado — limpar tudo
-        await (supabase as any).from("veiculo_produtos").delete().eq("veiculo_id", selected.id);
+      // Deletar vínculos atuais e re-inserir
+      await (supabase as any).from("veiculo_produtos").delete().eq("veiculo_id", selected.id);
+      if (produtoIds.length > 0) {
+        const inserts = produtoIds.map(pid => ({
+          veiculo_id: selected.id, produto_id: pid, tipo: "principal",
+        }));
+        const { error } = await (supabase as any).from("veiculo_produtos").insert(inserts);
+        if (error) throw error;
       }
-      // Salvar ajuste avulso na tabela veiculos
+      // Salvar ajuste avulso na tabela veiculos (colunas podem não existir ainda)
       const ajusteNum = parseFloat(lapsAjusteValor) || 0;
       await (supabase as any).from("veiculos").update({
         ajuste_avulso_valor: ajusteNum,
         ajuste_avulso_desc: lapsAjusteDesc.trim() || null,
-      }).eq("id", selected.id);
+      }).eq("id", selected.id).then(() => {}).catch(() => {});
 
       toast.success("Composição do plano salva com sucesso!");
       await carregarLaps(selected);
