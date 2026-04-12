@@ -97,7 +97,7 @@ export default function ConsultarVeiculo() {
   // Auto-buscar por placa via query params (atalho do Associado)
   useEffect(() => {
     const placaParam = searchParams.get("placa");
-    const tabParam = searchParams.get("tab");
+    const tabParam = searchParams.get("vtab") || searchParams.get("tab");
     if (placaParam && !searched) {
       setFilters(prev => ({ ...prev, placa: placaParam }));
       if (tabParam) setAutoTab(tabParam);

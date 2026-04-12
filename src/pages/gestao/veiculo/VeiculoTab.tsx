@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Car, CarFront, Search, UserPlus, ClipboardCheck, BarChart3,
   ArrowLeft, ChevronRight, RefreshCw, User, CheckCircle, Users,
@@ -32,6 +33,14 @@ const actions = [
 
 export default function VeiculoTab() {
   const [view, setView] = useState<View>("menu");
+  const [searchParams] = useSearchParams();
+
+  // Se tem query param placa, abrir direto em consultar
+  useEffect(() => {
+    if (searchParams.get("placa")) {
+      setView("consultar");
+    }
+  }, [searchParams]);
 
   if (view === "menu") {
     return (

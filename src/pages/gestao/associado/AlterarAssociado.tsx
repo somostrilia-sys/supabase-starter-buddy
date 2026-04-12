@@ -799,7 +799,7 @@ export default function AlterarAssociado() {
                       <TableCell>
                         <div className="flex gap-1">
                           <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar" onClick={() => openVeicDetail(v.placa)}><Pencil className="h-3.5 w-3.5" /></Button>
-                          <Button variant="ghost" size="sm" className="h-7 text-[10px] text-primary" title="Ver LAPS / Produtos" onClick={() => navigate(`/gestao/veiculos?placa=${v.placa}&tab=laps`)}>LAPS</Button>
+                          <Button variant="ghost" size="sm" className="h-7 text-[10px] text-primary" title="Ver LAPS / Produtos" onClick={() => navigate(`/gestao?tab=veiculo&placa=${v.placa}&vtab=laps`)}>LAPS</Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Desvincular"><X className="h-3.5 w-3.5" /></Button>
                         </div>
                       </TableCell>
@@ -1043,7 +1043,7 @@ export default function AlterarAssociado() {
                   <div><Label className="text-xs">Rateio</Label><Input value={veicForm.rateio || "-"} disabled className="bg-muted/50" /></div>
                   <div><Label className="text-xs">Valor FIPE</Label><Input value={veicForm.valor_fipe ? `R$ ${String(veicForm.valor_fipe).replace(".", ",")}` : "-"} disabled className="bg-muted/50" /></div>
                 </div>
-                <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={() => { setVeicModal(false); navigate(`/gestao/veiculos?placa=${veicForm.placa}&tab=laps`); }}>
+                <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={() => { setVeicModal(false); navigate(`/gestao?tab=veiculo&placa=${veicForm.placa}&vtab=laps`); }}>
                   <Eye className="h-3.5 w-3.5" /> Ver Produtos (LAPS)
                 </Button>
               </div>

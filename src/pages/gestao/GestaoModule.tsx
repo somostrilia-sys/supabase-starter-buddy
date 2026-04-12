@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,9 +41,18 @@ const gestaoTabs = [
 
 export default function GestaoModule() {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { brand } = useBrand();
+
+  // Reagir a query params: ?tab=veiculo&placa=ABC1D23 (ex: botão LAPS do Associado)
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam && gestaoTabs.some(t => t.id === tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   const renderContent = () => {
     switch (activeTab) {
