@@ -123,13 +123,55 @@ export default function AlterarAssociado() {
     try {
       const { data, error } = await supabase
         .from("veiculos")
-        .select("*, contratos(*, planos(nome)), associados(nome, cpf, regional_id, cooperativa_id)")
+        .select("*, contratos(*, planos(nome)), associados(nome, cpf, regional_id, cooperativa_id, endereco_cidade, endereco_uf)")
         .ilike("placa", placa)
         .limit(1)
         .maybeSingle();
       if (error) throw error;
       if (!data) { toast.error("Veículo não encontrado"); setVeicModal(false); return; }
       setVeicDetail(data);
+
+      // Buscar taxa administrativa e rateio da faixas_fipe (mesma lógica do LAPS)
+      let taxaAdm = "";
+      let rateioVal = "";
+      let regId = data.associados?.regional_id || null;
+
+      // Resolver regional pela cidade de circulação
+      if (!regId && data.associados?.endereco_cidade && data.associados?.endereco_uf) {
+        const { data: mun } = await (supabase as any).from("municipios")
+          .select("id").eq("uf", data.associados.endereco_uf).ilike("nome", data.associados.endereco_cidade).limit(1).maybeSingle();
+        if (mun) {
+          const { data: rc } = await (supabase as any).from("regional_cidades")
+            .select("regional_id").eq("municipio_id", mun.id).limit(1).maybeSingle();
+          if (rc) regId = rc.regional_id;
+        }
+      }
+
+      if (regId && data.valor_fipe > 0) {
+        const modelo = (data.modelo || "").toLowerCase();
+        let tipoSga = "AUTOMOVEL";
+        if (/moto|cg |cb |honda cg/i.test(modelo)) tipoSga = "MOTOCICLETA";
+        else if (/scania|volvo fh|iveco|cargo|constellation/i.test(modelo)) tipoSga = "PESADOS";
+        else if (/sprinter|daily|ducato|master/i.test(modelo)) tipoSga = "VANS E PESADOS P.P";
+        else if (/fiorino|kangoo|doblo|strada|saveiro/i.test(modelo)) tipoSga = "UTILITARIOS";
+
+        const { data: faixa } = await (supabase as any).from("faixas_fipe")
+          .select("taxa_administrativa, rateio")
+          .eq("regional_id", regId).eq("tipo_veiculo", tipoSga)
+          .lte("fipe_min", data.valor_fipe).gte("fipe_max", data.valor_fipe)
+          .limit(1).maybeSingle();
+        if (faixa) {
+          taxaAdm = `R$ ${Number(faixa.taxa_administrativa || 0).toFixed(2).replace(".", ",")}`;
+          rateioVal = `R$ ${Number(faixa.rateio || 0).toFixed(2).replace(".", ",")}`;
+        }
+      }
+
+      // Buscar produtos vinculados para calcular cota (subtotal)
+      const { data: veicProds } = await (supabase as any).from("veiculo_produtos")
+        .select("produto_id, produtos_gia(valor, nome)").eq("veiculo_id", data.id);
+      const subtotal = (veicProds || []).reduce((s: number, vp: any) => s + (Number(vp.produtos_gia?.valor) || 0), 0);
+      const cotaVal = subtotal > 0 ? `R$ ${subtotal.toFixed(2).replace(".", ",")}` : data.cota || "";
+
       setVeicForm({
         placa: data.placa || "",
         modelo: data.modelo || "",
@@ -138,14 +180,14 @@ export default function AlterarAssociado() {
         chassi: data.chassi || "",
         cor: data.cor || "",
         status: data.status || "Ativo",
-        plano: data.contratos?.[0]?.planos?.nome || "Sem plano vinculado",
+        plano: data.contratos?.[0]?.planos?.nome || ((veicProds || []).length > 0 ? `${(veicProds || []).length} produtos` : "Sem plano vinculado"),
         renavam: data.renavam || "",
         combustivel: data.combustivel || "",
         categoria: data.categoria || "",
-        cota: data.cota || "",
+        cota: cotaVal,
         valor_fipe: data.valor_fipe || "",
-        taxa_adm: data.taxa_adm || "",
-        rateio: data.rateio || "",
+        taxa_adm: taxaAdm,
+        rateio: rateioVal,
       });
     } catch (e: any) {
       toast.error(e.message || "Erro ao buscar veículo");
