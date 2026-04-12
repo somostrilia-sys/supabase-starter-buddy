@@ -282,17 +282,18 @@ export default function ConsultarVeiculo() {
         }
       }
 
-      // Calcular mensalidade
-      await calcularMensalidadeLaps(veiculo, sel, taxaAdm, rateioVal);
+      // Calcular mensalidade (passa produtosRegional pois o state ainda não atualizou)
+      await calcularMensalidadeLaps(sel, taxaAdm, rateioVal, produtosRegional);
     } catch (err: any) {
       toast.error("Erro ao carregar LAPS: " + err.message);
     }
     setLapsLoading(false);
   };
 
-  const calcularMensalidadeLaps = async (veiculo: Veiculo, selecionados: Record<string, boolean>, taxaAdm?: number, rateioVal?: number) => {
+  const calcularMensalidadeLaps = async (selecionados: Record<string, boolean>, taxaAdm?: number, rateioVal?: number, produtosOverride?: any[]) => {
+    const produtos = produtosOverride || lapsProdutosDisponiveis;
     const produtoIds = Object.entries(selecionados).filter(([, v]) => v).map(([k]) => k);
-    const subtotal = lapsProdutosDisponiveis.filter(p => produtoIds.includes(p.id)).reduce((s, p) => s + (p.valor || 0), 0);
+    const subtotal = produtos.filter(p => produtoIds.includes(p.id)).reduce((s, p) => s + (p.valor || 0), 0);
     const ajusteNum = parseFloat(lapsAjusteValor) || 0;
     const taxa = taxaAdm ?? lapsCalculo?.taxa_administrativa ?? 0;
     const rateio = rateioVal ?? lapsCalculo?.rateio ?? 0;
@@ -637,7 +638,7 @@ export default function ConsultarVeiculo() {
                               onCheckedChange={(checked) => {
                                 const novo = { ...lapsSelecionados, [p.id]: !!checked };
                                 setLapsSelecionados(novo);
-                                calcularMensalidadeLaps(sel, novo);
+                                calcularMensalidadeLaps(novo);
                               }}
                             />
                             <div className="flex-1 min-w-0">
@@ -713,7 +714,7 @@ export default function ConsultarVeiculo() {
                       <Input
                         value={lapsAjusteValor}
                         onChange={e => setLapsAjusteValor(e.target.value)}
-                        onBlur={() => calcularMensalidadeLaps(sel, lapsSelecionados)}
+                        onBlur={() => calcularMensalidadeLaps(lapsSelecionados)}
                         placeholder="0,00"
                         className="text-sm font-mono"
                       />
