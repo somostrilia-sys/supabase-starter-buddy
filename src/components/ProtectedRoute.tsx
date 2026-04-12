@@ -19,6 +19,7 @@ export function ProtectedRoute({
   const perms = usePermission();
   const [timeout, setTimeout_] = useState(false);
 
+  const isFullyLoaded = !loading && !usuarioLoading && !perms.loading;
   const hasPermission = !permission || perms[permission];
 
   // Timeout: se tudo não carrega em 10s, redireciona para login
@@ -27,11 +28,12 @@ export function ProtectedRoute({
     return () => clearTimeout(timer);
   }, []);
 
+  // Só mostra toast depois que TUDO carregou (evita falso "Sem permissão")
   useEffect(() => {
-    if (!loading && !usuarioLoading && session && permission && !hasPermission) {
+    if (isFullyLoaded && session && permission && !hasPermission) {
       toast.error("Sem permissão");
     }
-  }, [loading, usuarioLoading, session, permission, hasPermission]);
+  }, [isFullyLoaded, session, permission, hasPermission]);
 
   // Aguarda auth + profile + usuario carregarem
   if (loading || (session && (usuarioLoading || perms.loading))) {
@@ -47,7 +49,7 @@ export function ProtectedRoute({
     return <Navigate to="/auth" replace />;
   }
 
-  if (permission && !hasPermission) {
+  if (isFullyLoaded && permission && !hasPermission) {
     return <Navigate to="/" replace />;
   }
 
