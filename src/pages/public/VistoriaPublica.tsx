@@ -20,6 +20,11 @@ import imgChassi from "@/assets/vistoria/chassi.jpg";
 import imgQuilometragem from "@/assets/vistoria/quilometragem.jpg";
 import imgParaBrisa from "@/assets/vistoria/para-brisa.jpg";
 // Moto
+import imgMotoFrente from "@/assets/vistoria/moto/frente.jpg";
+import imgMotoTraseira from "@/assets/vistoria/moto/traseira.jpg";
+import imgMotoLateral from "@/assets/vistoria/moto/lateral.jpg";
+import imgMotoMotor from "@/assets/vistoria/moto/motor.jpg";
+import imgMotoRodas from "@/assets/vistoria/moto/rodas.jpg";
 import imgMotoGuidao from "@/assets/vistoria/moto/guidao.jpg";
 import imgMotoPainel from "@/assets/vistoria/moto/painel.jpg";
 import imgMotoCarenagem from "@/assets/vistoria/moto/carenagem.jpg";
@@ -31,8 +36,8 @@ import imgCamCarroceria from "@/assets/vistoria/caminhao/carroceria.jpg";
 import imgCamEixos from "@/assets/vistoria/caminhao/eixos.jpg";
 import imgCamTacografo from "@/assets/vistoria/caminhao/tacografo.jpg";
 
-// Todas as categorias possíveis (automóvel + moto + caminhão)
-const TODAS_CATEGORIAS: Record<string, { label: string; img: string; obs?: string }> = {
+// Categorias base (automóvel)
+const CATEGORIAS_BASE: Record<string, { label: string; img: string; obs?: string }> = {
   frente: { label: "Frente", img: imgFrente },
   traseira: { label: "Traseira", img: imgTraseira },
   lateral_esquerda: { label: "Lateral Esquerda", img: imgLateralEsq },
@@ -46,19 +51,37 @@ const TODAS_CATEGORIAS: Record<string, { label: string; img: string; obs?: strin
   chave: { label: "Chave do Veículo", img: imgChave },
   chassi: { label: "Chassi", img: imgChassi, obs: "Se não encontrar no motor, pode ser do vidro" },
   quilometragem: { label: "Quilometragem", img: imgQuilometragem },
-  // Moto (fotos reais de moto)
+  para_brisa: { label: "Para-brisa", img: imgParaBrisa },
+  teto: { label: "Teto", img: imgTeto },
+  // Moto exclusivas
   guidao: { label: "Guidão", img: imgMotoGuidao },
   painel_moto: { label: "Painel / Velocímetro", img: imgMotoPainel },
   carenagem: { label: "Carenagem / Tanque", img: imgMotoCarenagem },
   escapamento: { label: "Escapamento", img: imgMotoEscapamento },
-  // Caminhão (fotos reais de caminhão)
-  para_brisa: { label: "Para-brisa", img: imgParaBrisa },
+  // Caminhão exclusivas
   cabine: { label: "Cabine", img: imgCamCabine },
   carroceria: { label: "Carroceria / Baú", img: imgCamCarroceria },
   eixos: { label: "Eixos / Suspensão", img: imgCamEixos },
   tacografo: { label: "Tacógrafo", img: imgCamTacografo },
-  teto: { label: "Teto", img: imgTeto },
 };
+
+// Overrides de imagens/labels para moto (IDs compartilhados que precisam de foto diferente)
+const OVERRIDES_MOTO: Record<string, { label: string; img: string; obs?: string }> = {
+  frente: { label: "Frente", img: imgMotoFrente },
+  traseira: { label: "Traseira", img: imgMotoTraseira },
+  lateral_esquerda: { label: "Lateral Esquerda", img: imgMotoLateral },
+  lateral_direita: { label: "Lateral Direita", img: imgMotoLateral },
+  motor_capo: { label: "Motor", img: imgMotoMotor },
+  rodas_pneus: { label: "Rodas e Pneus", img: imgMotoRodas },
+  chave: { label: "Chave da Moto", img: imgChave },
+  chassi: { label: "Chassi", img: imgChassi, obs: "No chassi ou no cabeçote" },
+};
+
+// Retorna o mapa de categorias com imagens corretas para o tipo
+function getCategorias(isMoto: boolean): Record<string, { label: string; img: string; obs?: string }> {
+  if (!isMoto) return CATEGORIAS_BASE;
+  return { ...CATEGORIAS_BASE, ...OVERRIDES_MOTO };
+}
 
 // Fotos por tipo de veículo
 const CATEGORIAS_AUTOMOVEL = ["frente","traseira","lateral_esquerda","lateral_direita","para_brisa","interior_painel","banco_dianteiro","banco_traseiro","motor_capo","porta_malas","rodas_pneus","chave","chassi","quilometragem"];
@@ -311,10 +334,15 @@ export default function VistoriaPublica() {
   );
 
   // Categorias dinâmicas baseadas na vistoria (moto/caminhão/automóvel)
+  const categoriasIdsFallback = detectarCategoriaPorModelo(vistoria?.modelo || "", vistoria?.configuracao);
   const categoriasIds = (vistoria?.fotos_solicitadas && Array.isArray(vistoria.fotos_solicitadas) && vistoria.fotos_solicitadas.length > 0)
     ? vistoria.fotos_solicitadas as string[]
-    : detectarCategoriaPorModelo(vistoria?.modelo || "", vistoria?.configuracao);
-  const CATEGORIAS = categoriasIds.map(id => ({ id, ...(TODAS_CATEGORIAS[id] || { label: id.replace(/_/g, " "), img: "" }) }));
+    : categoriasIdsFallback;
+  // Detectar se é moto para usar imagens de referência corretas
+  const isMoto = categoriasIdsFallback === CATEGORIAS_MOTO
+    || categoriasIds.includes("guidao") || categoriasIds.includes("carenagem") || categoriasIds.includes("escapamento");
+  const catMap = getCategorias(isMoto);
+  const CATEGORIAS = categoriasIds.map(id => ({ id, ...(catMap[id] || { label: id.replace(/_/g, " "), img: "" }) }));
 
   const fotosTiradas = fotos.size;
   const totalFotos = CATEGORIAS.length;
