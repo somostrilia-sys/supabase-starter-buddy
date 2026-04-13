@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PosVendaSection from "./PosVendaSection";
+import ArquivosSGA from "@/components/ArquivosSGA";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -457,8 +458,8 @@ export default function ConsultarVeiculo() {
                             <TableCell className="text-sm font-medium">{v.nome}</TableCell>
                             <TableCell className="font-mono text-sm">{v.placa}</TableCell>
                             <TableCell className="text-xs">{v.regional}</TableCell>
-                            <TableCell className="text-xs">{new Date(v.dataCadastro).toLocaleDateString("pt-BR")}</TableCell>
-                            <TableCell className="text-xs">{new Date(v.dataContrato).toLocaleDateString("pt-BR")}</TableCell>
+                            <TableCell className="text-xs">{v.dataCadastro ? new Date(v.dataCadastro).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                            <TableCell className="text-xs">{v.dataContrato ? new Date(v.dataContrato).toLocaleDateString("pt-BR") : "—"}</TableCell>
                             <TableCell className="text-xs">Dia {v.diaVenc}</TableCell>
                             <TableCell className="text-xs">R$ {v.valorFipe.toLocaleString("pt-BR")}</TableCell>
                             <TableCell className="text-xs">{v.cota}</TableCell>
@@ -523,6 +524,7 @@ export default function ConsultarVeiculo() {
             <TabsTrigger value="agregados" className="text-xs gap-1"><Package className="h-3 w-3" />Agregados</TabsTrigger>
             <TabsTrigger value="vistorias" className="text-xs gap-1"><ClipboardCheck className="h-3 w-3" />Vistorias</TabsTrigger>
             <TabsTrigger value="documentos" className="text-xs gap-1"><FileText className="h-3 w-3" />Documentos</TabsTrigger>
+            <TabsTrigger value="arquivos-sga" className="text-xs gap-1"><FileText className="h-3 w-3" />SGA</TabsTrigger>
             <TabsTrigger value="observacoes" className="text-xs gap-1"><FileText className="h-3 w-3" />Obs</TabsTrigger>
             <TabsTrigger value="fornecedores" className="text-xs gap-1"><PhoneIcon className="h-3 w-3" />Fornecedores</TabsTrigger>
             <TabsTrigger value="contratos" className="text-xs gap-1"><FileSignature className="h-3 w-3" />Contratos</TabsTrigger>
@@ -910,6 +912,11 @@ export default function ConsultarVeiculo() {
               </TableBody>
             </Table>
           </CardContent></Card>
+        </TabsContent>
+
+        {/* TAB SGA - ARQUIVOS */}
+        <TabsContent value="arquivos-sga" className="mt-4">
+          <ArquivosSGA placa={sel.placa} />
         </TabsContent>
 
         {/* TAB 7 - OBSERVAÇÕES */}

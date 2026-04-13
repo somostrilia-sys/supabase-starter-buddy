@@ -70,16 +70,22 @@ export default function DashboardTab() {
   const mesAtual = new Date().toISOString().slice(0, 7);
 
   // ── Contagem de associados por status ──
-  const { data: statusAssociados = { ativo: 0, inadimplente: 0, inativo: 0, inativo_pendencia: 0, cancelado: 0, negado: 0, suspenso: 0, pendente: 0, total: 0 }, isLoading: loadingStatus } = useQuery({
+  const { data: statusAssociados = { ativo: 0, inadimplente: 0, inativo: 0, inativo_pendencia: 0, cancelado: 0, negado: 0, suspenso: 0, pendente: 0, inativo_voluntario: 0, ativo_migrado: 0, especial: 0, pre_cadastro: 0, total: 0 }, isLoading: loadingStatus } = useQuery({
     queryKey: ["kpi_associados_status"],
     queryFn: async () => {
-      const statuses = ["ativo", "inadimplente", "inativo", "inativo_pendencia", "cancelado", "negado", "suspenso", "pendente", "pendente_revistoria"];
+      // Status reais no banco (sincronizados do SGA)
+      const statuses = ["ativo", "inativo", "inativo_com_pendencia", "inativo_voluntario", "ativo_migrado", "pre_cadastro", "pendente", "especial", "suspenso"];
       const result: Record<string, number> = { total: 0 };
       for (const s of statuses) {
         const { count } = await supabase.from("associados").select("id", { count: "exact", head: true }).eq("status", s);
         result[s] = count ?? 0;
         result.total += result[s];
       }
+      // Aliases de UI — "inadimplente" mapeado pra inativo_com_pendencia (SGA usa esse nome)
+      result.inadimplente = result.inativo_com_pendencia || 0;
+      result.inativo_pendencia = result.inativo_com_pendencia || 0;
+      result.cancelado = 0; // sem cancelado no banco
+      result.negado = 0;
       return result;
     },
   });

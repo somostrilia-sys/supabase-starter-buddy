@@ -190,9 +190,9 @@ export default function Dashboard() {
       supabase.from("mensalidades").select("valor").eq("status", "pago").eq("data_pagamento", today),
       supabase.from("mensalidades").select("id", { count: "exact", head: true }),
       supabase.from("mensalidades").select("id", { count: "exact", head: true }).eq("status", "atrasado"),
-      supabase.from("deals").select("id", { count: "exact", head: true }).eq("status", "aberto").in("stage", ["negociacao", "proposta"]),
-      supabase.from("deals").select("id", { count: "exact", head: true }).eq("status", "ganho").gte("updated_at", monthStartStr),
-      supabase.from("deals").select("id", { count: "exact", head: true }).gte("created_at", monthStartStr),
+      supabase.from("negociacoes").select("id", { count: "exact", head: true }).in("stage", ["em_negociacao", "novo_lead", "em_contato", "aguardando_vistoria"]),
+      supabase.from("negociacoes").select("id", { count: "exact", head: true }).eq("stage", "concluido").gte("updated_at", monthStartStr),
+      supabase.from("negociacoes").select("id", { count: "exact", head: true }).gte("created_at", monthStartStr),
     ]);
 
     const recebidoHoje = pagoHojeRes.data?.reduce((s, m) => s + Number(m.valor), 0) ?? 0;

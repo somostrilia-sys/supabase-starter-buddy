@@ -14,6 +14,7 @@ import {
   MessageSquare, ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import ArquivosSGA from "@/components/ArquivosSGA";
 
 interface EventoData {
   protocolo: string;
@@ -221,10 +222,11 @@ export default function EventoDetalhe({
         </DialogHeader>
 
         <Tabs defaultValue="dados" className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="grid grid-cols-4 mx-6 mt-1 shrink-0">
+          <TabsList className="grid grid-cols-5 mx-6 mt-1 shrink-0">
             <TabsTrigger value="dados">Dados Gerais</TabsTrigger>
             <TabsTrigger value="andamentos">Andamentos</TabsTrigger>
             <TabsTrigger value="documentos">Documentos</TabsTrigger>
+            <TabsTrigger value="arquivos-sga">Arquivos SGA</TabsTrigger>
             <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
           </TabsList>
 
@@ -440,6 +442,11 @@ export default function EventoDetalhe({
                 </div>
               )}
             </div>
+          </TabsContent>
+
+          {/* ── ABA: Arquivos SGA ── */}
+          <TabsContent value="arquivos-sga" className="flex-1 overflow-y-auto px-6 py-4">
+            <ArquivosSGA protocolo={evento.protocolo} />
           </TabsContent>
 
           {/* ── ABA: Financeiro ── */}

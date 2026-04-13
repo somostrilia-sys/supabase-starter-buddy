@@ -12,7 +12,11 @@ serve(async (req) => {
     const SGA_URL = "https://api.hinova.com.br/api/sga/v2";
     const authRes = await fetch(`${SGA_URL}/usuario/autenticar`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ login: "WALK BOT #203", senha: "253425Mk", tipo_sistema: "A" })
+      body: JSON.stringify({
+        login: Deno.env.get("SGA_LOGIN")!,
+        senha: Deno.env.get("SGA_SENHA")!,
+        tipo_sistema: "A"
+      })
     });
     const { token_usuario } = await authRes.json();
     

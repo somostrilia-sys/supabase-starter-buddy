@@ -242,9 +242,10 @@ export default function AlterarAssociado() {
   const buscar = async () => {
     setSearching(true);
     try {
+      // Select enxuto pra listagem — joins pesados (veiculos/contratos/planos) são lazy-loaded quando o user clica num associado
       let query = supabase
         .from("associados")
-        .select("*, negociacao_origem_id, veiculos(*), contratos(*, planos(*)), regionais(id, nome), cooperativas(id, nome)")
+        .select("id, nome, cpf, data_nascimento, telefone, email, status, regional_id, cooperativa_id, endereco_cep, endereco_logradouro, endereco_bairro, endereco_cidade, endereco_uf, codigo_sga, regionais(id, nome), cooperativas(id, nome)")
         .order("nome")
         .limit(50);
 
