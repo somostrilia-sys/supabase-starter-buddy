@@ -275,16 +275,16 @@ export default function VistoriaTab({ deal, onUpdate }: Props) {
     if (vistoriaId) {
       const stageAnterior = deal.stage; // capture before any update
       await supabase.from("vistorias" as any).update({ status: "aprovada" } as any).eq("id", vistoriaId);
-      // Move deal stage forward
-      await supabase.from("negociacoes").update({ stage: "vistoria_aprovada", updated_at: new Date().toISOString() } as any).eq("id", deal.id);
+      // Move deal stage forward → liberado_cadastro (próximo passo no pipeline)
+      await supabase.from("negociacoes").update({ stage: "liberado_cadastro", updated_at: new Date().toISOString() } as any).eq("id", deal.id);
       const { error: errTrans } = await supabase.from("pipeline_transicoes").insert({
-        negociacao_id: deal.id, stage_anterior: stageAnterior, stage_novo: "vistoria_aprovada",
+        negociacao_id: deal.id, stage_anterior: stageAnterior, stage_novo: "liberado_cadastro",
         motivo: "Vistoria aprovada", automatica: false,
       } as any);
       if (errTrans) console.error("Erro ao registrar transição:", errTrans);
     }
     setStatus("aprovada");
-    toast.success("Vistoria aprovada!");
+    toast.success("Vistoria aprovada! Card movido para Liberado p/ Cadastro.");
     onUpdate?.();
   };
 
@@ -292,11 +292,11 @@ export default function VistoriaTab({ deal, onUpdate }: Props) {
     if (vistoriaId) {
       const stageAnterior = deal.stage; // capture before any update
       await supabase.from("vistorias" as any).update({ status: "reprovada" } as any).eq("id", vistoriaId);
-      // Move deal stage to reprovada
-      await supabase.from("negociacoes").update({ stage: "vistoria_reprovada", updated_at: new Date().toISOString() } as any).eq("id", deal.id);
+      // Manter em aguardando_vistoria (precisa refazer)
+      await supabase.from("negociacoes").update({ stage: "aguardando_vistoria", updated_at: new Date().toISOString() } as any).eq("id", deal.id);
       const { error: errTrans } = await supabase.from("pipeline_transicoes").insert({
-        negociacao_id: deal.id, stage_anterior: stageAnterior, stage_novo: "vistoria_reprovada",
-        motivo: "Vistoria reprovada", automatica: false,
+        negociacao_id: deal.id, stage_anterior: stageAnterior, stage_novo: "aguardando_vistoria",
+        motivo: "Vistoria reprovada — aguardando nova vistoria", automatica: false,
       } as any);
       if (errTrans) console.error("Erro ao registrar transição:", errTrans);
     }
