@@ -572,8 +572,13 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     };
 
     // 1. Cache de preços direto no deal (instantâneo, sem query)
+    // Validar se o cache corresponde ao tipo de veículo atual (evitar cache de carro para moto)
     const cachePrecos = (deal as any).cache_precos;
-    if (cachePrecos && Array.isArray(cachePrecos) && cachePrecos.length > 0) {
+    const tipoAtual = d.tipo_veiculo || detectTipo();
+    const tipoMapeado = TIPO_VEICULO_MAP[tipoAtual];
+    const cacheValido = cachePrecos && Array.isArray(cachePrecos) && cachePrecos.length > 0
+      && (!tipoMapeado || cachePrecos.some((p: any) => !p.tipo_veiculo || tipoMapeado.includes(p.tipo_veiculo)));
+    if (cacheValido) {
       validarPlanosCache(cachePrecos).then(validados => {
         setPrecosReais(validados);
         aplicarDescontoDiretor(validados);
@@ -674,9 +679,9 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       combustivel: r.combustivel || prev.combustivel || "",
       ...(tipoDetectadoFipe ? { tipoVeiculo: tipoDetectadoFipe } : {}),
     }));
-    // Persistir tipo_veiculo detectado pela FIPE no banco
+    // Persistir tipo_veiculo detectado pela FIPE no banco e limpar cache antigo
     if (tipoDetectadoFipe && deal.id && !deal.id.startsWith("p")) {
-      supabase.from("negociacoes").update({ tipo_veiculo: tipoDetectadoFipe } as any).eq("id", deal.id).then(() => {});
+      supabase.from("negociacoes").update({ tipo_veiculo: tipoDetectadoFipe, cache_precos: null } as any).eq("id", deal.id).then(() => {});
     }
     const matchMarca = marcas.find(m => (r.marca || "").toUpperCase().includes(m.toUpperCase()));
     if (matchMarca) setMarca(matchMarca);
@@ -1064,9 +1069,9 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           renavam: r.renavam || prev.renavam || "",
           ...(tipoFipeConsulta ? { tipoVeiculo: tipoFipeConsulta } : {}),
         }));
-        // Persistir tipo detectado
+        // Persistir tipo detectado e limpar cache antigo
         if (tipoFipeConsulta && deal.id && !deal.id.startsWith("p")) {
-          supabase.from("negociacoes").update({ tipo_veiculo: tipoFipeConsulta } as any).eq("id", deal.id).then(() => {});
+          supabase.from("negociacoes").update({ tipo_veiculo: tipoFipeConsulta, cache_precos: null } as any).eq("id", deal.id).then(() => {});
         }
 
         const vFipe = r.valorFipe || 0;
@@ -1146,7 +1151,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         <div className="grid grid-cols-3 gap-x-4 gap-y-3">
           <div className="space-y-1">
             <Label className={lbl}>Tipo do Veículo <span className="text-destructive">*</span></Label>
-            <Select value={form.tipoVeiculo} onValueChange={v => { set("tipoVeiculo", v); setTipoConfirmado(true); if (valorFipe > 0) setTimeout(() => carregarPrecos(valorFipe, v), 100); if (deal.id && !deal.id.startsWith("p")) supabase.from("negociacoes").update({ tipo_veiculo: v } as any).eq("id", deal.id).then(() => {}); }}>
+            <Select value={form.tipoVeiculo} onValueChange={v => { set("tipoVeiculo", v); setTipoConfirmado(true); setPrecosReais([]); if (valorFipe > 0) setTimeout(() => carregarPrecos(valorFipe, v), 100); if (deal.id && !deal.id.startsWith("p")) supabase.from("negociacoes").update({ tipo_veiculo: v, cache_precos: null } as any).eq("id", deal.id).then(() => {}); }}>
               <SelectTrigger className={`rounded-none border ${!form.tipoVeiculo ? "border-destructive bg-destructive/5" : "border-gray-300"}`}>
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>

@@ -60,8 +60,38 @@ const TODAS_CATEGORIAS: Record<string, { label: string; img: string; obs?: strin
   teto: { label: "Teto", img: imgTeto },
 };
 
-// Default automóvel
-const CATEGORIAS_DEFAULT = ["frente","traseira","lateral_esquerda","lateral_direita","interior_painel","banco_dianteiro","banco_traseiro","motor_capo","porta_malas","rodas_pneus","chave","chassi","quilometragem"];
+// Fotos por tipo de veículo
+const CATEGORIAS_AUTOMOVEL = ["frente","traseira","lateral_esquerda","lateral_direita","para_brisa","interior_painel","banco_dianteiro","banco_traseiro","motor_capo","porta_malas","rodas_pneus","chave","chassi","quilometragem"];
+const CATEGORIAS_MOTO = ["frente","traseira","lateral_esquerda","lateral_direita","guidao","painel_moto","carenagem","motor_capo","escapamento","rodas_pneus","chave","chassi","quilometragem"];
+const CATEGORIAS_CAMINHAO = ["frente","traseira","lateral_esquerda","lateral_direita","para_brisa","cabine","interior_painel","carroceria","motor_capo","eixos","rodas_pneus","tacografo","chave","chassi","quilometragem"];
+
+// Detectar tipo pelo modelo do veículo
+function detectarCategoriaPorModelo(modelo: string, configuracao?: string): string[] {
+  // Se a vistoria já tem configuração salva
+  if (configuracao) {
+    const cfg = configuracao.toLowerCase();
+    if (cfg === "moto" || cfg === "motocicleta") return CATEGORIAS_MOTO;
+    if (cfg === "caminhão" || cfg === "caminhao") return CATEGORIAS_CAMINHAO;
+    if (cfg === "carro" || cfg === "automóvel" || cfg === "automovel") return CATEGORIAS_AUTOMOVEL;
+  }
+  const m = (modelo || "").toLowerCase();
+  const motosKw = [
+    "ducati", "monster", "panigale", "scrambler", "diavel", "multistrada",
+    "cg ", "cb ", "xre", "pcx", "nmax", "fazer", "twister", "titan", "fan ",
+    "biz", "pop ", "bros", "lander", "crosser", "tenere", "mt-", "yzf",
+    "ninja", "z900", "duke", "bmw gs", "harley", "indian", "motocicleta",
+    "moto", "vespa", "piaggio", "benelli", "aprilia", "husqvarna", "ktm",
+    "triumph", "royal enfield", "scooter", "dafra", "shineray", "haojue",
+    "kawasaki", "yamaha", "suzuki", "honda cg",
+  ];
+  const camKw = ["caminhao", "caminhão", "scania", "volvo fh", "volvo fm", "iveco", "man ", "daf", "accelo", "cargo", "worker", "constellation", "sprinter", "daily", "pesado"];
+  if (motosKw.some(kw => m.includes(kw))) return CATEGORIAS_MOTO;
+  if (camKw.some(kw => m.includes(kw))) return CATEGORIAS_CAMINHAO;
+  return CATEGORIAS_AUTOMOVEL;
+}
+
+// Default automóvel (legado)
+const CATEGORIAS_DEFAULT = CATEGORIAS_AUTOMOVEL;
 
 interface FotoCapturada {
   id: string;
@@ -283,7 +313,7 @@ export default function VistoriaPublica() {
   // Categorias dinâmicas baseadas na vistoria (moto/caminhão/automóvel)
   const categoriasIds = (vistoria?.fotos_solicitadas && Array.isArray(vistoria.fotos_solicitadas) && vistoria.fotos_solicitadas.length > 0)
     ? vistoria.fotos_solicitadas as string[]
-    : CATEGORIAS_DEFAULT;
+    : detectarCategoriaPorModelo(vistoria?.modelo || "", vistoria?.configuracao);
   const CATEGORIAS = categoriasIds.map(id => ({ id, ...(TODAS_CATEGORIAS[id] || { label: id.replace(/_/g, " "), img: "" }) }));
 
   const fotosTiradas = fotos.size;
