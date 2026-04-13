@@ -145,7 +145,23 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
   const detectTipo = () => {
     const m = dealModelo.toLowerCase();
     const p = ((deal as any).plano || "").toLowerCase();
-    const motos = ["cg ", "cb ", "xre", "pcx", "nmax", "fazer", "twister", "titan", "fan ", "biz", "bros", "lander", "mt-", "yzf", "ninja", "duke", "moto", "honda cg", "yamaha", "suzuki", "dafra", "shineray", "haojue", "kasinski", "traxx", "kawasaki", "bmw gs", "bmw r", "harley", "triumph", "royal enfield", "pop ", "sahara", "crosser", "tenere", "burgman", "neo ", "fluo", "factor", "ybr"];
+    const motos = [
+      "cg ", "cb ", "xre", "pcx", "nmax", "fazer", "twister", "titan", "fan ", "biz",
+      "bros", "lander", "mt-", "yzf", "ninja", "duke", "moto", "honda cg", "yamaha",
+      "suzuki", "dafra", "shineray", "haojue", "kasinski", "traxx", "kawasaki",
+      "bmw gs", "bmw r", "harley", "triumph", "royal enfield", "pop ", "sahara",
+      "crosser", "tenere", "burgman", "neo ", "fluo", "factor", "ybr",
+      // Marcas/modelos adicionais
+      "ducati", "monster", "panigale", "scrambler", "diavel", "multistrada",
+      "vespa", "piaggio", "benelli", "mv agusta", "aprilia", "husqvarna",
+      "ktm", "gas gas", "moto guzzi", "indian", "z900", "z800", "z650",
+      "versys", "vulcan", "concours", "er-6", "w800", "bobber", "bonneville",
+      "street triple", "tiger", "speed triple", "trident", "rocket",
+      "r1", "r3", "r6", "r7", "xj6", "xmax", "nmax", "tracer",
+      "africa twin", "goldwing", "shadow", "rebel", "valkyrie", "ctx",
+      "boulevard", "intruder", "v-strom", "gsx", "hayabusa", "burgman",
+      "motocicleta", "ciclomotor", "scooter", "triciclo",
+    ];
     const vans = ["sprinter", "daily", "ducato", "master", "boxer", "transit", "jumper", "hr ", "bongo", "topic", "kombi"];
     const utilitarios = ["fiorino", "kangoo", "doblo", "doblò", "partner", "berlingo", "saveiro", "strada", "montana", "toro"];
     const pesados = ["scania", "volvo fh", "volvo fm", "volvo vm", "iveco", "man ", "daf", "accelo", "cargo", "worker", "constellation", "pesado", "caminhão", "caminhao", "tector", "atego", "axor", "actros", "delivery", "volkswagen 24", "volkswagen 17", "volkswagen 13", "volkswagen 11", "volkswagen 8", "ford f-4000", "ford f-350", "vuc"];
@@ -630,6 +646,24 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     setModeloReal(r.modelo || "");
     setValorFipeReal(r.valorFipe || 0);
     setCodFipeReal(r.codFipe || "");
+    // Detectar tipo de veículo pela resposta FIPE (tipo_veiculo_fipe: "motos", "carros", "caminhoes")
+    // ou pelo modelo retornado (fallback para detectTipo atualizado)
+    let tipoDetectadoFipe: string | undefined;
+    const tipoFipe = (r.tipo_veiculo_fipe || r.tipoVeiculo || "").toLowerCase();
+    if (tipoFipe === "motos" || tipoFipe === "moto" || tipoFipe === "motocicleta") {
+      tipoDetectadoFipe = "Motocicleta";
+    } else if (tipoFipe === "caminhoes" || tipoFipe === "caminhão" || tipoFipe === "caminhao") {
+      tipoDetectadoFipe = "Pesados";
+    } else if (tipoFipe === "carros" || tipoFipe === "carro" || tipoFipe === "automóvel" || tipoFipe === "automovel") {
+      // Não forçar "Automóvel" — deixar detectTipo refinar (pode ser utilitário etc)
+      tipoDetectadoFipe = undefined;
+    }
+    // Fallback: detectar pelo modelo retornado pela FIPE
+    if (!tipoDetectadoFipe && r.modelo) {
+      const mFipe = (r.modelo || "").toLowerCase();
+      const motosKw = ["ducati", "monster", "panigale", "scrambler", "diavel", "multistrada", "vespa", "piaggio", "benelli", "mv agusta", "aprilia", "husqvarna", "ktm", "gas gas", "moto guzzi", "indian", "harley", "triumph", "royal enfield", "yamaha", "honda cg", "suzuki", "kawasaki", "bmw gs", "bmw r", "dafra", "shineray", "haojue", "motocicleta", "scooter"];
+      if (motosKw.some(kw => mFipe.includes(kw))) tipoDetectadoFipe = "Motocicleta";
+    }
     setForm(prev => ({
       ...prev,
       placa: deal.veiculo_placa || prev.placa,
@@ -638,7 +672,12 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       anoFab: r.anoFabricacao || prev.anoFab || "",
       cor: r.cor || prev.cor || "",
       combustivel: r.combustivel || prev.combustivel || "",
+      ...(tipoDetectadoFipe ? { tipoVeiculo: tipoDetectadoFipe } : {}),
     }));
+    // Persistir tipo_veiculo detectado pela FIPE no banco
+    if (tipoDetectadoFipe && deal.id && !deal.id.startsWith("p")) {
+      supabase.from("negociacoes").update({ tipo_veiculo: tipoDetectadoFipe } as any).eq("id", deal.id).then(() => {});
+    }
     const matchMarca = marcas.find(m => (r.marca || "").toUpperCase().includes(m.toUpperCase()));
     if (matchMarca) setMarca(matchMarca);
     const vFipe = r.valorFipe || 0;
@@ -646,7 +685,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       // Passar UF/cidade do deal para evitar stale closure
       const uf = (deal as any).estado_circulacao || d.estadoCirc || "";
       const cidade = (deal as any).cidade_circulacao || d.cidadeCirc || "";
-      await carregarPrecos(vFipe, undefined, uf, cidade);
+      await carregarPrecos(vFipe, tipoDetectadoFipe || undefined, uf, cidade);
       carregarCoberturas(planoSelecionado);
     }
     verificarAceitacao(r.marca || "", r.modelo || "");
@@ -1002,6 +1041,20 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         const matchMarca = marcas.find(m => marcaNome.toUpperCase().includes(m.toUpperCase()));
         if (matchMarca) setMarca(matchMarca);
 
+        // Detectar tipo pela FIPE (modelo/marca)
+        let tipoFipeConsulta: string | undefined;
+        const tipoFipeRaw = (r.tipo_veiculo_fipe || r.tipoVeiculo || "").toLowerCase();
+        if (tipoFipeRaw === "motos" || tipoFipeRaw === "moto" || tipoFipeRaw === "motocicleta") {
+          tipoFipeConsulta = "Motocicleta";
+        } else if (tipoFipeRaw === "caminhoes" || tipoFipeRaw === "caminhão") {
+          tipoFipeConsulta = "Pesados";
+        }
+        if (!tipoFipeConsulta) {
+          const mFipe = ((r.modelo || "") + " " + marcaNome).toLowerCase();
+          const motosKw = ["ducati", "monster", "panigale", "scrambler", "diavel", "multistrada", "vespa", "piaggio", "benelli", "mv agusta", "aprilia", "husqvarna", "ktm", "gas gas", "moto guzzi", "indian", "harley", "triumph", "royal enfield", "yamaha", "honda cg", "suzuki", "kawasaki", "bmw gs", "bmw r", "dafra", "shineray", "haojue", "motocicleta", "scooter"];
+          if (motosKw.some(kw => mFipe.includes(kw))) tipoFipeConsulta = "Motocicleta";
+        }
+
         setForm(prev => ({
           ...prev,
           anoFab: r.anoFabricacao || prev.anoFab,
@@ -1009,12 +1062,17 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           combustivel: r.combustivel || prev.combustivel,
           chassi: r.chassi || prev.chassi,
           renavam: r.renavam || prev.renavam || "",
+          ...(tipoFipeConsulta ? { tipoVeiculo: tipoFipeConsulta } : {}),
         }));
+        // Persistir tipo detectado
+        if (tipoFipeConsulta && deal.id && !deal.id.startsWith("p")) {
+          supabase.from("negociacoes").update({ tipo_veiculo: tipoFipeConsulta } as any).eq("id", deal.id).then(() => {});
+        }
 
         const vFipe = r.valorFipe || 0;
 
         if (vFipe > 0) {
-          await carregarPrecos(vFipe);
+          await carregarPrecos(vFipe, tipoFipeConsulta || undefined);
           await carregarCoberturas(planoSelecionado);
         }
         await verificarAceitacao(marcaNome, r.modelo || "");
@@ -1088,7 +1146,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         <div className="grid grid-cols-3 gap-x-4 gap-y-3">
           <div className="space-y-1">
             <Label className={lbl}>Tipo do Veículo <span className="text-destructive">*</span></Label>
-            <Select value={form.tipoVeiculo} onValueChange={v => { set("tipoVeiculo", v); setTipoConfirmado(true); if (valorFipe > 0) setTimeout(() => carregarPrecos(valorFipe, v), 100); }}>
+            <Select value={form.tipoVeiculo} onValueChange={v => { set("tipoVeiculo", v); setTipoConfirmado(true); if (valorFipe > 0) setTimeout(() => carregarPrecos(valorFipe, v), 100); if (deal.id && !deal.id.startsWith("p")) supabase.from("negociacoes").update({ tipo_veiculo: v } as any).eq("id", deal.id).then(() => {}); }}>
               <SelectTrigger className={`rounded-none border ${!form.tipoVeiculo ? "border-destructive bg-destructive/5" : "border-gray-300"}`}>
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>

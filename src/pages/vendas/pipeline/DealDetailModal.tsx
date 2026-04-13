@@ -566,16 +566,24 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
   );
 }
 
+const TIPOS_VEICULO_OPTIONS = ["Automóvel", "Motocicleta", "Utilitários", "Vans e Pesados Pequenos", "Pesados"];
+
 function VeiculoTabInline({ deal }: { deal: PipelineDeal }) {
   const [veiculo, setVeiculo] = React.useState<any>(null);
   const [negData, setNegData] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(false);
+  const [tipoVeiculo, setTipoVeiculo] = React.useState<string>((deal as any).tipo_veiculo || "");
 
   // Carregar dados salvos da negociação (OCR + manual)
   React.useEffect(() => {
     if (!deal.id || deal.id.startsWith("p")) return;
     supabase.from("negociacoes" as any).select("*").eq("id", deal.id).single()
-      .then(({ data }) => { if (data) setNegData(data); });
+      .then(({ data }) => {
+        if (data) {
+          setNegData(data);
+          if ((data as any).tipo_veiculo) setTipoVeiculo((data as any).tipo_veiculo);
+        }
+      });
   }, [deal.id]);
 
   // Buscar dados da API pela placa
@@ -589,6 +597,13 @@ function VeiculoTabInline({ deal }: { deal: PipelineDeal }) {
       }).catch((e) => { console.error("Erro ao buscar placa:", e); setLoading(false); });
     }
   }, [deal.veiculo_placa]);
+
+  const handleTipoChange = (v: string) => {
+    setTipoVeiculo(v);
+    if (deal.id && !deal.id.startsWith("p")) {
+      supabase.from("negociacoes").update({ tipo_veiculo: v } as any).eq("id", deal.id).then(() => {});
+    }
+  };
 
   const n = negData || {};
   const v = veiculo || {};
@@ -618,7 +633,16 @@ function VeiculoTabInline({ deal }: { deal: PipelineDeal }) {
         </div>
         <div className="space-y-1.5">
           <Label>Tipo Veículo</Label>
-          <Input className="rounded-none border border-gray-300" value={v.submodelo ? "Automóvel" : "—"} readOnly />
+          <Select value={tipoVeiculo} onValueChange={handleTipoChange}>
+            <SelectTrigger className="rounded-none border border-gray-300">
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
+            <SelectContent>
+              {TIPOS_VEICULO_OPTIONS.map(t => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         {loading && <p className="text-xs text-muted-foreground col-span-2">Buscando dados do veículo...</p>}
         {campos.map(([label, val]) => (

@@ -232,22 +232,44 @@ export default function VistoriaTab({ deal, onUpdate }: Props) {
   }, [vistoriaReal]);
   const [prazo, setPrazo] = useState("7");
   const [iaAnalisando, setIaAnalisando] = useState(false);
-  const [selectedFotos, setSelectedFotos] = useState<string[]>([
-    "frente","traseira","lateral_esquerda","lateral_direita","para_brisa","interior_painel",
-    "banco_dianteiro","banco_traseiro","motor_capo","porta_malas","rodas_pneus",
-    "chave","chassi","quilometragem"
-  ]);
-  // Detectar tipo de veículo pelo modelo (reativo ao deal)
+  const fotosAutomovel = ["frente","traseira","lateral_esquerda","lateral_direita","para_brisa","interior_painel","banco_dianteiro","banco_traseiro","motor_capo","porta_malas","rodas_pneus","chave","chassi","quilometragem"];
+  const fotosMoto = ["frente","traseira","lateral_esquerda","lateral_direita","guidao","painel_moto","carenagem","motor_capo","escapamento","rodas_pneus","chave","chassi","quilometragem"];
+  const fotosCaminhao = ["frente","traseira","lateral_esquerda","lateral_direita","para_brisa","cabine","interior_painel","carroceria","motor_capo","eixos","rodas_pneus","tacografo","chave","chassi","quilometragem"];
+  const [selectedFotos, setSelectedFotos] = useState<string[]>(fotosAutomovel);
+  // Detectar tipo de veículo: prioridade para tipo salvo no deal, fallback para detecção por modelo
   const dealPlano = (deal as any).plano || "";
+  const dealTipoVeiculo = (deal as any).tipo_veiculo || "";
   const categoriaVistoria = React.useMemo(() => {
+    // Prioridade: tipo_veiculo salvo no banco (já corrigido pela FIPE ou manualmente)
+    if (dealTipoVeiculo) {
+      if (dealTipoVeiculo === "Motocicleta") return "moto";
+      if (["Pesados", "Vans e Pesados Pequenos", "Caminhão", "Van", "Ônibus"].includes(dealTipoVeiculo)) return "caminhao";
+      return "automovel";
+    }
+    // Fallback: detecção por modelo
     const modelo = (deal.veiculo_modelo || "").toLowerCase();
     const plano = dealPlano.toLowerCase();
-    const motos = ["cg ", "cb ", "xre", "pcx", "nmax", "factor", "fazer", "twister", "titan", "fan ", "biz", "pop ", "bros", "lander", "crosser", "tenere", "mt-", "yzf", "ninja", "z900", "duke", "bmw gs", "harley", "indian", "motocicleta", "moto"];
+    const motos = [
+      "cg ", "cb ", "xre", "pcx", "nmax", "factor", "fazer", "twister", "titan", "fan ", "biz",
+      "pop ", "bros", "lander", "crosser", "tenere", "mt-", "yzf", "ninja", "z900", "duke",
+      "bmw gs", "harley", "indian", "motocicleta", "moto",
+      "ducati", "monster", "panigale", "scrambler", "diavel", "multistrada",
+      "vespa", "piaggio", "benelli", "mv agusta", "aprilia", "husqvarna",
+      "ktm", "gas gas", "moto guzzi", "triumph", "royal enfield",
+      "scooter", "ciclomotor",
+    ];
     const caminhoes = ["caminhao", "caminhão", "truck", "trator", "carreta", "scania", "volvo fh", "volvo fm", "mercedes actros", "mercedes atego", "mercedes axor", "iveco", "man tgx", "man tgs", "daf", "vuc", "3/4", "toco", "bi-truck", "micro-onibus", "micro onibus", "sprinter", "daily", "accelo", "constellation", "worker", "cargo", "volkswagen worker", "ford cargo", "pesado", "pesados"];
     if (motos.some(m => modelo.includes(m)) || plano.includes("moto")) return "moto";
     if (caminhoes.some(c => modelo.includes(c)) || plano.includes("pesado") || plano.includes("van")) return "caminhao";
     return "automovel";
-  }, [deal.veiculo_modelo, dealPlano]);
+  }, [deal.veiculo_modelo, dealPlano, dealTipoVeiculo]);
+
+  // Atualizar fotos selecionadas quando o tipo de veículo mudar
+  React.useEffect(() => {
+    if (categoriaVistoria === "moto") setSelectedFotos(fotosMoto);
+    else if (categoriaVistoria === "caminhao") setSelectedFotos(fotosCaminhao);
+    else setSelectedFotos(fotosAutomovel);
+  }, [categoriaVistoria]);
 
   const handleAprovar = async () => {
     if (vistoriaId) {
