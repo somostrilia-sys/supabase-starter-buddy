@@ -233,7 +233,7 @@ export default function VistoriaTab({ deal, onUpdate }: Props) {
   const [prazo, setPrazo] = useState("7");
   const [iaAnalisando, setIaAnalisando] = useState(false);
   const fotosAutomovel = ["frente","traseira","lateral_esquerda","lateral_direita","para_brisa","interior_painel","banco_dianteiro","banco_traseiro","motor_capo","porta_malas","rodas_pneus","chave","chassi","quilometragem"];
-  const fotosMoto = ["frente","traseira","lateral_esquerda","lateral_direita","guidao","painel_moto","carenagem","motor_capo","escapamento","rodas_pneus","chave","chassi","quilometragem"];
+  const fotosMoto = ["chave","frente","farol","chassi","painel_km","guidao_retrovisores","roda_dianteira","placa_traseira","traseira","lateral_direita","lateral_esquerda"];
   const fotosCaminhao = ["frente","traseira","lateral_esquerda","lateral_direita","para_brisa","cabine","interior_painel","carroceria","motor_capo","eixos","rodas_pneus","tacografo","chave","chassi","quilometragem"];
   const [selectedFotos, setSelectedFotos] = useState<string[]>(fotosAutomovel);
   // Detectar tipo de veículo: prioridade para tipo salvo no deal, fallback para detecção por modelo

@@ -23,12 +23,11 @@ import imgParaBrisa from "@/assets/vistoria/para-brisa.jpg";
 import imgMotoFrente from "@/assets/vistoria/moto/frente.jpg";
 import imgMotoTraseira from "@/assets/vistoria/moto/traseira.jpg";
 import imgMotoLateral from "@/assets/vistoria/moto/lateral.jpg";
-import imgMotoMotor from "@/assets/vistoria/moto/motor.jpg";
 import imgMotoRodas from "@/assets/vistoria/moto/rodas.jpg";
 import imgMotoGuidao from "@/assets/vistoria/moto/guidao.jpg";
 import imgMotoPainel from "@/assets/vistoria/moto/painel.jpg";
-import imgMotoCarenagem from "@/assets/vistoria/moto/carenagem.jpg";
-import imgMotoEscapamento from "@/assets/vistoria/moto/escapamento.jpg";
+import imgMotoFarol from "@/assets/vistoria/moto/farol.svg";
+import imgMotoPlacaTraseira from "@/assets/vistoria/moto/placa-traseira.svg";
 // Caminhão
 import imgCamParabrisa from "@/assets/vistoria/caminhao/parabrisa.jpg";
 import imgCamCabine from "@/assets/vistoria/caminhao/cabine.jpg";
@@ -36,7 +35,7 @@ import imgCamCarroceria from "@/assets/vistoria/caminhao/carroceria.jpg";
 import imgCamEixos from "@/assets/vistoria/caminhao/eixos.jpg";
 import imgCamTacografo from "@/assets/vistoria/caminhao/tacografo.jpg";
 
-// Categorias base (automóvel)
+// Categorias base (automóvel + caminhão)
 const CATEGORIAS_BASE: Record<string, { label: string; img: string; obs?: string }> = {
   frente: { label: "Frente", img: imgFrente },
   traseira: { label: "Traseira", img: imgTraseira },
@@ -53,11 +52,17 @@ const CATEGORIAS_BASE: Record<string, { label: string; img: string; obs?: string
   quilometragem: { label: "Quilometragem", img: imgQuilometragem },
   para_brisa: { label: "Para-brisa", img: imgParaBrisa },
   teto: { label: "Teto", img: imgTeto },
-  // Moto exclusivas
+  // Moto exclusivas (IDs novos)
+  farol: { label: "Farol", img: imgMotoFarol, obs: "Fotografe o farol dianteiro" },
+  painel_km: { label: "Painel com Quilometragem", img: imgMotoPainel, obs: "Ligue a moto para mostrar o km" },
+  guidao_retrovisores: { label: "Guidão c/ Retrovisores", img: imgMotoGuidao, obs: "Mostre os espelhos dos dois retrovisores" },
+  roda_dianteira: { label: "Roda Dianteira Lado Esquerdo", img: imgMotoRodas },
+  placa_traseira: { label: "Placa Traseira", img: imgMotoPlacaTraseira, obs: "Placa bem legível" },
+  // Moto (IDs legados — compatibilidade com vistorias antigas)
   guidao: { label: "Guidão", img: imgMotoGuidao },
   painel_moto: { label: "Painel / Velocímetro", img: imgMotoPainel },
-  carenagem: { label: "Carenagem / Tanque", img: imgMotoCarenagem },
-  escapamento: { label: "Escapamento", img: imgMotoEscapamento },
+  carenagem: { label: "Carenagem / Tanque", img: imgMotoGuidao },
+  escapamento: { label: "Escapamento", img: imgMotoTraseira },
   // Caminhão exclusivas
   cabine: { label: "Cabine", img: imgCamCabine },
   carroceria: { label: "Carroceria / Baú", img: imgCamCarroceria },
@@ -71,9 +76,7 @@ const OVERRIDES_MOTO: Record<string, { label: string; img: string; obs?: string 
   traseira: { label: "Traseira", img: imgMotoTraseira },
   lateral_esquerda: { label: "Lateral Esquerda", img: imgMotoLateral },
   lateral_direita: { label: "Lateral Direita", img: imgMotoLateral },
-  motor_capo: { label: "Motor", img: imgMotoMotor },
-  rodas_pneus: { label: "Rodas e Pneus", img: imgMotoRodas },
-  chave: { label: "Chave da Moto", img: imgChave },
+  chave: { label: "Chaves do Veículo", img: imgChave },
   chassi: { label: "Chassi", img: imgChassi, obs: "No chassi ou no cabeçote" },
 };
 
@@ -85,7 +88,7 @@ function getCategorias(isMoto: boolean): Record<string, { label: string; img: st
 
 // Fotos por tipo de veículo
 const CATEGORIAS_AUTOMOVEL = ["frente","traseira","lateral_esquerda","lateral_direita","para_brisa","interior_painel","banco_dianteiro","banco_traseiro","motor_capo","porta_malas","rodas_pneus","chave","chassi","quilometragem"];
-const CATEGORIAS_MOTO = ["frente","traseira","lateral_esquerda","lateral_direita","guidao","painel_moto","carenagem","motor_capo","escapamento","rodas_pneus","chave","chassi","quilometragem"];
+const CATEGORIAS_MOTO = ["chave","frente","farol","chassi","painel_km","guidao_retrovisores","roda_dianteira","placa_traseira","traseira","lateral_direita","lateral_esquerda"];
 const CATEGORIAS_CAMINHAO = ["frente","traseira","lateral_esquerda","lateral_direita","para_brisa","cabine","interior_painel","carroceria","motor_capo","eixos","rodas_pneus","tacografo","chave","chassi","quilometragem"];
 
 // Detectar tipo pelo modelo do veículo
@@ -340,6 +343,7 @@ export default function VistoriaPublica() {
     : categoriasIdsFallback;
   // Detectar se é moto para usar imagens de referência corretas
   const isMoto = categoriasIdsFallback === CATEGORIAS_MOTO
+    || categoriasIds.includes("guidao_retrovisores") || categoriasIds.includes("farol") || categoriasIds.includes("painel_km")
     || categoriasIds.includes("guidao") || categoriasIds.includes("carenagem") || categoriasIds.includes("escapamento");
   const catMap = getCategorias(isMoto);
   const CATEGORIAS = categoriasIds.map(id => ({ id, ...(catMap[id] || { label: id.replace(/_/g, " "), img: "" }) }));

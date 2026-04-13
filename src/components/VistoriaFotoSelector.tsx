@@ -29,6 +29,8 @@ import imgMotoTraseira from "@/assets/vistoria/moto/traseira.jpg";
 import imgMotoLateral from "@/assets/vistoria/moto/lateral.jpg";
 import imgMotoMotor from "@/assets/vistoria/moto/motor.jpg";
 import imgMotoRodas from "@/assets/vistoria/moto/rodas.jpg";
+import imgMotoFarol from "@/assets/vistoria/moto/farol.svg";
+import imgMotoPlacaTraseira from "@/assets/vistoria/moto/placa-traseira.svg";
 
 // ── Imagens caminhão (fotos reais) ──
 import imgCabine from "@/assets/vistoria/caminhao/cabine.jpg";
@@ -69,19 +71,17 @@ const partesAutomovel: VistoriaParte[] = [
 ];
 
 const partesMoto: VistoriaParte[] = [
+  { id: "chave", label: "Chaves do Veículo", img: imgChave },
   { id: "frente", label: "Frente", img: imgMotoFrente },
-  { id: "traseira", label: "Traseira", img: imgMotoTraseira },
-  { id: "lateral_esquerda", label: "Lateral Esquerda", img: imgMotoLateral },
-  { id: "lateral_direita", label: "Lateral Direita", img: imgMotoLateral },
-  { id: "guidao", label: "Guidão", img: imgGuidao },
-  { id: "painel_moto", label: "Painel / Velocímetro", img: imgPainelMoto },
-  { id: "carenagem", label: "Carenagem / Tanque", img: imgCarenagem },
-  { id: "motor_capo", label: "Motor", img: imgMotoMotor },
-  { id: "escapamento", label: "Escapamento", img: imgEscapamento },
-  { id: "rodas_pneus", label: "Rodas e Pneus", img: imgMotoRodas },
-  { id: "chave", label: "Chave da Moto", img: imgChave },
+  { id: "farol", label: "Farol", img: imgMotoFarol, obs: "(Fotografe o farol dianteiro)" },
   { id: "chassi", label: "Chassi", img: imgChassi, obs: "(No chassi ou no cabeçote)" },
-  { id: "quilometragem", label: "Quilometragem", img: imgQuilometragem },
+  { id: "painel_km", label: "Painel com Quilometragem", img: imgPainelMoto, obs: "(Ligue a moto para mostrar o km)" },
+  { id: "guidao_retrovisores", label: "Guidão c/ Retrovisores", img: imgGuidao, obs: "(Mostre os espelhos dos dois retrovisores)" },
+  { id: "roda_dianteira", label: "Roda Dianteira Lado Esquerdo", img: imgMotoRodas },
+  { id: "placa_traseira", label: "Placa Traseira", img: imgMotoPlacaTraseira, obs: "(Placa bem legível)" },
+  { id: "traseira", label: "Traseira", img: imgMotoTraseira },
+  { id: "lateral_direita", label: "Lateral Direita", img: imgMotoLateral },
+  { id: "lateral_esquerda", label: "Lateral Esquerda", img: imgMotoLateral },
 ];
 
 const partesCaminhao: VistoriaParte[] = [
