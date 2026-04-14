@@ -54,12 +54,19 @@ async function buscarFipePorModelo(marca: string, modelo: string, ano: string) {
       if (!marcasRes.ok) continue;
       const marcasList = await marcasRes.json();
 
-      // Encontrar marca
+      // Encontrar marca (com aliases comuns)
+      const MARCA_ALIASES: Record<string, string[]> = {
+        "vw": ["volkswagen"],
+        "mb": ["mercedes-benz", "mercedes"],
+        "gm": ["chevrolet"],
+      };
       const marcaNorm = (marca || "").toLowerCase().trim();
-      const marcaMatch = marcasList.find((m: any) =>
-        (m.nome || "").toLowerCase().includes(marcaNorm) ||
-        marcaNorm.includes((m.nome || "").toLowerCase())
-      );
+      const aliases = MARCA_ALIASES[marcaNorm] || [];
+      const marcaMatch = marcasList.find((m: any) => {
+        const nome = (m.nome || "").toLowerCase();
+        return nome.includes(marcaNorm) || marcaNorm.includes(nome) ||
+          aliases.some(a => nome.includes(a));
+      });
       if (!marcaMatch) continue;
 
       // 2. Buscar modelos
@@ -68,16 +75,26 @@ async function buscarFipePorModelo(marca: string, modelo: string, ano: string) {
       const modelosData = await modelosRes.json();
       const modelosList = modelosData.modelos || [];
 
-      // Encontrar modelo (match parcial)
+      // Encontrar modelo (match parcial com múltiplas estratégias)
       const modeloNorm = (modelo || "").toLowerCase().trim();
       let modeloMatch = modelosList.find((m: any) => (m.nome || "").toLowerCase().includes(modeloNorm));
       if (!modeloMatch) {
-        // Tentar match por palavras principais
-        const palavras = modeloNorm.split(/\s+/).filter((p: string) => p.length > 2);
-        modeloMatch = modelosList.find((m: any) => {
+        // Inverso: verificar se o nome FIPE está contido no modelo informado
+        modeloMatch = modelosList.find((m: any) => modeloNorm.includes((m.nome || "").toLowerCase().replace(/\s*\d+p\s*\(.*?\)/g, "").trim()));
+      }
+      if (!modeloMatch) {
+        // Extrair tokens numéricos e alfanuméricos significativos para match
+        const tokens = modeloNorm.split(/[\s\-\/]+/).filter((p: string) => p.length >= 2);
+        // Score cada modelo FIPE pelo número de tokens encontrados
+        let bestScore = 0;
+        for (const m of modelosList) {
           const nome = (m.nome || "").toLowerCase();
-          return palavras.filter((p: string) => nome.includes(p)).length >= Math.ceil(palavras.length * 0.5);
-        });
+          const score = tokens.filter((t: string) => nome.includes(t)).length;
+          if (score > bestScore && score >= Math.max(2, Math.ceil(tokens.length * 0.4))) {
+            bestScore = score;
+            modeloMatch = m;
+          }
+        }
       }
       if (!modeloMatch) continue;
 
@@ -125,7 +142,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { acao, placa } = body;
+    const { acao, placa, marca: marcaParam, modelo: modeloParam, ano: anoParam } = body;
 
     if (acao !== "placa" || !placa) {
       return jsonRes({ sucesso: false, error: "acao=placa e placa são obrigatórios" }, 400);
@@ -208,12 +225,13 @@ Deno.serve(async (req) => {
     }
 
     // 2b. Fallback: buscar FIPE por modelo/marca via Parallelum
-    if (!fipeResult && veiculoData?.marca && veiculoData?.modelo) {
-      const fipePorModelo = await buscarFipePorModelo(
-        veiculoData.marca,
-        veiculoData.modelo,
-        veiculoData.anoFabricacao || veiculoData.anoModelo || ""
-      );
+    // Usar dados do veiculoData ou parâmetros do frontend como fallback
+    const marcaBusca = veiculoData?.marca || marcaParam || "";
+    const modeloBusca = veiculoData?.modelo || modeloParam || "";
+    const anoBusca = veiculoData?.anoFabricacao || veiculoData?.anoModelo || anoParam || "";
+
+    if (!fipeResult && marcaBusca && modeloBusca) {
+      const fipePorModelo = await buscarFipePorModelo(marcaBusca, modeloBusca, anoBusca);
       if (fipePorModelo) {
         fipeResult = {
           ...fipePorModelo,
@@ -223,7 +241,7 @@ Deno.serve(async (req) => {
     }
 
     // 2c. Se temos dados do veículo mas sem FIPE, detectar tipo pelo modelo
-    const tipoDetectado = veiculoData ? detectarTipoVeiculo(veiculoData.modelo) : null;
+    const tipoDetectado = modeloBusca ? detectarTipoVeiculo(modeloBusca) : null;
 
     // 3. Montar resultado
     if (!veiculoData && !fipeResult) {

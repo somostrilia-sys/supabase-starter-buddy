@@ -742,7 +742,11 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       const placa = (deal.veiculo_placa || "").replace(/[^A-Z0-9]/gi, "");
       if (placa.length < 7) return;
       setFipeLoading(true);
-      callEdge("gia-buscar-placa", { acao: "placa", placa }).then(res => {
+      // Passar marca/modelo/ano como fallback para busca FIPE quando API de placa falha
+      const dealMarca = (deal as any).marca_fipe || marca || inferredMarca || "";
+      const dealModelo = deal.veiculo_modelo || "";
+      const dealAno = (deal as any).ano_fabricacao || (deal as any).ano_modelo || "";
+      callEdge("gia-buscar-placa", { acao: "placa", placa, marca: dealMarca, modelo: dealModelo, ano: dealAno }).then(res => {
         if (res.sucesso && res.resultado) {
           aplicarDadosFipe(res.resultado, true); // salvar cache
         } else {
@@ -1044,8 +1048,8 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     setFipeFetched(false);
 
     try {
-      // Buscar via API real (wdapi2)
-      const result = await callEdge("gia-buscar-placa", { acao: "placa", placa: cleanPlaca });
+      // Buscar via API real (wdapi2) com fallback marca/modelo/ano
+      const result = await callEdge("gia-buscar-placa", { acao: "placa", placa: cleanPlaca, marca: marca || inferredMarca || "", modelo: deal.veiculo_modelo || "", ano: (deal as any).ano_fabricacao || "" });
 
       if (result.sucesso && result.resultado) {
         const r = result.resultado;
