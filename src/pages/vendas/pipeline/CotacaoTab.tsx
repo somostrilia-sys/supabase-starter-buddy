@@ -164,18 +164,20 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     ];
     const vans = ["sprinter", "daily", "ducato", "master", "boxer", "transit", "jumper", "hr ", "bongo", "topic", "kombi"];
     const utilitarios = ["fiorino", "kangoo", "doblo", "doblò", "partner", "berlingo", "saveiro", "strada", "montana", "toro"];
-    const pesados = ["scania", "volvo fh", "volvo fm", "volvo vm", "iveco", "man ", "daf", "accelo", "cargo", "worker", "constellation", "pesado", "caminhão", "caminhao", "tector", "atego", "axor", "actros", "delivery", "volkswagen 24", "volkswagen 17", "volkswagen 13", "volkswagen 11", "volkswagen 8", "ford f-4000", "ford f-350", "vuc"];
+    const pesados = ["scania", "volvo fh", "volvo fm", "volvo vm", "volvo nh", "volvo nl", "iveco", "man ", "daf", "accelo", "cargo", "worker", "constellation", "pesado", "caminhão", "caminhao", "tector", "atego", "axor", "actros", "arocs", "atron", "delivery", "meteor", "volksbus", "e-delivery", "volkswagen 24", "volkswagen 17", "volkswagen 13", "volkswagen 11", "volkswagen 8", "ford f-4000", "ford f-350", "vuc"];
     const onibus = ["ônibus", "onibus", "micro-ônibus", "micro-onibus"];
+    // Padrão numérico de caminhões VW/MAN (ex: 28.460, 24.280, 17.230, 8-150, 9-170)
+    const pesadoNumerico = /\b(\d{1,2}[.\-]\d{3})\b/;
     if (motos.some(x => m.includes(x)) || p.includes("moto")) return "Motocicleta";
     if (onibus.some(x => m.includes(x))) return "Pesados";
-    if (pesados.some(x => m.includes(x)) || p.includes("pesado")) return "Pesados";
+    if (pesados.some(x => m.includes(x)) || p.includes("pesado") || pesadoNumerico.test(m)) return "Pesados";
     if (vans.some(x => m.includes(x)) || p.includes("van")) return "Vans e Pesados Pequenos";
     if (utilitarios.some(x => m.includes(x))) return "Utilitários";
     return "Automóvel";
   };
 
   const d = deal as any;
-  const [tipoConfirmado, setTipoConfirmado] = useState(true);
+  const [tipoConfirmado, setTipoConfirmado] = useState(!!d.tipo_veiculo);
   const [form, setForm] = useState({
     tipoVeiculo: d.tipo_veiculo || detectTipo(),
     placa: d.veiculo_placa || "",
@@ -667,7 +669,10 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     if (!tipoDetectadoFipe && r.modelo) {
       const mFipe = (r.modelo || "").toLowerCase();
       const motosKw = ["ducati", "monster", "panigale", "scrambler", "diavel", "multistrada", "vespa", "piaggio", "benelli", "mv agusta", "aprilia", "husqvarna", "ktm", "gas gas", "moto guzzi", "indian", "harley", "triumph", "royal enfield", "yamaha", "honda cg", "suzuki", "kawasaki", "bmw gs", "bmw r", "dafra", "shineray", "haojue", "motocicleta", "scooter"];
+      const pesadosKw = ["scania", "volvo fh", "volvo fm", "volvo vm", "volvo nh", "volvo nl", "iveco", "man ", "daf", "accelo", "cargo", "worker", "constellation", "tector", "atego", "axor", "actros", "arocs", "atron", "delivery", "meteor", "volksbus", "e-delivery", "ford f-4000", "ford f-350", "ônibus", "onibus"];
+      const pesadoNumerico = /\b(\d{1,2}[.\-]\d{3})\b/;
       if (motosKw.some(kw => mFipe.includes(kw))) tipoDetectadoFipe = "Motocicleta";
+      else if (pesadosKw.some(kw => mFipe.includes(kw)) || pesadoNumerico.test(mFipe)) tipoDetectadoFipe = "Pesados";
     }
     setForm(prev => ({
       ...prev,
@@ -679,6 +684,8 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       combustivel: r.combustivel || prev.combustivel || "",
       ...(tipoDetectadoFipe ? { tipoVeiculo: tipoDetectadoFipe } : {}),
     }));
+    // Marcar tipo como confirmado quando veio da FIPE (tipo direto da API)
+    if (tipoDetectadoFipe && tipoFipe) setTipoConfirmado(true);
     // Persistir tipo_veiculo detectado pela FIPE no banco e limpar cache antigo
     if (tipoDetectadoFipe && deal.id && !deal.id.startsWith("p")) {
       supabase.from("negociacoes").update({ tipo_veiculo: tipoDetectadoFipe, cache_precos: null } as any).eq("id", deal.id).then(() => {});
@@ -1057,7 +1064,10 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         if (!tipoFipeConsulta) {
           const mFipe = ((r.modelo || "") + " " + marcaNome).toLowerCase();
           const motosKw = ["ducati", "monster", "panigale", "scrambler", "diavel", "multistrada", "vespa", "piaggio", "benelli", "mv agusta", "aprilia", "husqvarna", "ktm", "gas gas", "moto guzzi", "indian", "harley", "triumph", "royal enfield", "yamaha", "honda cg", "suzuki", "kawasaki", "bmw gs", "bmw r", "dafra", "shineray", "haojue", "motocicleta", "scooter"];
+          const pesadosKw = ["scania", "volvo fh", "volvo fm", "volvo vm", "volvo nh", "volvo nl", "iveco", "man ", "daf", "accelo", "cargo", "worker", "constellation", "tector", "atego", "axor", "actros", "arocs", "atron", "delivery", "meteor", "volksbus", "e-delivery", "ford f-4000", "ford f-350", "ônibus", "onibus"];
+          const pesadoNumerico = /\b(\d{1,2}[.\-]\d{3})\b/;
           if (motosKw.some(kw => mFipe.includes(kw))) tipoFipeConsulta = "Motocicleta";
+          else if (pesadosKw.some(kw => mFipe.includes(kw)) || pesadoNumerico.test(mFipe)) tipoFipeConsulta = "Pesados";
         }
 
         setForm(prev => ({
@@ -1152,12 +1162,13 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           <div className="space-y-1">
             <Label className={lbl}>Tipo do Veículo <span className="text-destructive">*</span></Label>
             <Select value={form.tipoVeiculo} onValueChange={v => { set("tipoVeiculo", v); setTipoConfirmado(true); setPrecosReais([]); if (valorFipe > 0) setTimeout(() => carregarPrecos(valorFipe, v), 100); if (deal.id && !deal.id.startsWith("p")) supabase.from("negociacoes").update({ tipo_veiculo: v, cache_precos: null } as any).eq("id", deal.id).then(() => {}); }}>
-              <SelectTrigger className={`rounded-none border ${!form.tipoVeiculo ? "border-destructive bg-destructive/5" : "border-gray-300"}`}>
+              <SelectTrigger className={`rounded-none border ${!form.tipoVeiculo ? "border-destructive bg-destructive/5" : !tipoConfirmado ? "border-warning bg-warning/5" : "border-gray-300"}`}>
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>{tiposVeiculo.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
             </Select>
             {!form.tipoVeiculo && <p className="text-[10px] text-destructive font-medium">Selecione o tipo antes de prosseguir</p>}
+            {form.tipoVeiculo && !tipoConfirmado && <p className="text-[10px] text-warning font-medium">Tipo detectado automaticamente — confirme ou altere</p>}
           </div>
           <div className="space-y-1">
             <Label className={lbl}>Placa</Label>
