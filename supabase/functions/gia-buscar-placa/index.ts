@@ -241,7 +241,10 @@ Deno.serve(async (req) => {
     // Usar dados do veiculoData ou parâmetros do frontend como fallback
     const marcaBusca = veiculoData?.marca || marcaParam || "";
     const modeloBusca = veiculoData?.modelo || modeloParam || "";
-    const anoBusca = veiculoData?.anoFabricacao || veiculoData?.anoModelo || anoParam || "";
+    // Priorizar anoModelo; combinar fab/modelo quando diferentes
+    const anoFabV = veiculoData?.anoFabricacao || "";
+    const anoModV = veiculoData?.anoModelo || "";
+    const anoBusca = anoParam || (anoFabV && anoModV && anoFabV !== anoModV ? `${anoFabV}/${anoModV}` : anoModV || anoFabV || "");
 
     if (!fipeResult && marcaBusca && modeloBusca) {
       const fipePorModelo = await buscarFipePorModelo(marcaBusca, modeloBusca, anoBusca);
@@ -261,11 +264,16 @@ Deno.serve(async (req) => {
       return jsonRes({ sucesso: false, error: "Veículo não encontrado" }, 404);
     }
 
+    // Resolver anos: priorizar dados do veículo, senão derivar do anoParam ou FIPE
+    const anoParamPartes = (anoParam || "").replace(/\D/g, " ").trim().split(/\s+/).filter((p: string) => p.length === 4);
+    const anoFabFinal = veiculoData?.anoFabricacao || anoParamPartes[0] || String(fipeResult?.anoModelo || "");
+    const anoModFinal = veiculoData?.anoModelo || (anoParamPartes.length >= 2 ? anoParamPartes[1] : "") || String(fipeResult?.anoModelo || "");
+
     const resultado = {
       marca: fipeResult?.marca || veiculoData?.marca || "",
       modelo: fipeResult?.modelo || veiculoData?.modelo || "",
-      anoFabricacao: veiculoData?.anoFabricacao || String(fipeResult?.anoModelo || ""),
-      anoModelo: veiculoData?.anoModelo || String(fipeResult?.anoModelo || ""),
+      anoFabricacao: anoFabFinal,
+      anoModelo: anoModFinal,
       cor: veiculoData?.cor || "",
       combustivel: fipeResult?.combustivel || veiculoData?.combustivel || "",
       chassi: veiculoData?.chassi || "",

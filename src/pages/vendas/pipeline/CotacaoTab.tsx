@@ -679,16 +679,20 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       placa: deal.veiculo_placa || prev.placa,
       chassi: r.chassi || prev.chassi || "",
       renavam: r.renavam || prev.renavam || "",
-      anoFab: r.anoFabricacao || prev.anoFab || "",
+      anoFab: r.anoModelo || r.anoFabricacao || prev.anoFab || "",
       cor: r.cor || prev.cor || "",
       combustivel: r.combustivel || prev.combustivel || "",
       ...(tipoDetectadoFipe ? { tipoVeiculo: tipoDetectadoFipe } : {}),
     }));
     // Marcar tipo como confirmado quando veio da FIPE (tipo direto da API)
     if (tipoDetectadoFipe && tipoFipe) setTipoConfirmado(true);
-    // Persistir tipo_veiculo detectado pela FIPE no banco e limpar cache antigo
-    if (tipoDetectadoFipe && deal.id && !deal.id.startsWith("p")) {
-      supabase.from("negociacoes").update({ tipo_veiculo: tipoDetectadoFipe, cache_precos: null } as any).eq("id", deal.id).then(() => {});
+    // Persistir tipo_veiculo e anos no banco e limpar cache antigo
+    const anoUpdate: any = { cache_precos: null };
+    if (tipoDetectadoFipe) anoUpdate.tipo_veiculo = tipoDetectadoFipe;
+    if (r.anoFabricacao) anoUpdate.ano_fabricacao = String(r.anoFabricacao);
+    if (r.anoModelo) anoUpdate.ano_modelo = String(r.anoModelo);
+    if (deal.id && !deal.id.startsWith("p") && Object.keys(anoUpdate).length > 1) {
+      supabase.from("negociacoes").update(anoUpdate as any).eq("id", deal.id).then(() => {});
     }
     const matchMarca = marcas.find(m => (r.marca || "").toUpperCase().includes(m.toUpperCase()));
     if (matchMarca) setMarca(matchMarca);
@@ -1082,16 +1086,20 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
 
         setForm(prev => ({
           ...prev,
-          anoFab: r.anoFabricacao || prev.anoFab,
+          anoFab: r.anoModelo || r.anoFabricacao || prev.anoFab,
           cor: r.cor || prev.cor,
           combustivel: r.combustivel || prev.combustivel,
           chassi: r.chassi || prev.chassi,
           renavam: r.renavam || prev.renavam || "",
           ...(tipoFipeConsulta ? { tipoVeiculo: tipoFipeConsulta } : {}),
         }));
-        // Persistir tipo detectado e limpar cache antigo
-        if (tipoFipeConsulta && deal.id && !deal.id.startsWith("p")) {
-          supabase.from("negociacoes").update({ tipo_veiculo: tipoFipeConsulta, cache_precos: null } as any).eq("id", deal.id).then(() => {});
+        // Persistir tipo detectado, anos e limpar cache antigo
+        if (deal.id && !deal.id.startsWith("p")) {
+          const updConsulta: any = { cache_precos: null };
+          if (tipoFipeConsulta) updConsulta.tipo_veiculo = tipoFipeConsulta;
+          if (r.anoFabricacao) updConsulta.ano_fabricacao = String(r.anoFabricacao);
+          if (r.anoModelo) updConsulta.ano_modelo = String(r.anoModelo);
+          supabase.from("negociacoes").update(updConsulta as any).eq("id", deal.id).then(() => {});
         }
 
         const vFipe = r.valorFipe || 0;
