@@ -103,11 +103,24 @@ async function buscarFipePorModelo(marca: string, modelo: string, ano: string) {
       if (!anosRes.ok) continue;
       const anosList = await anosRes.json();
 
-      // Encontrar ano
-      const anoNum = (ano || "").replace(/\D/g, "").slice(0, 4);
-      let anoMatch = anosList.find((a: any) => (a.codigo || "").includes(anoNum));
+      // Encontrar ano — filtrar "32000" (zero km) e preferir ano modelo
+      const anosReais = anosList.filter((a: any) => !(a.codigo || "").startsWith("32000"));
+      // Ano pode ser "2021" ou "2021/2022" — extrair ambos
+      const anoStr = (ano || "").replace(/\D/g, " ").trim();
+      const anoPartes = anoStr.split(/\s+/).filter((p: string) => p.length === 4);
+      // Priorizar ano modelo (segundo valor em "2021/2022") sobre ano fabricação
+      const anoModelo = anoPartes.length >= 2 ? anoPartes[1] : anoPartes[0] || "";
+      const anoFab = anoPartes[0] || "";
+      let anoMatch = anosReais.find((a: any) => (a.codigo || "").startsWith(anoModelo));
+      if (!anoMatch && anoFab && anoFab !== anoModelo) {
+        anoMatch = anosReais.find((a: any) => (a.codigo || "").startsWith(anoFab));
+      }
+      if (!anoMatch && anosReais.length > 0) {
+        // Sem ano informado: pegar o mais antigo disponível (mais conservador)
+        anoMatch = anosReais[anosReais.length - 1];
+      }
       if (!anoMatch && anosList.length > 0) {
-        anoMatch = anosList[0]; // mais recente
+        anoMatch = anosList[anosList.length - 1];
       }
       if (!anoMatch) continue;
 

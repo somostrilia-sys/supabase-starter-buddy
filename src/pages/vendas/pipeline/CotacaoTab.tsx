@@ -745,7 +745,10 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       // Passar marca/modelo/ano como fallback para busca FIPE quando API de placa falha
       const dealMarca = (deal as any).marca_fipe || marca || inferredMarca || "";
       const dealModelo = deal.veiculo_modelo || "";
-      const dealAno = (deal as any).ano_fabricacao || (deal as any).ano_modelo || "";
+      // Passar fabricação/modelo para a edge function priorizar ano modelo na FIPE
+      const anoFab = (deal as any).ano_fabricacao || "";
+      const anoMod = (deal as any).ano_modelo || "";
+      const dealAno = anoFab && anoMod && anoFab !== anoMod ? `${anoFab}/${anoMod}` : anoMod || anoFab || "";
       callEdge("gia-buscar-placa", { acao: "placa", placa, marca: dealMarca, modelo: dealModelo, ano: dealAno }).then(res => {
         if (res.sucesso && res.resultado) {
           aplicarDadosFipe(res.resultado, true); // salvar cache
@@ -1049,7 +1052,10 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
 
     try {
       // Buscar via API real (wdapi2) com fallback marca/modelo/ano
-      const result = await callEdge("gia-buscar-placa", { acao: "placa", placa: cleanPlaca, marca: marca || inferredMarca || "", modelo: deal.veiculo_modelo || "", ano: (deal as any).ano_fabricacao || "" });
+      const anoF = (deal as any).ano_fabricacao || "";
+      const anoM = (deal as any).ano_modelo || "";
+      const anoParam = anoF && anoM && anoF !== anoM ? `${anoF}/${anoM}` : anoM || anoF || "";
+      const result = await callEdge("gia-buscar-placa", { acao: "placa", placa: cleanPlaca, marca: marca || inferredMarca || "", modelo: deal.veiculo_modelo || "", ano: anoParam });
 
       if (result.sucesso && result.resultado) {
         const r = result.resultado;
