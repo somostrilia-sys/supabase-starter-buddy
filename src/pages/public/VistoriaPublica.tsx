@@ -29,11 +29,16 @@ import imgMotoPainel from "@/assets/vistoria/moto/painel.jpg";
 import imgMotoFarol from "@/assets/vistoria/moto/farol.svg";
 import imgMotoPlacaTraseira from "@/assets/vistoria/moto/placa-traseira.svg";
 // Caminhão
+import imgCamFrente from "@/assets/vistoria/caminhao/frente.jpg";
+import imgCamTraseira from "@/assets/vistoria/caminhao/traseira.jpg";
+import imgCamLateral from "@/assets/vistoria/caminhao/lateral.jpg";
 import imgCamParabrisa from "@/assets/vistoria/caminhao/parabrisa.jpg";
 import imgCamCabine from "@/assets/vistoria/caminhao/cabine.jpg";
 import imgCamCarroceria from "@/assets/vistoria/caminhao/carroceria.jpg";
 import imgCamEixos from "@/assets/vistoria/caminhao/eixos.jpg";
 import imgCamTacografo from "@/assets/vistoria/caminhao/tacografo.jpg";
+import imgCamMotor from "@/assets/vistoria/caminhao/motor.jpg";
+import imgCamRodas from "@/assets/vistoria/caminhao/rodas.jpg";
 
 // Categorias base (automóvel + caminhão)
 const CATEGORIAS_BASE: Record<string, { label: string; img: string; obs?: string }> = {
@@ -80,10 +85,22 @@ const OVERRIDES_MOTO: Record<string, { label: string; img: string; obs?: string 
   chassi: { label: "Chassi", img: imgChassi, obs: "No chassi ou no cabeçote" },
 };
 
+// Overrides de imagens/labels para caminhão (IDs compartilhados que precisam de foto diferente)
+const OVERRIDES_CAMINHAO: Record<string, { label: string; img: string; obs?: string }> = {
+  frente: { label: "Frente", img: imgCamFrente },
+  traseira: { label: "Traseira", img: imgCamTraseira },
+  lateral_esquerda: { label: "Lateral Esquerda", img: imgCamLateral },
+  lateral_direita: { label: "Lateral Direita", img: imgCamLateral },
+  para_brisa: { label: "Para-brisa", img: imgCamParabrisa },
+  motor_capo: { label: "Motor", img: imgCamMotor },
+  rodas_pneus: { label: "Rodas e Pneus", img: imgCamRodas },
+};
+
 // Retorna o mapa de categorias com imagens corretas para o tipo
-function getCategorias(isMoto: boolean): Record<string, { label: string; img: string; obs?: string }> {
-  if (!isMoto) return CATEGORIAS_BASE;
-  return { ...CATEGORIAS_BASE, ...OVERRIDES_MOTO };
+function getCategorias(isMoto: boolean, isCaminhao?: boolean): Record<string, { label: string; img: string; obs?: string }> {
+  if (isMoto) return { ...CATEGORIAS_BASE, ...OVERRIDES_MOTO };
+  if (isCaminhao) return { ...CATEGORIAS_BASE, ...OVERRIDES_CAMINHAO };
+  return CATEGORIAS_BASE;
 }
 
 // Fotos por tipo de veículo
@@ -110,7 +127,7 @@ function detectarCategoriaPorModelo(modelo: string, configuracao?: string): stri
     "triumph", "royal enfield", "scooter", "dafra", "shineray", "haojue",
     "kawasaki", "yamaha", "suzuki", "honda cg",
   ];
-  const camKw = ["caminhao", "caminhão", "scania", "volvo fh", "volvo fm", "iveco", "man ", "daf", "accelo", "cargo", "worker", "constellation", "sprinter", "daily", "pesado"];
+  const camKw = ["caminhao", "caminhão", "scania", "volvo fh", "volvo fm", "volvo vm", "iveco", "man ", "daf", "accelo", "cargo", "worker", "constellation", "sprinter", "daily", "pesado", "fh ", "fh-", "fm ", "fm-", "vm ", "vm-", "fmx", "tector", "atego", "axor", "actros", "arocs", "atron", "delivery", "meteor", "volksbus", "e-delivery", "tgx", "tgs"];
   if (motosKw.some(kw => m.includes(kw))) return CATEGORIAS_MOTO;
   if (camKw.some(kw => m.includes(kw))) return CATEGORIAS_CAMINHAO;
   return CATEGORIAS_AUTOMOVEL;
@@ -341,11 +358,13 @@ export default function VistoriaPublica() {
   const categoriasIds = (vistoria?.fotos_solicitadas && Array.isArray(vistoria.fotos_solicitadas) && vistoria.fotos_solicitadas.length > 0)
     ? vistoria.fotos_solicitadas as string[]
     : categoriasIdsFallback;
-  // Detectar se é moto para usar imagens de referência corretas
+  // Detectar tipo para usar imagens de referência corretas
   const isMoto = categoriasIdsFallback === CATEGORIAS_MOTO
     || categoriasIds.includes("guidao_retrovisores") || categoriasIds.includes("farol") || categoriasIds.includes("painel_km")
     || categoriasIds.includes("guidao") || categoriasIds.includes("carenagem") || categoriasIds.includes("escapamento");
-  const catMap = getCategorias(isMoto);
+  const isCaminhao = !isMoto && (categoriasIdsFallback === CATEGORIAS_CAMINHAO
+    || categoriasIds.includes("cabine") || categoriasIds.includes("carroceria") || categoriasIds.includes("eixos") || categoriasIds.includes("tacografo"));
+  const catMap = getCategorias(isMoto, isCaminhao);
   const CATEGORIAS = categoriasIds.map(id => ({ id, ...(catMap[id] || { label: id.replace(/_/g, " "), img: "" }) }));
 
   const fotosTiradas = fotos.size;

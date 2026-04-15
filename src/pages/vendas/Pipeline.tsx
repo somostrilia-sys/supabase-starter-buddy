@@ -334,6 +334,7 @@ export default function Pipeline() {
     desconto_ia_aprovado: (n as any).desconto_ia_aprovado || false,
     desconto_percentual: (n as any).desconto_percentual || 0,
     auto_cotacao_gerada: (n as any).auto_cotacao_gerada || false,
+    tipo_veiculo: (n as any).tipo_veiculo || "",
     created_at: n.created_at,
     updated_at: n.updated_at,
   } as any)), [negociacoes]);

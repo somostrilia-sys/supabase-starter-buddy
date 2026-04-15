@@ -60,7 +60,7 @@ export function useNegociacoes(companyId?: string, periodoPadrao: PeriodoFiltro 
 
       const PAGE_SIZE = 1000;
       const MAX_PAGES = periodo === "todos" ? 10 : 5;
-      const fields = "id,codigo,lead_nome,cpf_cnpj,telefone,email,veiculo_modelo,veiculo_placa,plano,valor_plano,stage,consultor,cooperativa,regional,gerente,origem,observacoes,enviado_sga,visualizacoes_proposta,status_icons,created_at,updated_at,chassi,renavam,ano_fabricacao,ano_modelo,cor,combustivel,cidade_circulacao,estado_circulacao,dia_vencimento,vistoria_status,vistoria_motivo,cache_fipe,cache_precos,cotacao_id,proposta_concorrente_url,desconto_aprovado_por,desconto_ia_aprovado,desconto_percentual";
+      const fields = "id,codigo,lead_nome,cpf_cnpj,telefone,email,veiculo_modelo,veiculo_placa,plano,valor_plano,stage,consultor,cooperativa,regional,gerente,origem,observacoes,enviado_sga,visualizacoes_proposta,status_icons,created_at,updated_at,chassi,renavam,ano_fabricacao,ano_modelo,cor,combustivel,cidade_circulacao,estado_circulacao,dia_vencimento,vistoria_status,vistoria_motivo,cache_fipe,cache_precos,cotacao_id,proposta_concorrente_url,desconto_aprovado_por,desconto_ia_aprovado,desconto_percentual,tipo_veiculo";
       const headers = { apikey, Authorization: `Bearer ${token || apikey}` };
 
       // Primeira página rápida — mostra imediatamente

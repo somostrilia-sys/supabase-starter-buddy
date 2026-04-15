@@ -19,7 +19,20 @@ import PedirLiberacaoButton from "@/components/PedirLiberacaoButton";
 import OpcionaisSection, { OpcionalItem } from "@/components/OpcionaisSection";
 
 /* ─── Marcas estáticas (fallback para select manual quando API não retorna) ─── */
-const marcas = ["Chevrolet", "Hyundai", "Honda", "Toyota", "Volkswagen", "Fiat", "Jeep", "Nissan", "Renault", "Ford"];
+const marcas = [
+  // Carros
+  "Chevrolet", "Hyundai", "Honda", "Toyota", "Volkswagen", "Fiat", "Jeep", "Nissan", "Renault", "Ford",
+  "Peugeot", "Citroën", "Citroen", "BMW", "Mercedes-Benz", "Mercedes", "Audi", "Mitsubishi", "Kia", "Subaru",
+  "Land Rover", "Volvo", "Suzuki", "Chery", "JAC", "Caoa Chery", "BYD", "GWM", "RAM", "Dodge", "Mini",
+  "Porsche", "Lexus", "Alfa Romeo",
+  // Pesados / Caminhões
+  "Scania", "MAN", "Iveco", "DAF", "AGRALE", "Foton", "Sinotruk", "Shacman",
+  // Motos
+  "Yamaha", "Kawasaki", "Ducati", "Harley-Davidson", "Triumph", "Royal Enfield", "KTM",
+  "Dafra", "Shineray", "Haojue",
+  // Aliases comuns
+  "VW", "MB", "GM",
+];
 
 /* ─── Lookup de placa na tabela veiculos do Supabase ─── */
 const lookupPlaca = async (placa: string) => {
@@ -132,6 +145,8 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
   const [valorFipeReal, setValorFipeReal] = useState((deal as any).cache_fipe?.valorFipe || 0);
   const [codFipeReal, setCodFipeReal] = useState("");
   const [modeloIdx, setModeloIdx] = useState(0);
+  // Tipo detectado pela FIPE real (fora do useCallback para evitar stale closure)
+  const [tipoFipeDetectado, setTipoFipeDetectado] = useState("");
 
   // FIPE cascata
   const [fipeMarcasList, setFipeMarcasList] = useState<{ codigo: string; nome: string }[]>([]);
@@ -140,6 +155,12 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
   const [fipeMarcaCod, setFipeMarcaCod] = useState("");
   const [fipeModeloCod, setFipeModeloCod] = useState("");
   const [fipeAnoCod, setFipeAnoCod] = useState("");
+
+  // Auto-match pendente após consulta por placa (prefere códigos FIPE, fallback para nomes)
+  const [pendingAutoMatch, setPendingAutoMatch] = useState<{
+    marca: string; modelo: string; ano: string;
+    marcaCod?: string; modeloCod?: string; anoCod?: string;
+  } | null>(null);
 
   // Detectar tipo do veículo (sugestão inicial, usuário deve confirmar)
   const detectTipo = () => {
@@ -164,7 +185,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     ];
     const vans = ["sprinter", "daily", "ducato", "master", "boxer", "transit", "jumper", "hr ", "bongo", "topic", "kombi"];
     const utilitarios = ["fiorino", "kangoo", "doblo", "doblò", "partner", "berlingo", "saveiro", "strada", "montana", "toro"];
-    const pesados = ["scania", "volvo fh", "volvo fm", "volvo vm", "volvo nh", "volvo nl", "iveco", "man ", "daf", "accelo", "cargo", "worker", "constellation", "pesado", "caminhão", "caminhao", "tector", "atego", "axor", "actros", "arocs", "atron", "delivery", "meteor", "volksbus", "e-delivery", "volkswagen 24", "volkswagen 17", "volkswagen 13", "volkswagen 11", "volkswagen 8", "ford f-4000", "ford f-350", "vuc"];
+    const pesados = ["scania", "volvo fh", "volvo fm", "volvo vm", "volvo nh", "volvo nl", "man ", "daf", "accelo", "cargo", "worker", "constellation", "pesado", "caminhão", "caminhao", "tector", "atego", "axor", "actros", "arocs", "atron", "meteor", "volksbus", "e-delivery", "volkswagen 24", "volkswagen 17", "volkswagen 13", "volkswagen 11", "volkswagen 8", "ford f-4000", "ford f-350", "vuc", "fh ", "fm ", "vm ", "nh ", "nl ", "p 310", "p 340", "p 360", "p 410", "p 450", "r 410", "r 450", "r 500", "r 540", "g 410", "g 450", "g 500", "s 450", "s 500", "s 540", "tgx", "tgs", "iveco tector", "iveco stralis", "iveco cursor"];
     const onibus = ["ônibus", "onibus", "micro-ônibus", "micro-onibus"];
     // Padrão numérico de caminhões VW/MAN (ex: 28.460, 24.280, 17.230, 8-150, 9-170)
     const pesadoNumerico = /\b(\d{1,2}[.\-]\d{3})\b/;
@@ -339,6 +360,54 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       setFipeLoading(false);
     }).catch(() => setFipeLoading(false));
   }, [fipeAnoCod]);
+
+  // Auto-match cascata FIPE após consulta por placa (usa códigos quando disponíveis)
+  useEffect(() => {
+    if (!pendingAutoMatch || fipeMarcasList.length === 0) return;
+    // Preferir código direto da edge function
+    if (pendingAutoMatch.marcaCod) {
+      const exists = fipeMarcasList.find(m => m.codigo === pendingAutoMatch.marcaCod);
+      if (exists && exists.codigo !== fipeMarcaCod) { setFipeMarcaCod(exists.codigo); return; }
+    }
+    // Fallback: match por nome
+    const target = pendingAutoMatch.marca.toUpperCase();
+    if (!target) return;
+    const match = fipeMarcasList.find(m => m.nome.toUpperCase() === target)
+      || fipeMarcasList.find(m => target.includes(m.nome.toUpperCase()) || m.nome.toUpperCase().includes(target));
+    if (match && match.codigo !== fipeMarcaCod) setFipeMarcaCod(match.codigo);
+  }, [fipeMarcasList, pendingAutoMatch]);
+
+  useEffect(() => {
+    if (!pendingAutoMatch || fipeModelosList.length === 0 || !fipeMarcaCod) return;
+    // Preferir código direto
+    if (pendingAutoMatch.modeloCod) {
+      const exists = fipeModelosList.find(m => String(m.codigo) === pendingAutoMatch.modeloCod);
+      if (exists && String(exists.codigo) !== fipeModeloCod) { setFipeModeloCod(String(exists.codigo)); return; }
+    }
+    // Fallback: match por nome
+    const target = pendingAutoMatch.modelo.toUpperCase();
+    if (!target) return;
+    const match = fipeModelosList.find(m => m.nome.toUpperCase() === target)
+      || fipeModelosList.find(m => target.includes(m.nome.toUpperCase()) || m.nome.toUpperCase().includes(target));
+    if (match && String(match.codigo) !== fipeModeloCod) setFipeModeloCod(String(match.codigo));
+  }, [fipeModelosList, fipeMarcaCod, pendingAutoMatch]);
+
+  useEffect(() => {
+    if (!pendingAutoMatch || fipeAnosList.length === 0 || !fipeModeloCod) return;
+    // Preferir código direto
+    if (pendingAutoMatch.anoCod) {
+      const exists = fipeAnosList.find(a => a.codigo === pendingAutoMatch.anoCod);
+      if (exists) { setFipeAnoCod(exists.codigo); setPendingAutoMatch(null); return; }
+    }
+    // Fallback: match por ano
+    const targetAno = pendingAutoMatch.ano;
+    if (!targetAno) return;
+    const match = fipeAnosList.find(a => a.codigo.startsWith(targetAno) || a.nome.startsWith(targetAno));
+    if (match) {
+      setFipeAnoCod(match.codigo);
+      setPendingAutoMatch(null);
+    }
+  }, [fipeAnosList, fipeModeloCod, pendingAutoMatch]);
 
   // Cidades dinâmicas do banco
   const [cidades, setCidades] = useState<string[]>([]);
@@ -669,11 +738,13 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     if (!tipoDetectadoFipe && r.modelo) {
       const mFipe = (r.modelo || "").toLowerCase();
       const motosKw = ["ducati", "monster", "panigale", "scrambler", "diavel", "multistrada", "vespa", "piaggio", "benelli", "mv agusta", "aprilia", "husqvarna", "ktm", "gas gas", "moto guzzi", "indian", "harley", "triumph", "royal enfield", "yamaha", "honda cg", "suzuki", "kawasaki", "bmw gs", "bmw r", "dafra", "shineray", "haojue", "motocicleta", "scooter"];
-      const pesadosKw = ["scania", "volvo fh", "volvo fm", "volvo vm", "volvo nh", "volvo nl", "iveco", "man ", "daf", "accelo", "cargo", "worker", "constellation", "tector", "atego", "axor", "actros", "arocs", "atron", "delivery", "meteor", "volksbus", "e-delivery", "ford f-4000", "ford f-350", "ônibus", "onibus"];
+      const pesadosKw = ["scania", "volvo fh", "volvo fm", "volvo vm", "volvo nh", "volvo nl", "iveco", "man ", "daf", "accelo", "cargo", "worker", "constellation", "tector", "atego", "axor", "actros", "arocs", "atron", "delivery", "meteor", "volksbus", "e-delivery", "ford f-4000", "ford f-350", "ônibus", "onibus", "fh ", "fm ", "vm ", "nh ", "nl ", "p 310", "p 340", "p 360", "p 410", "p 450", "r 410", "r 450", "r 500", "r 540", "g 410", "g 450", "g 500", "s 450", "s 500", "s 540", "tgx", "tgs"];
       const pesadoNumerico = /\b(\d{1,2}[.\-]\d{3})\b/;
       if (motosKw.some(kw => mFipe.includes(kw))) tipoDetectadoFipe = "Motocicleta";
       else if (pesadosKw.some(kw => mFipe.includes(kw)) || pesadoNumerico.test(mFipe)) tipoDetectadoFipe = "Pesados";
     }
+    // Setar tipo via state dedicado (evita problema de stale closure no useCallback)
+    if (tipoDetectadoFipe) setTipoFipeDetectado(tipoDetectadoFipe);
     setForm(prev => ({
       ...prev,
       placa: deal.veiculo_placa || prev.placa,
@@ -682,13 +753,14 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       anoFab: r.anoModelo || r.anoFabricacao || prev.anoFab || "",
       cor: r.cor || prev.cor || "",
       combustivel: r.combustivel || prev.combustivel || "",
-      ...(tipoDetectadoFipe ? { tipoVeiculo: tipoDetectadoFipe } : {}),
+      // Só sobrescrever tipo se não foi confirmado pelo usuário/responsável
+      ...(tipoDetectadoFipe && !d.tipo_veiculo ? { tipoVeiculo: tipoDetectadoFipe } : {}),
     }));
     // Marcar tipo como confirmado quando veio da FIPE (tipo direto da API)
-    if (tipoDetectadoFipe && tipoFipe) setTipoConfirmado(true);
+    if (tipoDetectadoFipe && !d.tipo_veiculo) setTipoConfirmado(true);
     // Persistir tipo_veiculo e anos no banco e limpar cache antigo
     const anoUpdate: any = { cache_precos: null };
-    if (tipoDetectadoFipe) anoUpdate.tipo_veiculo = tipoDetectadoFipe;
+    if (tipoDetectadoFipe && !d.tipo_veiculo) anoUpdate.tipo_veiculo = tipoDetectadoFipe;
     if (r.anoFabricacao) anoUpdate.ano_fabricacao = String(r.anoFabricacao);
     if (r.anoModelo) anoUpdate.ano_modelo = String(r.anoModelo);
     if (deal.id && !deal.id.startsWith("p") && Object.keys(anoUpdate).length > 1) {
@@ -696,6 +768,18 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     }
     const matchMarca = marcas.find(m => (r.marca || "").toUpperCase().includes(m.toUpperCase()));
     if (matchMarca) setMarca(matchMarca);
+
+    // Disparar auto-match cascata FIPE (marca → modelo → ano)
+    const anoAutoMatch = String(r.anoModelo || r.anoFabricacao || "");
+    setPendingAutoMatch({
+      marca: r.marca || "",
+      modelo: r.modelo || "",
+      ano: anoAutoMatch,
+      marcaCod: r.fipeMarcaCodigo || "",
+      modeloCod: r.fipeModeloCodigo || "",
+      anoCod: r.fipeAnoCodigo || "",
+    });
+
     const vFipe = r.valorFipe || 0;
     if (vFipe > 0) {
       // Passar UF/cidade do deal para evitar stale closure
@@ -717,11 +801,14 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
   React.useEffect(() => {
     if (dadosReaisCarregados) return;
     if (!precosCarregadosDaCotacao) return;
-    if (precosReais.length > 0 && fipeFetched) { setDadosReaisCarregados(true); return; }
+    if (precosReais.length > 0 && fipeFetched && valorFipeReal > 0) { setDadosReaisCarregados(true); return; }
 
     // 1. Tentar cache salvo na negociação (instantâneo)
     const cacheFipe = (deal as any).cache_fipe;
     if (cacheFipe && cacheFipe.valorFipe > 0) {
+      const tf = (cacheFipe.tipo_veiculo_fipe || cacheFipe.tipoVeiculo || "").toLowerCase();
+      if (tf === "caminhoes" || tf === "caminhão") setTipoFipeDetectado("Pesados");
+      else if (tf === "motos" || tf === "moto" || tf === "motocicleta") setTipoFipeDetectado("Motocicleta");
       aplicarDadosFipe(cacheFipe, false);
       return;
     }
@@ -731,6 +818,9 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       supabase.from("negociacoes" as any).select("cache_fipe").eq("id", deal.id).maybeSingle()
         .then(({ data }: any) => {
           if (data?.cache_fipe && data.cache_fipe.valorFipe > 0) {
+            const tf = (data.cache_fipe.tipo_veiculo_fipe || data.cache_fipe.tipoVeiculo || "").toLowerCase();
+            if (tf === "caminhoes" || tf === "caminhão") setTipoFipeDetectado("Pesados");
+            else if (tf === "motos" || tf === "moto" || tf === "motocicleta") setTipoFipeDetectado("Motocicleta");
             aplicarDadosFipe(data.cache_fipe, false);
             return;
           }
@@ -755,6 +845,10 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       const dealAno = anoFab && anoMod && anoFab !== anoMod ? `${anoFab}/${anoMod}` : anoMod || anoFab || "";
       callEdge("gia-buscar-placa", { acao: "placa", placa, marca: dealMarca, modelo: dealModelo, ano: dealAno }).then(res => {
         if (res.sucesso && res.resultado) {
+          // Setar tipo diretamente aqui (fora do useCallback)
+          const tf = (res.resultado.tipo_veiculo_fipe || res.resultado.tipoVeiculo || "").toLowerCase();
+          if (tf === "caminhoes" || tf === "caminhão") setTipoFipeDetectado("Pesados");
+          else if (tf === "motos" || tf === "moto" || tf === "motocicleta") setTipoFipeDetectado("Motocicleta");
           aplicarDadosFipe(res.resultado, true); // salvar cache
         } else {
           setFipeLoading(false);
@@ -1078,7 +1172,7 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         if (!tipoFipeConsulta) {
           const mFipe = ((r.modelo || "") + " " + marcaNome).toLowerCase();
           const motosKw = ["ducati", "monster", "panigale", "scrambler", "diavel", "multistrada", "vespa", "piaggio", "benelli", "mv agusta", "aprilia", "husqvarna", "ktm", "gas gas", "moto guzzi", "indian", "harley", "triumph", "royal enfield", "yamaha", "honda cg", "suzuki", "kawasaki", "bmw gs", "bmw r", "dafra", "shineray", "haojue", "motocicleta", "scooter"];
-          const pesadosKw = ["scania", "volvo fh", "volvo fm", "volvo vm", "volvo nh", "volvo nl", "iveco", "man ", "daf", "accelo", "cargo", "worker", "constellation", "tector", "atego", "axor", "actros", "arocs", "atron", "delivery", "meteor", "volksbus", "e-delivery", "ford f-4000", "ford f-350", "ônibus", "onibus"];
+          const pesadosKw = ["scania", "volvo fh", "volvo fm", "volvo vm", "volvo nh", "volvo nl", "iveco", "man ", "daf", "accelo", "cargo", "worker", "constellation", "tector", "atego", "axor", "actros", "arocs", "atron", "delivery", "meteor", "volksbus", "e-delivery", "ford f-4000", "ford f-350", "ônibus", "onibus", "fh ", "fm ", "vm ", "nh ", "nl ", "p 310", "p 340", "p 360", "p 410", "p 450", "r 410", "r 450", "r 500", "r 540", "g 410", "g 450", "g 500", "s 450", "s 500", "s 540", "tgx", "tgs"];
           const pesadoNumerico = /\b(\d{1,2}[.\-]\d{3})\b/;
           if (motosKw.some(kw => mFipe.includes(kw))) tipoFipeConsulta = "Motocicleta";
           else if (pesadosKw.some(kw => mFipe.includes(kw)) || pesadoNumerico.test(mFipe)) tipoFipeConsulta = "Pesados";
@@ -1093,6 +1187,17 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           renavam: r.renavam || prev.renavam || "",
           ...(tipoFipeConsulta ? { tipoVeiculo: tipoFipeConsulta } : {}),
         }));
+
+        // Disparar auto-match cascata FIPE (marca → modelo → ano)
+        setPendingAutoMatch({
+          marca: marcaNome,
+          modelo: r.modelo || "",
+          ano: String(r.anoModelo || r.anoFabricacao || ""),
+          marcaCod: r.fipeMarcaCodigo || "",
+          modeloCod: r.fipeModeloCodigo || "",
+          anoCod: r.fipeAnoCodigo || "",
+        });
+
         // Persistir tipo detectado, anos e limpar cache antigo
         if (deal.id && !deal.id.startsWith("p")) {
           const updConsulta: any = { cache_precos: null };
