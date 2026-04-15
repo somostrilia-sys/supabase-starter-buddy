@@ -50,27 +50,28 @@ function fmtBRLParts(v: number): { currency: string; integer: string; decimals: 
 }
 
 // Descrições padrão das coberturas (fallback quando detalhe do banco está vazio)
+// Obs: evitar citar percentuais FIPE aqui — regras variam por categoria (táxi, leilão, etc)
 const coberturaDescFallback: Record<string, string> = {
-  "colisão": "Cobertura para danos por colisão, capotamento ou tombamento",
+  "colisão": "Danos por colisão, capotamento ou tombamento",
   "incêndio": "Proteção contra incêndio, explosão e queda de raio",
-  "perda total": "Indenização integral quando reparo ultrapassa 75% do valor FIPE",
-  "roubo": "Indenização de 100% da tabela FIPE em caso de roubo",
-  "furto": "Indenização de 100% da tabela FIPE em caso de furto",
-  "danos a terceiros": "Cobertura para danos materiais e corporais causados a terceiros",
-  "terceiros": "Cobertura para danos materiais e corporais causados a terceiros",
-  "vidros": "Cobertura para para-brisas, vidros laterais e traseiro",
-  "retrovisor": "Cobertura para retrovisores danificados",
-  "danos da natureza": "Cobertura para enchentes, granizo, queda de árvore",
-  "carro reserva": "Veículo reserva por até 15 dias em caso de sinistro",
-  "assistência 24h": "Socorro mecânico e guincho 24h, 7 dias por semana",
-  "guincho": "Serviço de guincho ilimitado em território nacional",
-  "reboque": "Serviço de reboque/guincho ilimitado em território nacional",
-  "chaveiro": "Serviço de chaveiro para abertura do veículo",
+  "perda total": "Indenização integral conforme regulamento do plano",
+  "roubo": "Indenização conforme regulamento do plano",
+  "furto": "Indenização conforme regulamento do plano",
+  "danos a terceiros": "Danos materiais e corporais causados a terceiros",
+  "terceiros": "Danos materiais e corporais causados a terceiros",
+  "vidros": "Para-brisas, vidros laterais e traseiro",
+  "retrovisor": "Troca ou reparo de retrovisores",
+  "danos da natureza": "Enchentes, granizo, queda de árvore",
+  "carro reserva": "Veículo reserva em caso de sinistro",
+  "assistência 24h": "Socorro mecânico 24h, 7 dias por semana",
+  "guincho": "Serviço de guincho em território nacional",
+  "reboque": "Serviço de reboque em território nacional",
+  "chaveiro": "Abertura do veículo no local",
   "recarga de bateria": "Recarga ou troca de bateria no local",
   "auxílio combustível": "Envio de combustível em caso de pane seca",
-  "troca de pneus": "Troca de pneu furado pelo estepe do veículo",
-  "hospedagem": "Diárias de hotel em caso de sinistro fora do domicílio",
-  "retorno ao domicílio": "Transporte de retorno ao domicílio em caso de sinistro",
+  "troca de pneus": "Troca pelo estepe do veículo",
+  "hospedagem": "Diárias de hotel após sinistro fora do domicílio",
+  "retorno ao domicílio": "Transporte de retorno após sinistro",
   "clube": "Acesso ao clube de benefícios e descontos exclusivos",
 };
 
@@ -83,36 +84,56 @@ function getCoberturaDesc(nome: string, detalheOriginal: string): string {
   return "";
 }
 
-// Map de emojis/ícones e categorias para benefícios (sem desc hardcoded — usar detalhe do banco)
-const beneficiosMeta: Record<string, { emoji: string; cat: string; ico: string }> = {
-  "Colisão": { emoji: "💥", cat: "cat-colisao", ico: "ico-red" },
-  "Incêndio": { emoji: "🔥", cat: "cat-colisao", ico: "ico-red" },
-  "Perda Total": { emoji: "⚠️", cat: "cat-colisao", ico: "ico-blue" },
-  "Roubo": { emoji: "🔒", cat: "cat-roubo", ico: "ico-purple" },
-  "Furto": { emoji: "🔒", cat: "cat-roubo", ico: "ico-purple" },
-  "Danos a Terceiros": { emoji: "👥", cat: "cat-terceiro", ico: "ico-green" },
-  "Terceiros": { emoji: "👥", cat: "cat-terceiro", ico: "ico-green" },
-  "Vidros": { emoji: "🪟", cat: "cat-vidro", ico: "ico-cyan" },
-  "Retrovisor": { emoji: "🪞", cat: "cat-vidro", ico: "ico-cyan" },
-  "Danos da natureza": { emoji: "🌧️", cat: "cat-extra", ico: "ico-blue" },
-  "Carro Reserva": { emoji: "🚙", cat: "cat-assist", ico: "ico-green" },
-  "Assistência 24H": { emoji: "🚗", cat: "cat-assist", ico: "ico-yellow" },
-  "Guincho": { emoji: "♾️", cat: "cat-assist", ico: "ico-yellow" },
-  "Reboque": { emoji: "♾️", cat: "cat-assist", ico: "ico-yellow" },
-  "Chaveiro": { emoji: "🔑", cat: "cat-extra", ico: "ico-orange" },
-  "Recarga de bateria": { emoji: "🔋", cat: "cat-extra", ico: "ico-orange" },
-  "Auxílio combustível": { emoji: "⛽", cat: "cat-extra", ico: "ico-orange" },
-  "Troca de pneus": { emoji: "🛞", cat: "cat-extra", ico: "ico-orange" },
-  "Hospedagem": { emoji: "🏨", cat: "cat-extra", ico: "ico-orange" },
-  "Retorno ao domicílio": { emoji: "🏠", cat: "cat-extra", ico: "ico-orange" },
-  "Clube": { emoji: "⭐", cat: "cat-clube", ico: "ico-sky" },
+// Mapeamento nome → categoria + emoji
+const categoryMap: Record<string, { cat: string; emoji: string }> = {
+  "colisão": { cat: "protecao", emoji: "💥" },
+  "colisao": { cat: "protecao", emoji: "💥" },
+  "incêndio": { cat: "protecao", emoji: "🔥" },
+  "incendio": { cat: "protecao", emoji: "🔥" },
+  "perda total": { cat: "protecao", emoji: "⚠️" },
+  "roubo": { cat: "roubo", emoji: "🔒" },
+  "furto": { cat: "roubo", emoji: "🔑" },
+  "danos a terceiros": { cat: "terceiro", emoji: "👥" },
+  "terceiros": { cat: "terceiro", emoji: "👥" },
+  "rcf": { cat: "terceiro", emoji: "👥" },
+  "vidro": { cat: "vidro", emoji: "🪟" },
+  "retrovisor": { cat: "vidro", emoji: "🪞" },
+  "guincho": { cat: "assist", emoji: "♾️" },
+  "reboque": { cat: "assist", emoji: "♾️" },
+  "chaveiro": { cat: "assist", emoji: "🔑" },
+  "bateria": { cat: "assist", emoji: "🔋" },
+  "combustível": { cat: "assist", emoji: "⛽" },
+  "combustivel": { cat: "assist", emoji: "⛽" },
+  "pane seca": { cat: "assist", emoji: "⛽" },
+  "pneu": { cat: "assist", emoji: "🛞" },
+  "assistência": { cat: "assist", emoji: "🚗" },
+  "assistencia": { cat: "assist", emoji: "🚗" },
+  "carro reserva": { cat: "extra", emoji: "🚙" },
+  "natureza": { cat: "extra", emoji: "🌧️" },
+  "hospedagem": { cat: "extra", emoji: "🏨" },
+  "retorno": { cat: "extra", emoji: "🏠" },
+  "domicílio": { cat: "extra", emoji: "🏠" },
+  "domicilio": { cat: "extra", emoji: "🏠" },
+  "clube": { cat: "clube", emoji: "⭐" },
 };
 
-function getBenefMeta(nome: string) {
-  for (const [key, meta] of Object.entries(beneficiosMeta)) {
-    if (nome.toLowerCase().includes(key.toLowerCase())) return meta;
+const categoryMeta: Record<string, { label: string; chip: string; order: number }> = {
+  protecao: { label: "Proteção Principal", chip: "💥", order: 1 },
+  roubo: { label: "Roubo & Furto", chip: "🔒", order: 2 },
+  terceiro: { label: "Responsabilidade a Terceiros", chip: "👥", order: 3 },
+  vidro: { label: "Vidros & Retrovisores", chip: "🪟", order: 4 },
+  assist: { label: "Assistência 24 Horas", chip: "🚗", order: 5 },
+  extra: { label: "Benefícios Extras", chip: "✨", order: 6 },
+  clube: { label: "Clube de Benefícios", chip: "⭐", order: 7 },
+  outros: { label: "Outras Coberturas", chip: "✅", order: 99 },
+};
+
+function getCatMeta(nome: string): { cat: string; emoji: string } {
+  const lower = nome.toLowerCase();
+  for (const [key, meta] of Object.entries(categoryMap)) {
+    if (lower.includes(key)) return meta;
   }
-  return { emoji: "✅", cat: "cat-extra", ico: "ico-blue" };
+  return { cat: "outros", emoji: "✅" };
 }
 
 function buildPage3HTML(dados: DadosCotacao): string {
@@ -123,31 +144,59 @@ function buildPage3HTML(dados: DadosCotacao): string {
   const validadeDate = (() => { const d = new Date(); d.setDate(d.getDate() + dados.validade); return d.toLocaleDateString("pt-BR"); })();
   const price = fmtBRLParts(mensalFinal);
 
-  // Build benefícios HTML — usar coberturas reais do banco, sem fallback inventado
+  // Agrupar coberturas por categoria
   const coberturas = dados.coberturas.filter(c => c.inclusa);
+  const totalBenef = coberturas.length;
 
-  let beneficiosHTML = "";
+  const grupos: Record<string, { nome: string; desc: string; emoji: string }[]> = {};
+  for (const c of coberturas) {
+    const meta = getCatMeta(c.nome);
+    const rawDesc = c.detalhe || "";
+    const cleanDesc = (rawDesc === "0" || rawDesc === "0,00" || rawDesc === "R$ 0,00" || Number(rawDesc) === 0) ? "" : rawDesc;
+    const desc = getCoberturaDesc(c.nome, cleanDesc);
+    if (!grupos[meta.cat]) grupos[meta.cat] = [];
+    grupos[meta.cat].push({ nome: c.nome, desc, emoji: meta.emoji });
+  }
+  const sortedCats = Object.keys(grupos).sort(
+    (a, b) => (categoryMeta[a]?.order || 99) - (categoryMeta[b]?.order || 99)
+  );
+
+  let coberturasHTML = "";
   if (coberturas.length > 0) {
-    beneficiosHTML = coberturas.map(c => {
-      const meta = getBenefMeta(c.nome);
-      const isClube = c.nome.toLowerCase().includes("clube");
-      const rawDesc = c.detalhe || "";
-      const cleanDesc = (rawDesc === "0" || rawDesc === "0,00" || rawDesc === "R$ 0,00" || Number(rawDesc) === 0) ? "" : rawDesc;
-      const desc = getCoberturaDesc(c.nome, cleanDesc);
-      return `<div class="benefit-item ${isClube ? "benefit-full " : ""}${meta.cat}">
-        <div class="benefit-icon ${meta.ico}">${meta.emoji}</div>
-        <div class="benefit-text-wrap">
-          <div class="benefit-name">${c.nome}</div>
-          ${desc ? `<div class="benefit-desc">${desc}</div>` : ""}
+    coberturasHTML = sortedCats.map(cat => {
+      const items = grupos[cat];
+      const meta = categoryMeta[cat] || categoryMeta.outros;
+      const singleFull = (cat === "terceiro" || cat === "clube") && items.length === 1;
+      const itemsHTML = items.map(item => {
+        const fullCls = singleFull ? " cov-full" : "";
+        return `<div class="cov-item${fullCls}">
+          <div class="ico">${item.emoji}</div>
+          <div class="txt">
+            <div class="name">${item.nome}</div>
+            ${item.desc ? `<div class="desc">${item.desc}</div>` : ""}
+          </div>
+        </div>`;
+      }).join("\n");
+      const countLabel = items.length === 1 ? "1 item" : `${items.length} itens`;
+      return `<div class="cov-cat cat-${cat}">
+        <div class="cov-cat-header">
+          <div class="chip">${meta.chip}</div>
+          <h4>${meta.label}</h4>
+          <div class="count">${countLabel}</div>
         </div>
+        <div class="cov-items">${itemsHTML}</div>
       </div>`;
     }).join("\n");
   } else {
-    beneficiosHTML = `<div class="benefit-item benefit-full cat-extra">
-      <div class="benefit-icon ico-blue">📋</div>
-      <div class="benefit-text-wrap">
-        <div class="benefit-name">Coberturas conforme plano selecionado</div>
-        <div class="benefit-desc">Consulte seu consultor para detalhes das coberturas do plano ${dados.plano.nome}</div>
+    coberturasHTML = `<div class="cov-cat cat-outros">
+      <div class="cov-items">
+        <div class="cov-item cov-full">
+          <div class="ico">📋</div>
+          <div class="txt">
+            <div class="name">Coberturas conforme plano selecionado</div>
+            <div class="desc">Consulte seu consultor para detalhes das coberturas do plano ${dados.plano.nome}</div>
+          </div>
+        </div>
       </div>
     </div>`;
   }
@@ -156,27 +205,21 @@ function buildPage3HTML(dados: DadosCotacao): string {
   let opcionaisHTML = "";
   if (dados.opcionais && dados.opcionais.length > 0) {
     const opcItems = dados.opcionais.map(o =>
-      `<div class="benefit-item cat-extra">
-        <div class="benefit-icon ico-sky">➕</div>
-        <div class="benefit-text-wrap">
-          <div class="benefit-name">${o.nome}</div>
-          <div class="benefit-desc">${fmtBRL(o.valor_mensal)}/mês</div>
+      `<div class="opc-item">
+        <div class="ico">➕</div>
+        <div class="txt">
+          <div class="name">${o.nome}</div>
+          <div class="val">${fmtBRL(o.valor_mensal)}/m&ecirc;s</div>
         </div>
       </div>`
     ).join("\n");
     opcionaisHTML = `
-    <div class="benefits-section" style="margin-top:16px;">
-      <div class="benefits-section-inner" style="background:linear-gradient(135deg,#1a4a2e 0%,#1e5a36 100%);">
-        <div class="benefits-title">
-          <div class="line" style="background:linear-gradient(90deg,rgba(46,204,113,0.4),transparent);"></div>
-          <h3 style="color:#2ecc71;">✦ Serviços Contratados ✦</h3>
-          <div class="line line-r" style="background:linear-gradient(270deg,rgba(46,204,113,0.4),transparent);"></div>
-        </div>
-        <div class="benefits-grid">${opcItems}</div>
-        <div style="text-align:right;margin-top:8px;padding-right:14px;">
-          <span style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:13px;color:#2ecc71;">Total serviços: ${fmtBRL(totalOpc)}/mês</span>
-        </div>
+    <div class="opc-section">
+      <div class="opc-head">
+        <h3>&#10022; Servi&ccedil;os Contratados &#10022;</h3>
+        <div class="opc-total">Total: ${fmtBRL(totalOpc)}/m&ecirc;s</div>
       </div>
+      <div class="opc-grid">${opcItems}</div>
     </div>`;
   }
 
@@ -211,27 +254,68 @@ function buildPage3HTML(dados: DadosCotacao): string {
     .data-row:last-child{border-bottom:none}
     .data-label{font-size:9.5px;color:#8ab8d8;text-transform:uppercase;font-weight:600;letter-spacing:0.8px}
     .data-value{font-size:13px;color:#ffffff;font-weight:600;text-align:right}
-    .benefits-section{margin-bottom:20px}
-    .benefits-section-inner{background:linear-gradient(135deg,#0d2b5e 0%,#14376e 100%);border-radius:16px;padding:24px 22px;box-shadow:0 4px 25px rgba(13,43,94,0.35);border:1px solid rgba(91,184,245,0.15)}
-    .benefits-title{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-    .benefits-title .line{flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,0.3),transparent)}
-    .benefits-title .line-r{background:linear-gradient(270deg,rgba(255,255,255,0.3),transparent)}
-    .benefits-title h3{font-family:'Montserrat',sans-serif;font-weight:800;font-size:14px;color:#fff;letter-spacing:3px;text-transform:uppercase;white-space:nowrap}
-    .benefits-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .benefit-item{display:flex;align-items:center;gap:12px;padding:14px 16px;background:linear-gradient(135deg,rgba(192,210,230,0.12),rgba(160,190,220,0.08));border-radius:12px;border:1px solid rgba(192,210,230,0.18);position:relative;overflow:hidden}
-    .benefit-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px}
-    .benefit-item.cat-colisao::before{background:linear-gradient(180deg,#ef4444,#dc2626)}
-    .benefit-item.cat-roubo::before{background:linear-gradient(180deg,#8b5cf6,#7c3aed)}
-    .benefit-item.cat-terceiro::before{background:linear-gradient(180deg,#10b981,#059669)}
-    .benefit-item.cat-vidro::before{background:linear-gradient(180deg,#06b6d4,#0891b2)}
-    .benefit-item.cat-assist::before{background:linear-gradient(180deg,#f59e0b,#d97706)}
-    .benefit-item.cat-extra::before{background:linear-gradient(180deg,#f97316,#ea580c)}
-    .benefit-item.cat-clube::before{background:linear-gradient(180deg,#5bb8f5,#2a7fc9)}
-    .benefit-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-    .ico-red{background:rgba(239,68,68,0.2)}.ico-blue{background:rgba(59,130,246,0.2)}.ico-purple{background:rgba(139,92,246,0.2)}.ico-green{background:rgba(16,185,129,0.2)}.ico-cyan{background:rgba(6,182,212,0.2)}.ico-yellow{background:rgba(245,158,11,0.2)}.ico-orange{background:rgba(249,115,22,0.2)}.ico-sky{background:rgba(91,184,245,0.2)}
-    .benefit-name{font-size:14px;color:#ffffff;font-weight:700;line-height:1.3;letter-spacing:0.3px}
-    .benefit-desc{font-size:11px;color:#a0c4e0;font-weight:500;margin-top:2px}
-    .benefit-full{grid-column:1 / -1}
+    /* ============ NOVA SEÇÃO DE COBERTURAS ============ */
+    .cov-wrap{margin-bottom:20px}
+    .cov-hero{background:linear-gradient(135deg,#0d2b5e 0%,#14376e 50%,#1a4a8a 100%);border-radius:16px 16px 0 0;padding:18px 26px;display:flex;align-items:center;justify-content:space-between;border:1px solid rgba(91,184,245,0.25);border-bottom:none;box-shadow:0 4px 25px rgba(13,43,94,0.35)}
+    .cov-hero-title{display:flex;align-items:center;gap:14px}
+    .cov-hero-title .spark{width:42px;height:42px;background:linear-gradient(135deg,#5bb8f5,#2a7fc9);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 14px rgba(91,184,245,0.4)}
+    .cov-hero-title h2{font-family:'Montserrat',sans-serif;font-weight:900;font-size:18px;color:#fff;letter-spacing:2px;text-transform:uppercase;margin:0}
+    .cov-hero-title p{font-size:10.5px;color:#7aaed4;margin:2px 0 0;font-weight:500}
+    .cov-hero-badge{background:linear-gradient(135deg,#059669,#10b981);color:#fff;font-family:'Montserrat',sans-serif;font-weight:800;font-size:10.5px;padding:8px 16px;border-radius:20px;letter-spacing:1.5px;box-shadow:0 3px 12px rgba(16,185,129,0.4)}
+    .cov-body{background:#0a1e3a;border-radius:0 0 16px 16px;border:1px solid rgba(91,184,245,0.25);border-top:none;padding:18px 18px 14px}
+    .cov-cat{margin-bottom:14px}
+    .cov-cat:last-child{margin-bottom:0}
+    .cov-cat-header{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:10px;margin-bottom:8px}
+    .cov-cat-header .chip{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;background:rgba(255,255,255,0.18)}
+    .cov-cat-header h4{font-family:'Montserrat',sans-serif;font-weight:800;font-size:12px;color:#fff;letter-spacing:2.5px;text-transform:uppercase;margin:0;flex:1}
+    .cov-cat-header .count{background:rgba(255,255,255,0.22);color:#fff;font-family:'Montserrat',sans-serif;font-weight:800;font-size:10px;padding:3px 9px;border-radius:12px;letter-spacing:0.5px}
+    .cat-protecao .cov-cat-header{background:linear-gradient(90deg,#dc2626,#ef4444 60%,#f87171)}
+    .cat-roubo .cov-cat-header{background:linear-gradient(90deg,#7c3aed,#8b5cf6 60%,#a78bfa)}
+    .cat-terceiro .cov-cat-header{background:linear-gradient(90deg,#059669,#10b981 60%,#34d399)}
+    .cat-vidro .cov-cat-header{background:linear-gradient(90deg,#0891b2,#06b6d4 60%,#22d3ee)}
+    .cat-assist .cov-cat-header{background:linear-gradient(90deg,#d97706,#f59e0b 60%,#fbbf24)}
+    .cat-extra .cov-cat-header{background:linear-gradient(90deg,#ea580c,#f97316 60%,#fb923c)}
+    .cat-clube .cov-cat-header{background:linear-gradient(90deg,#2a7fc9,#5bb8f5 60%,#93d5ff)}
+    .cat-outros .cov-cat-header{background:linear-gradient(90deg,#475569,#64748b 60%,#94a3b8)}
+    .cov-items{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+    .cov-item{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;background:linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02));border-radius:9px;border:1px solid rgba(255,255,255,0.09);position:relative;overflow:hidden}
+    .cov-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+    .cat-protecao .cov-item::before{background:#ef4444}
+    .cat-roubo .cov-item::before{background:#8b5cf6}
+    .cat-terceiro .cov-item::before{background:#10b981}
+    .cat-vidro .cov-item::before{background:#06b6d4}
+    .cat-assist .cov-item::before{background:#f59e0b}
+    .cat-extra .cov-item::before{background:#f97316}
+    .cat-clube .cov-item::before{background:#5bb8f5}
+    .cat-outros .cov-item::before{background:#64748b}
+    .cov-item .ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+    .cat-protecao .cov-item .ico{background:rgba(239,68,68,0.22)}
+    .cat-roubo .cov-item .ico{background:rgba(139,92,246,0.22)}
+    .cat-terceiro .cov-item .ico{background:rgba(16,185,129,0.22)}
+    .cat-vidro .cov-item .ico{background:rgba(6,182,212,0.22)}
+    .cat-assist .cov-item .ico{background:rgba(245,158,11,0.22)}
+    .cat-extra .cov-item .ico{background:rgba(249,115,22,0.22)}
+    .cat-clube .cov-item .ico{background:rgba(91,184,245,0.22)}
+    .cat-outros .cov-item .ico{background:rgba(100,116,139,0.22)}
+    .cov-item .txt{flex:1;min-width:0}
+    .cov-item .name{font-size:12px;color:#fff;font-weight:700;line-height:1.25;letter-spacing:0.2px;display:flex;align-items:center;gap:5px}
+    .cov-item .name::after{content:'\\2713';color:#10b981;font-weight:900;font-size:12px}
+    .cov-item .desc{font-size:9.5px;color:#a0c4e0;font-weight:500;margin-top:2px;line-height:1.35}
+    .cov-full{grid-column:1 / -1;padding:13px 16px}
+    .cov-full .ico{width:36px;height:36px;font-size:18px}
+    .cov-full .name{font-size:13px}
+    .cov-full .desc{font-size:10.5px}
+    /* OPCIONAIS */
+    .opc-section{margin-top:16px;background:linear-gradient(135deg,#1a4a2e 0%,#1e5a36 100%);border-radius:14px;padding:16px 20px;border:1px solid rgba(46,204,113,0.25);box-shadow:0 4px 20px rgba(26,74,46,0.4)}
+    .opc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .opc-head h3{font-family:'Montserrat',sans-serif;font-weight:900;font-size:13px;color:#2ecc71;letter-spacing:2px;text-transform:uppercase;margin:0}
+    .opc-total{font-family:'Montserrat',sans-serif;font-weight:800;font-size:13px;color:#fff;background:rgba(46,204,113,0.22);padding:5px 14px;border-radius:16px;border:1px solid rgba(46,204,113,0.4)}
+    .opc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+    .opc-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(46,204,113,0.08);border-radius:9px;border:1px solid rgba(46,204,113,0.25)}
+    .opc-item .ico{width:28px;height:28px;border-radius:7px;background:rgba(46,204,113,0.25);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+    .opc-item .txt{flex:1;min-width:0}
+    .opc-item .name{font-size:11.5px;color:#fff;font-weight:700;line-height:1.2}
+    .opc-item .val{font-size:10px;color:#7ee3a5;font-weight:600;margin-top:1px}
     .pricing-section{background:linear-gradient(135deg,#0d2b5e 0%,#14376e 100%);border:1px solid rgba(91,184,245,0.15);border-radius:16px;padding:22px 28px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;position:relative;overflow:hidden;box-shadow:0 4px 25px rgba(13,43,94,0.35)}
     .pricing-section::before{content:'';position:absolute;top:-60%;right:-15%;width:280px;height:280px;background:radial-gradient(circle,rgba(91,184,245,0.08),transparent 70%);border-radius:50%}
     .pricing-left{position:relative;z-index:1}
@@ -299,17 +383,20 @@ function buildPage3HTML(dados: DadosCotacao): string {
       </div>
     </div>
 
-    <!-- BENEFÍCIOS -->
-    <div class="benefits-section">
-      <div class="benefits-section-inner">
-        <div class="benefits-title">
-          <div class="line"></div>
-          <h3>&#10022; Benef&iacute;cios Contratados &#10022;</h3>
-          <div class="line line-r"></div>
+    <!-- COBERTURAS -->
+    <div class="cov-wrap">
+      <div class="cov-hero">
+        <div class="cov-hero-title">
+          <div class="spark">&#128737;&#65039;</div>
+          <div>
+            <h2>Coberturas Contratadas</h2>
+            <p>Prote&ccedil;&atilde;o conforme o plano ${dados.plano.nome}</p>
+          </div>
         </div>
-        <div class="benefits-grid">
-          ${beneficiosHTML}
-        </div>
+        <div class="cov-hero-badge">&#10003; ${totalBenef} BENEF&Iacute;CIOS</div>
+      </div>
+      <div class="cov-body">
+        ${coberturasHTML}
       </div>
     </div>
 
