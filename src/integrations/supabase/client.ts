@@ -29,6 +29,10 @@ export async function callEdge(functionName: string, body: Record<string, unknow
     },
     body: JSON.stringify(body),
   });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => resp.statusText);
+    throw new Error(`Edge ${functionName}: ${resp.status} — ${text.substring(0, 200)}`);
+  }
   return resp.json();
 }
 

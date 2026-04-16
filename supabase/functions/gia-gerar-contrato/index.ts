@@ -71,26 +71,9 @@ Deno.serve(async (req) => {
       return jsonRes({ sucesso: false, error: "Negociação não encontrada" }, 404);
     }
 
-    // 2. Buscar email do Maikon pela API dele
-    let maikonEmail = "maikon@objetivoauto.com.br";
-    let maikonNome = "Maikon";
-    try {
-      const meForm = new FormData();
-      meForm.append(
-        "operations",
-        JSON.stringify({
-          query: `query { me { name email } }`,
-        }),
-      );
-      meForm.append("map", JSON.stringify({}));
-      const meResult = await autentiqueRequest(AUTENTIQUE_TOKEN_MAIKON, meForm);
-      if (meResult?.data?.me) {
-        maikonEmail = meResult.data.me.email || maikonEmail;
-        maikonNome = meResult.data.me.name || maikonNome;
-      }
-    } catch (_e) {
-      console.warn("Não foi possível buscar dados do Maikon, usando defaults");
-    }
+    // 2. Dados do Maikon (representante da empresa)
+    const maikonEmail = "diretoria@objetivoauto.com.br";
+    const maikonNome = "Maikon Serrão Coelho";
 
     // 3. Converter base64 para File
     const binaryStr = atob(pdf_base64);
@@ -105,6 +88,11 @@ Deno.serve(async (req) => {
     );
 
     // 4. Criar documento no Autentique com 2 signatários
+    const emailAssociado = neg.email || "";
+    if (!emailAssociado) {
+      return jsonRes({ sucesso: false, error: "E-mail do associado não cadastrado. Preencha na aba Associado." }, 400);
+    }
+
     const nomeDoc = `Contrato Proteção Veicular - ${neg.lead_nome || ""} - ${neg.veiculo_placa || ""}`;
 
     const signers: any[] = [
@@ -113,7 +101,7 @@ Deno.serve(async (req) => {
         action: "SIGN",
       },
       {
-        email: neg.email || "",
+        email: emailAssociado,
         action: "SIGN",
       },
     ];
