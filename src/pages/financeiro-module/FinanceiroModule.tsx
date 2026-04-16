@@ -7,7 +7,7 @@ import { useBrand } from "@/hooks/useBrand";
 import {
   Wallet, PieChart, ArrowLeftRight, TrendingDown,
   LineChart, FileBarChart, BarChart3, Building,
-  ChevronLeft, LogOut, DollarSign,
+  ChevronLeft, LogOut, DollarSign, CalendarCheck,
 } from "lucide-react";
 
 import { DemoBanner } from "@/components/DemoBanner";
@@ -19,9 +19,11 @@ import ProjecaoDespesasTab from "./projecao-despesas/ProjecaoDespesasTab";
 import RelatoriosFinanceiroTab from "./relatorios/RelatoriosFinanceiroTab";
 import AnaliseCustoTab from "./analise-custo/AnaliseCustoTab";
 import AnaliseCooperativaTab from "./analise-cooperativa/AnaliseCooperativaTab";
+import FechamentoMensal from "../gestao/financeiro/FechamentoMensal";
 
 const financeiroTabs = [
   { id: "fluxo-caixa", label: "Fluxo de Caixa", icon: Wallet },
+  { id: "fechamento-mensal", label: "Fechamento Mensal", icon: CalendarCheck },
   { id: "recebimentos", label: "Recebimentos", icon: PieChart },
   { id: "conciliacao", label: "Conciliação", icon: ArrowLeftRight },
   { id: "contas-pagar", label: "Contas a Pagar", icon: TrendingDown },
@@ -40,6 +42,7 @@ export default function FinanceiroModule() {
   const renderContent = () => {
     switch (activeTab) {
       case "fluxo-caixa": return <FluxoCaixaTab />;
+      case "fechamento-mensal": return <FechamentoMensal />;
       case "recebimentos": return <RecebimentosCategoriaTab />;
       case "conciliacao": return <ConciliacaoTab />;
       case "contas-pagar": return <ContasPagarTab />;

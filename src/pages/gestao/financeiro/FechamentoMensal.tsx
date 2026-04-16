@@ -4,7 +4,7 @@ import { ArrowLeft, CalendarCheck, Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-interface Props { onBack: () => void; }
+interface Props { onBack?: () => void; }
 
 function buildMonthOptions() {
   const options: { value: string; label: string }[] = [];
@@ -178,9 +178,11 @@ export default function FechamentoMensal({ onBack }: Props) {
   return (
     <div className="p-6 lg:px-8 flex flex-col min-h-[calc(100vh-7.5rem)]">
       <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+        {onBack && (
+          <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        )}
         <CalendarCheck className="h-5 w-5 text-primary shrink-0" />
         <h1 className="text-lg font-semibold">Fechamento Mensal</h1>
         <div className="ml-auto flex items-center gap-2">
