@@ -310,8 +310,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "run-sql" && body.sql) {
+      await sql.unsafe(body.sql);
+      await sql.end();
+      return new Response(JSON.stringify({ status: "ok", sql: body.sql.substring(0, 100) }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     await sql.end();
-    return new Response(JSON.stringify({ error: "action required: prepare|insert|finalize|check" }), {
+    return new Response(JSON.stringify({ error: "action required: prepare|insert|finalize|check|run-sql" }), {
       status: 400, headers: { "Content-Type": "application/json" },
     });
 

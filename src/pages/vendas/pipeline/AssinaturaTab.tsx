@@ -228,19 +228,32 @@ export default function AssinaturaTab({ deal, onUpdate }: Props) {
 
   const handleEnviar = async (canal: "email" | "whatsapp" | "ambos") => {
     setGerando(true);
-    // Gerar PDF do contrato com dados reais do cache
-    const pdfBlob = await gerarContratoPdf(buildPdfParams());
+    try {
+      // Gerar PDF do contrato com dados reais do cache
+      const pdfBlob = await gerarContratoPdf(buildPdfParams());
 
-    // Converter blob pra base64
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const base64 = (reader.result as string).split(",")[1];
-      const result = await callEdge("gia-gerar-contrato", { negociacao_id: deal.id, canal, pdf_base64: base64, telefone_associado: deal.telefone });
-      setGerando(false);
+      // Converter blob pra base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(",")[1]);
+        reader.onerror = () => reject(new Error("Erro ao ler PDF"));
+        reader.readAsDataURL(pdfBlob);
+      });
+
+      const result = await callEdge("gia-gerar-contrato", {
+        negociacao_id: deal.id,
+        canal,
+        pdf_base64: base64,
+        telefone_associado: deal.telefone,
+      });
+
+      console.log("gia-gerar-contrato result:", result);
+
       if (result.sucesso === false) {
         toast.error(result.error || "Erro ao gerar contrato");
         return;
       }
+
       setEnviado(true);
       setStatus("enviado");
       if (result.link_assinatura) setLinkAssinatura(result.link_assinatura);
@@ -260,8 +273,12 @@ export default function AssinaturaTab({ deal, onUpdate }: Props) {
           mensagem: msgNotif,
         }).catch((e) => { console.error("Erro ao enviar notificação:", e); });
       }
-    };
-    reader.readAsDataURL(pdfBlob);
+    } catch (err) {
+      console.error("handleEnviar error:", err);
+      toast.error(`Erro ao gerar contrato: ${err instanceof Error ? err.message : "Erro desconhecido"}`);
+    } finally {
+      setGerando(false);
+    }
   };
 
   const handleBaixarContrato = async () => {
