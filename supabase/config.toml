@@ -1,4 +1,10 @@
 project_id = "yrjiegtqfngdliwclpzo"
 
+[functions.gia-gerar-contrato]
+verify_jwt = false
+
+[functions.gia-enviar-notificacao]
+verify_jwt = false
+
 [functions.autentique-webhook]
 verify_jwt = false
