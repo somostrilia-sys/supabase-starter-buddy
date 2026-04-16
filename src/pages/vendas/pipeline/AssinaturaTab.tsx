@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,6 +30,9 @@ interface Documento {
   nome?: string;
   tipo?: string;
   created_at: string;
+  autentique_document_id?: string;
+  autentique_link?: string;
+  autentique_status?: string;
 }
 
 interface TimelineEvent {
@@ -51,6 +54,7 @@ const tipoCores: Record<string, string> = {
 interface Props { deal: PipelineDeal; onUpdate?: () => void; }
 
 export default function AssinaturaTab({ deal, onUpdate }: Props) {
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<AssinaturaStatus>("pendente");
   const [docSelecionado, setDocSelecionado] = useState("");
   const [enviado, setEnviado] = useState(false);
@@ -170,6 +174,9 @@ export default function AssinaturaTab({ deal, onUpdate }: Props) {
         nome: c.tipo === "contrato" ? "Contrato de Proteção Veicular" : c.tipo === "proposta" ? "Proposta de Adesão" : c.tipo === "termo" ? "Termo de Adesão ao Regulamento" : (c.tipo || "Documento"),
         tipo: c.tipo || "Contrato",
         created_at: c.created_at,
+        autentique_document_id: c.autentique_document_id,
+        autentique_link: c.autentique_link,
+        autentique_status: c.autentique_status,
       })) as Documento[];
     },
   });
@@ -193,10 +200,22 @@ export default function AssinaturaTab({ deal, onUpdate }: Props) {
   });
 
   const docs = documentos || [];
-  // Auto-select first document when loaded
+  // Auto-select first document when loaded + sync status/link from DB
   React.useEffect(() => {
-    if (docs.length > 0 && !docSelecionado) {
-      setDocSelecionado(docs[0].id);
+    if (docs.length > 0) {
+      if (!docSelecionado) setDocSelecionado(docs[0].id);
+      const primeiro = docs[0];
+      if (primeiro.autentique_link) setLinkAssinatura(primeiro.autentique_link);
+      if (primeiro.autentique_status) {
+        const statusMap: Record<string, AssinaturaStatus> = {
+          enviado: "enviado", visualizado: "visualizado",
+          assinado: "assinado", concluido: "assinado",
+          rejeitado: "expirado", aguardando_assinatura: "enviado",
+          erro_envio: "expirado",
+        };
+        const mapped = statusMap[primeiro.autentique_status];
+        if (mapped) { setStatus(mapped); setEnviado(true); }
+      }
     }
   }, [documentos]);
 
@@ -225,6 +244,8 @@ export default function AssinaturaTab({ deal, onUpdate }: Props) {
       setEnviado(true);
       setStatus("enviado");
       if (result.link_assinatura) setLinkAssinatura(result.link_assinatura);
+      queryClient.invalidateQueries({ queryKey: ["assinatura-docs", deal.id] });
+      queryClient.invalidateQueries({ queryKey: ["assinatura-timeline", deal.id] });
       toast.success("Contrato enviado para assinatura via e-mail!");
 
       // Notificar associado via Email
@@ -277,8 +298,8 @@ export default function AssinaturaTab({ deal, onUpdate }: Props) {
               <div>
                 <span className="text-xs text-muted-foreground">Envelope ID</span>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-mono text-xs">AUT-2026-{deal.codigo.split("-").pop()}</span>
-                  <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => { navigator.clipboard.writeText(`AUT-2026-${deal.codigo.split("-").pop()}`); toast.success("ID copiado!"); }}>
+                  <span className="font-mono text-xs">{doc?.autentique_document_id || deal.codigo}</span>
+                  <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => { navigator.clipboard.writeText(doc?.autentique_document_id || deal.codigo); toast.success("ID copiado!"); }}>
                     <Copy className="h-3 w-3" />
                   </Button>
                 </div>
@@ -292,8 +313,8 @@ export default function AssinaturaTab({ deal, onUpdate }: Props) {
                 <p>{deal.lead_nome}</p>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground">Validade</span>
-                <p>12/03/2026 (7 dias)</p>
+                <span className="text-xs text-muted-foreground">Enviado em</span>
+                <p>{doc?.created_at ? new Date(doc.created_at).toLocaleDateString("pt-BR") : "—"}</p>
               </div>
             </div>
           )}
@@ -341,10 +362,15 @@ export default function AssinaturaTab({ deal, onUpdate }: Props) {
               <FileText className="h-8 w-8 text-muted-foreground" />
               <div>
                 <p className="text-sm font-semibold">{doc?.nome || "Documento"}</p>
-                <p className="text-xs text-muted-foreground">PDF • 2 páginas • 145 KB</p>
+                <p className="text-xs text-muted-foreground">PDF • Contrato de Proteção Veicular</p>
               </div>
             </div>
-            <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={() => toast.info("Abrindo pré-visualização...")}>
+            <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={async () => {
+              toast.info("Gerando pré-visualização...");
+              const blob = await gerarContratoPdf(buildPdfParams());
+              const url = URL.createObjectURL(blob);
+              window.open(url, "_blank");
+            }}>
               <ExternalLink className="h-3.5 w-3.5 mr-1" />Visualizar
             </Button>
           </CardContent>
