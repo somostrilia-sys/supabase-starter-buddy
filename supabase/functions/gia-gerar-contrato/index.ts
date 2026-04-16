@@ -1,12 +1,14 @@
 /**
  * gia-gerar-contrato
- * 1. Recebe PDF base64 + dados da negociação
- * 2. Cria documento no Autentique (Token Objetivo) com 2 signatários
- * 3. Auto-assina pelo Maikon (Token Maikon) — assinatura da empresa
- * 4. Salva contrato no banco com link do associado
- * 5. Retorna link de assinatura para o frontend
+ * 1. Recebe dados da negociação (sem PDF — gera no servidor)
+ * 2. Gera PDF do contrato usando pdf-lib (sem DOM/html2canvas)
+ * 3. Cria documento no Autentique (Token Objetivo) com 2 signatários
+ * 4. Auto-assina pelo Maikon (Token Maikon) — assinatura da empresa
+ * 5. Salva contrato no banco com link do associado
+ * 6. Retorna link de assinatura para o frontend
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -36,17 +38,204 @@ async function autentiqueRequest(token: string, formData: FormData) {
   return resp.json();
 }
 
+// --- Geração do PDF server-side ---
+function fmtMoney(v: number): string {
+  return `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+}
+
+async function gerarPdfServidor(neg: any, cotacao: any): Promise<Uint8Array> {
+  const pdf = await PDFDocument.create();
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
+
+  const blue = rgb(0.1, 0.23, 0.36); // #1A3A5C
+  const gray = rgb(0.4, 0.4, 0.4);
+  const black = rgb(0, 0, 0);
+  const lightGray = rgb(0.85, 0.85, 0.85);
+
+  // ── Página 1: Dados do Associado e Veículo ──
+  const p1 = pdf.addPage([595.28, 841.89]); // A4
+  let y = 800;
+  const margin = 50;
+  const w = 595.28 - margin * 2;
+
+  // Header
+  p1.drawRectangle({ x: 0, y: 820, width: 595.28, height: 22, color: blue });
+  p1.drawText("OBJETIVO AUTO BENEFÍCIOS", { x: margin, y: 825, size: 12, font: fontBold, color: rgb(1, 1, 1) });
+  p1.drawText("CNPJ: 58.506.161/0001-31", { x: 380, y: 825, size: 9, font, color: rgb(1, 1, 1) });
+
+  y = 795;
+  p1.drawText("TERMO DE ADESÃO — PROTEÇÃO VEICULAR ASSOCIATIVA", { x: margin, y, size: 13, font: fontBold, color: blue });
+
+  // Seção: Dados do Associado
+  y -= 30;
+  p1.drawRectangle({ x: margin, y: y - 2, width: w, height: 16, color: blue });
+  p1.drawText("DADOS DO ASSOCIADO", { x: margin + 6, y: y + 1, size: 9, font: fontBold, color: rgb(1, 1, 1) });
+
+  const drawField = (page: any, label: string, value: string, x: number, yy: number, fieldW: number) => {
+    page.drawText(label, { x, y: yy, size: 7, font, color: gray });
+    page.drawText(value || "—", { x, y: yy - 11, size: 9, font, color: black });
+    page.drawLine({ start: { x, y: yy - 14 }, end: { x: x + fieldW, y: yy - 14 }, thickness: 0.3, color: lightGray });
+  };
+
+  y -= 30;
+  drawField(p1, "Nome Completo", neg.lead_nome || "", margin, y, 250);
+  drawField(p1, "CPF/CNPJ", neg.cpf_cnpj || "", margin + 260, y, 230);
+
+  y -= 30;
+  drawField(p1, "Telefone", neg.telefone || "", margin, y, 160);
+  drawField(p1, "E-mail", neg.email || "", margin + 170, y, 320);
+
+  y -= 30;
+  drawField(p1, "Consultor", neg.consultor || "", margin, y, 250);
+  drawField(p1, "Regional", neg.regional || "", margin + 260, y, 230);
+
+  // Seção: Dados do Veículo
+  y -= 40;
+  p1.drawRectangle({ x: margin, y: y - 2, width: w, height: 16, color: blue });
+  p1.drawText("DADOS DO VEÍCULO", { x: margin + 6, y: y + 1, size: 9, font: fontBold, color: rgb(1, 1, 1) });
+
+  y -= 30;
+  drawField(p1, "Placa", neg.veiculo_placa || "", margin, y, 120);
+  drawField(p1, "Modelo", neg.veiculo_modelo || "", margin + 130, y, 250);
+  drawField(p1, "Plano", neg.plano || "", margin + 390, y, 100);
+
+  // Preços do cache
+  const precos = neg.cache_precos;
+  let planoInfo: any = null;
+  if (Array.isArray(precos) && precos.length > 0) {
+    const planoNome = neg.plano || "";
+    planoInfo = precos.find((p: any) =>
+      (p.plano_normalizado || p.plano || "").toLowerCase().includes(planoNome.toLowerCase()) ||
+      planoNome.toLowerCase().includes((p.plano_normalizado || p.plano || "").toLowerCase())
+    ) || precos[0];
+  }
+
+  y -= 30;
+  drawField(p1, "Valor Mensalidade", planoInfo ? fmtMoney(Number(planoInfo.cota || 0)) : fmtMoney(Number(neg.valor_plano || 0)), margin, y, 160);
+  drawField(p1, "Adesão", planoInfo ? fmtMoney(Number(planoInfo.adesao || 0)) : "—", margin + 170, y, 130);
+  drawField(p1, "Participação", planoInfo ? `${planoInfo.tipo_franquia || ""} ${planoInfo.valor_franquia || ""}`.trim() || "5% FIPE" : "5% FIPE", margin + 310, y, 180);
+
+  // Coberturas
+  y -= 40;
+  p1.drawRectangle({ x: margin, y: y - 2, width: w, height: 16, color: blue });
+  p1.drawText("COBERTURAS E SERVIÇOS", { x: margin + 6, y: y + 1, size: 9, font: fontBold, color: rgb(1, 1, 1) });
+
+  let coberturas: string[] = [];
+  if (cotacao?.todos_planos && Array.isArray(cotacao.todos_planos)) {
+    const planoNome = neg.plano || "";
+    const match = cotacao.todos_planos.find((p: any) =>
+      (p.nome || "").toLowerCase().includes(planoNome.toLowerCase()) ||
+      planoNome.toLowerCase().includes((p.nome || "").toLowerCase())
+    ) || cotacao.todos_planos[0];
+    if (match?.coberturas) {
+      coberturas = match.coberturas.filter((c: any) => c.inclusa !== false).map((c: any) => c.cobertura || c.nome);
+    }
+  }
+  if (coberturas.length === 0) {
+    coberturas = ["Roubo", "Furto", "Colisão", "Incêndio", "Perda Total", "Assistência 24H", "Reboque", "Chaveiro"];
+  }
+
+  y -= 20;
+  const colW = 240;
+  for (let i = 0; i < coberturas.length; i++) {
+    const col = i % 2;
+    if (col === 0 && i > 0) y -= 16;
+    p1.drawText(`• ${coberturas[i]}`, { x: margin + col * colW, y, size: 8.5, font, color: black });
+  }
+
+  // ── Página 2: Termos e Condições ──
+  const p2 = pdf.addPage([595.28, 841.89]);
+  y = 800;
+  p2.drawRectangle({ x: 0, y: 820, width: 595.28, height: 22, color: blue });
+  p2.drawText("OBJETIVO AUTO BENEFÍCIOS — TERMOS E CONDIÇÕES", { x: margin, y: 825, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+
+  const termos = [
+    "1. O presente Termo de Adesão vincula o ASSOCIADO à ASSOCIAÇÃO DE PROTEÇÃO VEICULAR, mediante o pagamento da taxa de adesão e mensalidades.",
+    "2. A proteção veicular cobre os eventos descritos no regulamento da associação, incluindo roubo, furto, colisão, incêndio e perda total, conforme coberturas contratadas.",
+    "3. O associado deve manter os pagamentos em dia. O atraso superior a 30 dias poderá resultar na suspensão da cobertura.",
+    "4. Em caso de sinistro, o associado deverá comunicar imediatamente e apresentar Boletim de Ocorrência em até 48 horas.",
+    "5. A participação do associado (franquia) será conforme tabela vigente na data do sinistro.",
+    "6. O veículo deverá estar em boas condições de uso e conservação, conforme vistoria de entrada.",
+    "7. Modificações no veículo que alterem suas características originais devem ser comunicadas previamente.",
+    "8. A associação se reserva o direito de recusar a adesão de veículos com restrições judiciais ou documentação irregular.",
+    "9. O cancelamento da adesão poderá ser solicitado a qualquer momento, respeitando o prazo de carência de 90 dias.",
+    "10. Este contrato é regido pelo Código Civil Brasileiro e pelo Estatuto Social da Associação.",
+  ];
+
+  y = 790;
+  for (const t of termos) {
+    const lines = splitText(t, font, 8, w);
+    for (const line of lines) {
+      p2.drawText(line, { x: margin, y, size: 8, font, color: black });
+      y -= 13;
+    }
+    y -= 6;
+  }
+
+  // ── Página 3: Assinaturas ──
+  const p3 = pdf.addPage([595.28, 841.89]);
+  y = 800;
+  p3.drawRectangle({ x: 0, y: 820, width: 595.28, height: 22, color: blue });
+  p3.drawText("OBJETIVO AUTO BENEFÍCIOS — ASSINATURAS", { x: margin, y: 825, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+
+  y = 760;
+  p3.drawText("Declaro que li e aceito integralmente os termos e condições deste Termo de Adesão.", { x: margin, y, size: 9, font, color: black });
+  p3.drawText("Confirmo a veracidade das informações prestadas e autorizo a proteção do veículo descrito.", { x: margin, y: y - 15, size: 9, font, color: black });
+
+  // Data
+  y -= 50;
+  const hoje = new Date().toLocaleDateString("pt-BR");
+  p3.drawText(`Data: ${hoje}`, { x: margin, y, size: 9, font, color: black });
+
+  // Linha assinatura Associado
+  y -= 60;
+  p3.drawLine({ start: { x: margin, y }, end: { x: margin + 220, y }, thickness: 0.5, color: black });
+  p3.drawText(neg.lead_nome || "Associado", { x: margin, y: y - 14, size: 9, font: fontBold, color: black });
+  p3.drawText("ASSOCIADO", { x: margin, y: y - 26, size: 7, font, color: gray });
+
+  // Linha assinatura Empresa
+  p3.drawLine({ start: { x: margin + 280, y }, end: { x: margin + 500, y }, thickness: 0.5, color: black });
+  p3.drawText("Maikon Serrão Coelho", { x: margin + 280, y: y - 14, size: 9, font: fontBold, color: black });
+  p3.drawText("OBJETIVO AUTO BENEFÍCIOS", { x: margin + 280, y: y - 26, size: 7, font, color: gray });
+
+  // Hash de autenticação
+  y -= 80;
+  const hash = `GIA-${Date.now().toString(36).toUpperCase()}`;
+  p3.drawText(`Código de autenticação: ${hash}`, { x: margin, y, size: 7, font, color: gray });
+  p3.drawText("Documento gerado eletronicamente pelo sistema GIA — Gestão Integrada de Associações", { x: margin, y: y - 12, size: 7, font, color: gray });
+
+  return pdf.save();
+}
+
+function splitText(text: string, font: any, size: number, maxWidth: number): string[] {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let currentLine = "";
+  for (const word of words) {
+    const test = currentLine ? `${currentLine} ${word}` : word;
+    const width = font.widthOfTextAtSize(test, size);
+    if (width > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = test;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  return lines;
+}
+
+// --- Main handler ---
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   try {
-    const { negociacao_id, canal, pdf_base64, telefone_associado } =
-      await req.json();
+    const body = await req.json();
+    const { negociacao_id, canal, pdf_base64, telefone_associado } = body;
 
     if (!negociacao_id)
       return jsonRes({ sucesso: false, error: "negociacao_id obrigatório" }, 400);
-    if (!pdf_base64)
-      return jsonRes({ sucesso: false, error: "pdf_base64 obrigatório" }, 400);
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -75,38 +264,47 @@ Deno.serve(async (req) => {
     const maikonEmail = "diretoria@objetivoauto.com.br";
     const maikonNome = "Maikon Serrão Coelho";
 
-    // 3. Converter base64 para File
-    const binaryStr = atob(pdf_base64);
-    const bytes = new Uint8Array(binaryStr.length);
-    for (let i = 0; i < binaryStr.length; i++) {
-      bytes[i] = binaryStr.charCodeAt(i);
+    // 3. Gerar ou usar PDF
+    let pdfBytes: Uint8Array;
+    if (pdf_base64) {
+      // Se o frontend enviou PDF pronto, usar ele
+      const binaryStr = atob(pdf_base64);
+      pdfBytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        pdfBytes[i] = binaryStr.charCodeAt(i);
+      }
+    } else {
+      // Gerar PDF no servidor (sem travar o browser)
+      const { data: cotacao } = await supabase
+        .from("cotacoes" as any)
+        .select("todos_planos")
+        .eq("negociacao_id", negociacao_id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      pdfBytes = await gerarPdfServidor(neg, cotacao);
     }
+
     const pdfFile = new File(
-      [bytes],
+      [pdfBytes],
       `Contrato-${(neg.lead_nome || "associado").replace(/\s/g, "_")}.pdf`,
       { type: "application/pdf" },
     );
 
-    // 4. Criar documento no Autentique com 2 signatários
+    // 4. Validar email
     const emailAssociado = neg.email || "";
     if (!emailAssociado) {
       return jsonRes({ sucesso: false, error: "E-mail do associado não cadastrado. Preencha na aba Associado." }, 400);
     }
 
+    // 5. Criar documento no Autentique com 2 signatários
     const nomeDoc = `Contrato Proteção Veicular - ${neg.lead_nome || ""} - ${neg.veiculo_placa || ""}`;
 
     const signers: any[] = [
-      {
-        email: maikonEmail,
-        action: "SIGN",
-      },
-      {
-        email: emailAssociado,
-        action: "SIGN",
-      },
+      { email: maikonEmail, action: "SIGN" },
+      { email: emailAssociado, action: "SIGN" },
     ];
 
-    // Se tiver telefone e canal whatsapp, adicionar delivery_method
     if (telefone_associado && (canal === "whatsapp" || canal === "ambos")) {
       const phone = telefone_associado.replace(/\D/g, "");
       const phoneFormatted = phone.startsWith("55") ? `+${phone}` : `+55${phone}`;
@@ -120,11 +318,7 @@ Deno.serve(async (req) => {
         $signers: [SignerInput!]!
         $file: Upload!
       ) {
-        createDocument(
-          document: $document
-          signers: $signers
-          file: $file
-        ) {
+        createDocument(document: $document, signers: $signers, file: $file) {
           id
           name
           created_at
@@ -134,7 +328,6 @@ Deno.serve(async (req) => {
             email
             action { name }
             link { short_link }
-            user { id name email }
           }
         }
       }
@@ -151,23 +344,16 @@ Deno.serve(async (req) => {
           refusable: true,
           new_signature_style: true,
           show_audit_page: true,
-          locale: {
-            country: "BR",
-            language: "pt-BR",
-            timezone: "America/Sao_Paulo",
-            date_format: "DD_MM_YYYY",
-          },
+          locale: { country: "BR", language: "pt-BR", timezone: "America/Sao_Paulo", date_format: "DD_MM_YYYY" },
         },
         signers,
         file: null,
       },
     });
 
-    const map = JSON.stringify({ "0": ["variables.file"] });
-
     const formData = new FormData();
     formData.append("operations", operations);
-    formData.append("map", map);
+    formData.append("map", JSON.stringify({ "0": ["variables.file"] }));
     formData.append("0", pdfFile);
 
     const createResult = await autentiqueRequest(AUTENTIQUE_TOKEN, formData);
@@ -185,40 +371,28 @@ Deno.serve(async (req) => {
       return jsonRes({ sucesso: false, error: "Documento não criado no Autentique" }, 500);
     }
 
-    // 5. Auto-assinar pelo Maikon (representante da empresa)
+    // 6. Auto-assinar pelo Maikon
     try {
       const signForm = new FormData();
-      signForm.append(
-        "operations",
-        JSON.stringify({
-          query: `mutation { signDocument(id: "${doc.id}") }`,
-        }),
-      );
+      signForm.append("operations", JSON.stringify({ query: `mutation { signDocument(id: "${doc.id}") }` }));
       signForm.append("map", JSON.stringify({}));
-      const signResult = await autentiqueRequest(AUTENTIQUE_TOKEN_MAIKON, signForm);
-      if (signResult.errors) {
-        console.warn("Auto-assinatura Maikon:", JSON.stringify(signResult.errors));
-      }
+      await autentiqueRequest(AUTENTIQUE_TOKEN_MAIKON, signForm);
     } catch (e) {
       console.warn("Erro na auto-assinatura do Maikon (não bloqueante):", e);
     }
 
-    // 6. Extrair link de assinatura do associado (segundo signatário)
+    // 7. Extrair link de assinatura do associado
     const signatures = doc.signatures || [];
-    const sigAssociado = signatures.find(
-      (s: any) => s.email === (neg.email || "") || s.email !== maikonEmail,
-    );
-    const linkAssinatura = sigAssociado?.link?.short_link || signatures[1]?.link?.short_link || "";
+    const sigAssociado = signatures.find((s: any) => s.email === emailAssociado) || signatures[1];
+    const linkAssinatura = sigAssociado?.link?.short_link || "";
 
-    // 7. Salvar contrato no banco
+    // 8. Salvar contrato no banco
     const numero = `CTR-${Date.now().toString(36).toUpperCase()}`;
     const { error: insertErr } = await supabase.from("contratos" as any).insert({
       numero,
       negociacao_id,
       associado_id: neg.associado_id || null,
-      plano_id: null,
-      veiculo_id: null,
-      valor_mensal: neg.valor_mensal || 0,
+      valor_mensal: neg.valor_plano || 0,
       status: "aguardando_assinatura",
       tipo: "contrato",
       autentique_document_id: doc.id,
@@ -226,12 +400,9 @@ Deno.serve(async (req) => {
       autentique_status: "enviado",
     });
 
-    if (insertErr) {
-      console.error("Erro ao salvar contrato:", insertErr);
-      // Não bloqueia — o documento já foi criado no Autentique
-    }
+    if (insertErr) console.error("Erro ao salvar contrato:", insertErr);
 
-    // 8. Registrar evento na timeline
+    // 9. Registrar evento na timeline
     await supabase.from("pipeline_transicoes").insert({
       negociacao_id,
       stage_anterior: neg.stage || "assinatura",

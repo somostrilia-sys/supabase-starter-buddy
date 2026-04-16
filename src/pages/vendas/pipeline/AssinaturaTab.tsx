@@ -229,21 +229,10 @@ export default function AssinaturaTab({ deal, onUpdate }: Props) {
   const handleEnviar = async (canal: "email" | "whatsapp" | "ambos") => {
     setGerando(true);
     try {
-      // Gerar PDF do contrato com dados reais do cache
-      const pdfBlob = await gerarContratoPdf(buildPdfParams());
-
-      // Converter blob pra base64
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(",")[1]);
-        reader.onerror = () => reject(new Error("Erro ao ler PDF"));
-        reader.readAsDataURL(pdfBlob);
-      });
-
+      // PDF é gerado no servidor — não trava o browser
       const result = await callEdge("gia-gerar-contrato", {
         negociacao_id: deal.id,
         canal,
-        pdf_base64: base64,
         telefone_associado: deal.telefone,
       });
 
