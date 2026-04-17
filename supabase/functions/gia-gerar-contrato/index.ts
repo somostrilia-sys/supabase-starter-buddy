@@ -400,9 +400,46 @@ Deno.serve(async (req) => {
     }
 
     // 7. Extrair link de assinatura do associado
-    const signatures = doc.signatures || [];
-    const sigAssociado = signatures.find((s: any) => s.email && s.email !== maikonEmail) || signatures[1];
-    const linkAssinatura = sigAssociado?.link?.short_link || "";
+    let signatures = doc.signatures || [];
+    console.log("Autentique signatures retornadas:", JSON.stringify(signatures));
+
+    const pickAssociado = (list: any[]) =>
+      list.find((s: any) =>
+        (s.email && s.email !== maikonEmail) ||
+        (s.name && s.name !== maikonNome) ||
+        (!s.email && s.phone)
+      ) || list[1] || list[0];
+
+    let sigAssociado = pickAssociado(signatures);
+    let linkAssinatura = sigAssociado?.link?.short_link || "";
+
+    // Fallback: se link veio vazio, consultar o documento via query
+    if (!linkAssinatura) {
+      console.warn("short_link vazio — buscando via query document()");
+      try {
+        const queryForm = new FormData();
+        queryForm.append("operations", JSON.stringify({
+          query: `query { document(id: "${doc.id}") { signatures { public_id name email action { name } link { short_link } } } }`,
+        }));
+        queryForm.append("map", JSON.stringify({}));
+        const queryResult = await autentiqueRequest(AUTENTIQUE_TOKEN, queryForm);
+        const refetched = queryResult?.data?.document?.signatures || [];
+        console.log("Signatures re-fetch:", JSON.stringify(refetched));
+        if (refetched.length) {
+          signatures = refetched;
+          sigAssociado = pickAssociado(refetched);
+          linkAssinatura = sigAssociado?.link?.short_link || "";
+        }
+      } catch (e) {
+        console.warn("Falha ao refetch signatures:", e);
+      }
+    }
+
+    // Último fallback: montar URL pública a partir do public_id
+    if (!linkAssinatura && sigAssociado?.public_id) {
+      linkAssinatura = `https://assinar.autentique.com.br/${sigAssociado.public_id}`;
+      console.log("Usando fallback de URL pública:", linkAssinatura);
+    }
 
     // 8. Salvar contrato no banco
     const numero = `CTR-${Date.now().toString(36).toUpperCase()}`;
