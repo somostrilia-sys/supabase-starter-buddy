@@ -293,26 +293,31 @@ Deno.serve(async (req) => {
       { type: "application/pdf" },
     );
 
-    // 4. Validar email
+    // 4. Definir canal e validar dados de contato do associado
     const emailAssociado = neg.email || "";
-    if (!emailAssociado) {
+    const usarWhatsApp = !!telefone_associado && (canal === "whatsapp" || canal === "ambos");
+
+    if (!usarWhatsApp && !emailAssociado) {
       return jsonRes({ sucesso: false, error: "E-mail do associado não cadastrado. Preencha na aba Associado." }, 400);
     }
 
     // 5. Criar documento no Autentique com 2 signatários
+    // Autentique exige email OU phone+delivery_method (não os dois no mesmo signer)
     const nomeDoc = `Contrato Proteção Veicular - ${neg.lead_nome || ""} - ${neg.veiculo_placa || ""}`;
+
+    const signerAssociado: any = { name: neg.lead_nome || "Associado", action: "SIGN" };
+    if (usarWhatsApp) {
+      const phone = telefone_associado.replace(/\D/g, "");
+      signerAssociado.phone = phone.startsWith("55") ? `+${phone}` : `+55${phone}`;
+      signerAssociado.delivery_method = "DELIVERY_METHOD_WHATSAPP";
+    } else {
+      signerAssociado.email = emailAssociado;
+    }
 
     const signers: any[] = [
       { email: maikonEmail, name: maikonNome, action: "SIGN" },
-      { email: emailAssociado, name: neg.lead_nome || "Associado", action: "SIGN" },
+      signerAssociado,
     ];
-
-    if (telefone_associado && (canal === "whatsapp" || canal === "ambos")) {
-      const phone = telefone_associado.replace(/\D/g, "");
-      const phoneFormatted = phone.startsWith("55") ? `+${phone}` : `+55${phone}`;
-      signers[1].phone = phoneFormatted;
-      signers[1].delivery_method = "DELIVERY_METHOD_WHATSAPP";
-    }
 
     const createMutation = `
       mutation CreateDocumentMutation(
@@ -346,7 +351,7 @@ Deno.serve(async (req) => {
           refusable: true,
           new_signature_style: true,
           show_audit_page: true,
-          locale: { country: "BR", language: "PT_BR", timezone: "America/Sao_Paulo", date_format: "DD_MM_YYYY" },
+          locale: { country: "BR", language: "pt-BR", timezone: "America/Sao_Paulo", date_format: "DD_MM_YYYY" },
         },
         signers,
         file: null,
@@ -396,7 +401,7 @@ Deno.serve(async (req) => {
 
     // 7. Extrair link de assinatura do associado
     const signatures = doc.signatures || [];
-    const sigAssociado = signatures.find((s: any) => s.email === emailAssociado) || signatures[1];
+    const sigAssociado = signatures.find((s: any) => s.email && s.email !== maikonEmail) || signatures[1];
     const linkAssinatura = sigAssociado?.link?.short_link || "";
 
     // 8. Salvar contrato no banco
