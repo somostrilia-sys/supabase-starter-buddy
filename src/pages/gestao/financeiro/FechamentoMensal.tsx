@@ -37,7 +37,8 @@ type Conferencia = {
 };
 
 type LoteResult = {
-  contratos_ativos: number;
+  associados_ativos: number;
+  associados_com_valor_sga: number;
   ja_com_boleto: number;
   boletos_a_gerar?: number;
   boletos_pendentes?: number;
@@ -239,7 +240,11 @@ export default function FechamentoMensal({ onBack }: Props) {
 
         {simResult ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
-            <Stat label="Contratos ativos" value={simResult.contratos_ativos.toString()} />
+            <Stat label="Associados ativos" value={simResult.associados_ativos.toString()} />
+            <Stat
+              label="Com valor SGA"
+              value={simResult.associados_com_valor_sga.toString()}
+            />
             <Stat label="Já com boleto" value={simResult.ja_com_boleto.toString()} />
             <Stat
               label="A gerar"
@@ -249,7 +254,7 @@ export default function FechamentoMensal({ onBack }: Props) {
           </div>
         ) : (
           <p className="text-sm text-muted-foreground mb-4">
-            Clique em <b>Simular</b> pra ver quantos boletos seriam emitidos.
+            Fonte: último boleto SGA de cada associado (90 dias). Clique em <b>Simular</b>.
           </p>
         )}
 
