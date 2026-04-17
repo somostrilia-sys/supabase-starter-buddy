@@ -428,14 +428,18 @@ Deno.serve(async (req) => {
     }
 
     // 9. Registrar evento na timeline
-    await supabase.from("pipeline_transicoes").insert({
-      negociacao_id,
-      stage_anterior: neg.stage || "assinatura",
-      stage_novo: "assinatura",
-      motivo: `Contrato enviado para assinatura digital via ${canal}`,
-      automatica: true,
-      usuario_nome: "Sistema",
-    }).catch(() => {});
+    try {
+      await supabase.from("pipeline_transicoes").insert({
+        negociacao_id,
+        stage_anterior: neg.stage || "assinatura",
+        stage_novo: "assinatura",
+        motivo: `Contrato enviado para assinatura digital via ${canal}`,
+        automatica: true,
+        usuario_nome: "Sistema",
+      });
+    } catch (e) {
+      console.warn("Falha ao inserir transição (não bloqueante):", e);
+    }
 
     return jsonRes({
       sucesso: true,

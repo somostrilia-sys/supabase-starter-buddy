@@ -125,25 +125,31 @@ Deno.serve(async (req) => {
 
     const descricao = `${DESCRICAO_MAP[eventType] || eventType}${signerName ? ` (${signerName})` : ""}${signerEmail ? ` - ${signerEmail}` : ""}`;
 
-    await supabase
-      .from("pipeline_transicoes")
-      .insert({
-        negociacao_id: contrato.negociacao_id,
-        stage_anterior: "assinatura",
-        stage_novo: newStatus === "concluido" ? "venda_concretizada" : "assinatura",
-        motivo: descricao,
-        automatica: true,
-        usuario_nome: "Autentique Webhook",
-      })
-      .catch(() => {});
+    try {
+      await supabase
+        .from("pipeline_transicoes")
+        .insert({
+          negociacao_id: contrato.negociacao_id,
+          stage_anterior: "assinatura",
+          stage_novo: newStatus === "concluido" ? "venda_concretizada" : "assinatura",
+          motivo: descricao,
+          automatica: true,
+          usuario_nome: "Autentique Webhook",
+        });
+    } catch (e) {
+      console.warn("Falha ao inserir transição (webhook):", e);
+    }
 
     // Se todas as assinaturas foram concluídas, mover negociação
     if (eventType === "document.finished") {
-      await supabase
-        .from("negociacoes" as any)
-        .update({ stage: "venda_concretizada" })
-        .eq("id", contrato.negociacao_id)
-        .catch(() => {});
+      try {
+        await supabase
+          .from("negociacoes" as any)
+          .update({ stage: "venda_concretizada" })
+          .eq("id", contrato.negociacao_id);
+      } catch (e) {
+        console.warn("Falha ao atualizar stage (webhook):", e);
+      }
 
       // Atualizar status do contrato para ativo
       await supabase
