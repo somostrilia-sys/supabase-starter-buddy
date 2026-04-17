@@ -33,7 +33,9 @@ async function autentiqueRequest(token: string, formData: FormData) {
   });
   if (!resp.ok) {
     const text = await resp.text();
-    throw new Error(`Autentique HTTP ${resp.status}: ${text}`);
+    let detail = text;
+    try { detail = JSON.stringify(JSON.parse(text)); } catch {}
+    throw new Error(`Autentique HTTP ${resp.status}: ${detail}`);
   }
   return resp.json();
 }
@@ -301,14 +303,14 @@ Deno.serve(async (req) => {
     const nomeDoc = `Contrato Proteção Veicular - ${neg.lead_nome || ""} - ${neg.veiculo_placa || ""}`;
 
     const signers: any[] = [
-      { email: maikonEmail, action: "SIGN" },
-      { email: emailAssociado, action: "SIGN" },
+      { email: maikonEmail, name: maikonNome, action: "SIGN" },
+      { email: emailAssociado, name: neg.lead_nome || "Associado", action: "SIGN" },
     ];
 
     if (telefone_associado && (canal === "whatsapp" || canal === "ambos")) {
       const phone = telefone_associado.replace(/\D/g, "");
       const phoneFormatted = phone.startsWith("55") ? `+${phone}` : `+55${phone}`;
-      signers[1].phone = phoneFormatted;
+      signers[1].phone_number = phoneFormatted;
       signers[1].delivery_method = "DELIVERY_METHOD_WHATSAPP";
     }
 
@@ -344,7 +346,7 @@ Deno.serve(async (req) => {
           refusable: true,
           new_signature_style: true,
           show_audit_page: true,
-          locale: { country: "BR", language: "pt-BR", timezone: "America/Sao_Paulo", date_format: "DD_MM_YYYY" },
+          locale: { country: "BR", language: "PT_BR", timezone: "America/Sao_Paulo", date_format: "DD_MM_YYYY" },
         },
         signers,
         file: null,
@@ -359,10 +361,15 @@ Deno.serve(async (req) => {
     const createResult = await autentiqueRequest(AUTENTIQUE_TOKEN, formData);
 
     if (createResult.errors) {
-      console.error("Autentique errors:", JSON.stringify(createResult.errors));
+      const err0 = createResult.errors[0];
+      console.error("Autentique errors:", JSON.stringify(createResult.errors, null, 2));
+      const validationDetail = err0?.extensions?.validation
+        ? ` [campos: ${Object.keys(err0.extensions.validation).join(", ")}]`
+        : "";
       return jsonRes({
         sucesso: false,
-        error: `Erro Autentique: ${createResult.errors[0]?.message || "Erro desconhecido"}`,
+        error: `Erro Autentique: ${err0?.message || "Erro desconhecido"}${validationDetail}`,
+        detalhes: err0?.extensions,
       }, 500);
     }
 
@@ -376,7 +383,13 @@ Deno.serve(async (req) => {
       const signForm = new FormData();
       signForm.append("operations", JSON.stringify({ query: `mutation { signDocument(id: "${doc.id}") }` }));
       signForm.append("map", JSON.stringify({}));
-      await autentiqueRequest(AUTENTIQUE_TOKEN_MAIKON, signForm);
+      const signResult = await autentiqueRequest(AUTENTIQUE_TOKEN_MAIKON, signForm);
+      if (signResult.errors) {
+        console.error("Auto-assinatura Maikon falhou:", JSON.stringify(signResult.errors));
+        await supabase.from("contratos" as any)
+          .update({ autentique_status: "erro_assinatura_empresa" })
+          .eq("autentique_document_id", doc.id);
+      }
     } catch (e) {
       console.warn("Erro na auto-assinatura do Maikon (não bloqueante):", e);
     }
@@ -400,7 +413,14 @@ Deno.serve(async (req) => {
       autentique_status: "enviado",
     });
 
-    if (insertErr) console.error("Erro ao salvar contrato:", insertErr);
+    if (insertErr) {
+      console.error("Contrato órfão no Autentique:", doc.id, insertErr);
+      return jsonRes({
+        sucesso: false,
+        error: "Contrato criado no Autentique mas falhou ao salvar localmente. ID: " + doc.id,
+        autentique_document_id: doc.id,
+      }, 500);
+    }
 
     // 9. Registrar evento na timeline
     await supabase.from("pipeline_transicoes").insert({

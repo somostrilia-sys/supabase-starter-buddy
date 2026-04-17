@@ -41,7 +41,8 @@ async function verifySignature(
 
 const STATUS_MAP: Record<string, string> = {
   "signature.viewed": "visualizado",
-  "signature.accepted": "assinado",
+  "signature.accepted": "parcialmente_assinado",
+  "signature.signed": "parcialmente_assinado",
   "signature.rejected": "rejeitado",
   "document.finished": "concluido",
   "signature.delivery_failed": "erro_envio",
@@ -50,6 +51,7 @@ const STATUS_MAP: Record<string, string> = {
 const DESCRICAO_MAP: Record<string, string> = {
   "signature.viewed": "Documento visualizado pelo signatário",
   "signature.accepted": "Documento assinado pelo signatário",
+  "signature.signed": "Documento assinado pelo signatário",
   "signature.rejected": "Assinatura recusada pelo signatário",
   "document.finished": "Todas as assinaturas concluídas",
   "signature.delivery_failed": "Falha na entrega do email ao signatário",
@@ -62,15 +64,17 @@ Deno.serve(async (req) => {
     const rawBody = await req.text();
     const payload = JSON.parse(rawBody);
 
-    // Validar assinatura HMAC (se secret configurado)
+    // Validar assinatura HMAC (obrigatório)
     const secret = Deno.env.get("AUTENTIQUE_WEBHOOK_SECRET");
-    if (secret) {
-      const sig = req.headers.get("x-autentique-signature");
-      const valid = await verifySignature(rawBody, sig, secret);
-      if (!valid) {
-        console.warn("Webhook signature inválida");
-        return jsonRes({ ok: false, error: "Invalid signature" }, 401);
-      }
+    if (!secret) {
+      console.error("AUTENTIQUE_WEBHOOK_SECRET não configurado — rejeitando");
+      return jsonRes({ ok: false, error: "Webhook mal configurado" }, 500);
+    }
+    const hmacSig = req.headers.get("x-autentique-signature");
+    const valid = await verifySignature(rawBody, hmacSig, secret);
+    if (!valid) {
+      console.warn("Webhook signature inválida");
+      return jsonRes({ ok: false, error: "Invalid signature" }, 401);
     }
 
     const eventType = payload?.event?.type;
@@ -114,10 +118,10 @@ Deno.serve(async (req) => {
       .eq("id", contrato.id);
 
     // Registrar evento na timeline
-    const signerName = docData?.signatures?.[0]?.name ||
-      payload?.event?.data?.object?.name || "";
-    const signerEmail = docData?.signatures?.[0]?.email ||
-      payload?.event?.data?.object?.email || "";
+    const signerSig = payload?.event?.data?.signature ||
+      docData?.signatures?.find((s: any) => s.viewed_at || s.signed_at || s.rejected_at);
+    const signerName = signerSig?.name || "";
+    const signerEmail = signerSig?.email || "";
 
     const descricao = `${DESCRICAO_MAP[eventType] || eventType}${signerName ? ` (${signerName})` : ""}${signerEmail ? ` - ${signerEmail}` : ""}`;
 
