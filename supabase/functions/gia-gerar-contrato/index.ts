@@ -310,7 +310,7 @@ Deno.serve(async (req) => {
     if (telefone_associado && (canal === "whatsapp" || canal === "ambos")) {
       const phone = telefone_associado.replace(/\D/g, "");
       const phoneFormatted = phone.startsWith("55") ? `+${phone}` : `+55${phone}`;
-      signers[1].phone_number = phoneFormatted;
+      signers[1].phone = phoneFormatted;
       signers[1].delivery_method = "DELIVERY_METHOD_WHATSAPP";
     }
 
