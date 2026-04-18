@@ -78,6 +78,7 @@ const ConsultorLanding = React.lazy(() => import("./pages/public/ConsultorLandin
 const ExcecaoAprovacao = React.lazy(() => import("./pages/public/ExcecaoAprovacao"));
 const PortalAfiliado = React.lazy(() => import("./pages/public/PortalAfiliado"));
 const AuditLog = React.lazy(() => import("./pages/gestao/AuditLog"));
+const WhatsAppConversas = React.lazy(() => import("./pages/gestao/whatsapp/Conversas"));
 
 const queryClient = new QueryClient();
 
@@ -138,6 +139,7 @@ const App = () => (
             <Route path="/usuarios" element={<G><Usuarios /></G>} />
             <Route path="/parametros" element={<G><Parametros /></G>} />
             <Route path="/gestao/auditoria" element={<G><AuditLog /></G>} />
+            <Route path="/gestao/whatsapp" element={<G><WhatsAppConversas /></G>} />
 
             {/* Financeiro — specific routes before wildcard */}
             <Route path="/financeiro/fluxo-diario" element={<G><FluxoDiario /></G>} />
