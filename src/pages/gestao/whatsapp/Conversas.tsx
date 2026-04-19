@@ -7,15 +7,19 @@ import {
 } from "@/hooks/useWhatsApp";
 import { ChatList } from "@/components/whatsapp/ChatList";
 import { ChatWindow } from "@/components/whatsapp/ChatWindow";
+import { FilaSetor } from "@/components/whatsapp/FilaSetor";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Wifi, WifiOff, QrCode } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Wifi, WifiOff, QrCode, Inbox, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QRConnect } from "@/components/whatsapp/QRConnect";
 import type { WhatsAppConversation, WhatsAppInstance } from "@/types/whatsapp";
+import type { Atendimento } from "@/hooks/useHubAtendimentos";
 import { cn } from "@/lib/utils";
 
 export default function Conversas() {
   useInstancesRealtime();
+  const [selectedAtend, setSelectedAtend] = useState<Atendimento | null>(null);
   const { data: instances = [], isLoading } = useWhatsAppInstances();
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   const [selected, setSelected] = useState<WhatsAppConversation | null>(null);
@@ -53,7 +57,44 @@ export default function Conversas() {
         </p>
       </div>
 
-      <div className="flex h-[calc(100vh-11rem)] border rounded-lg overflow-hidden bg-background">
+      <Tabs defaultValue="fila" className="w-full">
+        <TabsList>
+          <TabsTrigger value="fila" className="gap-1.5">
+            <Inbox className="h-3.5 w-3.5" /> Fila Atendimento
+          </TabsTrigger>
+          <TabsTrigger value="conversas" className="gap-1.5">
+            <MessageSquare className="h-3.5 w-3.5" /> Conversas
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="fila" className="mt-4">
+          <div className="flex h-[calc(100vh-14rem)] border rounded-lg overflow-hidden bg-background">
+            <div className="w-80 shrink-0">
+              <FilaSetor
+                onSelect={(a) => setSelectedAtend(a)}
+                selectedId={selectedAtend?.id}
+              />
+            </div>
+            <div className="flex-1">
+              {selectedAtend ? (
+                <ChatWindow
+                  instanceId={selectedAtend.instance_id}
+                  telefone={selectedAtend.telefone}
+                  nome={selectedAtend.atendente_nome ?? null}
+                  associadoId={null}
+                />
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
+                  <Inbox className="h-16 w-16 opacity-30" />
+                  <p className="text-sm">Selecione um atendimento da fila</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="conversas" className="mt-4">
+      <div className="flex h-[calc(100vh-14rem)] border rounded-lg overflow-hidden bg-background">
         {/* Col 1: Instâncias */}
         <div className="w-16 lg:w-20 border-r bg-muted/30 flex flex-col items-center py-3 gap-2">
           {sortedInstances.length === 0 && (
@@ -142,6 +183,8 @@ export default function Conversas() {
           onOpenChange={(v) => { if (!v) setQrInstance(null); }}
         />
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
