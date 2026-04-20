@@ -11,7 +11,9 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useUsuario } from "@/hooks/useUsuario";
 import { useCountUp } from "@/hooks/useCountUp";
+import { useAlertas } from "@/hooks/useAlertas";
 import { BackgroundEffects } from "@/components/BackgroundEffects";
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
@@ -153,6 +155,8 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { brand } = useBrand();
+  const { isConsultor, isGestor, canViewAllData, loading: usuarioLoading } = useUsuario();
+  const { alertasRevistoria } = useAlertas();
   const [stats, setStats] = useState({
     associadosAtivos: 0,
     associadosInativos: 0,
@@ -166,9 +170,16 @@ export default function Dashboard() {
     conversao: 0,
   });
 
+  // Consultor goes straight to pipeline
   useEffect(() => {
-    loadDashboard();
-  }, []);
+    if (!usuarioLoading && isConsultor) {
+      navigate("/vendas/pipeline", { replace: true });
+    }
+  }, [isConsultor, usuarioLoading, navigate]);
+
+  useEffect(() => {
+    if (!usuarioLoading && !isConsultor) loadDashboard();
+  }, [isConsultor, usuarioLoading]);
 
   async function loadDashboard() {
     const today = new Date().toISOString().split("T")[0];
@@ -190,9 +201,9 @@ export default function Dashboard() {
       supabase.from("mensalidades").select("valor").eq("status", "pago").eq("data_pagamento", today),
       supabase.from("mensalidades").select("id", { count: "exact", head: true }),
       supabase.from("mensalidades").select("id", { count: "exact", head: true }).eq("status", "atrasado"),
-      supabase.from("negociacoes").select("id", { count: "exact", head: true }).in("stage", ["em_negociacao", "novo_lead", "em_contato", "aguardando_vistoria"]),
-      supabase.from("negociacoes").select("id", { count: "exact", head: true }).eq("stage", "concluido").gte("updated_at", monthStartStr),
-      supabase.from("negociacoes").select("id", { count: "exact", head: true }).gte("created_at", monthStartStr),
+      supabase.from("deals").select("id", { count: "exact", head: true }).eq("status", "aberto").in("stage", ["negociacao", "proposta"]),
+      supabase.from("deals").select("id", { count: "exact", head: true }).eq("status", "ganho").gte("updated_at", monthStartStr),
+      supabase.from("deals").select("id", { count: "exact", head: true }).gte("created_at", monthStartStr),
     ]);
 
     const recebidoHoje = pagoHojeRes.data?.reduce((s, m) => s + Number(m.valor), 0) ?? 0;
@@ -222,6 +233,15 @@ export default function Dashboard() {
     { name: "Inativos", value: stats.associadosInativos || 0, fill: "hsl(var(--chart-4))" },
     { name: "Suspensos", value: stats.associadosSuspensos || 0, fill: "hsl(var(--chart-3))" },
   ].filter((d) => d.value > 0);
+
+  // Wait for role to load before rendering (prevents flash of admin dashboard for consultors)
+  if (usuarioLoading || isConsultor) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background dot-pattern relative">
@@ -267,7 +287,10 @@ export default function Dashboard() {
 
         {/* ══════════ MODULE NAVIGATION (colored pills) ══════════ */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          {modules.map((mod, i) => (
+          {modules.filter(mod => {
+            if (mod.title === "GESTÃO" || mod.title === "FINANCEIRO") return canViewAllData;
+            return true;
+          }).map((mod, i) => (
             <button
               key={mod.title}
               onClick={() => navigate(mod.route)}
@@ -286,7 +309,7 @@ export default function Dashboard() {
         </div>
 
         {/* ══════════ GESTÃO SECTION ══════════ */}
-        <ModuleSection
+        {canViewAllData && <ModuleSection
           icon={Shield}
           title="Gestão"
           color="hsl(var(--gestao))"
@@ -309,6 +332,13 @@ export default function Dashboard() {
                 value={`${stats.associadosInativos} / ${stats.associadosSuspensos}`}
                 icon={Users}
                 animDelay={4}
+              />
+              <KpiCard
+                label="Revistoria Pendente"
+                value={alertasRevistoria.length}
+                icon={AlertTriangle}
+                subtitle={alertasRevistoria.length > 0 ? "Inadimplentes >5d sem vídeo" : "Tudo em dia"}
+                animDelay={5}
               />
             </div>
           </div>
@@ -369,8 +399,9 @@ export default function Dashboard() {
               </Card>
             </div>
           </div>
-        </ModuleSection>
+        </ModuleSection>}
 
+        {canViewAllData && <>
         <div className="h-px bg-border" />
 
         {/* ══════════ FINANCEIRO SECTION ══════════ */}
@@ -401,6 +432,7 @@ export default function Dashboard() {
             </div>
           </div>
         </ModuleSection>
+        </>}
       </div>
     </div>
   );

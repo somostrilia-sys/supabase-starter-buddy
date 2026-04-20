@@ -16,7 +16,7 @@ export function useAlertas() {
         .select("id, valor, data_vencimento, referencia, associados(nome, cpf)")
         .gte("data_vencimento", hoje)
         .lte("data_vencimento", em3dias)
-        .not("status", "in", "(pago,cancelado)")
+        .not("status", "in", '("pago","cancelado")')
         .order("data_vencimento") as any);
       if (error) throw error;
       return data || [];
@@ -53,5 +53,23 @@ export function useAlertas() {
     },
   });
 
-  return { alertasVencimento, alertasInadimplencia, alertasVistoria };
+  // Revistoria pendente: veículos inadimplentes há mais de 5 dias sem vídeo ativo
+  // (fonte: view public.veiculos_revistoria_pendente)
+  const { data: alertasRevistoria = [] } = useQuery({
+    queryKey: ["alertas_revistoria"],
+    queryFn: async () => {
+      const { data, error } = await (supabase
+        .from("veiculos_revistoria_pendente" as any)
+        .select("veiculo_id, placa, marca, modelo, ano, associado_id, nome, cpf, whatsapp, telefone, primeiro_vencimento, valor_devido, dias_atraso, tem_revistoria_ativa")
+        .gt("dias_atraso", 5)
+        .eq("tem_revistoria_ativa", false)
+        .order("dias_atraso", { ascending: false })
+        .limit(500) as any);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 60_000,
+  });
+
+  return { alertasVencimento, alertasInadimplencia, alertasVistoria, alertasRevistoria };
 }
