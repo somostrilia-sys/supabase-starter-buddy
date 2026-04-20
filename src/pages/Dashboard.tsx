@@ -333,13 +333,15 @@ export default function Dashboard() {
                 icon={Users}
                 animDelay={4}
               />
-              <KpiCard
-                label="Revistoria Pendente"
-                value={alertasRevistoria.length}
-                icon={AlertTriangle}
-                subtitle={alertasRevistoria.length > 0 ? "Inadimplentes >5d sem vídeo" : "Tudo em dia"}
-                animDelay={5}
-              />
+              <div onClick={() => navigate("/alertas")} className="cursor-pointer">
+                <KpiCard
+                  label="Revistoria Pendente"
+                  value={alertasRevistoria.length}
+                  icon={AlertTriangle}
+                  subtitle={alertasRevistoria.length > 0 ? "Clique pra ver lista" : "Tudo em dia"}
+                  animDelay={5}
+                />
+              </div>
             </div>
           </div>
           <div className="rounded-2xl border-[3px] border-blue-400/70 bg-white p-4 shadow-sm mt-4">

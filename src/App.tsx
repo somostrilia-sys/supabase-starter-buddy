@@ -12,6 +12,7 @@ import { ModuleLayout } from "@/components/ModuleLayout";
 // Eager imports — small, frequently used, first-paint critical
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Alertas from "./pages/Alertas";
 import NotFound from "./pages/NotFound";
 
 // Loading spinner for Suspense fallback
@@ -126,6 +127,7 @@ const App = () => (
             <Route path="/excecao/:token" element={<ExcecaoAprovacao />} />
             <Route path="/afiliado/:token" element={<PortalAfiliado />} />
             <Route path="/" element={<D><Dashboard /></D>} />
+            <Route path="/alertas" element={<D><Alertas /></D>} />
 
             {/* Gestão (legacy) — admin/diretor only */}
             <Route path="/associados" element={<G><Associados /></G>} />
