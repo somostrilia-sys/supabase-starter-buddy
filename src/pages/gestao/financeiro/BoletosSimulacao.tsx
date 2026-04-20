@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Play, FileText, XCircle, Eye, Loader2, Search } from "lucide-react";
+import { ArrowLeft, Play, FileText, XCircle, Eye, Loader2, Search, Download, Copy, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,7 +32,16 @@ type BoletoRow = {
   status: string;
   data_pagamento: string | null;
   created_at: string;
+  pdf_url: string | null;
+  link_boleto: string | null;
+  linha_digitavel: string | null;
+  pix_copia_cola: string | null;
+  provider: string | null;
 };
+
+function copy(text: string, label: string) {
+  navigator.clipboard.writeText(text).then(() => toast.success(`${label} copiado`)).catch(() => toast.error("Falha ao copiar"));
+}
 
 export default function BoletosSimulacao({ onBack }: { onBack: () => void }) {
   const queryClient = useQueryClient();
@@ -51,7 +60,7 @@ export default function BoletosSimulacao({ onBack }: { onBack: () => void }) {
     queryFn: async () => {
       let query = (supabase as any)
         .from("boletos")
-        .select("id, nosso_numero, associado_nome, cpf_associado, valor, vencimento, status, data_pagamento, created_at")
+        .select("id, nosso_numero, associado_nome, cpf_associado, valor, vencimento, status, data_pagamento, created_at, pdf_url, link_boleto, linha_digitavel, pix_copia_cola, provider")
         .order("vencimento", { ascending: false })
         .limit(200);
 
@@ -238,6 +247,8 @@ export default function BoletosSimulacao({ onBack }: { onBack: () => void }) {
                   <TableHead>Vencimento</TableHead>
                   <TableHead>Pagamento</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Origem</TableHead>
+                  <TableHead>Boleto</TableHead>
                   <TableHead>Acao</TableHead>
                 </TableRow>
               </TableHeader>
@@ -254,6 +265,35 @@ export default function BoletosSimulacao({ onBack }: { onBack: () => void }) {
                       <Badge className={`text-[10px] ${statusColors[b.status as StatusBoleto] || "bg-gray-100 text-gray-800"}`}>
                         {b.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px] uppercase">
+                        {b.provider || "sga"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {(b.pdf_url || b.link_boleto) ? (
+                          <Button asChild size="icon" variant="outline" className="h-7 w-7" title="Baixar PDF">
+                            <a href={(b.pdf_url || b.link_boleto) as string} target="_blank" rel="noreferrer">
+                              <Download className="h-3 w-3" />
+                            </a>
+                          </Button>
+                        ) : null}
+                        {b.linha_digitavel ? (
+                          <Button size="icon" variant="outline" className="h-7 w-7" title="Copiar linha digitável" onClick={() => copy(b.linha_digitavel!, "Linha digitável")}>
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        ) : null}
+                        {b.pix_copia_cola ? (
+                          <Button size="icon" variant="outline" className="h-7 w-7" title="Copiar PIX" onClick={() => copy(b.pix_copia_cola!, "PIX")}>
+                            <QrCode className="h-3 w-3" />
+                          </Button>
+                        ) : null}
+                        {!b.pdf_url && !b.link_boleto && !b.linha_digitavel && !b.pix_copia_cola ? (
+                          <span className="text-[10px] text-muted-foreground">—</span>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {(b.status === "aberto" || b.status === "vencido") && (

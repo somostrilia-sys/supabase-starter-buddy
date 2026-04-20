@@ -505,6 +505,8 @@ export default function RelatoriosTab() {
     { key: "unidade", label: "Unidade" }, { key: "consultor", label: "Consultor" },
     { key: "tipo", label: "Tipo" }, { key: "banco", label: "Banco" },
     { key: "forma_pagamento", label: "Pagto" }, { key: "contrato", label: "Contrato" },
+    { key: "provider", label: "Origem" }, { key: "link_boleto", label: "PDF" },
+    { key: "linha_digitavel", label: "Linha Digitavel" },
   ];
 
   const handleExportAssocCSV = () => exportCSV(filteredAssoc as Record<string, unknown>[], "associados", assocColumns);
@@ -838,11 +840,13 @@ export default function RelatoriosTab() {
                   <TableHead className="font-bold text-xs uppercase">Banco</TableHead>
                   <TableHead className="font-bold text-xs uppercase">Pagto</TableHead>
                   <TableHead className="font-bold text-xs uppercase">Contrato</TableHead>
+                  <TableHead className="font-bold text-xs uppercase">Origem</TableHead>
+                  <TableHead className="font-bold text-xs uppercase">Boleto</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {pagedBoletos.length === 0 && (
-                  <TableRow><TableCell colSpan={14} className="text-center py-8 text-muted-foreground">Nenhum boleto encontrado com os filtros aplicados</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={16} className="text-center py-8 text-muted-foreground">Nenhum boleto encontrado com os filtros aplicados</TableCell></TableRow>
                 )}
                 {pagedBoletos.map((b: any, i: number) => (
                   <TableRow key={b.id} className={i % 2 === 0 ? "bg-card" : "bg-muted/30"}>
@@ -860,6 +864,12 @@ export default function RelatoriosTab() {
                     <TableCell className="text-xs">{b.banco || "—"}</TableCell>
                     <TableCell className="text-xs">{b.forma_pagamento || "—"}</TableCell>
                     <TableCell className="font-mono text-xs">{b.contrato || "—"}</TableCell>
+                    <TableCell className="text-xs uppercase">{b.provider || "sga"}</TableCell>
+                    <TableCell className="text-xs">
+                      {(b.pdf_url || b.link_boleto) ? (
+                        <a href={(b.pdf_url || b.link_boleto) as string} target="_blank" rel="noreferrer" className="underline text-primary">PDF</a>
+                      ) : "—"}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
