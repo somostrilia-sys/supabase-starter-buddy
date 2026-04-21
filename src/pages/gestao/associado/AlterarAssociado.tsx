@@ -376,7 +376,7 @@ export default function AlterarAssociado() {
 
       const { data: veiculos, error: vErr } = await supabase
         .from("veiculos")
-        .select("placa, modelo, marca, ano, cor, dia_vencimento, status")
+        .select("placa, modelo, marca, ano, cor, dia_vencimento")
         .eq("associado_id", a.id);
 
       if (vErr) {
@@ -389,10 +389,7 @@ export default function AlterarAssociado() {
           marca: v.marca || "",
           ano: v.ano || 0,
           cor: v.cor || "",
-          situacao: v.status === "ativo" || v.status === "Ativo" ? "Ativo"
-                  : v.status === "cancelado" ? "Cancelado"
-                  : v.status === "suspenso" ? "Suspenso"
-                  : "Ativo",
+          situacao: "Ativo",
           plano: "",
         }));
       }
