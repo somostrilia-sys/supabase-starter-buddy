@@ -8,6 +8,7 @@ import {
   Users, Car, ClipboardList, Wrench, SlidersHorizontal,
   DollarSign, Truck, AlertTriangle, BarChart3, FileText,
   Globe, ChevronLeft, LayoutDashboard, LogOut, Shield, Calculator,
+  MessageSquare,
 } from "lucide-react";
 import DashboardTab from "./dashboard/DashboardTab";
 import RateioTab from "./rateio/RateioTab";
@@ -22,6 +23,7 @@ import EventoTab from "./evento/EventoTab";
 import RelatoriosTab from "./relatorios/RelatoriosTab";
 import DocumentacaoTab from "./documentacao/DocumentacaoTab";
 import AreaClienteTab from "./area-cliente/AreaClienteTab";
+import WhatsAppConversas from "./whatsapp/Conversas";
 
 const gestaoTabs = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -37,6 +39,7 @@ const gestaoTabs = [
   { id: "relatorios", label: "Relatórios", icon: BarChart3 },
   { id: "documentacao", label: "Documentação", icon: FileText },
   { id: "area-cliente", label: "Área do Cliente", icon: Globe },
+  { id: "whatsapp", label: "WhatsApp", icon: MessageSquare },
 ];
 
 export default function GestaoModule() {
@@ -69,6 +72,7 @@ export default function GestaoModule() {
       case "relatorios": return <RelatoriosTab />;
       case "documentacao": return <DocumentacaoTab />;
       case "area-cliente": return <AreaClienteTab />;
+      case "whatsapp": return <WhatsAppConversas />;
       default:
         return (
           <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
