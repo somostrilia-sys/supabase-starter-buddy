@@ -369,7 +369,7 @@ export default function TabelasPrecosTab() {
                 <TableHead>Regional</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead>Planos</TableHead>
-                <TableHead className="text-center">Faixas</TableHead>
+                <TableHead className="text-center" title="Número de intervalos FIPE únicos nesta categoria">Faixas FIPE</TableHead>
                 <TableHead className="text-right w-20">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -423,65 +423,80 @@ export default function TabelasPrecosTab() {
                       </TableCell>
                     </TableRow>
 
-                    {isExpanded && (
+                    {isExpanded && (() => {
+                      // Layout pivotado (Power CRM Tab 5 — Preços dos Planos):
+                      // 1 linha por Intervalo FIPE × 1 coluna por plano, célula = cota (valor real mensal).
+                      // NÃO mostra "preço base" (confuso) nem "taxa administrativa" (não relevante aqui).
+                      const planosUnicos = [...new Set(g.rows.map(r => r.plano))].sort();
+                      const faixasMap = new Map<string, Record<string, TabelaPrecoRow>>();
+                      for (const r of g.rows) {
+                        const fkey = `${r.valor_menor}-${r.valor_maior}`;
+                        if (!faixasMap.has(fkey)) faixasMap.set(fkey, {});
+                        faixasMap.get(fkey)![r.plano] = r;
+                      }
+                      const faixasOrdenadas = Array.from(faixasMap.entries())
+                        .sort(([a], [b]) => Number(a.split("-")[0]) - Number(b.split("-")[0]));
+                      return (
                       <TableRow>
                         <TableCell colSpan={6} className="p-0 bg-muted/30">
-                          <div className="p-4 space-y-4">
-                            {Array.from(byPlano.entries()).map(([plano, items]) => (
-                              <div key={plano}>
-                                <div className="flex items-center justify-between mb-2">
-                                  <h4 className="text-sm font-semibold text-foreground">{plano}</h4>
-                                  <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => openCreate({ regional_id: g.rows[0]?.regional_id || "", tipo_veiculo: g.tipo_veiculo, plano })}>
-                                    <Plus className="h-3 w-3" /> Faixa
-                                  </Button>
-                                </div>
-                                <div className="overflow-x-auto">
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow className="border-b border-[#747474]/50">
-                                        <TableHead className="text-xs">Faixa FIPE</TableHead>
-                                        <TableHead className="text-xs">Cota</TableHead>
-                                        <TableHead className="text-xs">Taxa Adm.</TableHead>
-                                        <TableHead className="text-xs">Adesão</TableHead>
-                                        <TableHead className="text-xs">Rastreador</TableHead>
-                                        <TableHead className="text-xs">Instalação</TableHead>
-                                        <TableHead className="text-xs">Franquia</TableHead>
-                                        <TableHead className="text-xs text-right">Ações</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {items.map((row) => (
-                                        <TableRow key={row.id} className="border-b border-[#747474]/20">
-                                          <TableCell className="text-xs font-mono whitespace-nowrap">
-                                            {formatCurrency(row.valor_menor)} — {formatCurrency(row.valor_maior)}
+                          <div className="p-4 overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="border-b border-[#747474]/50">
+                                  <TableHead className="text-xs">Intervalo FIPE</TableHead>
+                                  {planosUnicos.map(p => (
+                                    <TableHead key={p} className="text-xs text-center whitespace-nowrap">{p}</TableHead>
+                                  ))}
+                                  <TableHead className="text-xs text-center">Adesão</TableHead>
+                                  <TableHead className="text-xs text-center">Franquia</TableHead>
+                                  <TableHead className="text-xs text-center">Rastreador</TableHead>
+                                  <TableHead className="text-xs text-right">Ações</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {faixasOrdenadas.map(([fkey, rowsPorPlano]) => {
+                                  const anyRow = Object.values(rowsPorPlano)[0];
+                                  return (
+                                    <TableRow key={fkey} className="border-b border-[#747474]/20">
+                                      <TableCell className="text-xs font-mono whitespace-nowrap">
+                                        {formatCurrency(anyRow.valor_menor)} — {formatCurrency(anyRow.valor_maior)}
+                                      </TableCell>
+                                      {planosUnicos.map(p => {
+                                        const r = rowsPorPlano[p];
+                                        return (
+                                          <TableCell key={p} className="text-xs text-center whitespace-nowrap">
+                                            {r ? (
+                                              <span className="font-semibold text-primary">{formatCurrency(r.cota)}</span>
+                                            ) : (
+                                              <span className="text-muted-foreground">—</span>
+                                            )}
                                           </TableCell>
-                                          <TableCell className="text-xs">{formatCurrency(row.cota)}</TableCell>
-                                          <TableCell className="text-xs">{formatCurrency(row.taxa_administrativa)}</TableCell>
-                                          <TableCell className="text-xs">{formatCurrency(row.adesao)}</TableCell>
-                                          <TableCell className="text-xs">{row.rastreador || "—"}</TableCell>
-                                          <TableCell className="text-xs">{formatCurrency(row.instalacao)}</TableCell>
-                                          <TableCell className="text-xs">
-                                            {row.tipo_franquia ? `${row.tipo_franquia} ${formatCurrency(row.valor_franquia)}` : "—"}
-                                          </TableCell>
-                                          <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(row)}>
+                                        );
+                                      })}
+                                      <TableCell className="text-xs text-center">{formatCurrency(anyRow.adesao)}</TableCell>
+                                      <TableCell className="text-xs text-center whitespace-nowrap">
+                                        {anyRow.tipo_franquia ? `${anyRow.tipo_franquia} ${formatCurrency(anyRow.valor_franquia)}` : "—"}
+                                      </TableCell>
+                                      <TableCell className="text-xs text-center">{anyRow.rastreador || "—"}</TableCell>
+                                      <TableCell className="text-right">
+                                        <div className="flex justify-end gap-1 flex-wrap">
+                                          {Object.values(rowsPorPlano).map((r: any) => (
+                                            <Button key={r.id} variant="ghost" size="icon" className="h-7 w-7" title={`Editar ${r.plano}`} onClick={() => openEdit(r)}>
                                               <Edit className="h-3.5 w-3.5" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteTarget({ id: row.id, plano: row.plano })}>
-                                              <Trash2 className="h-3.5 w-3.5" />
-                                            </Button>
-                                          </TableCell>
-                                        </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                              </div>
-                            ))}
+                                          ))}
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                              </TableBody>
+                            </Table>
                           </div>
                         </TableCell>
                       </TableRow>
-                    )}
+                      );
+                    })()}
                   </Fragment>
                 );
               })}

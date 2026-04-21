@@ -2229,6 +2229,8 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           onClose={() => setAgregadoModalOpen(false)}
           negociacaoId={deal.id}
           existing={agregadoEditando}
+          cidadeCirculacao={form.cidadeCirc || (deal as any).cidade_circulacao || ""}
+          estadoCirculacao={form.estadoCirc || (deal as any).estado_circulacao || ""}
           onSaved={(ag) => {
             setAgregados(prev => {
               if (agregadoEditando?.id) {
