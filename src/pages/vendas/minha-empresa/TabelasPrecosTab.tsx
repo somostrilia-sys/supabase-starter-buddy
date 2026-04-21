@@ -95,17 +95,31 @@ export default function TabelasPrecosTab() {
   const { data: rows, isLoading, error } = useQuery<TabelaPrecoRow[]>({
     queryKey: ["tabela_precos"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("tabela_precos")
-        .select("*, regionais:regional_id(nome)")
-        .order("regional")
-        .order("tipo_veiculo")
-        .order("plano")
-        .order("valor_menor");
-      if (error) throw error;
-      return (data ?? []).map((r: any) => ({
+      // Paginação manual: PostgREST default limita a 1000 rows e estávamos cortando
+      // Pesados/Vans de várias regionais silenciosamente.
+      const PAGE_SIZE = 1000;
+      let allRows: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("tabela_precos")
+          .select("*, regionais:regional_id(nome)")
+          .order("regional")
+          .order("tipo_veiculo")
+          .order("plano")
+          .order("valor_menor")
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allRows = allRows.concat(data);
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+      return allRows.map((r: any) => ({
         ...r,
-        regional_nome: r.regionais?.nome || r.regional || "Sem regional",
+        // Prioriza campo texto "regional" (consistente com o gravado na import)
+        // sobre o join por regional_id (que tem inconsistências pré-existentes).
+        regional_nome: r.regional || r.regionais?.nome || "Sem regional",
       })) as TabelaPrecoRow[];
     },
   });
