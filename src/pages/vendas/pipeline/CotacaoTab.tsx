@@ -17,6 +17,7 @@ import { MessageSquare, Mail, Link2, CreditCard, CheckCircle, Shield, ShieldChec
 import ExcecaoButton from "@/components/ExcecaoButton";
 import PedirLiberacaoButton from "@/components/PedirLiberacaoButton";
 import OpcionaisSection, { OpcionalItem } from "@/components/OpcionaisSection";
+import AgregadoModal, { AgregadoData } from "./AgregadoModal";
 
 /* ─── Marcas estáticas (fallback para select manual quando API não retorna) ─── */
 const marcas = [
@@ -237,6 +238,23 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
   const [implementoSelecionado, setImplementoSelecionado] = useState("");
   const [implementoValorDeclarado, setImplementoValorDeclarado] = useState("");
   const [implementoCotaAdicional, setImplementoCotaAdicional] = useState(0);
+
+  // Errata 3: fluxo CRM de Pesados — múltiplos agregados por negociação
+  const [agregados, setAgregados] = useState<AgregadoData[]>([]);
+  const [agregadoModalOpen, setAgregadoModalOpen] = useState(false);
+  const [agregadoEditando, setAgregadoEditando] = useState<AgregadoData | null>(null);
+
+  React.useEffect(() => {
+    if (!deal.id || deal.id.startsWith("p")) return;
+    supabase.from("negociacao_agregados" as any).select("*").eq("negociacao_id", deal.id).order("created_at")
+      .then(({ data }: any) => setAgregados(data || []));
+  }, [deal.id]);
+
+  async function removerAgregado(id: string) {
+    await supabase.from("negociacao_agregados" as any).delete().eq("id", id);
+    setAgregados(prev => prev.filter(a => a.id !== id));
+    toast.success("Agregado removido");
+  }
 
   React.useEffect(() => {
     supabase.from("implementos_catalogo" as any).select("id, nome").eq("ativo", true).order("ordem")
@@ -550,6 +568,9 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     if (regionalId) {
       query = query.eq("regional_id", regionalId);
     }
+    // Errata 3: planos "agregado" nunca devem aparecer na seleção do veículo principal
+    // (são exclusivos para agregados — card separado com cálculo próprio)
+    query = query.not("plano_normalizado", "ilike", "%agregado%");
     const { data: todos } = await query.order("plano_normalizado");
 
     if (todos && todos.length > 0) {
@@ -625,21 +646,24 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
 
     // Validar planos aceitos via modelos_veiculo (usado pelo cache)
     const validarPlanosCache = async (precos: any[]) => {
+      // Errata 3: sempre excluir planos "agregado" do seletor principal
+      const semAgregado = precos.filter((t: any) => !(t.plano_normalizado || t.plano || "").toLowerCase().includes("agregado"));
+      const base = semAgregado.length > 0 ? semAgregado : precos;
       const cf = (deal as any).cod_fipe || (deal as any).cache_fipe?.codFipe;
-      if (!cf) return precos;
+      if (!cf) return base;
       const { data: modelo } = await supabase.from("modelos_veiculo" as any)
         .select("planos, aceito")
         .eq("cod_fipe", cf)
         .eq("aceito", true)
         .maybeSingle();
-      if (!modelo) return precos;
+      if (!modelo) return base;
       const permitidos = (modelo.planos || "").split(",").map((p: string) => p.trim()).filter(Boolean);
-      if (permitidos.length === 0) return precos;
-      const filtered = precos.filter((t: any) => {
+      if (permitidos.length === 0) return base;
+      const filtered = base.filter((t: any) => {
         const plano = (t.plano_normalizado || t.plano || "").toLowerCase();
         return permitidos.some((pp: string) => plano.includes(pp.toLowerCase()) || pp.toLowerCase().includes(plano));
       });
-      return filtered.length > 0 ? filtered : precos;
+      return filtered.length > 0 ? filtered : base;
     };
 
     // 1. Cache de preços direto no deal (instantâneo, sem query)
@@ -661,12 +685,15 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
 
     const processarPlanos = (data: any) => {
       if (data?.todos_planos && Array.isArray(data.todos_planos) && data.todos_planos.length > 0) {
-        const planosCotacao = data.todos_planos.map((p: any) => ({
-          plano: p.nome, plano_normalizado: p.nome,
-          cota: p.valor_mensal || 0, adesao: p.adesao || 0,
-          rastreador: p.rastreador || "Não", instalacao: p.instalacao || 0,
-          tipo_franquia: p.tipo_franquia || "", valor_franquia: p.franquia || 0,
-        }));
+        const planosCotacao = data.todos_planos
+          // Errata 3: filtrar planos "agregado" do seletor principal
+          .filter((p: any) => !(p.nome || "").toLowerCase().includes("agregado"))
+          .map((p: any) => ({
+            plano: p.nome, plano_normalizado: p.nome,
+            cota: p.valor_mensal || 0, adesao: p.adesao || 0,
+            rastreador: p.rastreador || "Não", instalacao: p.instalacao || 0,
+            tipo_franquia: p.tipo_franquia || "", valor_franquia: p.franquia || 0,
+          }));
         setPrecosReais(planosCotacao);
         if (data.plano_selecionado) setPlanoSelecionado(data.plano_selecionado);
         if (data.todos_planos[0]?.valor_fipe) setValorFipeReal(data.todos_planos[0].valor_fipe);
@@ -1459,10 +1486,58 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           </label>
         </div>
 
-        {/* Implemento / Agregado — selecionável com valor declarado e cota automática */}
+        {/* Errata 3 — Agregados (fluxo CRM para Pesados): lista + botão Adicionar */}
+        {(["Pesados", "Vans e Pesados Pequenos", "Van", "Ônibus", "Caminhão", "Van/Utilitário"].includes(form.tipoVeiculo)) && (
+          <div className="p-3 border-2 border-slate-300 rounded bg-white space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-bold text-[#1A3A5C]">Agregados</Label>
+              <Button size="sm" variant="outline" className="rounded-none" onClick={() => { setAgregadoEditando(null); setAgregadoModalOpen(true); }}>
+                Adicionar
+              </Button>
+            </div>
+            {agregados.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nenhum agregado cadastrado. Clique em "Adicionar" para incluir carretas, reboques ou implementos com seu próprio plano.</p>
+            ) : (
+              <div className="space-y-2">
+                {agregados.map(ag => (
+                  <div key={ag.id} className="border rounded p-3 bg-slate-50 space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-[#1A3A5C]">{ag.nome}</p>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-0.5 text-xs mt-1">
+                          {ag.placa && <div><span className="text-muted-foreground">Placa:</span> <strong>{ag.placa}</strong></div>}
+                          {ag.chassi && <div><span className="text-muted-foreground">Chassi:</span> <strong>{ag.chassi}</strong></div>}
+                          {ag.renavam && <div><span className="text-muted-foreground">Renavam:</span> <strong>{ag.renavam}</strong></div>}
+                          <div><span className="text-muted-foreground">Valor Protegido:</span> <strong>{formatCurrency(Number(ag.valor_protegido))}</strong></div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge className="bg-[#1A3A5C] text-white text-[10px]">{ag.plano}</Badge>
+                        <span className="text-sm font-bold text-[#1A3A5C]">{formatCurrency(Number(ag.mensalidade || 0))}/mês</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-1 border-t">
+                      <Button size="sm" variant="ghost" className="h-7 text-xs rounded-none" onClick={() => { setAgregadoEditando(ag); setAgregadoModalOpen(true); }}>
+                        Editar
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 text-xs rounded-none text-destructive" onClick={() => ag.id && removerAgregado(ag.id)}>
+                        Remover
+                      </Button>
+                      <Button size="sm" className="h-7 text-xs rounded-none bg-blue-600 hover:bg-blue-700 text-white ml-auto" onClick={() => toast.info(`Cotação isolada do agregado ${ag.nome} — em construção`)}>
+                        Enviar cotação do agregado sozinho
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Implemento / Agregado — selecionável com valor declarado e cota automática (legado — mantido para compatibilidade) */}
         {(["Pesados", "Vans e Pesados Pequenos", "Van", "Ônibus", "Caminhão", "Van/Utilitário"].includes(form.tipoVeiculo)) && (
           <div className="p-3 border-2 border-blue-200 rounded bg-blue-50/50 space-y-3">
-            <Label className="text-sm font-bold text-[#1A3A5C]">Implemento / Agregado</Label>
+            <Label className="text-sm font-bold text-[#1A3A5C]">Implemento / Agregado (legado)</Label>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Tipo</Label>
@@ -2146,6 +2221,24 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
           </Card>
         )}
       </fieldset>
+
+      {/* Modal Agregado — Errata 3 */}
+      {agregadoModalOpen && deal.id && !deal.id.startsWith("p") && (
+        <AgregadoModal
+          open={agregadoModalOpen}
+          onClose={() => setAgregadoModalOpen(false)}
+          negociacaoId={deal.id}
+          existing={agregadoEditando}
+          onSaved={(ag) => {
+            setAgregados(prev => {
+              if (agregadoEditando?.id) {
+                return prev.map(a => a.id === ag.id ? ag : a);
+              }
+              return [...prev, ag];
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -367,8 +367,26 @@ export default function AlterarAssociado() {
       banco: a.banco, agencia: a.agencia, contaCorrente: a.contaCorrente,
       diaVencimento: a.diaVencimento, observacoes: a.observacoes, status: a.status, plano: a.plano,
     });
-    // Carregar histórico do audit_log (ERR-010)
     const isRealId = a.id.includes("-") && a.id.length > 10;
+
+    // Lazy-load veículos + contratos (search é enxuto por performance)
+    if (isRealId) {
+      try {
+        const [{ data: veiculos }, { data: contratos }] = await Promise.all([
+          supabase.from("veiculos").select("placa, modelo, marca, ano, cor, dia_vencimento").eq("associado_id", a.id),
+          supabase.from("contratos" as any).select("*, planos(nome)").eq("associado_id", a.id).limit(1),
+        ]);
+        const planoNome = (contratos?.[0] as any)?.planos?.nome || "";
+        const mappedVeiculos = (veiculos || []).map((v: any) => ({
+          placa: v.placa, modelo: v.modelo, marca: v.marca,
+          ano: v.ano || 0, cor: v.cor || "",
+          situacao: "Ativo", plano: planoNome,
+        }));
+        setSelected(prev => prev ? { ...prev, veiculos: mappedVeiculos, plano: planoNome || prev.plano } : prev);
+      } catch (e) { console.warn("Erro ao carregar veículos:", e); }
+    }
+
+    // Carregar histórico do audit_log (ERR-010)
     if (isRealId) {
       try {
         const { data: logs } = await supabase

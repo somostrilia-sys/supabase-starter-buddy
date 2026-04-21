@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ChevronDown, ChevronRight, Search, Loader2, Plus, Edit, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Search, Loader2, Plus, Edit, Trash2, Layers } from "lucide-react";
 import { toast } from "sonner";
+import TabelaMestreModal from "./TabelaMestreModal";
 
 interface TabelaPrecoRow {
   id: string;
@@ -89,6 +90,7 @@ export default function TabelasPrecosTab() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>({ ...emptyForm });
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; plano: string } | null>(null);
+  const [mestreOpen, setMestreOpen] = useState<{ tabelaId: string; label: string } | null>(null);
 
   const { data: rows, isLoading, error } = useQuery<TabelaPrecoRow[]>({
     queryKey: ["tabela_precos"],
@@ -355,7 +357,19 @@ export default function TabelasPrecosTab() {
                       </TableCell>
                       <TableCell className="text-center font-mono">{g.faixas}</TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openCreate({ regional_id: g.rows[0]?.regional_id || "", tipo_veiculo: g.tipo_veiculo })}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          title="Editar Tabela Mestre"
+                          onClick={() => setMestreOpen({
+                            tabelaId: g.rows[0]?.tabela_id || `${g.regional}|${g.tipo_veiculo}`,
+                            label: `${g.regional} — ${g.tipo_veiculo}`,
+                          })}
+                        >
+                          <Layers className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Nova Faixa" onClick={() => openCreate({ regional_id: g.rows[0]?.regional_id || "", tipo_veiculo: g.tipo_veiculo })}>
                           <Plus className="h-4 w-4" />
                         </Button>
                       </TableCell>
@@ -427,6 +441,16 @@ export default function TabelasPrecosTab() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Modal Editar Tabela Mestre */}
+      {mestreOpen && (
+        <TabelaMestreModal
+          open={!!mestreOpen}
+          onClose={() => setMestreOpen(null)}
+          tabelaId={mestreOpen.tabelaId}
+          tabelaLabel={mestreOpen.label}
+        />
+      )}
 
       {/* Modal Criar/Editar Faixa */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>

@@ -347,8 +347,10 @@ export async function gerarLaudoVistoria(dados: DadosLaudo) {
 
   for (let i = 0; i < pages.length; i++) {
     if (i > 0) doc.addPage();
+    // Yield ao main thread para não travar UI em laudos grandes
+    await new Promise(resolve => setTimeout(resolve, 0));
     const canvas = await renderPageToCanvas(pages[i]);
-    const imgData = canvas.toDataURL("image/jpeg", 0.92);
+    const imgData = canvas.toDataURL("image/jpeg", 0.85);
     doc.addImage(imgData, "JPEG", 0, 0, 210, 297);
   }
 

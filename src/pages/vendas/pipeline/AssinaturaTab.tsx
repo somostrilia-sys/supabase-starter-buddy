@@ -11,7 +11,7 @@ import { supabase, callEdge } from "@/integrations/supabase/client";
 import { gerarContratoPdf } from "@/lib/gerarContratoPdf";
 import {
   Mail, MessageSquare, FileText, CheckCircle, Clock,
-  Eye, Send, AlertTriangle, Copy, ExternalLink, RotateCcw, Loader2,
+  Eye, Send, AlertTriangle, Copy, ExternalLink, RotateCcw, Loader2, Download,
 } from "lucide-react";
 import ExcecaoButton from "@/components/ExcecaoButton";
 
@@ -271,14 +271,50 @@ export default function AssinaturaTab({ deal, onUpdate }: Props) {
   };
 
   const handleBaixarContrato = async () => {
-    const blob = await gerarContratoPdf(buildPdfParams());
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Contrato-${deal.lead_nome.replace(/\s/g, "_")}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Contrato baixado!");
+    try {
+      const blob = await gerarContratoPdf(buildPdfParams());
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Contrato-${deal.lead_nome.replace(/\s/g, "_")}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Contrato baixado!");
+    } catch (err) {
+      console.error("Erro ao baixar contrato:", err);
+      toast.error(`Erro ao gerar contrato: ${err instanceof Error ? err.message : "erro desconhecido"}`);
+    }
+  };
+
+  const [baixandoAssinado, setBaixandoAssinado] = useState(false);
+
+  const handleBaixarAssinado = async () => {
+    if (!doc?.id) { toast.error("Nenhum contrato selecionado."); return; }
+    setBaixandoAssinado(true);
+    try {
+      const res = await callEdge("gia-baixar-contrato-assinado", { contrato_id: doc.id });
+      if (!res?.sucesso) {
+        toast.error(res?.error || "Erro ao baixar PDF assinado");
+        return;
+      }
+      // Converter base64 → Blob → download
+      const binary = atob(res.pdf_base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = res.filename || `Contrato-Assinado-${deal.lead_nome.replace(/\s/g, "_")}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(res.assinado ? "PDF assinado baixado!" : "PDF original baixado (ainda não assinado)");
+    } catch (err) {
+      console.error("Erro ao baixar assinado:", err);
+      toast.error(`Erro: ${err instanceof Error ? err.message : "erro desconhecido"}`);
+    } finally {
+      setBaixandoAssinado(false);
+    }
   };
 
   const lbl = "text-sm font-semibold";
@@ -390,6 +426,12 @@ export default function AssinaturaTab({ deal, onUpdate }: Props) {
           <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={handleBaixarContrato}>
             <FileText className="h-3.5 w-3.5 mr-1" />Baixar Contrato PDF
           </Button>
+          {doc?.autentique_document_id && (status === "assinado" || status === "enviado" || status === "visualizado") && (
+            <Button size="sm" variant="outline" className="rounded-none border border-green-500 text-green-700 hover:bg-green-50" onClick={handleBaixarAssinado} disabled={baixandoAssinado}>
+              {baixandoAssinado ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Download className="h-3.5 w-3.5 mr-1" />}
+              {baixandoAssinado ? "Baixando..." : "Baixar PDF Assinado"}
+            </Button>
+          )}
           <Button size="sm" className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white" onClick={() => handleEnviar("ambos")} disabled={gerando}>
             <Send className="h-3.5 w-3.5 mr-1" />{gerando ? "Gerando..." : "Enviar E-mail"}
           </Button>
