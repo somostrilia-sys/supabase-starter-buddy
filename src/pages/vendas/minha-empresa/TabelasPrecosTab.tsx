@@ -48,7 +48,8 @@ interface Regional {
 
 interface TabelaAgrupada {
   regional: string;
-  tipo_veiculo: string;
+  tipo_veiculo: string;       // tipo_veiculo do banco (original, p/ editar/filtrar)
+  categoria_negocio: string;  // categoria exibida ao admin (alinhada à negociação)
   planos: string[];
   faixas: number;
   rows: TabelaPrecoRow[];
@@ -60,6 +61,22 @@ function formatCurrency(value: number | null | undefined): string {
 }
 
 const TIPOS_VEICULO = ["leves", "motos", "pesados", "utilitarios", "vans"];
+
+// Mapeia (tipo_veiculo + plano_normalizado) do banco → categoria de negócio visível ao admin.
+// Mesma taxonomia que o fluxo de Negociação usa implicitamente via modelos_veiculo.planos.
+// NÃO altera dados — só agrupa/exibe.
+function getCategoriaNegocio(tipoVeiculo: string, planoNormalizado: string): string {
+  const plano = (planoNormalizado || "").toLowerCase();
+  if (plano.includes("agregado")) return "Agregado";
+  if (tipoVeiculo === "Motos" || plano.includes("motos")) return "Motocicleta";
+  if (tipoVeiculo === "Carros e Utilitários Pequenos") return "Automóvel e Utilitário";
+  if (tipoVeiculo === "Pesados e Vans") {
+    if (plano === "vans e pesados") return "Vans e Pesados Pequenos";
+    // pesados completo, pesados objetivo super sul, rastreador pesados → Pesados
+    return "Pesados";
+  }
+  return tipoVeiculo || "Outros";
+}
 
 const emptyForm = {
   plano: "",
@@ -145,28 +162,43 @@ export default function TabelasPrecosTab() {
   const grouped = useMemo<TabelaAgrupada[]>(() => {
     if (!rows) return [];
     const map = new Map<string, TabelaPrecoRow[]>();
+    // Agrupa por (regional + categoria_negocio) — reflete a taxonomia da negociação.
+    // Cada linha de Pesados/Vans Pequenos/Agregado vira grupo próprio mesmo que
+    // compartilhem tipo_veiculo "Pesados e Vans" no banco.
     for (const r of rows) {
-      const key = `${r.regional_nome || r.regional}||${r.tipo_veiculo}`;
+      const categoria = getCategoriaNegocio(r.tipo_veiculo, r.plano_normalizado || r.plano);
+      const key = `${r.regional_nome || r.regional}||${categoria}`;
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(r);
     }
     return Array.from(map.entries()).map(([, items]) => {
       const planos = [...new Set(items.map((i) => i.plano))];
       const faixas = new Set(items.map((i) => `${i.valor_menor}-${i.valor_maior}`)).size;
-      return { regional: items[0].regional_nome || items[0].regional, tipo_veiculo: items[0].tipo_veiculo, planos, faixas, rows: items };
+      return {
+        regional: items[0].regional_nome || items[0].regional,
+        tipo_veiculo: items[0].tipo_veiculo,
+        categoria_negocio: getCategoriaNegocio(items[0].tipo_veiculo, items[0].plano_normalizado || items[0].plano),
+        planos,
+        faixas,
+        rows: items,
+      };
     });
   }, [rows]);
 
   const regionais = useMemo(() => [...new Set(grouped.map((g) => g.regional))].sort(), [grouped]);
-  const tiposVeiculo = useMemo(() => [...new Set(grouped.map((g) => g.tipo_veiculo))].sort(), [grouped]);
+  // Filtro de tipo agora opera em categoria_negocio (Motocicleta, Automóvel e Utilitário, Pesados, Vans e Pesados Pequenos, Agregado)
+  const tiposVeiculo = useMemo(() => [...new Set(grouped.map((g) => g.categoria_negocio))].sort(), [grouped]);
 
   const filtered = useMemo(() => {
     return grouped.filter((g) => {
       if (filterRegional !== "all" && g.regional !== filterRegional) return false;
-      if (filterTipo !== "all" && g.tipo_veiculo !== filterTipo) return false;
+      if (filterTipo !== "all" && g.categoria_negocio !== filterTipo) return false;
       if (search) {
         const s = search.toLowerCase();
-        return g.regional.toLowerCase().includes(s) || g.tipo_veiculo.toLowerCase().includes(s) || g.planos.some((p) => p.toLowerCase().includes(s));
+        return g.regional.toLowerCase().includes(s)
+          || g.categoria_negocio.toLowerCase().includes(s)
+          || g.tipo_veiculo.toLowerCase().includes(s)
+          || g.planos.some((p) => p.toLowerCase().includes(s));
       }
       return true;
     });
@@ -335,7 +367,7 @@ export default function TabelasPrecosTab() {
               <TableRow className="border-b-2 border-[#747474]">
                 <TableHead className="w-10"></TableHead>
                 <TableHead>Regional</TableHead>
-                <TableHead>Tipo Veículo</TableHead>
+                <TableHead>Categoria</TableHead>
                 <TableHead>Planos</TableHead>
                 <TableHead className="text-center">Faixas</TableHead>
                 <TableHead className="text-right w-20">Ações</TableHead>
@@ -348,7 +380,9 @@ export default function TabelasPrecosTab() {
                 </TableRow>
               )}
               {filtered.map((g) => {
-                const key = `${g.regional}||${g.tipo_veiculo}`;
+                // Chave inclui categoria_negocio para diferenciar Pesados/Vans Pequenos/Agregado
+                // que compartilham o mesmo tipo_veiculo "Pesados e Vans" no banco
+                const key = `${g.regional}||${g.categoria_negocio}`;
                 const isExpanded = expandedKeys.has(key);
                 const byPlano = new Map<string, TabelaPrecoRow[]>();
                 for (const r of g.rows) {
@@ -363,7 +397,7 @@ export default function TabelasPrecosTab() {
                         {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                       </TableCell>
                       <TableCell className="font-medium">{g.regional}</TableCell>
-                      <TableCell><Badge variant="outline" className="border-[#747474]">{g.tipo_veiculo}</Badge></TableCell>
+                      <TableCell><Badge variant="outline" className="border-[#747474]">{g.categoria_negocio}</Badge></TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {g.planos.map((p) => <Badge key={p} variant="secondary" className="text-xs">{p}</Badge>)}
