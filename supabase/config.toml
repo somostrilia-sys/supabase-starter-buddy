@@ -8,3 +8,12 @@ verify_jwt = false
 
 [functions.autentique-webhook]
 verify_jwt = false
+
+[functions.gia-api-trilhoassist]
+verify_jwt = false
+
+[functions.gia-trilhoassist-sync-diario]
+verify_jwt = false
+
+[functions.gia-trilhoassist-fechamento-mensal]
+verify_jwt = false
