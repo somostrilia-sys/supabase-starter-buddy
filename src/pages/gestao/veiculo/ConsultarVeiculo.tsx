@@ -274,19 +274,29 @@ export default function ConsultarVeiculo() {
       const taxaAdm = faixa ? Number(faixa.taxa_administrativa) || 0 : 0;
       const rateioVal = faixa ? Number(faixa.rateio) || 0 : 0;
 
-      // Calcular mensalidade
-      await calcularMensalidadeLaps(sel, taxaAdm, rateioVal, produtosRegional);
+      // Calcular mensalidade — passar ajusteInicial explícito (setLapsAjusteValor só flush no próximo render)
+      const ajusteInicial = ajusteData?.ajuste_avulso_valor != null
+        ? parseFloat(String(ajusteData.ajuste_avulso_valor)) || 0
+        : 0;
+      calcularMensalidadeLaps(sel, taxaAdm, rateioVal, produtosRegional, ajusteInicial);
     } catch (err: any) {
       toast.error("Erro ao carregar LAPS: " + err.message);
     }
     setLapsLoading(false);
   };
 
-  const calcularMensalidadeLaps = async (selecionados: Record<string, boolean>, taxaAdm?: number, rateioVal?: number, produtosOverride?: any[]) => {
+  const calcularMensalidadeLaps = (
+    selecionados: Record<string, boolean>,
+    taxaAdm?: number,
+    rateioVal?: number,
+    produtosOverride?: any[],
+    ajusteOverride?: number,
+  ) => {
     const produtos = produtosOverride || lapsProdutosDisponiveis;
     const produtoIds = Object.entries(selecionados).filter(([, v]) => v).map(([k]) => k);
     const subtotal = produtos.filter(p => produtoIds.includes(p.id)).reduce((s, p) => s + (p.valor || 0), 0);
-    const ajusteNum = parseFloat(lapsAjusteValor) || 0;
+    // Prioridade: valor passado explicitamente > state atual (evita race condition no load inicial)
+    const ajusteNum = ajusteOverride !== undefined ? ajusteOverride : (parseFloat(lapsAjusteValor) || 0);
     const taxa = taxaAdm ?? lapsCalculo?.taxa_administrativa ?? 0;
     const rateio = rateioVal ?? lapsCalculo?.rateio ?? 0;
     const total = subtotal + taxa + rateio + ajusteNum;
@@ -719,11 +729,8 @@ export default function ConsultarVeiculo() {
                         value={lapsAjusteValor}
                         onChange={e => {
                           setLapsAjusteValor(e.target.value);
-                          const ajuste = parseFloat(e.target.value) || 0;
-                          const sub = lapsCalculo?.subtotal_produtos ?? 0;
-                          const taxa = lapsCalculo?.taxa_administrativa ?? 0;
-                          const rat = lapsCalculo?.rateio ?? 0;
-                          setLapsCalculo((prev: any) => ({ ...prev, ajuste_avulso: ajuste, total_mensalidade: sub + taxa + rat + ajuste }));
+                          // Recalcular usando ajusteOverride para evitar ler state que acabou de ser setado
+                          calcularMensalidadeLaps(lapsSelecionados, undefined, undefined, undefined, parseFloat(e.target.value) || 0);
                         }}
                         placeholder="0,00"
                         className="text-sm font-mono"
