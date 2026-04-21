@@ -16,7 +16,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import PhoneInput from "@/components/ui/phone-input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import DocumentosVendaTab from "@/components/DocumentosVendaTab";
 import {
   Search, User, Car, DollarSign, FileText, Clock, AlertTriangle,
@@ -74,6 +74,7 @@ const ocBadge = (s: string) => {
 
 export default function AlterarAssociado() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [filters, setFilters] = useState({ cpf: "", nome: "", placa: "", situacao: "Todos", regional: "Todos", cooperativa: "Todos" });
   const [results, setResults] = useState<Associado[]>([]);
   const [searched, setSearched] = useState(false);
@@ -107,6 +108,55 @@ export default function AlterarAssociado() {
       }
     });
   }, []);
+
+  // Auto-abrir associado quando a URL tiver ?associado_id=X (integração com Consultar Veículo)
+  const autoLoadedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const assocId = searchParams.get("associado_id");
+    if (!assocId || autoLoadedRef.current === assocId) return;
+    autoLoadedRef.current = assocId;
+    (async () => {
+      const { data: a, error } = await supabase
+        .from("associados")
+        .select("*, negociacao_origem_id, veiculos(*), contratos(*, planos(*)), regionais(id, nome), cooperativas(id, nome)")
+        .eq("id", assocId)
+        .maybeSingle();
+      if (error || !a) {
+        toast.error("Associado não encontrado: " + (error?.message || "ID inválido"));
+        return;
+      }
+      // Reusa o mesmo mapeamento do buscar() para manter consistência de UI
+      const aa = a as any;
+      const aMapped: Associado = {
+        id: aa.id, codigo: aa.codigo || aa.cpf || aa.id.slice(0, 6).toUpperCase(),
+        nome: aa.nome, cpf: aa.cpf, rg: aa.rg || "", dataNasc: aa.data_nascimento || "",
+        sexo: "", estadoCivil: "", profissao: "", cnh: aa.cnh || "", categoriaCnh: "", escolaridade: "",
+        celular: aa.telefone || "", telResidencial: "", telComercial: "",
+        email: aa.email || "", emailAux: "", contato: "",
+        cep: aa.endereco_cep || "", logradouro: aa.endereco_logradouro || "",
+        numero: "", complemento: "", bairro: "",
+        cidade: aa.endereco_cidade || "", estado: aa.endereco_uf || "",
+        nomeConjuge: "", nomePai: "", nomeMae: "",
+        regional: aa.regionais?.nome || (aa.regional_id ? regionaisMap[aa.regional_id] : "") || "",
+        cooperativa: aa.cooperativas?.nome || (aa.cooperativa_id ? cooperativasMap[aa.cooperativa_id]?.nome : "") || "",
+        consultorResp: aa.consultor_responsavel || "Não Identificado",
+        banco: "", agencia: "", contaCorrente: "",
+        diaVencimento: aa.dia_vencimento ? String(aa.dia_vencimento) : (aa.veiculos?.[0]?.dia_vencimento ? String(aa.veiculos[0].dia_vencimento) : "10"),
+        observacoes: "",
+        status: aa.status === "ativo" ? "Ativo" : aa.status === "suspenso" ? "Suspenso" : aa.status === "cancelado" ? "Cancelado" : (aa.status === "inativo" || aa.status === "inativo_pendencia") ? "Inadimplente" : "Ativo",
+        plano: aa.contratos?.[0]?.planos?.nome || "",
+        dataAdesao: aa.data_adesao || "",
+        veiculos: (aa.veiculos || []).map((v: any) => ({
+          placa: v.placa, modelo: v.modelo, marca: v.marca,
+          ano: v.ano || 0, cor: v.cor || "",
+          situacao: "Ativo", plano: aa.contratos?.[0]?.planos?.nome || "",
+        })),
+        lancamentos: [], documentos: [], historico: [], ocorrencias: [],
+        ...(aa.negociacao_origem_id ? { negociacao_origem_id: aa.negociacao_origem_id } as any : {}),
+      };
+      openEdit(aMapped);
+    })();
+  }, [searchParams, regionaisMap, cooperativasMap]);
   const [ocModal, setOcModal] = useState(false);
   const [newOc, setNewOc] = useState({ tipo: "", veiculo: "", data: "", descricao: "", valor: "" });
   const [veicModal, setVeicModal] = useState(false);
@@ -242,10 +292,11 @@ export default function AlterarAssociado() {
   const buscar = async () => {
     setSearching(true);
     try {
-      // Select enxuto pra listagem — joins pesados (veiculos/contratos/planos) são lazy-loaded quando o user clica num associado
+      // Select com joins — veiculos e contratos(planos) necessários para UI da aba Veículos
+      // (revertido do "enxuto" que prometia lazy-load mas nunca foi implementado — commit 9c6bb16)
       let query = supabase
         .from("associados")
-        .select("id, nome, cpf, data_nascimento, telefone, email, status, regional_id, cooperativa_id, endereco_cep, endereco_logradouro, endereco_bairro, endereco_cidade, endereco_uf, codigo_sga, regionais(id, nome), cooperativas(id, nome)")
+        .select("*, negociacao_origem_id, veiculos(*), contratos(*, planos(*)), regionais(id, nome), cooperativas(id, nome)")
         .order("nome")
         .limit(50);
 
@@ -369,52 +420,7 @@ export default function AlterarAssociado() {
     });
     const isRealId = a.id.includes("-") && a.id.length > 10;
 
-    // Lazy-load veículos (query isolada — não depende de outras)
-    if (isRealId) {
-      let mappedVeiculos: Associado["veiculos"] = [];
-      let planoNome = "";
-
-      const { data: veiculos, error: vErr } = await supabase
-        .from("veiculos")
-        .select("placa, modelo, marca, ano, cor, dia_vencimento")
-        .eq("associado_id", a.id);
-
-      if (vErr) {
-        console.error("[AlterarAssociado] Erro veiculos:", vErr);
-        toast.error(`Erro ao carregar veículos: ${vErr.message}`);
-      } else if (veiculos) {
-        mappedVeiculos = veiculos.map((v: any) => ({
-          placa: v.placa || "",
-          modelo: v.modelo || "",
-          marca: v.marca || "",
-          ano: v.ano || 0,
-          cor: v.cor || "",
-          situacao: "Ativo",
-          plano: "",
-        }));
-      }
-
-      // Query de contrato/plano isolada — erro aqui não derruba os veículos
-      try {
-        const { data: contratos } = await supabase
-          .from("contratos" as any)
-          .select("plano_id, planos(nome)")
-          .eq("associado_id", a.id)
-          .limit(1);
-        planoNome = (contratos?.[0] as any)?.planos?.nome || "";
-      } catch (e) {
-        console.warn("[AlterarAssociado] plano não carregado:", e);
-      }
-
-      // Populate plano em cada veículo (string vazia se não achou)
-      mappedVeiculos = mappedVeiculos.map(v => ({ ...v, plano: planoNome }));
-
-      setSelected(prev => prev ? {
-        ...prev,
-        veiculos: mappedVeiculos,
-        plano: planoNome || prev.plano,
-      } : prev);
-    }
+    // Veículos e plano já vêm do select fat em buscar() — não precisa de lazy-load.
 
     // Carregar histórico do audit_log (ERR-010)
     if (isRealId) {

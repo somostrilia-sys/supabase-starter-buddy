@@ -455,7 +455,19 @@ export default function ConsultarVeiculo() {
                       <TableBody>
                         {paged.map(v => (
                           <TableRow key={v.id}>
-                            <TableCell className="text-sm font-medium">{v.nome}</TableCell>
+                            <TableCell className="text-sm font-medium">
+                              {v.associado_id ? (
+                                <button
+                                  className="text-primary hover:underline text-left"
+                                  onClick={() => navigate(`/gestao?tab=associado&sub=alterar&associado_id=${v.associado_id}`)}
+                                  title="Abrir Consultar/Alterar Associado"
+                                >
+                                  {v.nome}
+                                </button>
+                              ) : (
+                                v.nome
+                              )}
+                            </TableCell>
                             <TableCell className="font-mono text-sm">{v.placa}</TableCell>
                             <TableCell className="text-xs">{v.regional}</TableCell>
                             <TableCell className="text-xs">{v.dataCadastro ? new Date(v.dataCadastro).toLocaleDateString("pt-BR") : "—"}</TableCell>

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   UserPlus, UserCog, Link2, FileBarChart, Users,
   ArrowLeft, ChevronRight,
@@ -19,7 +20,19 @@ const actions = [
 ];
 
 export default function AssociadoTab() {
-  const [view, setView] = useState<AssociadoView>("menu");
+  const [searchParams] = useSearchParams();
+  // Auto-abrir view "alterar" quando houver associado_id ou sub=alterar na URL
+  // (integração com Consultar Veículo → link para Consultar/Alterar Associado)
+  const initialView: AssociadoView = (searchParams.get("sub") as AssociadoView)
+    || (searchParams.get("associado_id") ? "alterar" : "menu");
+  const [view, setView] = useState<AssociadoView>(initialView);
+
+  useEffect(() => {
+    const sub = searchParams.get("sub") as AssociadoView | null;
+    const assocId = searchParams.get("associado_id");
+    if (sub && sub !== view) setView(sub);
+    else if (assocId && view === "menu") setView("alterar");
+  }, [searchParams]);
 
   if (view === "menu") {
     return (
