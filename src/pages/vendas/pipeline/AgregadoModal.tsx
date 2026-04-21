@@ -29,9 +29,13 @@ interface Props {
   negociacaoId: string;
   existing?: AgregadoData | null;
   onSaved: (agregado: AgregadoData) => void;
+  // Cidade/UF de circulação do deal — usados pra filtrar tabelas de preço pela regional.
+  // Se não passados, cai no comportamento antigo (todas regionais).
+  cidadeCirculacao?: string;
+  estadoCirculacao?: string;
 }
 
-export default function AgregadoModal({ open, onClose, negociacaoId, existing, onSaved }: Props) {
+export default function AgregadoModal({ open, onClose, negociacaoId, existing, onSaved, cidadeCirculacao, estadoCirculacao }: Props) {
   const [nome, setNome] = useState("");
   const [placa, setPlaca] = useState("");
   const [chassi, setChassi] = useState("");
@@ -57,24 +61,65 @@ export default function AgregadoModal({ open, onClose, negociacaoId, existing, o
   const valorNum = Number(valorProtegido) || 0;
   const valorValido = valorNum > 0;
 
-  // Buscar tabelas de preço compatíveis (só planos "agregado") com o valor protegido
+  // Resolver regional via cidade de circulação (municipios → regional_cidades → regionais)
+  const [regionalFiltro, setRegionalFiltro] = useState<string>("");
+  useEffect(() => {
+    if (!cidadeCirculacao || !estadoCirculacao) { setRegionalFiltro(""); return; }
+    (async () => {
+      const { data: mun } = await (supabase as any).from("municipios")
+        .select("id")
+        .eq("uf", estadoCirculacao.toUpperCase())
+        .ilike("nome", cidadeCirculacao)
+        .limit(1)
+        .maybeSingle();
+      if (!mun) { setRegionalFiltro(""); return; }
+      const { data: rc } = await (supabase as any).from("regional_cidades")
+        .select("regional_id, regionais(nome)")
+        .eq("municipio_id", mun.id)
+        .limit(1)
+        .maybeSingle();
+      const nome = rc?.regionais?.nome || "";
+      setRegionalFiltro(nome);
+    })();
+  }, [cidadeCirculacao, estadoCirculacao]);
+
+  // Buscar tabelas de preço compatíveis (só planos "agregado") com o valor protegido + regional da cidade
   const [tabelasDisponiveis, setTabelasDisponiveis] = useState<any[]>([]);
   const [loadingTabelas, setLoadingTabelas] = useState(false);
 
   useEffect(() => {
     if (!valorValido) { setTabelasDisponiveis([]); setTabelaPrecosId(""); return; }
     setLoadingTabelas(true);
-    supabase.from("tabela_precos" as any)
+    let q = supabase.from("tabela_precos" as any)
       .select("id, plano, plano_normalizado, cota, valor_menor, valor_maior, tipo_franquia, valor_franquia, adesao, regional")
       .ilike("plano_normalizado", "%agregado%")
       .lte("valor_menor", valorNum)
-      .gte("valor_maior", valorNum)
-      .order("cota")
-      .then(({ data }: any) => {
-        setTabelasDisponiveis(data || []);
+      .gte("valor_maior", valorNum);
+    // Se conseguimos resolver a regional pela cidade do deal, filtra só tabelas dessa regional.
+    // Usa campo texto `regional` (consistente com import) em vez de regional_id (inconsistente no banco).
+    if (regionalFiltro) {
+      q = q.ilike("regional", `%${regionalFiltro.replace(/^REGIONAL /i, "").replace(/^Regional /, "")}%`);
+    }
+    q.order("cota").then(({ data }: any) => {
+      let resultado = data || [];
+      // Fallback: se filtro por regional retornou vazio, desiste do filtro pra não bloquear o usuário
+      if (resultado.length === 0 && regionalFiltro) {
+        supabase.from("tabela_precos" as any)
+          .select("id, plano, plano_normalizado, cota, valor_menor, valor_maior, tipo_franquia, valor_franquia, adesao, regional")
+          .ilike("plano_normalizado", "%agregado%")
+          .lte("valor_menor", valorNum)
+          .gte("valor_maior", valorNum)
+          .order("cota")
+          .then(({ data: all }: any) => {
+            setTabelasDisponiveis(all || []);
+            setLoadingTabelas(false);
+          });
+      } else {
+        setTabelasDisponiveis(resultado);
         setLoadingTabelas(false);
-      });
-  }, [valorNum, valorValido]);
+      }
+    });
+  }, [valorNum, valorValido, regionalFiltro]);
 
   const tabelaSelecionada = useMemo(
     () => tabelasDisponiveis.find((t: any) => t.id === tabelaPrecosId),

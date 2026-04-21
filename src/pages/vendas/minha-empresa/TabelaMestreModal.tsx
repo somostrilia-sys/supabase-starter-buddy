@@ -56,6 +56,25 @@ export default function TabelaMestreModal({ open, onClose, tabelaId, tabelaLabel
     enabled: open,
   });
 
+  // Rows de tabela_precos vinculados a esta tabela_id
+  // Usado nas abas 4 (Tabela/cotas) e 5 (Preços dos Planos)
+  const { data: precosRows } = useQuery({
+    queryKey: ["tm-precos", tabelaId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("tabela_precos")
+        .select("*")
+        .eq("tabela_id", tabelaId)
+        .order("valor_menor")
+        .order("plano");
+      if (error) return [];
+      return data || [];
+    },
+    enabled: open,
+  });
+
+  const fmt = (v: number | null | undefined) =>
+    v == null ? "—" : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
   // Modelos da marca ativa
   const { data: modelos, isLoading: loadingModelos } = useQuery({
     queryKey: ["tm-modelos", marcaAtivaId],
@@ -196,14 +215,90 @@ export default function TabelaMestreModal({ open, onClose, tabelaId, tabelaLabel
             <TabsTrigger value="precos">5. Preços dos Planos</TabsTrigger>
           </TabsList>
 
-          {/* Aba 1 — Dados Gerais (placeholder) */}
-          <TabsContent value="dados" className="flex-1 overflow-y-auto p-4">
-            <p className="text-sm text-muted-foreground">Dados gerais da tabela (nome, descrição, regional, tipo) — em construção.</p>
+          {/* Aba 1 — Dados Gerais (read-only, derivado de tabela_precos) */}
+          <TabsContent value="dados" className="flex-1 overflow-y-auto p-4 space-y-4">
+            {(() => {
+              const primeiro = precosRows?.[0];
+              const planosUnicos = [...new Set((precosRows || []).map((r: any) => r.plano))];
+              const faixas = new Set((precosRows || []).map((r: any) => `${r.valor_menor}-${r.valor_maior}`)).size;
+              return (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Identificador</Label>
+                      <p className="text-sm font-mono">{tabelaId}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Label</Label>
+                      <p className="text-sm">{tabelaLabel || "—"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Regional</Label>
+                      <p className="text-sm">{primeiro?.regional || "—"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Tipo Veículo</Label>
+                      <p className="text-sm">{primeiro?.tipo_veiculo || "—"}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Total de rows</Label>
+                      <p className="text-lg font-semibold">{precosRows?.length || 0}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Planos distintos</Label>
+                      <p className="text-lg font-semibold">{planosUnicos.length}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Faixas FIPE</Label>
+                      <p className="text-lg font-semibold">{faixas}</p>
+                    </div>
+                  </div>
+                  {planosUnicos.length > 0 && (
+                    <div className="pt-4 border-t">
+                      <Label className="text-xs text-muted-foreground">Planos vinculados</Label>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {planosUnicos.map(p => <Badge key={p as string} variant="secondary" className="text-xs">{p as string}</Badge>)}
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground pt-4 border-t">
+                    Tabela derivada dos registros em <code>tabela_precos</code> com <code>tabela_id = {tabelaId}</code>.
+                    Edição de metadados não está disponível nesta versão — as liberações de modelos são feitas na aba 3.
+                  </p>
+                </>
+              );
+            })()}
           </TabsContent>
 
-          {/* Aba 2 — Marcas */}
+          {/* Aba 2 — Marcas (lista com contador de modelos liberados nesta tabela) */}
           <TabsContent value="marcas" className="flex-1 overflow-y-auto p-4 space-y-3">
-            <p className="text-sm text-muted-foreground">Marcas disponíveis para esta tabela ({marcas?.length || 0} marcas cadastradas).</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">{marcas?.length || 0} marcas cadastradas</p>
+              <Badge variant="outline" className="text-xs">
+                {Object.values(contagemPorMarca).reduce((a, b) => a + b, 0)} modelos liberados
+              </Badge>
+            </div>
+            {loadingMarcas ? (
+              <div className="flex items-center justify-center py-10"><Loader2 className="h-4 w-4 animate-spin" /></div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {(marcas || []).map((m: any) => {
+                  const count = contagemPorMarca[m.id] || 0;
+                  return (
+                    <div key={m.id} className={`flex items-center gap-2 p-2 rounded border ${count > 0 ? "border-primary/40 bg-primary/5" : "border-border"}`}>
+                      <CheckCircle2 className={`h-3.5 w-3.5 ${count > 0 ? "text-primary" : "text-muted-foreground/30"}`} />
+                      <span className="text-xs font-medium flex-1 truncate">{m.nome}</span>
+                      <Badge variant="outline" className="text-[10px]">{count}</Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground pt-3 border-t">
+              Para liberar/desvincular modelos por marca, use a aba <strong>3. Veículos (ano)</strong>.
+            </p>
           </TabsContent>
 
           {/* Aba 3 — Veículos (ano): NÚCLEO DA ERRATA 2 */}
@@ -345,14 +440,101 @@ export default function TabelaMestreModal({ open, onClose, tabelaId, tabelaLabel
             </div>
           </TabsContent>
 
-          {/* Aba 4 — Tabela (cotas) */}
+          {/* Aba 4 — Tabela (cotas) — faixas FIPE com Adesão/Franquia/Rastreador (SEM preço base) */}
           <TabsContent value="cotas" className="flex-1 overflow-y-auto p-4">
-            <p className="text-sm text-muted-foreground">Cotas por faixa FIPE (integração com tabela_precos existente).</p>
+            {!precosRows || precosRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-10">Nenhuma faixa FIPE cadastrada para esta tabela.</p>
+            ) : (() => {
+              // Dedup por faixa (valor_menor-valor_maior) — mostra 1 linha por intervalo
+              const faixas = new Map<string, any>();
+              for (const r of precosRows) {
+                const key = `${r.valor_menor}-${r.valor_maior}`;
+                if (!faixas.has(key)) faixas.set(key, r);
+              }
+              const ordenadas = Array.from(faixas.entries())
+                .sort(([a], [b]) => Number(a.split("-")[0]) - Number(b.split("-")[0]));
+              return (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="border-b">
+                      <tr className="text-xs text-muted-foreground">
+                        <th className="text-left py-2 px-2">Intervalo FIPE</th>
+                        <th className="text-center py-2 px-2">Adesão</th>
+                        <th className="text-center py-2 px-2">Franquia</th>
+                        <th className="text-center py-2 px-2">Rastreador</th>
+                        <th className="text-center py-2 px-2">Instalação</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ordenadas.map(([key, r]) => (
+                        <tr key={key} className="border-b">
+                          <td className="py-2 px-2 font-mono text-xs whitespace-nowrap">{fmt(r.valor_menor)} — {fmt(r.valor_maior)}</td>
+                          <td className="py-2 px-2 text-xs text-center">{fmt(r.adesao)}</td>
+                          <td className="py-2 px-2 text-xs text-center whitespace-nowrap">
+                            {r.tipo_franquia ? `${r.tipo_franquia} ${fmt(r.valor_franquia)}` : "—"}
+                          </td>
+                          <td className="py-2 px-2 text-xs text-center">{r.rastreador || "—"}</td>
+                          <td className="py-2 px-2 text-xs text-center">{fmt(r.instalacao)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    {ordenadas.length} intervalos FIPE. Mensalidades por plano disponíveis na aba <strong>5. Preços dos Planos</strong>.
+                  </p>
+                </div>
+              );
+            })()}
           </TabsContent>
 
-          {/* Aba 5 — Preços dos Planos */}
+          {/* Aba 5 — Preços dos Planos (pivot estilo Power CRM Tab 5) */}
           <TabsContent value="precos" className="flex-1 overflow-y-auto p-4">
-            <p className="text-sm text-muted-foreground">Preços dos planos.</p>
+            {!precosRows || precosRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-10">Nenhum preço cadastrado para esta tabela.</p>
+            ) : (() => {
+              const planosUnicos = [...new Set(precosRows.map((r: any) => r.plano))].sort();
+              const faixasMap = new Map<string, Record<string, any>>();
+              for (const r of precosRows) {
+                const key = `${r.valor_menor}-${r.valor_maior}`;
+                if (!faixasMap.has(key)) faixasMap.set(key, {});
+                faixasMap.get(key)![r.plano] = r;
+              }
+              const ordenadas = Array.from(faixasMap.entries())
+                .sort(([a], [b]) => Number(a.split("-")[0]) - Number(b.split("-")[0]));
+              return (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="border-b">
+                      <tr className="text-xs text-muted-foreground">
+                        <th className="text-left py-2 px-2">Intervalo FIPE</th>
+                        {planosUnicos.map(p => <th key={p as string} className="text-center py-2 px-2 whitespace-nowrap">{p as string}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ordenadas.map(([key, rowsPorPlano]) => {
+                        const anyRow = Object.values(rowsPorPlano)[0];
+                        return (
+                          <tr key={key} className="border-b">
+                            <td className="py-2 px-2 font-mono text-xs whitespace-nowrap">{fmt(anyRow.valor_menor)} — {fmt(anyRow.valor_maior)}</td>
+                            {planosUnicos.map(p => {
+                              const r = rowsPorPlano[p as string];
+                              return (
+                                <td key={p as string} className="py-2 px-2 text-xs text-center whitespace-nowrap">
+                                  {r ? <span className="font-semibold text-primary">{fmt(r.cota)}</span> : <span className="text-muted-foreground">—</span>}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Valores de cota mensal por plano e faixa FIPE. {ordenadas.length} intervalos × {planosUnicos.length} planos = {precosRows.length} cotas.
+                  </p>
+                </div>
+              );
+            })()}
           </TabsContent>
         </Tabs>
 
