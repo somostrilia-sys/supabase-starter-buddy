@@ -18,11 +18,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import DocumentosVendaTab from "@/components/DocumentosVendaTab";
+import HistoricoEventosList from "@/components/HistoricoEventosList";
 import {
   Search, User, Car, DollarSign, FileText, Clock, AlertTriangle,
   Eye, Pencil, History, ArrowLeft, Save, Upload, Trash2, Plus,
   Download, ChevronLeft, ChevronRight, X, MapPin, Phone, Mail,
-  Heart, KeyRound, Landmark, GraduationCap, Loader2,
+  Heart, KeyRound, Landmark, GraduationCap, Loader2, Printer,
 } from "lucide-react";
 
 // ─── Mock Data ───
@@ -41,7 +42,7 @@ interface Associado {
   banco: string; agencia: string; contaCorrente: string; diaVencimento: string;
   observacoes: string; status: string; plano: string; dataAdesao: string;
   veiculos: { placa: string; modelo: string; marca: string; ano: number; cor: string; situacao: string; plano: string }[];
-  lancamentos: { data: string; tipo: string; valor: number; status: string; vencimento: string }[];
+  lancamentos: { id?: string; data: string; tipo: string; valor: number; status: string; vencimento: string; placa?: string; modelo?: string; nossoNumero?: string; linhaDigitavel?: string; pixCopiaCola?: string; pdfPath?: string | null; linkBoleto?: string; dataPagamento?: string }[];
   documentos: { nome: string; tipo: string; dataUpload: string }[];
   historico: { dataHora: string; usuario: string; campo: string; anterior: string; novo: string }[];
   ocorrencias: { numero: string; data: string; tipo: string; placa: string; status: string; valorEstimado: number }[];
@@ -442,6 +443,41 @@ export default function AlterarAssociado() {
           setSelected(prev => prev ? { ...prev, historico: hist } : prev);
         }
       } catch (e) { console.warn("Erro ao carregar histórico:", e); }
+
+      // Carrega histórico financeiro (todos boletos do associado, todos veículos)
+      try {
+        const { data: boletos } = await supabase
+          .from("boletos")
+          .select("id, nosso_numero, valor, vencimento, data_pagamento, valor_pagamento, status, referencia, tipo, linha_digitavel, pix_copia_cola, pdf_storage_path, link_boleto, data_emissao, veiculo_id, veiculos:veiculo_id(placa, modelo, marca)")
+          .eq("associado_id", a.id)
+          .gte("vencimento", "2025-01-01")
+          .order("vencimento", { ascending: false })
+          .limit(1000);
+        const hoje = new Date().toISOString().slice(0, 10);
+        const statusLabel = (b: any) => {
+          if (b.data_pagamento) return "Pago";
+          if (b.status === "baixado" || b.status === "pago") return "Pago";
+          if (b.vencimento && b.vencimento < hoje) return "Atrasado";
+          return "Pendente";
+        };
+        const lancamentos = (boletos ?? []).map((b: any) => ({
+          id: b.id,
+          data: b.data_emissao || b.vencimento,
+          tipo: b.tipo || "Mensalidade",
+          valor: Number(b.valor ?? 0),
+          status: statusLabel(b),
+          vencimento: b.vencimento ?? "",
+          dataPagamento: b.data_pagamento ?? "",
+          placa: b.veiculos?.placa ?? "—",
+          modelo: b.veiculos ? `${b.veiculos.marca ?? ""} ${b.veiculos.modelo ?? ""}`.trim() : "",
+          nossoNumero: b.nosso_numero ?? "",
+          linhaDigitavel: b.linha_digitavel || "",
+          pixCopiaCola: b.pix_copia_cola || "",
+          pdfPath: b.pdf_storage_path || null,
+          linkBoleto: b.link_boleto || "",
+        }));
+        setSelected(prev => prev ? { ...prev, lancamentos } : prev);
+      } catch (e) { console.warn("Erro ao carregar financeiro:", e); }
     }
   };
 
@@ -533,7 +569,11 @@ export default function AlterarAssociado() {
 
   const totalMens = selected ? selected.lancamentos.reduce((s, l) => s + l.valor, 0) : 0;
   const inadimpl = selected ? selected.lancamentos.filter(l => l.status === "Atrasado").length : 0;
-  const ultimoPag = selected ? selected.lancamentos.find(l => l.status === "Pago") : null;
+  const ultimoPag = selected
+    ? selected.lancamentos
+        .filter(l => l.status === "Pago" && l.dataPagamento)
+        .sort((a, b) => (b.dataPagamento! > a.dataPagamento! ? 1 : -1))[0]
+    : null;
 
   // ── LIST VIEW ──
   if (!selected) {
@@ -673,6 +713,7 @@ export default function AlterarAssociado() {
           <TabsTrigger value="documentos" className="gap-1 text-xs"><FileText className="h-3.5 w-3.5" />Documentos</TabsTrigger>
           <TabsTrigger value="historico" className="gap-1 text-xs"><Clock className="h-3.5 w-3.5" />Histórico</TabsTrigger>
           <TabsTrigger value="ocorrencias" className="gap-1 text-xs"><AlertTriangle className="h-3.5 w-3.5" />Ocorrências</TabsTrigger>
+          <TabsTrigger value="historico-eventos" className="gap-1 text-xs"><Clock className="h-3.5 w-3.5" />Histórico Eventos</TabsTrigger>
           <TabsTrigger value="venda" className="gap-1 text-xs"><Eye className="h-3.5 w-3.5" />Processo de Venda</TabsTrigger>
         </TabsList>
 
@@ -914,32 +955,70 @@ export default function AlterarAssociado() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Total Mensalidades</p><p className="text-xl font-bold text-primary">R$ {totalMens.toFixed(2).replace(".", ",")}</p></CardContent></Card>
             <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Inadimplência</p><p className="text-xl font-bold text-destructive">{inadimpl} parcela(s)</p></CardContent></Card>
-            <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Último Pagamento</p><p className="text-xl font-bold">{ultimoPag ? new Date(ultimoPag.data).toLocaleDateString("pt-BR") : "-"}</p></CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Último Pagamento</p><p className="text-xl font-bold">{ultimoPag?.dataPagamento ? new Date(ultimoPag.dataPagamento).toLocaleDateString("pt-BR") : "-"}</p></CardContent></Card>
           </div>
           <Card>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Tipo</TableHead>
+                    <TableHead>Placa / Veículo</TableHead>
+                    <TableHead>Nº Título</TableHead>
+                    <TableHead>Vencimento</TableHead>
+                    <TableHead>Pagamento</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Vencimento</TableHead>
+                    <TableHead>Linha digitável</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {selected.lancamentos.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">Nenhum valor gerado</TableCell>
+                      <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">Nenhum boleto desde 01/01/2025</TableCell>
                     </TableRow>
                   ) : selected.lancamentos.map((l, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="text-sm">{new Date(l.data).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell className="text-sm">{l.tipo}</TableCell>
-                      <TableCell className="text-sm font-medium">R$ {l.valor.toFixed(2).replace(".",",")}</TableCell>
-                      <TableCell><Badge variant="outline" className={finBadge(l.status)}>{l.status}</Badge></TableCell>
-                      <TableCell className="text-sm">{new Date(l.vencimento).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableRow key={l.id ?? i}>
+                      <TableCell className="text-xs">
+                        <div className="font-mono font-medium">{l.placa || "—"}</div>
+                        {l.modelo && <div className="text-muted-foreground">{l.modelo}</div>}
+                      </TableCell>
+                      <TableCell className="text-xs font-mono">{l.nossoNumero}</TableCell>
+                      <TableCell className="text-xs">{l.vencimento ? new Date(l.vencimento).toLocaleDateString("pt-BR") : "-"}</TableCell>
+                      <TableCell className="text-xs">{l.dataPagamento ? new Date(l.dataPagamento).toLocaleDateString("pt-BR") : "-"}</TableCell>
+                      <TableCell className="text-xs font-medium">R$ {l.valor.toFixed(2).replace(".",",")}</TableCell>
+                      <TableCell><Badge variant="outline" className={`${finBadge(l.status)} text-xs`}>{l.status}</Badge></TableCell>
+                      <TableCell className="text-xs font-mono max-w-[180px]">
+                        {l.linhaDigitavel ? (
+                          <button
+                            title={l.linhaDigitavel}
+                            onClick={() => { navigator.clipboard.writeText(l.linhaDigitavel!); toast.success("Linha digitável copiada"); }}
+                            className="truncate block w-full text-left hover:text-primary"
+                          >{l.linhaDigitavel}</button>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex gap-1 justify-end">
+                          {l.pixCopiaCola && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Copiar Pix"
+                              onClick={() => { navigator.clipboard.writeText(l.pixCopiaCola!); toast.success("Pix copiado"); }}>
+                              <DollarSign className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Abrir PDF" disabled={!l.pdfPath && !l.linkBoleto}
+                            onClick={async () => {
+                              if (l.pdfPath) {
+                                const { data, error } = await supabase.storage.from("sga-boletos").createSignedUrl(l.pdfPath, 3600);
+                                if (error || !data?.signedUrl) { toast.error("Falha ao abrir PDF"); return; }
+                                window.open(data.signedUrl, "_blank");
+                              } else if (l.linkBoleto) {
+                                window.open(l.linkBoleto, "_blank");
+                              }
+                            }}>
+                            <Printer className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -1091,6 +1170,11 @@ export default function AlterarAssociado() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+        </TabsContent>
+
+        {/* Histórico de Eventos GIA (vinculado a este associado) */}
+        <TabsContent value="historico-eventos" className="mt-4">
+          <HistoricoEventosList associadoId={(selected as any).id} />
         </TabsContent>
 
         {/* Aba Processo de Venda — docs da negociação de origem */}

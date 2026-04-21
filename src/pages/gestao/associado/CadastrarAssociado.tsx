@@ -12,7 +12,7 @@ import PhoneInput from "@/components/ui/phone-input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, callEdge } from "@/integrations/supabase/client";
 import {
   User, MapPin, Phone, Mail, KeyRound, Landmark,
   FileText, Car, DollarSign, Gauge, Package, Radio, ClipboardCheck,
@@ -269,12 +269,42 @@ export default function CadastrarAssociado() {
     toast.success("Endereço encontrado!");
   };
 
-  const consultarPlaca = () => {
-    if (!form.placa) return toast.error("Informe a placa");
-    set("marca", "Volkswagen"); set("modelo", "T-Cross 200 TSI");
-    set("anoFab", "2023"); set("anoModelo", "2024"); set("cor", "Branco");
-    set("combustivel", "Flex"); set("valorFipe", "119.500,00");
-    toast.success("Veículo encontrado!");
+  const tipoFromFipe = (t: string) => {
+    const x = (t || "").toLowerCase();
+    if (x === "motos") return "Motocicleta";
+    if (x === "caminhoes") return "Caminhão";
+    return "Automovel";
+  };
+  const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
+  const fmtBr = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const consultarPlaca = async () => {
+    const placaLimpa = (form.placa || "").replace(/[^A-Z0-9]/gi, "").toUpperCase();
+    if (placaLimpa.length !== 7) return toast.error("Placa inválida. Use 7 caracteres (ex: ABC1D23).");
+    try {
+      const res: any = await callEdge("gia-buscar-placa", { acao: "placa", placa: placaLimpa });
+      const r = res?.resultado;
+      if (!r) return toast.error("Placa não encontrada.");
+      const marcaRaw = String(r.marca || "");
+      const marca = marcaRaw.includes(" - ") ? marcaRaw.split(" - ")[1] : marcaRaw;
+      setForm(p => ({
+        ...p,
+        chassi: r.chassi || p.chassi,
+        renavam: r.renavam || p.renavam,
+        codigoFipe: r.codFipe || p.codigoFipe,
+        tipoVeiculo: tipoFromFipe(r.tipoVeiculo || r.tipo_veiculo_fipe),
+        marca: marca || p.marca,
+        modelo: r.modelo || p.modelo,
+        anoFab: r.anoFabricacao ? String(r.anoFabricacao) : p.anoFab,
+        anoModelo: r.anoModelo ? String(r.anoModelo) : p.anoModelo,
+        cor: r.cor ? capitalize(String(r.cor)) : p.cor,
+        combustivel: r.combustivel ? capitalize(String(r.combustivel)) : p.combustivel,
+        valorFipe: typeof r.valorFipe === "number" && r.valorFipe > 0 ? fmtBr(r.valorFipe) : p.valorFipe,
+      }));
+      toast.success(`${marca} ${r.modelo} — FIPE R$ ${fmtBr(r.valorFipe || 0)}`);
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao consultar placa");
+    }
   };
 
   const decodificarVin = () => {
@@ -282,9 +312,9 @@ export default function CadastrarAssociado() {
     toast.success("VIN decodificado com sucesso!");
   };
 
-  const buscarFipe = () => {
-    set("valorFipe", "119.500,00");
-    toast.success("Valor FIPE atualizado!");
+  const buscarFipe = async () => {
+    if (form.placa) return consultarPlaca();
+    toast.error("Informe placa para buscar FIPE, ou use o modal FIPE.");
   };
 
   const [saving, setSaving] = useState(false);

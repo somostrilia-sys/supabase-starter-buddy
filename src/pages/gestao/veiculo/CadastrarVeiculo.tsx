@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, callEdge } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import ConsultaFipe from "@/pages/gestao/ferramentas/ConsultaFipe";
 import { useCategoriaVeiculo, useProdutosPorCategoria } from "@/hooks/useElegibilidade";
@@ -268,8 +268,55 @@ export default function CadastrarVeiculo() {
   const [previewDoc, setPreviewDoc] = useState<UploadedDoc | null>(null);
   const [pendingFiles, setPendingFiles] = useState<{ file: File; tipo: string; preview?: string }[]>([]);
   const [showFipeModal, setShowFipeModal] = useState(false);
+  const [buscandoPlaca, setBuscandoPlaca] = useState(false);
 
   const set = (f: string, v: string | boolean) => setForm(p => ({ ...p, [f]: v }));
+
+  const classificacaoFromTipo = (tipo: string): string => {
+    const t = (tipo || "").toLowerCase();
+    if (t === "motos") return "Motocicleta";
+    if (t === "caminhoes") return "Caminhão";
+    return "Automóvel";
+  };
+  const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
+  const fmtValorBr = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const buscarPorPlaca = async () => {
+    const placaLimpa = (form.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const placaValida = placaLimpa.length === 7;
+    if (!placaValida) {
+      toast.error("Placa inválida. Informe 7 caracteres (ex: ABC1D23).");
+      return;
+    }
+    setBuscandoPlaca(true);
+    try {
+      const res: any = await callEdge("gia-buscar-placa", { acao: "placa", placa: placaLimpa });
+      const r = res?.resultado;
+      if (!r) { toast.error("Placa não encontrada."); return; }
+      const marcaRaw = String(r.marca || "");
+      const marca = marcaRaw.includes(" - ") ? marcaRaw.split(" - ")[1] : marcaRaw;
+      setForm(p => ({
+        ...p,
+        placa: maskPlaca(placaLimpa),
+        chassi: r.chassi || p.chassi,
+        renavam: r.renavam || p.renavam,
+        modelo: r.modelo || p.modelo,
+        montadora: marca || p.montadora,
+        anoFab: r.anoFabricacao ? String(r.anoFabricacao) : p.anoFab,
+        anoMod: r.anoModelo ? String(r.anoModelo) : p.anoMod,
+        cor: r.cor ? capitalize(String(r.cor)) : p.cor,
+        combustivel: r.combustivel ? capitalize(String(r.combustivel)) : p.combustivel,
+        codFipe: r.codFipe || p.codFipe,
+        valorFipe: typeof r.valorFipe === "number" && r.valorFipe > 0 ? fmtValorBr(r.valorFipe) : p.valorFipe,
+        classificacao: classificacaoFromTipo(r.tipoVeiculo || r.tipo_veiculo_fipe) || p.classificacao,
+      }));
+      toast.success(`Placa encontrada: ${marca} ${r.modelo} — FIPE R$ ${fmtValorBr(r.valorFipe || 0)}`);
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao buscar placa");
+    } finally {
+      setBuscandoPlaca(false);
+    }
+  };
 
   // Detect GIA categoria from classificacao
   const categoriaGiaNome = (() => {
@@ -715,8 +762,22 @@ export default function CadastrarVeiculo() {
               </div>
               <div>
                 <Label className="text-xs">Placa *</Label>
-                <div className="flex gap-1 items-center"><Input value={form.placa} onChange={e => set("placa", maskPlaca(e.target.value))} placeholder="ABC-1234" />
-                <div className="flex items-center gap-1 shrink-0"><Checkbox checked={form.zeroKm as boolean} onCheckedChange={v => set("zeroKm", !!v)} /><span className="text-xs whitespace-nowrap">0km</span></div></div>
+                <div className="flex gap-1 items-center">
+                  <Input
+                    value={form.placa}
+                    onChange={e => set("placa", maskPlaca(e.target.value))}
+                    onBlur={() => {
+                      const limpa = (form.placa || "").replace(/[^A-Z0-9]/gi, "");
+                      if (limpa.length === 7 && !form.zeroKm && !form.valorFipe) buscarPorPlaca();
+                    }}
+                    placeholder="ABC-1234"
+                  />
+                  <Button type="button" variant="outline" size="sm" onClick={buscarPorPlaca} disabled={buscandoPlaca} title="Buscar dados por placa">
+                    {buscandoPlaca ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+                  </Button>
+                  <div className="flex items-center gap-1 shrink-0"><Checkbox checked={form.zeroKm as boolean} onCheckedChange={v => set("zeroKm", !!v)} /><span className="text-xs whitespace-nowrap">0km</span></div>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">Ao sair do campo, busca marca/modelo/ano/FIPE automaticamente.</p>
               </div>
               <div><Label className="text-xs">Renavam *</Label><Input value={form.renavam} onChange={e => set("renavam", e.target.value.replace(/\D/g,"").slice(0,11))} placeholder="11 dígitos" /></div>
               <div><Label className="text-xs">Cilindrada</Label><Input value={form.cilindrada} onChange={e => set("cilindrada", e.target.value)} placeholder="Ex: 999" /></div>

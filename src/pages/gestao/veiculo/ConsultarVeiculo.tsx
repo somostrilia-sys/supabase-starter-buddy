@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PosVendaSection from "./PosVendaSection";
-import ArquivosSGA from "@/components/ArquivosSGA";
+import HistoricoEventosList from "@/components/HistoricoEventosList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,10 +38,10 @@ interface Veiculo {
   sitVeiculo: string; sitAssociado: string;
   associado_id?: string;
   condutores: { nome: string; cpf: string; cnh: string; dataNasc: string; situacao: string }[];
-  lancamentos: { nTitulo: string; nBanco: string; tipo: string; banco: string; dtEmissao: string; dataVenc: string; dataPgto: string; valor: number; valorPago: number; parcela: string; nControle: string; status: string }[];
+  lancamentos: { id?: string; nTitulo: string; nBanco: string; tipo: string; banco: string; dtEmissao: string; dataVenc: string; dataPgto: string; valor: number; valorPago: number; parcela: string; nControle: string; status: string; linhaDigitavel?: string; pixCopiaCola?: string; pdfPath?: string | null; linkBoleto?: string }[];
   agregados: { tipo: string; placa: string; cota: string; marcaModelo: string; valor: number; data: string; situacao: string }[];
   vistorias: { data: string; tipo: string; resultado: string; obs: string; usuario: string }[];
-  documentos: { nome: string; tipo: string; data: string }[];
+  documentos: { nome: string; tipo: string; data: string; storage_path?: string | null; bucket?: string; fonte?: string }[];
   observacoes: { data: string; descricao: string; usuario: string }[];
   fornecedores: { protocolo: string; fornecedor: string; produto: string; servico: string; motivo: string; situacao: string; dataAbertura: string; dataFechamento: string }[];
   contratos: { contrato: string; termo: string; status: string; ip: string; dataHoraEnvio: string; arquivo: string }[];
@@ -75,6 +75,7 @@ export default function ConsultarVeiculo() {
   const [regionaisList, setRegionaisList] = useState<{id: string; nome: string}[]>([]);
   const [contratoData, setContratoData] = useState<any>(null);
   const [cotacaoData, setCotacaoData] = useState<any>(null);
+  const [origemData, setOrigemData] = useState<any>(null);
 
   // LAPS state
   const [lapsProdutosDisponiveis, setLapsProdutosDisponiveis] = useState<any[]>([]);
@@ -83,6 +84,10 @@ export default function ConsultarVeiculo() {
   const [lapsCalculo, setLapsCalculo] = useState<any>(null);
   const [lapsAjusteDesc, setLapsAjusteDesc] = useState("");
   const [lapsAjusteValor, setLapsAjusteValor] = useState("");
+  const [lapsDescontoValor, setLapsDescontoValor] = useState("");
+  const [lapsDescontoDesc, setLapsDescontoDesc] = useState("");
+  const [lapsAcrescimoValor, setLapsAcrescimoValor] = useState("");
+  const [lapsAcrescimoDesc, setLapsAcrescimoDesc] = useState("");
   const [lapsSaving, setLapsSaving] = useState(false);
   const [lapsLoading, setLapsLoading] = useState(false);
 
@@ -197,7 +202,7 @@ export default function ConsultarVeiculo() {
           : Promise.resolve({ data: null }),
         supabase.from("produtos_gia").select("*").eq("ativo", true).order("nome"),
         (supabase as any).from("veiculo_produtos").select("*").eq("veiculo_id", veiculo.id),
-        (supabase as any).from("veiculos").select("ajuste_avulso_valor, ajuste_avulso_desc").eq("id", veiculo.id).maybeSingle(),
+        (supabase as any).from("veiculos").select("ajuste_avulso_valor, ajuste_avulso_desc, desconto_valor, desconto_desc, acrescimo_valor, acrescimo_desc").eq("id", veiculo.id).maybeSingle(),
       ]);
 
       const assocData = assocRes.data;
@@ -260,7 +265,12 @@ export default function ConsultarVeiculo() {
       veicProd.forEach((vp: any) => { sel[vp.produto_id] = true; });
       setLapsSelecionados(sel);
 
-      // Ajuste avulso
+      // Desconto + Acréscimo (separados); compatibilidade com ajuste_avulso legado
+      setLapsDescontoValor(ajusteData?.desconto_valor ? String(ajusteData.desconto_valor) : "");
+      setLapsDescontoDesc(ajusteData?.desconto_desc || "");
+      setLapsAcrescimoValor(ajusteData?.acrescimo_valor ? String(ajusteData.acrescimo_valor) : "");
+      setLapsAcrescimoDesc(ajusteData?.acrescimo_desc || "");
+      // Mantém ajuste avulso legado pra display histórico
       if (ajusteData && (ajusteData.ajuste_avulso_valor || ajusteData.ajuste_avulso_desc)) {
         setLapsAjusteDesc(ajusteData.ajuste_avulso_desc || "");
         setLapsAjusteValor(String(ajusteData.ajuste_avulso_valor || ""));
@@ -317,11 +327,14 @@ export default function ConsultarVeiculo() {
         const { error } = await (supabase as any).from("veiculo_produtos").insert(inserts);
         if (error) throw error;
       }
-      // Salvar ajuste avulso na tabela veiculos (colunas podem não existir ainda)
-      const ajusteNum = parseFloat(lapsAjusteValor) || 0;
+      // Salvar desconto + acréscimo separados (substitui ajuste_avulso legado)
+      const descontoNum = parseFloat(lapsDescontoValor) || 0;
+      const acrescimoNum = parseFloat(lapsAcrescimoValor) || 0;
       await (supabase as any).from("veiculos").update({
-        ajuste_avulso_valor: ajusteNum,
-        ajuste_avulso_desc: lapsAjusteDesc.trim() || null,
+        desconto_valor: descontoNum,
+        desconto_desc: lapsDescontoDesc.trim() || null,
+        acrescimo_valor: acrescimoNum,
+        acrescimo_desc: lapsAcrescimoDesc.trim() || null,
       }).eq("id", selected.id).then(() => {}).catch(() => {});
 
       toast.success("Composição do plano salva com sucesso!");
@@ -335,6 +348,24 @@ export default function ConsultarVeiculo() {
   const selectVehicle = async (v: Veiculo) => {
     setContratoData(null);
     setCotacaoData(null);
+    setOrigemData(null);
+
+    // === Origem & vínculos (campos populados pelo gia-concluir-venda v3) ===
+    const { data: veicFull } = await (supabase as any)
+      .from("veiculos")
+      .select(`
+        id, renavam, cod_fipe, ano_fabricacao,
+        taxa_administrativa_sga, valor_adicional_sga, desconto_valor, acrescimo_valor,
+        consultor_venda_id, vistoria_id, contrato_id, negociacao_origem_id, voluntario_id,
+        consultor:usuarios!veiculos_consultor_venda_id_fkey(id, nome, email, regional, cooperativa),
+        voluntario:voluntarios!veiculos_voluntario_id_fkey(id, nome, email, funcao, telefone),
+        vistoria:vistorias!veiculos_vistoria_id_fkey(id, status, created_at, ai_aprovada, ai_score, laudo_url, laudo_storage_path, laudo_aprovado_em),
+        contrato:contratos!veiculos_contrato_id_fkey(id, numero, valor_mensal, status, autentique_link, autentique_status, pdf_storage_path, data_inicio, dia_vencimento),
+        origem:negociacoes!veiculos_negociacao_origem_id_fkey(id, codigo, consultor, cooperativa, regional, venda_concluida_em, created_at)
+      `)
+      .eq("id", v.id)
+      .maybeSingle();
+    if (veicFull) setOrigemData(veicFull);
 
     // Auto-preencher cota via FIPE + faixa + regional (ERR-015)
     if (v.valorFipe > 0 && !v.cota) {
@@ -372,20 +403,44 @@ export default function ConsultarVeiculo() {
     if (contratoRes.data) setContratoData(contratoRes.data);
     if (cotacaoRes.data) setCotacaoData(cotacaoRes.data);
     // Load related data in parallel
-    const [mensRes, sinistrosRes, docsRes] = await Promise.all([
-      v.associado_id
-        ? supabase.from("mensalidades").select("*").eq("associado_id", v.associado_id).order("data_vencimento", { ascending: false })
+    const [boletosRes, sinistrosRes, docsRes, docsAssocRes, docsSgaRes] = await Promise.all([
+      v.id
+        ? supabase.from("boletos").select("id, nosso_numero, valor, vencimento, data_pagamento, valor_pagamento, status, referencia, codigo_banco, nome_banco, tipo, linha_digitavel, pix_copia_cola, pdf_storage_path, link_boleto, data_emissao, situacao_descricao").eq("veiculo_id", v.id).gte("vencimento", "2025-01-01").order("vencimento", { ascending: false }).limit(500)
         : Promise.resolve({ data: [] }),
       supabase.from("sinistros").select("*").eq("veiculo_id", v.id),
       supabase.from("vehicle_documents").select("*").eq("vehicle_id", v.id),
+      v.associado_id
+        ? (supabase as any).from("documentos_associado").select("*").or(`associado_id.eq.${v.associado_id},veiculo_id.eq.${v.id}`).order("created_at", { ascending: false })
+        : (supabase as any).from("documentos_associado").select("*").eq("veiculo_id", v.id).order("created_at", { ascending: false }),
+      v.placa
+        ? (supabase as any).from("sga_arquivo_veiculo").select("id,arquivo_nome,arquivo_tipo,arquivo_data,storage_path,size_bytes,content_type,created_at").eq("placa", v.placa).not("downloaded_at", "is", null).order("arquivo_data", { ascending: false })
+        : Promise.resolve({ data: [] }),
     ]);
-    const lancamentos = (mensRes.data ?? []).map((m: any) => ({
-      nTitulo: m.id?.slice(0, 8) ?? "", nBanco: "", tipo: "Mensalidade",
-      banco: "", dtEmissao: m.created_at?.split("T")[0] ?? "",
-      dataVenc: m.data_vencimento ?? "", dataPgto: m.data_pagamento ?? "",
-      valor: m.valor ?? 0, valorPago: m.data_pagamento ? m.valor : 0,
-      parcela: m.referencia ?? "-", nControle: "",
-      status: m.status === "pago" ? "Pago" : m.status === "atrasado" ? "Atrasado" : "Pendente",
+    const hoje = new Date().toISOString().slice(0,10);
+    const statusLabel = (b: any) => {
+      if (b.data_pagamento) return "Pago";
+      if (b.status === "baixado" || b.status === "pago") return "Pago";
+      if (b.vencimento && b.vencimento < hoje) return "Atrasado";
+      return "Pendente";
+    };
+    const lancamentos = (boletosRes.data ?? []).map((b: any) => ({
+      id: b.id,
+      nTitulo: b.nosso_numero ?? "",
+      nBanco: b.codigo_banco ?? "",
+      tipo: b.tipo || "Mensalidade",
+      banco: b.nome_banco ?? "",
+      dtEmissao: b.data_emissao ?? "",
+      dataVenc: b.vencimento ?? "",
+      dataPgto: b.data_pagamento ?? "",
+      valor: Number(b.valor ?? 0),
+      valorPago: Number(b.valor_pagamento ?? (b.data_pagamento ? b.valor : 0)),
+      parcela: b.referencia ?? "-",
+      nControle: b.id?.slice(0, 8) ?? "",
+      status: statusLabel(b),
+      linhaDigitavel: b.linha_digitavel || "",
+      pixCopiaCola: b.pix_copia_cola || "",
+      pdfPath: b.pdf_storage_path || null,
+      linkBoleto: b.link_boleto || "",
     }));
     const fornecedores = (sinistrosRes.data ?? []).map((s: any) => ({
       protocolo: s.id?.slice(0, 8) ?? "", fornecedor: "",
@@ -393,10 +448,29 @@ export default function ConsultarVeiculo() {
       motivo: s.descricao ?? "", situacao: s.status ?? "",
       dataAbertura: s.data_ocorrencia ?? "", dataFechamento: "",
     }));
-    const documentos = (docsRes.data ?? []).map((d: any) => ({
+    const documentosLegados = (docsRes.data ?? []).map((d: any) => ({
       nome: d.nome_arquivo ?? "", tipo: d.tipo ?? "",
       data: d.created_at ? new Date(d.created_at).toLocaleDateString("pt-BR") : "",
+      storage_path: d.storage_path || null, bucket: "documentos", fonte: "legado",
     }));
+    const documentosVendas = (docsAssocRes.data ?? []).map((d: any) => ({
+      nome: d.titulo ?? d.storage_path?.split("/").pop() ?? "documento",
+      tipo: (d.categoria || "doc").toUpperCase(),
+      data: d.created_at ? new Date(d.created_at).toLocaleDateString("pt-BR") : "",
+      storage_path: d.storage_path, bucket: d.bucket || "documentos", fonte: "vendas",
+    }));
+    const parseSgaData = (s: string | null): string => {
+      if (!s) return "";
+      const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/) || s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      return m ? s.slice(0, 10) : s;
+    };
+    const documentosSga = (docsSgaRes.data ?? []).map((d: any) => ({
+      nome: d.arquivo_nome || d.storage_path?.split("/").pop() || "arquivo",
+      tipo: d.arquivo_tipo || "SGA",
+      data: parseSgaData(d.arquivo_data) || (d.created_at ? new Date(d.created_at).toLocaleDateString("pt-BR") : ""),
+      storage_path: d.storage_path, bucket: "sga-arquivos", fonte: "sga",
+    }));
+    const documentos = [...documentosVendas, ...documentosLegados, ...documentosSga];
     setSelected(prev => prev ? { ...prev, lancamentos, fornecedores, documentos } : prev);
   };
 
@@ -540,17 +614,18 @@ export default function ConsultarVeiculo() {
         <ScrollArea className="w-full">
           <TabsList className="inline-flex w-auto">
             <TabsTrigger value="dados" className="text-xs gap-1"><Car className="h-3 w-3" />Dados</TabsTrigger>
+            <TabsTrigger value="composicao" className="text-xs gap-1"><Calculator className="h-3 w-3" />Composição</TabsTrigger>
             <TabsTrigger value="laps" className="text-xs gap-1" onClick={() => { if (lapsProdutosDisponiveis.length === 0) carregarLaps(sel); }}><Calculator className="h-3 w-3" />LAPS</TabsTrigger>
             <TabsTrigger value="condutores" className="text-xs gap-1"><Users className="h-3 w-3" />Condutores</TabsTrigger>
             <TabsTrigger value="financeiro" className="text-xs gap-1"><DollarSign className="h-3 w-3" />Financeiro</TabsTrigger>
             <TabsTrigger value="agregados" className="text-xs gap-1"><Package className="h-3 w-3" />Agregados</TabsTrigger>
             <TabsTrigger value="vistorias" className="text-xs gap-1"><ClipboardCheck className="h-3 w-3" />Vistorias</TabsTrigger>
             <TabsTrigger value="documentos" className="text-xs gap-1"><FileText className="h-3 w-3" />Documentos</TabsTrigger>
-            <TabsTrigger value="arquivos-sga" className="text-xs gap-1"><FileText className="h-3 w-3" />SGA</TabsTrigger>
             <TabsTrigger value="observacoes" className="text-xs gap-1"><FileText className="h-3 w-3" />Obs</TabsTrigger>
             <TabsTrigger value="fornecedores" className="text-xs gap-1"><PhoneIcon className="h-3 w-3" />Fornecedores</TabsTrigger>
             <TabsTrigger value="contratos" className="text-xs gap-1"><FileSignature className="h-3 w-3" />Contratos</TabsTrigger>
             <TabsTrigger value="pos-venda" className="text-xs gap-1"><ClipboardCheck className="h-3 w-3" />Pós-Venda</TabsTrigger>
+            <TabsTrigger value="historico-eventos" className="text-xs gap-1"><Clock className="h-3 w-3" />Histórico Eventos</TabsTrigger>
           </TabsList>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
@@ -628,6 +703,156 @@ export default function ConsultarVeiculo() {
               </CardContent>
             </Card>
           )}
+
+          {/* Origem da Venda (vínculos do módulo Vendas) */}
+          {origemData && (origemData.origem || origemData.consultor || origemData.voluntario || origemData.vistoria || origemData.contrato) && (
+            <Card className="mt-4">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <FileSignature className="h-4 w-4 text-primary" />Origem da Venda
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-0 space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Consultor (vendeu)</Label>
+                    <p className="text-sm font-medium">{origemData.consultor?.nome || origemData.voluntario?.nome || origemData.origem?.consultor || "—"}</p>
+                    {(origemData.consultor?.email || origemData.voluntario?.email) && (
+                      <p className="text-xs text-muted-foreground">{origemData.consultor?.email || origemData.voluntario?.email}</p>
+                    )}
+                    {origemData.voluntario?.funcao && !origemData.consultor && (
+                      <p className="text-xs text-muted-foreground">{origemData.voluntario.funcao}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Cooperativa</Label>
+                    <p className="text-sm font-medium">{origemData.consultor?.cooperativa || origemData.origem?.cooperativa || "—"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Regional</Label>
+                    <p className="text-sm font-medium">{origemData.consultor?.regional || origemData.origem?.regional || "—"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Venda concluída em</Label>
+                    <p className="text-sm font-medium">
+                      {origemData.origem?.venda_concluida_em
+                        ? new Date(origemData.origem.venda_concluida_em).toLocaleDateString("pt-BR")
+                        : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Renavam</Label>
+                    <p className="text-sm font-mono">{origemData.renavam || "—"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Cód. FIPE</Label>
+                    <p className="text-sm font-mono">{origemData.cod_fipe || "—"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Ano Fabricação</Label>
+                    <p className="text-sm font-medium">{origemData.ano_fabricacao || "—"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Negociação</Label>
+                    {origemData.origem ? (
+                      <p className="text-sm font-mono">{origemData.origem.codigo || origemData.origem.id?.slice(0,8)}</p>
+                    ) : <p className="text-sm text-muted-foreground">—</p>}
+                  </div>
+                </div>
+
+                {/* Vistoria */}
+                {origemData.vistoria && (
+                  <div className="pt-3 border-t">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <ClipboardCheck className="h-4 w-4 text-primary" />
+                        <span className="text-xs font-medium">Vistoria</span>
+                        <StatusBadge status={origemData.vistoria.status || "pendente"} />
+                        {origemData.vistoria.ai_aprovada != null && (
+                          <Badge variant={origemData.vistoria.ai_aprovada ? "default" : "destructive"} className="text-xs">
+                            IA {origemData.vistoria.ai_aprovada ? "aprovou" : "rejeitou"}
+                            {origemData.vistoria.ai_score != null && ` (${Number(origemData.vistoria.ai_score).toFixed(0)}%)`}
+                          </Badge>
+                        )}
+                      </div>
+                      {origemData.vistoria.laudo_url && (
+                        <a href={origemData.vistoria.laudo_url} target="_blank" rel="noreferrer">
+                          <Button size="sm" variant="outline" className="gap-1"><Download className="h-3.5 w-3.5" />Laudo PDF</Button>
+                        </a>
+                      )}
+                    </div>
+                    {origemData.vistoria.laudo_aprovado_em && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Laudo aprovado em {new Date(origemData.vistoria.laudo_aprovado_em).toLocaleDateString("pt-BR")}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Contrato + Autentique */}
+                {origemData.contrato && (
+                  <div className="pt-3 border-t">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <FileSignature className="h-4 w-4 text-primary" />
+                        <span className="text-xs font-medium">Contrato {origemData.contrato.numero || ""}</span>
+                        <StatusBadge status={origemData.contrato.status || "—"} />
+                        {origemData.contrato.autentique_status && (
+                          <Badge variant="secondary" className="text-xs">Autentique: {origemData.contrato.autentique_status}</Badge>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        {origemData.contrato.autentique_link && (
+                          <a href={origemData.contrato.autentique_link} target="_blank" rel="noreferrer">
+                            <Button size="sm" variant="outline" className="gap-1"><Eye className="h-3.5 w-3.5" />Assinatura</Button>
+                          </a>
+                        )}
+                        {origemData.contrato.pdf_storage_path && (
+                          <a
+                            href={`${(supabase as any).storage?.from?.("documentos")?.getPublicUrl?.(origemData.contrato.pdf_storage_path)?.data?.publicUrl || ""}`}
+                            target="_blank" rel="noreferrer"
+                          >
+                            <Button size="sm" variant="outline" className="gap-1"><Download className="h-3.5 w-3.5" />PDF</Button>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Valor mensal R$ {Number(origemData.contrato.valor_mensal || 0).toFixed(2).replace(".", ",")}
+                      {origemData.contrato.dia_vencimento && ` · vence dia ${origemData.contrato.dia_vencimento}`}
+                    </p>
+                  </div>
+                )}
+
+                {/* Ajustes / mirrors SGA */}
+                {(origemData.taxa_administrativa_sga || origemData.valor_adicional_sga || origemData.desconto_valor || origemData.acrescimo_valor) && (
+                  <div className="pt-3 border-t grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Taxa admin</Label>
+                      <p className="text-sm font-medium">R$ {Number(origemData.taxa_administrativa_sga || 0).toFixed(2).replace(".", ",")}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Adicional</Label>
+                      <p className="text-sm font-medium">R$ {Number(origemData.valor_adicional_sga || 0).toFixed(2).replace(".", ",")}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Acréscimo</Label>
+                      <p className="text-sm font-medium">R$ {Number(origemData.acrescimo_valor || 0).toFixed(2).replace(".", ",")}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Desconto</Label>
+                      <p className="text-sm font-medium">R$ {Number(origemData.desconto_valor || 0).toFixed(2).replace(".", ",")}</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* TAB COMPOSIÇÃO - breakdown oficial via gia-calculo-mensalidade v2 (fonte única) */}
+        <TabsContent value="composicao" className="mt-4">
+          <ComposicaoTab veiculoId={sel.id} />
         </TabsContent>
 
         {/* TAB LAPS - COMPOSIÇÃO DO PLANO */}
@@ -701,7 +926,7 @@ export default function ConsultarVeiculo() {
               {/* Resumo de cálculo */}
               <Card>
                 <CardContent className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end mb-4">
                     <div>
                       <Label className="text-xs text-muted-foreground">Subtotal Produtos</Label>
                       <p className="text-sm font-mono font-medium">R$ {(lapsCalculo?.subtotal_produtos ?? 0).toFixed(2).replace(".", ",")}</p>
@@ -714,8 +939,10 @@ export default function ConsultarVeiculo() {
                       <Label className="text-xs text-muted-foreground">Rateio</Label>
                       <p className="text-sm font-mono font-medium">R$ {(lapsCalculo?.rateio ?? 0).toFixed(2).replace(".", ",")}</p>
                     </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end p-3 bg-muted/30 rounded">
                     <div>
-                      <Label className="text-xs">Ajuste Avulso - Descrição</Label>
+                      <Label className="text-xs">Motivo Ajuste</Label>
                       <Input
                         value={lapsAjusteDesc}
                         onChange={e => setLapsAjusteDesc(e.target.value)}
@@ -729,7 +956,6 @@ export default function ConsultarVeiculo() {
                         value={lapsAjusteValor}
                         onChange={e => {
                           setLapsAjusteValor(e.target.value);
-                          // Recalcular usando ajusteOverride para evitar ler state que acabou de ser setado
                           calcularMensalidadeLaps(lapsSelecionados, undefined, undefined, undefined, parseFloat(e.target.value) || 0);
                         }}
                         placeholder="0,00"
@@ -831,27 +1057,56 @@ export default function ConsultarVeiculo() {
             <ScrollArea className="w-full">
               <Table>
                 <TableHeader><TableRow>
-                  <TableHead>Nº Título</TableHead><TableHead>Nº Banco</TableHead><TableHead>Tipo</TableHead><TableHead>Banco</TableHead>
-                  <TableHead>Dt Emissão</TableHead><TableHead>Data Venc</TableHead><TableHead>Data Pgto</TableHead>
-                  <TableHead>Valor</TableHead><TableHead>Valor Pago</TableHead><TableHead>Parcela</TableHead>
-                  <TableHead>Nº Controle</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
+                  <TableHead>Nº Título</TableHead><TableHead>Banco</TableHead>
+                  <TableHead>Dt Emissão</TableHead><TableHead>Vencimento</TableHead><TableHead>Pagamento</TableHead>
+                  <TableHead>Valor</TableHead><TableHead>Valor Pago</TableHead><TableHead>Referência</TableHead>
+                  <TableHead>Status</TableHead><TableHead>Linha digitável</TableHead><TableHead className="text-right">Ações</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
-                  {sel.lancamentos.map((l, i) => (
-                    <TableRow key={i}>
+                  {sel.lancamentos.length === 0 ? (
+                    <TableRow><TableCell colSpan={11} className="text-center text-sm text-muted-foreground py-8">Nenhum boleto encontrado para esta placa a partir de 01/01/2025.</TableCell></TableRow>
+                  ) : sel.lancamentos.map((l, i) => (
+                    <TableRow key={l.id ?? i}>
                       <TableCell className="text-xs font-mono">{l.nTitulo}</TableCell>
-                      <TableCell className="text-xs">{l.nBanco}</TableCell>
-                      <TableCell className="text-xs">{l.tipo}</TableCell>
-                      <TableCell className="text-xs">{l.banco}</TableCell>
-                      <TableCell className="text-xs">{new Date(l.dtEmissao).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell className="text-xs">{new Date(l.dataVenc).toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell className="text-xs">{l.banco || l.nBanco || "-"}</TableCell>
+                      <TableCell className="text-xs">{l.dtEmissao ? new Date(l.dtEmissao).toLocaleDateString("pt-BR") : "-"}</TableCell>
+                      <TableCell className="text-xs">{l.dataVenc ? new Date(l.dataVenc).toLocaleDateString("pt-BR") : "-"}</TableCell>
                       <TableCell className="text-xs">{l.dataPgto ? new Date(l.dataPgto).toLocaleDateString("pt-BR") : "-"}</TableCell>
                       <TableCell className="text-xs">R$ {l.valor.toFixed(2).replace(".",",")}</TableCell>
                       <TableCell className="text-xs">R$ {l.valorPago.toFixed(2).replace(".",",")}</TableCell>
                       <TableCell className="text-xs">{l.parcela}</TableCell>
-                      <TableCell className="text-xs font-mono">{l.nControle}</TableCell>
                       <TableCell><Badge variant="outline" className={`${finBadge(l.status)} text-xs`}>{l.status}</Badge></TableCell>
-                      <TableCell><Button variant="ghost" size="icon" className="h-7 w-7"><Printer className="h-3.5 w-3.5" /></Button></TableCell>
+                      <TableCell className="text-xs font-mono max-w-[180px]">
+                        {l.linhaDigitavel ? (
+                          <button
+                            title={l.linhaDigitavel}
+                            onClick={() => { navigator.clipboard.writeText(l.linhaDigitavel!); toast.success("Linha digitável copiada"); }}
+                            className="truncate block w-full text-left hover:text-primary"
+                          >{l.linhaDigitavel}</button>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex gap-1 justify-end">
+                          {l.pixCopiaCola && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Copiar Pix"
+                              onClick={() => { navigator.clipboard.writeText(l.pixCopiaCola!); toast.success("Pix copia-e-cola copiado"); }}>
+                              <DollarSign className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Abrir PDF" disabled={!l.pdfPath && !l.linkBoleto}
+                            onClick={async () => {
+                              if (l.pdfPath) {
+                                const { data, error } = await supabase.storage.from("sga-boletos").createSignedUrl(l.pdfPath, 3600);
+                                if (error || !data?.signedUrl) { toast.error("Falha ao abrir PDF"); return; }
+                                window.open(data.signedUrl, "_blank");
+                              } else if (l.linkBoleto) {
+                                window.open(l.linkBoleto, "_blank");
+                              }
+                            }}>
+                            <Printer className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -912,30 +1167,57 @@ export default function ConsultarVeiculo() {
           </label>
           <Card><CardContent className="p-0">
             <Table>
-              <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Tipo</TableHead><TableHead>Data</TableHead><TableHead>Ações</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Tipo</TableHead><TableHead>Origem</TableHead><TableHead>Data</TableHead><TableHead>Ações</TableHead></TableRow></TableHeader>
               <TableBody>
-                {sel.documentos.map((d, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="text-sm">{d.nome}</TableCell>
-                    <TableCell><Badge variant="outline">{d.tipo}</Badge></TableCell>
-                    <TableCell className="text-sm">{d.data}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7"><Eye className="h-3.5 w-3.5" /></Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7"><Download className="h-3.5 w-3.5" /></Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {sel.documentos.length === 0 && (
+                  <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">Nenhum documento.</TableCell></TableRow>
+                )}
+                {sel.documentos.map((d, i) => {
+                  const isPrivate = d.bucket === "sga-arquivos";
+                  const publicUrl = !isPrivate && d.storage_path && d.bucket
+                    ? (supabase as any).storage?.from?.(d.bucket)?.getPublicUrl?.(d.storage_path)?.data?.publicUrl
+                    : null;
+                  const openSigned = async (download: boolean) => {
+                    if (!d.storage_path || !d.bucket) return;
+                    const { data, error } = await supabase.storage.from(d.bucket).createSignedUrl(d.storage_path, 3600, download ? { download: d.nome || true } : undefined);
+                    if (error || !data?.signedUrl) { toast.error("Falha ao abrir arquivo"); return; }
+                    window.open(data.signedUrl, "_blank", "noopener");
+                  };
+                  const fonteLabel = d.fonte === "vendas" ? "Vendas" : "Legado";
+                  const fonteVariant = d.fonte === "vendas" ? "default" : "secondary";
+                  return (
+                    <TableRow key={`${d.fonte}-${i}`}>
+                      <TableCell className="text-sm">{d.nome}</TableCell>
+                      <TableCell><Badge variant="outline">{d.tipo}</Badge></TableCell>
+                      <TableCell>
+                        <Badge variant={fonteVariant as any} className="text-xs">{fonteLabel}</Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{d.data}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {publicUrl && (
+                            <>
+                              <a href={publicUrl} target="_blank" rel="noreferrer"><Button variant="ghost" size="icon" className="h-7 w-7"><Eye className="h-3.5 w-3.5" /></Button></a>
+                              <a href={publicUrl} download><Button variant="ghost" size="icon" className="h-7 w-7"><Download className="h-3.5 w-3.5" /></Button></a>
+                            </>
+                          )}
+                          {isPrivate && (
+                            <>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSigned(false)}><Eye className="h-3.5 w-3.5" /></Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSigned(true)}><Download className="h-3.5 w-3.5" /></Button>
+                            </>
+                          )}
+                          {d.fonte === "legado" && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent></Card>
-        </TabsContent>
-
-        {/* TAB SGA - ARQUIVOS */}
-        <TabsContent value="arquivos-sga" className="mt-4">
-          <ArquivosSGA placa={sel.placa} />
         </TabsContent>
 
         {/* TAB 7 - OBSERVAÇÕES */}
@@ -1005,8 +1287,233 @@ export default function ConsultarVeiculo() {
         <TabsContent value="pos-venda" className="mt-4">
           <PosVendaSection veiculoId={sel.id} />
         </TabsContent>
+
+        {/* TAB HISTÓRICO EVENTOS (sync CRM Eventos → GIA) */}
+        <TabsContent value="historico-eventos" className="mt-4">
+          <HistoricoEventosList veiculoId={sel.id} placa={sel.placa} />
+        </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// ComposicaoTab — chama gia-calculo-mensalidade (fonte única Vendas↔Gestão)
+// ═══════════════════════════════════════════════════════════
+function ComposicaoTab({ veiculoId }: { veiculoId: string }) {
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["composicao", veiculoId],
+    enabled: !!veiculoId,
+    queryFn: async () => {
+      const res = await callEdge("gia-calculo-mensalidade", { veiculo_id: veiculoId });
+      if (!res?.sucesso) throw new Error(res?.error || "Falha ao calcular");
+      return res;
+    },
+  });
+
+  if (isLoading) return <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">Calculando composição...</CardContent></Card>;
+  if (!data?.sucesso) return <Card><CardContent className="p-8 text-center text-sm text-destructive">Erro ao calcular mensalidade.</CardContent></Card>;
+
+  const c = data.composicao;
+  const fmt = (n: number) => `R$ ${Number(n || 0).toFixed(2).replace(".", ",")}`;
+
+  const fonteTaxaLabel: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    sga_mirror: { label: "mirror SGA", variant: "secondary" },
+    faixas_fipe: { label: "faixas FIPE", variant: "default" },
+    tabela_precos: { label: "tabela preços", variant: "default" },
+    zero: { label: "zero", variant: "outline" },
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header com veículo + plano */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex justify-between items-start flex-wrap gap-2">
+            <div>
+              <p className="text-xs text-muted-foreground">Veículo</p>
+              <p className="text-base font-semibold">{data.veiculo?.placa} · {data.veiculo?.marca} {data.veiculo?.modelo}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                FIPE {fmt(data.veiculo?.valor_fipe || 0)} · {data.veiculo?.grupo?.nome || "sem plano"} · {data.veiculo?.regional?.nome || "sem regional"}
+              </p>
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => refetch()} className="gap-1">
+              <Calculator className="h-3.5 w-3.5" />Recalcular
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Breakdown */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2"><Calculator className="h-4 w-4 text-primary" />Composição da Mensalidade</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="w-24 text-right">Valor</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {c.produtos.length === 0 && (
+                <TableRow><TableCell colSpan={2} className="text-center text-xs text-muted-foreground py-4">Nenhum produto vinculado</TableCell></TableRow>
+              )}
+              {c.produtos.map((p: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell className="text-sm pl-8">
+                    {p.nome || p.produto_id}
+                  </TableCell>
+                  <TableCell className="text-sm text-right font-mono">{fmt(p.valor)}</TableCell>
+                </TableRow>
+              ))}
+              <TableRow className="bg-muted/30">
+                <TableCell className="text-sm font-medium">Subtotal produtos</TableCell>
+                <TableCell className="text-sm text-right font-mono font-medium">{fmt(c.subtotal_produtos)}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="text-sm">
+                  Taxa administrativa
+                  <Badge variant={fonteTaxaLabel[c.fonte_taxa]?.variant || "outline"} className="ml-2 text-xs">
+                    {fonteTaxaLabel[c.fonte_taxa]?.label || c.fonte_taxa}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-sm text-right font-mono">+ {fmt(c.taxa_administrativa)}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="text-sm">
+                  Rateio
+                  <Badge variant={fonteTaxaLabel[c.fonte_rateio]?.variant || "outline"} className="ml-2 text-xs">
+                    {fonteTaxaLabel[c.fonte_rateio]?.label || c.fonte_rateio}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-sm text-right font-mono">+ {fmt(c.rateio)}</TableCell>
+              </TableRow>
+              {c.valor_adicional !== 0 && (
+                <TableRow>
+                  <TableCell className="text-sm">Valor adicional (OUTROS)</TableCell>
+                  <TableCell className="text-sm text-right font-mono">{c.valor_adicional >= 0 ? "+ " : "− "}{fmt(Math.abs(c.valor_adicional))}</TableCell>
+                </TableRow>
+              )}
+              {c.acrescimo > 0 && (
+                <TableRow>
+                  <TableCell className="text-sm">
+                    Acréscimo manual
+                    {data.ajustes_descricao?.acrescimo_desc && <p className="text-xs text-muted-foreground mt-0.5">{data.ajustes_descricao.acrescimo_desc}</p>}
+                  </TableCell>
+                  <TableCell className="text-sm text-right font-mono text-warning">+ {fmt(c.acrescimo)}</TableCell>
+                </TableRow>
+              )}
+              {c.desconto > 0 && (
+                <TableRow>
+                  <TableCell className="text-sm">
+                    Desconto manual
+                    {data.ajustes_descricao?.desconto_desc && <p className="text-xs text-muted-foreground mt-0.5">{data.ajustes_descricao.desconto_desc}</p>}
+                  </TableCell>
+                  <TableCell className="text-sm text-right font-mono text-success">− {fmt(c.desconto)}</TableCell>
+                </TableRow>
+              )}
+              <TableRow className="bg-primary/5 border-t-2">
+                <TableCell className="text-base font-bold">TOTAL MENSAL</TableCell>
+                <TableCell className="text-base text-right font-mono font-bold">{fmt(c.total)}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Editar ajuste manual (acréscimo/desconto) */}
+      <AjusteManualEditor veiculoId={veiculoId} onSaved={() => refetch()} />
+
+      {/* Histórico últimos boletos */}
+      {data.historico_ultimos_boletos?.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2"><Clock className="h-4 w-4 text-primary" />Últimos boletos do associado</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader><TableRow><TableHead>Vencimento</TableHead><TableHead>Valor</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {data.historico_ultimos_boletos.map((b: any, i: number) => (
+                  <TableRow key={i}>
+                    <TableCell className="text-sm">{b.vencimento ? new Date(b.vencimento + "T12:00:00").toLocaleDateString("pt-BR") : "—"}</TableCell>
+                    <TableCell className="text-sm font-mono">{fmt(b.valor)}</TableCell>
+                    <TableCell><StatusBadge status={b.status} /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// AjusteManualEditor — editor inline acréscimo/desconto
+// ═══════════════════════════════════════════════════════════
+function AjusteManualEditor({ veiculoId, onSaved }: { veiculoId: string; onSaved: () => void }) {
+  const [acrescimoValor, setAcrescimoValor] = useState("");
+  const [acrescimoDesc, setAcrescimoDesc] = useState("");
+  const [descontoValor, setDescontoValor] = useState("");
+  const [descontoDesc, setDescontoDesc] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("veiculos")
+        .select("acrescimo_valor, acrescimo_desc, desconto_valor, desconto_desc")
+        .eq("id", veiculoId).maybeSingle();
+      if (data) {
+        setAcrescimoValor(data.acrescimo_valor ? String(data.acrescimo_valor) : "");
+        setAcrescimoDesc(data.acrescimo_desc || "");
+        setDescontoValor(data.desconto_valor ? String(data.desconto_valor) : "");
+        setDescontoDesc(data.desconto_desc || "");
+      }
+      setLoaded(true);
+    })();
+  }, [veiculoId]);
+
+  if (!loaded) return null;
+
+  const salvar = async () => {
+    setSaving(true);
+    const { error } = await supabase.from("veiculos").update({
+      acrescimo_valor: Number(acrescimoValor) || 0,
+      acrescimo_desc: acrescimoDesc || null,
+      desconto_valor: Number(descontoValor) || 0,
+      desconto_desc: descontoDesc || null,
+      updated_at: new Date().toISOString(),
+    } as any).eq("id", veiculoId);
+    setSaving(false);
+    if (error) toast.error("Erro: " + error.message);
+    else { toast.success("Ajuste salvo"); onSaved(); }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2"><Pencil className="h-4 w-4 text-primary" />Ajuste Manual (acréscimo/desconto)</CardTitle>
+      </CardHeader>
+      <CardContent className="p-4 pt-0 space-y-3">
+        <p className="text-xs text-muted-foreground">Divergência de valor vs SGA/Power vira acréscimo ou desconto aqui — recalcula total na hora.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label className="text-xs">+ Acréscimo (R$)</Label>
+            <Input type="number" step="0.01" min="0" value={acrescimoValor} onChange={e => setAcrescimoValor(e.target.value)} placeholder="0,00" />
+            <Input value={acrescimoDesc} onChange={e => setAcrescimoDesc(e.target.value)} placeholder="Motivo do acréscimo" />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs">− Desconto (R$)</Label>
+            <Input type="number" step="0.01" min="0" value={descontoValor} onChange={e => setDescontoValor(e.target.value)} placeholder="0,00" />
+            <Input value={descontoDesc} onChange={e => setDescontoDesc(e.target.value)} placeholder="Motivo do desconto" />
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={salvar} disabled={saving} className="gap-1.5"><Save className="h-4 w-4" />{saving ? "Salvando..." : "Salvar e recalcular"}</Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
