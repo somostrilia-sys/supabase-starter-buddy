@@ -75,11 +75,11 @@ function FotosReaisSection({ vistoriaId, statusVistoria }: { vistoriaId: string;
     queryKey: ["vistoria_fotos", vistoriaId],
     queryFn: async () => {
       const { data } = await (supabase as any).from("vistoria_fotos").select("id,tipo,storage_path,ai_aprovada,ai_motivo,ai_score").eq("vistoria_id", vistoriaId).order("created_at");
-      // Gerar signed URLs (10min) — mais confiável que getPublicUrl
-      return await Promise.all((data || []).map(async (foto: any) => {
-        const { data: signed } = await supabase.storage.from("vistoria-fotos").createSignedUrl(foto.storage_path, 600);
-        return { ...foto, thumbUrl: signed?.signedUrl || "" };
-      }));
+      // Bucket vistoria-fotos é público — getPublicUrl é síncrono, mais rápido e cacheável
+      return (data || []).map((foto: any) => {
+        const { data: urlData } = supabase.storage.from("vistoria-fotos").getPublicUrl(foto.storage_path);
+        return { ...foto, thumbUrl: urlData.publicUrl };
+      });
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -232,6 +232,7 @@ export default function VistoriaTab({ deal, onUpdate }: Props) {
   }, [vistoriaReal]);
   const [prazo, setPrazo] = useState("7");
   const [iaAnalisando, setIaAnalisando] = useState(false);
+  const [gerandoLaudo, setGerandoLaudo] = useState(false);
   const fotosAutomovel = ["frente","traseira","lateral_esquerda","lateral_direita","para_brisa","interior_painel","banco_dianteiro","banco_traseiro","motor_capo","porta_malas","rodas_pneus","chave","chassi","quilometragem"];
   const fotosMoto = ["chave","frente","farol","chassi","painel_km","guidao_retrovisores","roda_dianteira","placa_traseira","traseira","lateral_direita","lateral_esquerda"];
   const fotosCaminhao = ["frente","traseira","lateral_esquerda","lateral_direita","para_brisa","cabine","interior_painel","carroceria","motor_capo","eixos","rodas_pneus","tacografo","chave","chassi","quilometragem"];
@@ -623,63 +624,68 @@ export default function VistoriaTab({ deal, onUpdate }: Props) {
                     onSuccess={() => toast.success("Exceção solicitada!")}
                   />
                 )}
-                <Button size="sm" variant="outline" className="rounded-none border border-gray-300" onClick={async () => {
-                  // Buscar fotos reais do banco com signed URLs (fallback se bucket privado)
-                  const { data: fotosReais } = await (supabase as any).from("vistoria_fotos").select("*").eq("vistoria_id", vistoriaId).order("created_at");
-                  const fotosLaudo = await Promise.all((fotosReais || []).map(async (f: any) => {
-                    const { data: urlData } = supabase.storage.from("vistoria-fotos").getPublicUrl(f.storage_path);
-                    let url = urlData.publicUrl;
-                    // Testar se URL funciona, senão usar signed URL
-                    try {
-                      const test = await fetch(url, { method: "HEAD" });
-                      if (!test.ok) throw new Error("not public");
-                    } catch {
-                      const { data: signed } = await supabase.storage.from("vistoria-fotos").createSignedUrl(f.storage_path, 600);
-                      if (signed?.signedUrl) url = signed.signedUrl;
-                    }
-                    return {
-                      titulo: (f.tipo || "").replace(/_/g, " "),
-                      url,
-                      lat: f.latitude ? String(f.latitude) : "",
-                      lng: f.longitude ? String(f.longitude) : "",
-                      data: f.captured_at ? new Date(f.captured_at).toLocaleString("pt-BR") : new Date(f.created_at).toLocaleString("pt-BR"),
-                    };
-                  }));
+                <Button size="sm" variant="outline" className="rounded-none border border-gray-300" disabled={gerandoLaudo} onClick={async () => {
+                  if (!vistoriaId) { toast.error("Nenhuma vistoria encontrada."); return; }
+                  setGerandoLaudo(true);
+                  toast.info("Gerando laudo... isso pode levar alguns segundos.");
+                  try {
+                    // Buscar fotos + dados em paralelo
+                    const [fotosRes, negRes] = await Promise.all([
+                      (supabase as any).from("vistoria_fotos").select("*").eq("vistoria_id", vistoriaId).order("created_at"),
+                      (supabase as any).from("negociacoes").select("*").eq("id", deal.id).maybeSingle(),
+                    ]);
+                    const fotosReais = fotosRes.data || [];
+                    const d = negRes.data || deal;
 
-                  // Buscar dados atualizados do banco
-                  const { data: negAtual } = await (supabase as any).from("negociacoes").select("*").eq("id", deal.id).maybeSingle();
-                  const d = negAtual || deal;
+                    // Bucket público — getPublicUrl é síncrono (sem HEAD test que travava)
+                    const fotosLaudo = fotosReais.map((f: any) => {
+                      const { data: urlData } = supabase.storage.from("vistoria-fotos").getPublicUrl(f.storage_path);
+                      return {
+                        titulo: (f.tipo || "").replace(/_/g, " "),
+                        url: urlData.publicUrl,
+                        lat: f.latitude ? String(f.latitude) : "",
+                        lng: f.longitude ? String(f.longitude) : "",
+                        data: f.captured_at ? new Date(f.captured_at).toLocaleString("pt-BR") : new Date(f.created_at).toLocaleString("pt-BR"),
+                      };
+                    });
 
-                  await gerarLaudoVistoria({
-                    dataImpressao: new Date().toLocaleString("pt-BR"),
-                    contratante: "OBJETIVO AUTO BENEFÍCIOS",
-                    logoUrl: `${PUBLIC_DOMAIN}/logo-objetivo.png`,
-                    configuracao: categoriaVistoria === "automovel" ? "Carro" : categoriaVistoria === "moto" ? "Moto" : "Caminhão",
-                    solicitante: d.cooperativa || deal.cooperativa || "Objetivo Auto Benefícios",
-                    vistoriador: d.consultor || deal.consultor || "Sistema",
-                    proponente: { nome: d.lead_nome || deal.lead_nome, cpf: d.cpf_cnpj || "", telefone: d.telefone || "", email: d.email || "" },
-                    veiculo: {
-                      marcaModelo: d.veiculo_modelo || deal.veiculo_modelo,
-                      anoModelo: d.ano_modelo || d.ano_fabricacao || "",
-                      placa: d.veiculo_placa || deal.veiculo_placa,
-                      chassi: d.chassi || "",
-                      renavam: d.renavam || "",
-                      gnv: "Não",
-                      quilometragem: "",
-                      chassiRemarcado: "Não",
-                    },
-                    observacoes: vistoriaReal?.observacoes || "",
-                    acessorios: vistoriaReal?.acessorios && Array.isArray(vistoriaReal.acessorios) && vistoriaReal.acessorios.length > 0
-                      ? vistoriaReal.acessorios
-                      : ["Air Bag", "Alarme", "Ar Condicionado", "Vidros Elétricos", "Travas Elétricas", "Direção Elétrica", "Freio ABS"],
-                    parecer: status === "aprovada" ? "Aprovado" : status === "reprovada" ? "Reprovado" : "Pendente",
-                    avaliador: "Sistema IA",
-                    dataAnalise: new Date().toLocaleString("pt-BR"),
-                    fotos: fotosLaudo.length > 0 ? fotosLaudo : selectedFotos.map(f => ({ titulo: f.replace(/_/g, " "), url: "", lat: "", lng: "", data: "" })),
-                  } as any);
-                  toast.success("Laudo de vistoria baixado!");
+                    await gerarLaudoVistoria({
+                      dataImpressao: new Date().toLocaleString("pt-BR"),
+                      contratante: "OBJETIVO AUTO BENEFÍCIOS",
+                      logoUrl: `${PUBLIC_DOMAIN}/logo-objetivo.png`,
+                      configuracao: categoriaVistoria === "automovel" ? "Carro" : categoriaVistoria === "moto" ? "Moto" : "Caminhão",
+                      solicitante: d.cooperativa || deal.cooperativa || "Objetivo Auto Benefícios",
+                      vistoriador: d.consultor || deal.consultor || "Sistema",
+                      proponente: { nome: d.lead_nome || deal.lead_nome, cpf: d.cpf_cnpj || "", telefone: d.telefone || "", email: d.email || "" },
+                      veiculo: {
+                        marcaModelo: d.veiculo_modelo || deal.veiculo_modelo,
+                        anoModelo: d.ano_modelo || d.ano_fabricacao || "",
+                        placa: d.veiculo_placa || deal.veiculo_placa,
+                        chassi: d.chassi || "",
+                        renavam: d.renavam || "",
+                        gnv: "Não",
+                        quilometragem: "",
+                        chassiRemarcado: "Não",
+                      },
+                      observacoes: vistoriaReal?.observacoes || "",
+                      acessorios: vistoriaReal?.acessorios && Array.isArray(vistoriaReal.acessorios) && vistoriaReal.acessorios.length > 0
+                        ? vistoriaReal.acessorios
+                        : ["Air Bag", "Alarme", "Ar Condicionado", "Vidros Elétricos", "Travas Elétricas", "Direção Elétrica", "Freio ABS"],
+                      parecer: status === "aprovada" ? "Aprovado" : status === "reprovada" ? "Reprovado" : "Pendente",
+                      avaliador: "Sistema IA",
+                      dataAnalise: new Date().toLocaleString("pt-BR"),
+                      fotos: fotosLaudo.length > 0 ? fotosLaudo : selectedFotos.map(f => ({ titulo: f.replace(/_/g, " "), url: "", lat: "", lng: "", data: "" })),
+                    } as any);
+                    toast.success("Laudo de vistoria baixado!");
+                  } catch (err) {
+                    console.error("Erro ao gerar laudo:", err);
+                    toast.error(`Erro ao gerar laudo: ${err instanceof Error ? err.message : "erro desconhecido"}`);
+                  } finally {
+                    setGerandoLaudo(false);
+                  }
                 }}>
-                  <Download className="h-3.5 w-3.5 mr-1" />Laudo PDF
+                  {gerandoLaudo ? <RotateCcw className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Download className="h-3.5 w-3.5 mr-1" />}
+                  {gerandoLaudo ? "Gerando..." : "Laudo PDF"}
                 </Button>
           </div>
         </CardContent>
