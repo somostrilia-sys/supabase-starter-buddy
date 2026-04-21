@@ -369,21 +369,54 @@ export default function AlterarAssociado() {
     });
     const isRealId = a.id.includes("-") && a.id.length > 10;
 
-    // Lazy-load veículos + contratos (search é enxuto por performance)
+    // Lazy-load veículos (query isolada — não depende de outras)
     if (isRealId) {
-      try {
-        const [{ data: veiculos }, { data: contratos }] = await Promise.all([
-          supabase.from("veiculos").select("placa, modelo, marca, ano, cor, dia_vencimento").eq("associado_id", a.id),
-          supabase.from("contratos" as any).select("*, planos(nome)").eq("associado_id", a.id).limit(1),
-        ]);
-        const planoNome = (contratos?.[0] as any)?.planos?.nome || "";
-        const mappedVeiculos = (veiculos || []).map((v: any) => ({
-          placa: v.placa, modelo: v.modelo, marca: v.marca,
-          ano: v.ano || 0, cor: v.cor || "",
-          situacao: "Ativo", plano: planoNome,
+      let mappedVeiculos: Associado["veiculos"] = [];
+      let planoNome = "";
+
+      const { data: veiculos, error: vErr } = await supabase
+        .from("veiculos")
+        .select("placa, modelo, marca, ano, cor, dia_vencimento, status")
+        .eq("associado_id", a.id);
+
+      if (vErr) {
+        console.error("[AlterarAssociado] Erro veiculos:", vErr);
+        toast.error(`Erro ao carregar veículos: ${vErr.message}`);
+      } else if (veiculos) {
+        mappedVeiculos = veiculos.map((v: any) => ({
+          placa: v.placa || "",
+          modelo: v.modelo || "",
+          marca: v.marca || "",
+          ano: v.ano || 0,
+          cor: v.cor || "",
+          situacao: v.status === "ativo" || v.status === "Ativo" ? "Ativo"
+                  : v.status === "cancelado" ? "Cancelado"
+                  : v.status === "suspenso" ? "Suspenso"
+                  : "Ativo",
+          plano: "",
         }));
-        setSelected(prev => prev ? { ...prev, veiculos: mappedVeiculos, plano: planoNome || prev.plano } : prev);
-      } catch (e) { console.warn("Erro ao carregar veículos:", e); }
+      }
+
+      // Query de contrato/plano isolada — erro aqui não derruba os veículos
+      try {
+        const { data: contratos } = await supabase
+          .from("contratos" as any)
+          .select("plano_id, planos(nome)")
+          .eq("associado_id", a.id)
+          .limit(1);
+        planoNome = (contratos?.[0] as any)?.planos?.nome || "";
+      } catch (e) {
+        console.warn("[AlterarAssociado] plano não carregado:", e);
+      }
+
+      // Populate plano em cada veículo (string vazia se não achou)
+      mappedVeiculos = mappedVeiculos.map(v => ({ ...v, plano: planoNome }));
+
+      setSelected(prev => prev ? {
+        ...prev,
+        veiculos: mappedVeiculos,
+        plano: planoNome || prev.plano,
+      } : prev);
     }
 
     // Carregar histórico do audit_log (ERR-010)
