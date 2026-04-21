@@ -10,7 +10,7 @@ import {
   useAttendanceCounts,
   type Atendimento,
 } from "@/hooks/useHubAtendimentos";
-import { AttendanceList } from "@/components/whatsapp/AttendanceList";
+import { AttendanceList, type ProviderFilter } from "@/components/whatsapp/AttendanceList";
 import { AttendanceContext } from "@/components/whatsapp/AttendanceContext";
 import { ChatWindow } from "@/components/whatsapp/ChatWindow";
 import { ChatList } from "@/components/whatsapp/ChatList";
@@ -60,6 +60,7 @@ export default function Conversas() {
 
   const [selectedAtend, setSelectedAtend] = useState<Atendimento | null>(null);
   const [tabPage, setTabPage] = useState<"atendimentos" | "conversas">("atendimentos");
+  const [providerFilter, setProviderFilter] = useState<ProviderFilter>("meta");
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   const [selectedConv, setSelectedConv] = useState<WhatsAppConversation | null>(null);
   const [qrInstance, setQrInstance] = useState<WhatsAppInstance | null>(null);
@@ -139,6 +140,8 @@ export default function Conversas() {
               isAdmin={isAdmin}
               selectedId={selectedAtend?.id ?? null}
               onSelect={setSelectedAtend}
+              provider={providerFilter}
+              onProviderChange={setProviderFilter}
             />
           </div>
 

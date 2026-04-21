@@ -8,8 +8,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Send, Loader2, Check, CheckCheck, Clock, AlertCircle, Paperclip,
   MessageSquare, Smile, FileText, Mic, Zap, Bot, User, UserCheck,
+  BadgeCheck, Smartphone,
 } from "lucide-react";
-import { useMessages, useSendMessage } from "@/hooks/useWhatsApp";
+import { useMessages, useSendMessage, useWhatsAppInstances } from "@/hooks/useWhatsApp";
 import { useToast } from "@/hooks/use-toast";
 import { supabaseHub } from "@/integrations/hub/client";
 import { useQuery } from "@tanstack/react-query";
@@ -75,7 +76,10 @@ export function ChatWindow({ instanceId, telefone, nome, associadoId, atendiment
   const taRef = useRef<HTMLTextAreaElement>(null);
   const { data: messages = [], isLoading } = useMessages(instanceId, telefone);
   const { data: templates = [] } = useTemplates(atendimento?.setor);
+  const { data: instances = [] } = useWhatsAppInstances();
   const send = useSendMessage();
+  const activeInstance = instances.find((i) => i.id === instanceId);
+  const providerMeta = activeInstance?.tipo === "meta_oficial";
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -141,6 +145,20 @@ export function ChatWindow({ instanceId, telefone, nome, associadoId, atendiment
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#efeae2] dark:bg-muted/20 min-w-0">
+      {/* Provider strip — fixo no topo pra não confundir Meta vs UAZAPI */}
+      {activeInstance && (
+        <div className={cn(
+          "px-4 py-1.5 flex items-center gap-2 text-[11px] font-semibold",
+          providerMeta ? "bg-emerald-500/10 text-emerald-700 border-b border-emerald-200"
+                       : "bg-indigo-500/10 text-indigo-700 border-b border-indigo-200",
+        )}>
+          {providerMeta ? <BadgeCheck className="h-3.5 w-3.5" /> : <Smartphone className="h-3.5 w-3.5" />}
+          <span>{providerMeta ? "META OFICIAL" : "UAZAPI"}</span>
+          {activeInstance.nome && <span className="opacity-80">· {activeInstance.nome}</span>}
+          {activeInstance.telefone && <span className="opacity-70 ml-auto">{activeInstance.telefone}</span>}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b bg-background shadow-sm shrink-0">
         <Avatar className="h-10 w-10">

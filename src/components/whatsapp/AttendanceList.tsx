@@ -1,20 +1,24 @@
-// Lista de atendimentos estilo Meta Business Inbox — 3 tabs (Minhas / Fila / Todas)
+// GIA Gestão — Lista de atendimentos estilo Meta Business Inbox
+// Tabs Minhas/Fila/Todas + SEPARAÇÃO EXPLÍCITA Meta Oficial | UAZAPI por instance.tipo
 import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Inbox, Bot, User, Clock, UserCheck, Zap, AlertCircle } from "lucide-react";
+import { Search, Inbox, Bot, User, Clock, UserCheck, Zap, AlertCircle, BadgeCheck, Smartphone } from "lucide-react";
 import {
   useMyAttendances, useSectorQueue, useAtendimentos, useAssumir,
   statusToStage, type Atendimento, type AttendanceStage,
 } from "@/hooks/useHubAtendimentos";
+import { useWhatsAppInstances } from "@/hooks/useWhatsApp";
 import { useToast } from "@/hooks/use-toast";
+import type { InstanceTipo } from "@/types/whatsapp";
 import { cn } from "@/lib/utils";
 
 type TabKey = "minhas" | "fila" | "todas";
 type StageFilter = "all" | AttendanceStage;
+export type ProviderFilter = "meta" | "uazapi";
 
 interface Props {
   userId?: string | null;
@@ -22,6 +26,8 @@ interface Props {
   isAdmin?: boolean;
   selectedId?: string | null;
   onSelect: (a: Atendimento) => void;
+  provider: ProviderFilter;
+  onProviderChange: (p: ProviderFilter) => void;
 }
 
 const STAGE_META: Record<AttendanceStage, { label: string; Icon: any; cls: string; dot: string }> = {
@@ -31,6 +37,12 @@ const STAGE_META: Record<AttendanceStage, { label: string; Icon: any; cls: strin
   aguardando: { label: "Aguardando", Icon: Clock,       cls: "bg-amber-500/10 text-amber-700 border-amber-200",       dot: "bg-amber-500" },
   resolvido:  { label: "Resolvido",  Icon: UserCheck,   cls: "bg-emerald-500/10 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
 };
+
+function matchesProvider(tipo: InstanceTipo | undefined, p: ProviderFilter): boolean {
+  if (!tipo) return false;
+  if (p === "meta") return tipo === "meta_oficial";
+  return tipo === "central" || tipo === "colaborador";
+}
 
 function formatTel(t: string) {
   const d = String(t).replace(/\D/g, "");
@@ -60,11 +72,20 @@ function UrgenciaDot({ urgencia }: { urgencia: string | null }) {
   return <span className={cn("h-2 w-2 rounded-full shrink-0", cls)} title={`Urgência ${urgencia}`} />;
 }
 
-export function AttendanceList({ userId, userName, isAdmin, selectedId, onSelect }: Props) {
+export function AttendanceList({
+  userId, userName, isAdmin, selectedId, onSelect, provider, onProviderChange,
+}: Props) {
   const { toast } = useToast();
   const [tab, setTab] = useState<TabKey>(isAdmin ? "fila" : "minhas");
   const [stage, setStage] = useState<StageFilter>("all");
   const [q, setQ] = useState("");
+
+  const { data: instances = [] } = useWhatsAppInstances();
+  const instanceTipoMap = useMemo(() => {
+    const m = new Map<string, InstanceTipo>();
+    for (const i of instances) m.set(i.id, i.tipo);
+    return m;
+  }, [instances]);
 
   const mine = useMyAttendances(userId);
   const queue = useSectorQueue();
@@ -76,9 +97,14 @@ export function AttendanceList({ userId, userName, isAdmin, selectedId, onSelect
     tab === "fila"   ? queue :
     all;
 
-  const list = source.data ?? [];
+  const listRaw = source.data ?? [];
+  const listByProvider = useMemo(
+    () => listRaw.filter((a) => matchesProvider(instanceTipoMap.get(a.instance_id), provider)),
+    [listRaw, instanceTipoMap, provider],
+  );
+
   const filtered = useMemo(() => {
-    let out = list;
+    let out = listByProvider;
     if (stage !== "all") {
       out = out.filter((a) => statusToStage(a.status, a.ai_runs_count) === stage);
     }
@@ -92,16 +118,28 @@ export function AttendanceList({ userId, userName, isAdmin, selectedId, onSelect
       );
     }
     return out;
-  }, [list, stage, q]);
+  }, [listByProvider, stage, q]);
 
   const counts = useMemo(() => {
-    const c = { all: list.length, automacao: 0, ia: 0, humano: 0, aguardando: 0, resolvido: 0 };
-    for (const a of list) {
+    const c = { all: listByProvider.length, automacao: 0, ia: 0, humano: 0, aguardando: 0, resolvido: 0 };
+    for (const a of listByProvider) {
       const s = statusToStage(a.status, a.ai_runs_count);
       if (s in c) (c as any)[s]++;
     }
     return c;
-  }, [list]);
+  }, [listByProvider]);
+
+  // contagens por provider em cada aba (pra mostrar no toggle)
+  const providerCounts = useMemo(() => {
+    let meta = 0, uaz = 0;
+    for (const a of listRaw) {
+      const t = instanceTipoMap.get(a.instance_id);
+      if (!t) continue;
+      if (t === "meta_oficial") meta++;
+      else uaz++;
+    }
+    return { meta, uazapi: uaz };
+  }, [listRaw, instanceTipoMap]);
 
   const handleAssumir = async (a: Atendimento, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -111,7 +149,7 @@ export function AttendanceList({ userId, userName, isAdmin, selectedId, onSelect
         atendente_id: userId ?? null,
         atendente_nome: userName,
       });
-      toast({ title: "Atendimento assumido", description: `Protocolo #${a.protocolo?.slice(-6) ?? a.id.slice(-6)}` });
+      toast({ title: "Atendimento assumido", description: `#${a.protocolo?.slice(-6) ?? a.id.slice(-6)}` });
       onSelect(a);
       setTab("minhas");
     } catch (err: any) {
@@ -120,10 +158,10 @@ export function AttendanceList({ userId, userName, isAdmin, selectedId, onSelect
   };
 
   const tabDefs: { key: TabKey; label: string; count: number }[] = [
-    { key: "minhas", label: "Minhas", count: mine.data?.length ?? 0 },
-    { key: "fila",   label: "Fila do setor", count: queue.data?.length ?? 0 },
+    { key: "minhas", label: "Minhas", count: (mine.data ?? []).filter(a => matchesProvider(instanceTipoMap.get(a.instance_id), provider)).length },
+    { key: "fila",   label: "Fila",   count: (queue.data ?? []).filter(a => matchesProvider(instanceTipoMap.get(a.instance_id), provider)).length },
   ];
-  if (isAdmin) tabDefs.push({ key: "todas", label: "Todas", count: all.data?.length ?? 0 });
+  if (isAdmin) tabDefs.push({ key: "todas", label: "Todas", count: (all.data ?? []).filter(a => matchesProvider(instanceTipoMap.get(a.instance_id), provider)).length });
 
   const stageChips: { key: StageFilter; label: string; n: number; cls?: string }[] = [
     { key: "all",        label: "Todos",      n: counts.all },
@@ -135,7 +173,41 @@ export function AttendanceList({ userId, userName, isAdmin, selectedId, onSelect
 
   return (
     <div className="flex flex-col h-full bg-background border-r">
-      {/* Tabs */}
+      {/* Provider toggle — SEPARAÇÃO CLARA Meta vs UAZAPI */}
+      <div className="grid grid-cols-2 gap-0 border-b">
+        <button
+          onClick={() => onProviderChange("meta")}
+          className={cn(
+            "flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition-colors border-r",
+            provider === "meta"
+              ? "bg-emerald-500/10 text-emerald-700 border-b-2 border-b-emerald-500"
+              : "text-muted-foreground hover:bg-muted/40",
+          )}
+        >
+          <BadgeCheck className="h-3.5 w-3.5" />
+          META OFICIAL
+          <Badge variant="secondary" className="h-4 min-w-5 px-1 text-[10px] font-bold">
+            {providerCounts.meta}
+          </Badge>
+        </button>
+        <button
+          onClick={() => onProviderChange("uazapi")}
+          className={cn(
+            "flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition-colors",
+            provider === "uazapi"
+              ? "bg-indigo-500/10 text-indigo-700 border-b-2 border-b-indigo-500"
+              : "text-muted-foreground hover:bg-muted/40",
+          )}
+        >
+          <Smartphone className="h-3.5 w-3.5" />
+          UAZAPI
+          <Badge variant="secondary" className="h-4 min-w-5 px-1 text-[10px] font-bold">
+            {providerCounts.uazapi}
+          </Badge>
+        </button>
+      </div>
+
+      {/* Tabs Minhas/Fila/Todas */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
         <div className="px-3 pt-3">
           <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${tabDefs.length}, 1fr)` }}>
@@ -192,7 +264,9 @@ export function AttendanceList({ userId, userName, isAdmin, selectedId, onSelect
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
             <Inbox className="h-10 w-10 opacity-40" />
-            <p className="text-xs">Nenhum atendimento</p>
+            <p className="text-xs">
+              Nenhum atendimento em <span className="font-semibold">{provider === "meta" ? "Meta Oficial" : "UAZAPI"}</span>
+            </p>
           </div>
         ) : (
           filtered.map((a) => {

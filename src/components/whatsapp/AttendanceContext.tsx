@@ -6,14 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  UserCheck, ArrowRightLeft, CheckCircle2, Archive, RotateCcw,
+  UserCheck, ArrowRightLeft, CheckCircle2, RotateCcw,
   IdCard, Car, MessageSquare, Bot, Smile, Frown, Meh,
-  Clock, Tag, StickyNote, Hash, Phone,
+  Clock, Tag, StickyNote, Hash, Phone, BadgeCheck, Smartphone,
 } from "lucide-react";
 import {
   useAssumir, useTransferir, useResolver, useDevolverFila,
   statusToStage, type Atendimento,
 } from "@/hooks/useHubAtendimentos";
+import { useWhatsAppInstances } from "@/hooks/useWhatsApp";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -60,6 +61,7 @@ function elapsedSince(iso: string | null): string {
 
 export function AttendanceContext({ atendimento, userId, userName }: Props) {
   const { toast } = useToast();
+  const { data: instances = [] } = useWhatsAppInstances();
   const [showTransfer, setShowTransfer] = useState(false);
   const assumir = useAssumir();
   const transferir = useTransferir();
@@ -79,6 +81,8 @@ export function AttendanceContext({ atendimento, userId, userName }: Props) {
   const stg = statusToStage(a.status, a.ai_runs_count);
   const isMine = a.atendente_id === userId;
   const sentimento = a.sentimento ? SENTIMENTO_ICON[a.sentimento] : null;
+  const inst = instances.find((i) => i.id === a.instance_id);
+  const providerMeta = inst?.tipo === "meta_oficial";
 
   const handle = async (fn: () => Promise<unknown>, ok: string) => {
     try { await fn(); toast({ title: ok }); }
@@ -88,6 +92,16 @@ export function AttendanceContext({ atendimento, userId, userName }: Props) {
   return (
     <div className="hidden xl:flex flex-col h-full border-l bg-background w-80 shrink-0">
       <ScrollArea className="flex-1">
+        {/* Provider strip — sempre visível pra não confundir */}
+        <div className={cn(
+          "px-4 py-2 flex items-center gap-2 text-[11px] font-semibold border-b",
+          providerMeta ? "bg-emerald-500/10 text-emerald-700" : "bg-indigo-500/10 text-indigo-700",
+        )}>
+          {providerMeta ? <BadgeCheck className="h-3.5 w-3.5" /> : <Smartphone className="h-3.5 w-3.5" />}
+          <span>{providerMeta ? "Meta Oficial (WABA)" : "UAZAPI"}</span>
+          {inst?.nome && <span className="ml-auto text-[10px] opacity-80 truncate">{inst.nome}</span>}
+        </div>
+
         {/* Avatar header */}
         <div className="p-5 text-center border-b">
           <Avatar className="h-20 w-20 mx-auto">
