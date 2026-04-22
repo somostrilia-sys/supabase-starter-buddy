@@ -788,6 +788,13 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         aplicarDescontoDiretor(validados);
         setFipeFetched(true);
         setPrecosCarregadosDaCotacao(true);
+        // Refetch em background: cache pode estar desatualizado (pre-correcao
+        // de cota de participacao). Busca dados frescos no banco e sobrescreve
+        // cache e precosReais.
+        const vFipe = (deal as any).cache_fipe?.valorFipe || 0;
+        if (vFipe > 0) {
+          carregarPrecos(vFipe, tipoAtual, d.estado_circulacao, d.cidade_circulacao);
+        }
       });
       return;
     }
@@ -821,6 +828,11 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
               if (negData.cache_fipe?.valorFipe) setValorFipeReal(negData.cache_fipe.valorFipe);
               setFipeFetched(true);
               setPrecosCarregadosDaCotacao(true);
+              // Refetch em background para corrigir cache desatualizado
+              const vFipe = negData.cache_fipe?.valorFipe || 0;
+              if (vFipe > 0) {
+                carregarPrecos(vFipe, tipoAtual, d.estado_circulacao, d.cidade_circulacao);
+              }
             });
             return;
           }
