@@ -133,6 +133,51 @@ const TIPO_VEICULO_MAP: Record<string, string[]> = {
   "Ônibus": ["Pesados e Vans"],
 };
 
+// Filtro pós-SELECT que distingue subcategorias colapsadas no banco:
+//   - "Carros e Utilitários Pequenos" precisa separar Automóvel × Utilitários
+//     (Premium vem em duas variantes: "(Leves Comum)" = Auto, "(Leves)" = Util)
+//   - "Pesados e Vans" precisa separar Pesados × Vans e Pesados Pequenos
+//     (PESADOS (…) = pesado; "Vans e Pesados" = van/pequeno)
+const filtrarPlanosPorTipoVeiculo = (precos: any[], tipoVeiculo: string): any[] => {
+  if (!tipoVeiculo || !precos || precos.length === 0) return precos;
+  const isPesadosPequenos = ["Vans e Pesados Pequenos", "Van", "Van/Utilitário", "Caminhão"].includes(tipoVeiculo);
+  return precos.filter((p: any) => {
+    const nome = String(p.plano || "").trim();
+    if (tipoVeiculo === "Automóvel" || tipoVeiculo === "Utilitário") {
+      // Automóvel: descartar "(Leves)" puro; manter "(Leves Comum)" e sem sufixo
+      return !/\(leves\)\s*$/i.test(nome);
+    }
+    if (tipoVeiculo === "Utilitários") {
+      // Utilitários: descartar "(Leves Comum)"; manter "(Leves)" e sem sufixo
+      return !/\(leves\s+comum\)\s*$/i.test(nome);
+    }
+    if (tipoVeiculo === "Pesados" || tipoVeiculo === "Ônibus") {
+      // Pesados: descartar "Vans e Pesados" puro
+      return !/^vans\s+e\s+pesados\s*$/i.test(nome);
+    }
+    if (isPesadosPequenos) {
+      // Vans/pequenos: descartar nomes que começam com "PESADOS " (caixa alta no banco)
+      return !nome.startsWith("PESADOS ");
+    }
+    return true;
+  });
+};
+
+// Desempate do dedup quando mesma faixa FIPE: Automóvel prefere menor franquia,
+// Utilitários prefere maior; demais caem no critério legado (maior cota).
+const preferirPorFranquia = (r: any, existing: any, tipoVeiculo: string): boolean => {
+  if (!existing) return true;
+  const range = Number(r.valor_maior) - Number(r.valor_menor);
+  const existingRange = Number(existing.valor_maior) - Number(existing.valor_menor);
+  if (range < existingRange) return true;
+  if (range > existingRange) return false;
+  const rf = Number(r.valor_franquia ?? 0);
+  const ef = Number(existing.valor_franquia ?? 0);
+  if ((tipoVeiculo === "Automóvel" || tipoVeiculo === "Utilitário") && rf !== ef) return rf < ef;
+  if (tipoVeiculo === "Utilitários" && rf !== ef) return rf > ef;
+  return Number(r.cota) > Number(existing.cota);
+};
+
 interface Props { deal: PipelineDeal; onUpdate?: () => void; }
 
 export default function CotacaoTab({ deal, onUpdate }: Props) {
@@ -603,14 +648,15 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         });
         if (filtered.length > 0) resultado = filtered;
       }
-      // Deduplicar: 1 faixa por plano (menor range FIPE; se range igual, maior cota)
+      // Filtrar por subcategoria do tipoVeiculo (Automóvel × Utilitários, Pesados × Vans)
+      const filtradoPorSubcat = filtrarPlanosPorTipoVeiculo(resultado, tipoReal);
+      if (filtradoPorSubcat.length > 0) resultado = filtradoPorSubcat;
+      // Deduplicar: 1 faixa por plano (menor range FIPE; desempate por franquia conforme tipoVeiculo)
       const planoMap = new Map<string, any>();
       for (const r of resultado) {
         const nome = r.plano_normalizado || r.plano;
         const existing = planoMap.get(nome);
-        const range = Number(r.valor_maior) - Number(r.valor_menor);
-        const existingRange = existing ? Number(existing.valor_maior) - Number(existing.valor_menor) : Infinity;
-        if (!existing || range < existingRange || (range === existingRange && Number(r.cota) > Number(existing.cota))) {
+        if (preferirPorFranquia(r, existing, tipoReal)) {
           planoMap.set(nome, r);
         }
       }
@@ -668,7 +714,13 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     const validarPlanosCache = async (precos: any[]) => {
       // Errata 3: sempre excluir planos "agregado" do seletor principal
       const semAgregado = precos.filter((t: any) => !(t.plano_normalizado || t.plano || "").toLowerCase().includes("agregado"));
-      const base = semAgregado.length > 0 ? semAgregado : precos;
+      // Aplicar filtro por subcategoria (Automóvel × Utilitários / Pesados × Vans)
+      const tipoAtualCache = (deal as any).tipo_veiculo || detectTipo();
+      const aplicarSubcat = (arr: any[]) => {
+        const r = filtrarPlanosPorTipoVeiculo(arr, tipoAtualCache);
+        return r.length > 0 ? r : arr;
+      };
+      const base = aplicarSubcat(semAgregado.length > 0 ? semAgregado : precos);
       const cf = (deal as any).cod_fipe || (deal as any).cache_fipe?.codFipe;
       if (!cf) return base;
       const { data: modelo } = await supabase.from("modelos_veiculo" as any)
