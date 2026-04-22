@@ -75,16 +75,17 @@ export default function TabelaMestreModal({ open, onClose, tabelaId, tabelaLabel
   const fmt = (v: number | null | undefined) =>
     v == null ? "—" : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-  // Modelos da marca ativa
+  // Modelos da marca ativa — trazer TODOS (aceitos ou não) e diferenciar visualmente.
+  // Antes filtrava .eq("aceito", true), escondendo ~1342 modelos e deixando várias marcas
+  // com aparência de "sem dados" (Acura, ADLY, Alfa Romeo, etc).
   const { data: modelos, isLoading: loadingModelos } = useQuery({
     queryKey: ["tm-modelos", marcaAtivaId],
     queryFn: async () => {
       if (!marcaAtivaId) return [];
       const { data, error } = await supabase
         .from("modelos_veiculo" as any)
-        .select("id, nome, cod_fipe, tipo_veiculo")
+        .select("id, nome, cod_fipe, tipo_veiculo, aceito")
         .eq("marca_id", marcaAtivaId)
-        .eq("aceito", true)
         .order("nome");
       if (error) throw error;
       return (data || []) as any[];
@@ -201,12 +202,12 @@ export default function TabelaMestreModal({ open, onClose, tabelaId, tabelaLabel
 
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 pt-4 pb-2 shrink-0 border-b">
           <DialogTitle>Editar Tabela Mestre — {tabelaLabel || tabelaId}</DialogTitle>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={setTab} className="flex-1 overflow-hidden flex flex-col">
+        <Tabs value={tab} onValueChange={setTab} className="flex-1 overflow-hidden flex flex-col min-h-0">
           <TabsList className="grid grid-cols-5 mx-1 mt-1 shrink-0">
             <TabsTrigger value="dados">1. Dados Gerais</TabsTrigger>
             <TabsTrigger value="marcas">2. Marcas</TabsTrigger>
@@ -342,7 +343,7 @@ export default function TabelaMestreModal({ open, onClose, tabelaId, tabelaLabel
                           </span>
                           <span className="text-xs text-muted-foreground">({count})</span>
                           <Select value={ano} onValueChange={(v) => { setAnoMinimoMarca(m.id, v); }}>
-                            <SelectTrigger className="h-6 w-20 text-[10px] rounded-none" onClick={e => e.stopPropagation()}>
+                            <SelectTrigger className="h-6 w-28 text-[10px] rounded-none" onClick={e => e.stopPropagation()}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -396,16 +397,20 @@ export default function TabelaMestreModal({ open, onClose, tabelaId, tabelaLabel
                         <div className="flex items-center justify-center py-10"><Loader2 className="h-5 w-5 animate-spin" /></div>
                       ) : modelosFiltrados.length === 0 ? (
                         <p className="text-xs text-muted-foreground py-4 text-center">
-                          Nenhum modelo cadastrado para esta marca. Rode a sincronização FIPE.
+                          {buscaModelo
+                            ? `Nenhum modelo de ${marcaAtivaObj?.nome} corresponde a "${buscaModelo}".`
+                            : `Nenhum modelo cadastrado para ${marcaAtivaObj?.nome}. Rode a sincronização FIPE.`}
                         </p>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {modelosFiltrados.map((m: any) => {
                             const checked = liberadosSet.has(m.id);
+                            const naoAceito = m.aceito === false;
                             return (
                               <label
                                 key={m.id}
-                                className={`flex items-start gap-2 p-2 rounded border cursor-pointer hover:bg-muted/40 ${checked ? "border-primary bg-primary/5" : "border-border"}`}
+                                title={naoAceito ? "Modelo marcado como não aceito em modelos_veiculo" : ""}
+                                className={`flex items-start gap-2 p-2 rounded border cursor-pointer hover:bg-muted/40 ${checked ? "border-primary bg-primary/5" : naoAceito ? "border-amber-300 bg-amber-50/50" : "border-border"}`}
                               >
                                 <Checkbox
                                   checked={checked}
@@ -413,7 +418,10 @@ export default function TabelaMestreModal({ open, onClose, tabelaId, tabelaLabel
                                   className="mt-0.5"
                                 />
                                 <div className="flex-1 text-xs">
-                                  <div className="font-medium">{m.nome}</div>
+                                  <div className={`font-medium ${naoAceito ? "text-amber-700" : ""}`}>
+                                    {m.nome}
+                                    {naoAceito && <span className="ml-1 text-[9px] bg-amber-200 text-amber-900 px-1 rounded">não aceito</span>}
+                                  </div>
                                   {m.cod_fipe && (
                                     <div className="text-muted-foreground text-[10px] mt-0.5">
                                       Cód. FIPE: {m.cod_fipe}
@@ -538,7 +546,7 @@ export default function TabelaMestreModal({ open, onClose, tabelaId, tabelaLabel
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end gap-2 p-3 border-t">
+        <div className="flex justify-end gap-2 p-3 border-t shrink-0 bg-background">
           <Button variant="outline" className="rounded-none" onClick={onClose}>Cancelar</Button>
           <Button className="rounded-none bg-[#1A3A5C] hover:bg-[#15304D] text-white" onClick={() => { toast.success("Alterações salvas"); onClose(); }}>
             <Save className="h-3.5 w-3.5 mr-1" />Salvar
