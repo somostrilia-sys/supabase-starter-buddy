@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   Search, ArrowLeft, Loader2, FileText, QrCode, Copy, Download,
@@ -20,6 +21,7 @@ export default function BoletoAvulso({ onBack }: { onBack: () => void }) {
   const [placa, setPlaca] = useState("");
   const [buscando, setBuscando] = useState(false);
   const [veiculo, setVeiculo] = useState<any>(null);
+  const [aplicarDesconto15, setAplicarDesconto15] = useState(true);
   const [descontoTipo, setDescontoTipo] = useState<"percent" | "valor">("percent");
   const [descontoAdicional, setDescontoAdicional] = useState("");
   const [gerando, setGerando] = useState(false);
@@ -31,43 +33,72 @@ export default function BoletoAvulso({ onBack }: { onBack: () => void }) {
     setVeiculo(null);
     setBoletoGerado(null);
     try {
-      const { data, error } = await supabase
+      // 1) veículo (sem embed para evitar ambiguidade de relacionamento)
+      const { data: vdata, error: verr } = await supabase
         .from("veiculos")
-        .select("*, associados(id, nome, cpf, regional_id, cooperativa_id), contratos(*, planos(nome))")
-        .ilike("placa", `%${placa.replace("-", "")}%`)
+        .select("*")
+        .ilike("placa", `%${placa.replace(/[-\s]/g, "")}%`)
         .limit(1)
         .maybeSingle();
-      if (error) throw error;
-      if (!data) { toast.error("Placa não encontrada no cadastro."); return; }
+      if (verr) throw verr;
+      if (!vdata) { toast.error("Placa não encontrada no cadastro."); return; }
 
-      // Buscar faixa FIPE para taxa adm e rateio
+      // 2) associado
+      let associado: any = null;
+      if ((vdata as any).associado_id) {
+        const { data: adata } = await supabase
+          .from("associados")
+          .select("id, nome, cpf, regional_id, cooperativa_id")
+          .eq("id", (vdata as any).associado_id)
+          .maybeSingle();
+        associado = adata;
+      }
+
+      // 3) contrato do veículo (filtro direto por FK, sem embed)
+      const { data: cdata } = await (supabase as any)
+        .from("contratos")
+        .select("id, plano_id, valor_mensalidade, valor_mensal, status")
+        .eq("veiculo_id", (vdata as any).id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // 4) plano
+      let planoNome = "Sem plano";
+      if (cdata?.plano_id) {
+        const { data: pdata } = await supabase
+          .from("planos").select("nome").eq("id", cdata.plano_id).maybeSingle();
+        planoNome = (pdata as any)?.nome || "Sem plano";
+      }
+
+      // 5) Buscar faixa FIPE para taxa adm e rateio
       let taxaAdm = 0;
       let rateio = 0;
-      if (data.valor_fipe) {
+      if ((vdata as any).valor_fipe) {
         const { data: faixa } = await (supabase as any)
           .from("faixas_fipe")
           .select("taxa_adm, fator")
-          .lte("fipe_inicial", data.valor_fipe)
-          .gte("fipe_final", data.valor_fipe)
+          .lte("fipe_inicial", (vdata as any).valor_fipe)
+          .gte("fipe_final", (vdata as any).valor_fipe)
           .limit(1)
           .maybeSingle();
         if (faixa) {
           taxaAdm = faixa.taxa_adm || 0;
-          rateio = (data.valor_fipe * (faixa.fator || 0)) / 100;
+          rateio = ((vdata as any).valor_fipe * (faixa.fator || 0)) / 100;
         }
       }
 
-      const contrato = data.contratos?.[0];
-      const valorProdutos = contrato?.valor_mensalidade || 0;
+      const valorProdutos = cdata?.valor_mensalidade ?? cdata?.valor_mensal ?? 0;
 
       setVeiculo({
-        ...data,
-        plano: contrato?.planos?.nome || "Sem plano",
+        ...vdata,
+        associados: associado,
+        plano: planoNome,
         valorProdutos,
         taxaAdm,
         rateio,
         valorTotal: valorProdutos + taxaAdm + rateio,
-        situacao: data.status || "Ativo",
+        situacao: (vdata as any).status || "Ativo",
       });
     } catch (e: any) {
       toast.error(e.message || "Erro ao buscar veículo");
@@ -79,14 +110,12 @@ export default function BoletoAvulso({ onBack }: { onBack: () => void }) {
   const calcularValorFinal = () => {
     if (!veiculo) return 0;
     const valorBase = veiculo.valorTotal;
-    // Desconto automático 15%
-    const comDesconto15 = valorBase * 0.85;
-    // Desconto adicional
+    const comDesconto = aplicarDesconto15 ? valorBase * 0.85 : valorBase;
     const adicional = parseFloat(descontoAdicional) || 0;
     if (descontoTipo === "percent") {
-      return comDesconto15 * (1 - adicional / 100);
+      return comDesconto * (1 - adicional / 100);
     }
-    return Math.max(0, comDesconto15 - adicional);
+    return Math.max(0, comDesconto - adicional);
   };
 
   const gerarBoleto = async () => {
@@ -136,7 +165,7 @@ export default function BoletoAvulso({ onBack }: { onBack: () => void }) {
         <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft className="h-4 w-4" /></Button>
         <div>
           <h2 className="text-lg font-bold">Boleto Avulso</h2>
-          <p className="text-xs text-muted-foreground">Gerar boleto individual por placa com desconto automático de 15%</p>
+          <p className="text-xs text-muted-foreground">Gerar boleto individual por placa</p>
         </div>
       </div>
 
@@ -202,9 +231,23 @@ export default function BoletoAvulso({ onBack }: { onBack: () => void }) {
               <CardTitle className="text-sm flex items-center gap-2"><Percent className="h-4 w-4 text-primary" /> Descontos</CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
-              <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                <span className="text-sm">Desconto automático de <strong>15%</strong> aplicado: {fmtBRL(veiculo.valorTotal * 0.15)}</span>
+              <div className={`flex items-center justify-between gap-3 rounded-lg p-3 border ${aplicarDesconto15 ? "bg-emerald-500/10 border-emerald-500/20" : "bg-muted/30 border-border"}`}>
+                <div className="flex items-center gap-2">
+                  {aplicarDesconto15 ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Tag className="h-4 w-4 text-muted-foreground" />}
+                  <span className="text-sm">
+                    {aplicarDesconto15
+                      ? <>Desconto de <strong>15%</strong> aplicado: {fmtBRL(veiculo.valorTotal * 0.15)}</>
+                      : <>Desconto de 15% <strong>não aplicado</strong></>}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="switch-desconto-15" className="text-xs cursor-pointer">Aplicar 15%</Label>
+                  <Switch
+                    id="switch-desconto-15"
+                    checked={aplicarDesconto15}
+                    onCheckedChange={setAplicarDesconto15}
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
