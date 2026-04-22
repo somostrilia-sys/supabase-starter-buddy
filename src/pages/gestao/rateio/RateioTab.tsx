@@ -22,18 +22,21 @@ import DistribuicaoRateioFerramenta from "@/pages/gestao/ferramentas/Distribuica
 
 interface FaixaFipe {
   id: string;
+  regional_id: string | null;
+  regional_nome: string;
+  fator: number;                // cota_fator no banco
+  fipe_inicial: number;         // fipe_min no banco
+  fipe_final: number;           // fipe_max no banco
+  taxa_adm: number;             // taxa_administrativa no banco
+  valor_rateio: number;         // rateio no banco
+  tipo_veiculo: string;
+  created_at: string;
+  // Propriedades legadas (read-only, não existem no schema atual)
   categoria_id: string | null;
-  fator: number;
-  fipe_inicial: number;
-  fipe_final: number;
   descricao: string | null;
-  taxa_adm: number | null;
   valor_cota: number | null;
-  valor_rateio: number | null;
-  tipo_veiculo: string | null;
   codigo_sga: string | null;
   ativo: boolean;
-  created_at: string;
   categoria_nome?: string;
 }
 
@@ -81,33 +84,51 @@ function useFaixasFipe() {
   useEffect(() => {
     async function fetch() {
       setLoading(true);
-      // Schema real de faixas_fipe: id, regional_id, fipe_min, fipe_max,
-      // taxa_administrativa, rateio, cota_fator, tipo_veiculo, created_at.
-      // Antes o código tentava selecionar fipe_inicial/fipe_final/categoria_id/ativo
-      // que NÃO existem — resultava em erro 42703 e toast "Erro ao carregar faixas FIPE".
-      const { data: faixas, error } = await supabase
-        .from("faixas_fipe")
-        .select("id, regional_id, fipe_min, fipe_max, taxa_administrativa, rateio, cota_fator, tipo_veiculo, created_at")
-        .order("fipe_min", { ascending: true });
-
-      if (error) {
-        console.error("Erro ao buscar faixas_fipe:", error);
-        toast.error(`Erro ao carregar faixas FIPE: ${error.message}`);
-        setLoading(false);
-        return;
+      // Paginação manual (919 rows, PostgREST default 1000).
+      // Schema: id, regional_id, fipe_min, fipe_max, taxa_administrativa, rateio,
+      // cota_fator, tipo_veiculo, created_at. Sem `ativo`, sem `categoria_id`,
+      // sem `descricao`, sem `valor_cota` (campos legados do UI antigo).
+      const PAGE_SIZE = 1000;
+      let all: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data: faixas, error } = await supabase
+          .from("faixas_fipe")
+          .select("id, regional_id, fipe_min, fipe_max, taxa_administrativa, rateio, cota_fator, tipo_veiculo, created_at, regionais:regional_id(nome)")
+          .order("regional_id")
+          .order("tipo_veiculo")
+          .order("fipe_min")
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) {
+          console.error("Erro ao buscar faixas_fipe:", error);
+          toast.error(`Erro ao carregar faixas FIPE: ${error.message}`);
+          setLoading(false);
+          return;
+        }
+        if (!faixas || faixas.length === 0) break;
+        all = all.concat(faixas);
+        if (faixas.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
       }
 
-      const mapped: FaixaFipe[] = (faixas || []).map((f: any) => ({
+      const mapped: FaixaFipe[] = all.map((f: any) => ({
         id: f.id,
-        categoria_id: null,
-        fator: f.cota_fator ?? 1,
-        fipe_inicial: Number(f.fipe_min) ?? 0,
-        fipe_final: Number(f.fipe_max) ?? 0,
-        descricao: f.tipo_veiculo ?? "",
-        taxa_adm: Number(f.taxa_administrativa) ?? 0,
-        ativo: true, // coluna não existe; assume todos ativos
+        regional_id: f.regional_id,
+        regional_nome: f.regionais?.nome || "—",
+        fator: Number(f.cota_fator) || 1,
+        fipe_inicial: Number(f.fipe_min) || 0,
+        fipe_final: Number(f.fipe_max) || 0,
+        taxa_adm: Number(f.taxa_administrativa) || 0,
+        valor_rateio: Number(f.rateio) || 0,
+        tipo_veiculo: f.tipo_veiculo || "",
         created_at: f.created_at,
-        categoria_nome: f.tipo_veiculo ?? "Sem categoria",
+        // Campos legados mantidos para retrocompatibilidade (não usados)
+        categoria_id: null,
+        descricao: f.tipo_veiculo || "",
+        valor_cota: null,
+        codigo_sga: null,
+        ativo: true,
+        categoria_nome: f.tipo_veiculo || "Sem categoria",
       }));
       setData(mapped);
       setLoading(false);
@@ -407,6 +428,7 @@ function EstruturaCotas() {
   const categorias = useCategorias();
   const { regionais } = useRegionais();
   const [filtroCategoria, setFiltroCategoria] = useState("Todas");
+  const [filtroRegional, setFiltroRegional] = useState("Todas");
   const [showEdit, setShowEdit] = useState<FaixaFipe | null>(null);
   const [showRateioManual, setShowRateioManual] = useState(false);
   const [rateioManual, setRateioManual] = useState({
@@ -418,11 +440,19 @@ function EstruturaCotas() {
   });
   const [salvandoManual, setSalvandoManual] = useState(false);
 
-  const filtered = faixas.filter(c => filtroCategoria === "Todas" || c.categoria_nome === filtroCategoria);
+  const filtered = faixas.filter(c =>
+    (filtroCategoria === "Todas" || c.categoria_nome === filtroCategoria) &&
+    (filtroRegional === "Todas" || c.regional_nome === filtroRegional)
+  );
 
   const categoriaNomes = useMemo(() => {
     const names = new Set(faixas.map(f => f.categoria_nome ?? "Sem categoria"));
     return Array.from(names).sort();
+  }, [faixas]);
+
+  const regionaisNomes = useMemo(() => {
+    const names = new Set(faixas.map(f => f.regional_nome));
+    return Array.from(names).filter(n => n !== "—").sort();
   }, [faixas]);
 
 
@@ -457,6 +487,16 @@ function EstruturaCotas() {
       {/* Filtros e ações */}
       <div className="flex gap-3 items-end flex-wrap">
         <div>
+          <Label className="text-xs">Regional</Label>
+          <Select value={filtroRegional} onValueChange={setFiltroRegional}>
+            <SelectTrigger className="w-60"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Todas">Todas</SelectItem>
+              {regionaisNomes.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
           <Label className="text-xs">Categoria</Label>
           <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
             <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
@@ -475,21 +515,24 @@ function EstruturaCotas() {
 
       {/* Tabela de cotas */}
       <div className="border rounded-lg border-border overflow-hidden">
+        <div className="max-h-[60vh] overflow-y-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted">
+            <TableRow className="bg-muted sticky top-0 z-10">
+              <TableHead className="text-xs">Regional</TableHead>
               <TableHead className="text-xs">Valor Inicial (FIPE)</TableHead>
               <TableHead className="text-xs">Valor Final (FIPE)</TableHead>
-              <TableHead className="text-xs">Categoria Veículo</TableHead>
-              <TableHead className="text-xs">Descrição</TableHead>
-              <TableHead className="text-xs text-right">Fator Multiplicador</TableHead>
+              <TableHead className="text-xs">Categoria</TableHead>
+              <TableHead className="text-xs text-right">Taxa Adm. (R$)</TableHead>
+              <TableHead className="text-xs text-right">Rateio (R$)</TableHead>
+              <TableHead className="text-xs text-right">Fator</TableHead>
               <TableHead className="text-xs w-[60px]">Ação</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8">
+                <TableCell colSpan={8} className="text-center py-8">
                   <div className="flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
                     <span className="text-sm text-muted-foreground">Carregando faixas FIPE...</span>
@@ -498,18 +541,20 @@ function EstruturaCotas() {
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-sm text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-sm text-muted-foreground">
                   Nenhuma faixa FIPE encontrada.
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map(c => (
                 <TableRow key={c.id}>
-                  <TableCell className="text-sm font-mono">R$ {c.fipe_inicial.toLocaleString("pt-BR")}</TableCell>
-                  <TableCell className="text-sm font-mono">R$ {c.fipe_final.toLocaleString("pt-BR")}</TableCell>
+                  <TableCell className="text-xs">{c.regional_nome}</TableCell>
+                  <TableCell className="text-sm font-mono">R$ {c.fipe_inicial.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-sm font-mono">R$ {c.fipe_final.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
                   <TableCell><Badge variant="outline" className="text-xs border-primary/30 bg-primary/8">{c.categoria_nome}</Badge></TableCell>
-                  <TableCell className="text-sm">{c.descricao ?? "—"}</TableCell>
-                  <TableCell className="text-sm text-right font-bold font-mono">{c.fator.toFixed(1)}x</TableCell>
+                  <TableCell className="text-sm text-right font-mono">R$ {c.taxa_adm.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-sm text-right font-mono">R$ {c.valor_rateio.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-sm text-right font-bold font-mono">{c.fator.toFixed(2)}x</TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setShowEdit(c)}><Edit className="h-3 w-3" /></Button>
                   </TableCell>
@@ -518,6 +563,10 @@ function EstruturaCotas() {
             )}
           </TableBody>
         </Table>
+        </div>
+        <div className="px-3 py-2 text-xs text-muted-foreground border-t bg-muted/30">
+          {filtered.length} {filtered.length === 1 ? "faixa" : "faixas"} · vínculos distintos de <strong>faixa × categoria × regional</strong> (valores podem variar por regional)
+        </div>
       </div>
 
       {/* Histórico de importações (stays mock) */}
@@ -950,10 +999,8 @@ function EditCotaDialog({ showEdit, setShowEdit, onSaved }: { showEdit: any; set
         fipe_final: showEdit.fipe_final ?? 0,
         fator: showEdit.fator ?? 1,
         taxa_adm: showEdit.taxa_adm ?? 0,
-        valor_cota: showEdit.valor_cota ?? 0,
         valor_rateio: showEdit.valor_rateio ?? 0,
         tipo_veiculo: showEdit.tipo_veiculo ?? "",
-        descricao: showEdit.descricao ?? "",
       });
     }
   }, [showEdit]);
@@ -962,18 +1009,20 @@ function EditCotaDialog({ showEdit, setShowEdit, onSaved }: { showEdit: any; set
     if (!showEdit) return;
     setSaving(true);
     try {
+      // Usar nomes reais de coluna de faixas_fipe (schema: fipe_min, fipe_max,
+      // cota_fator, taxa_administrativa, rateio, tipo_veiculo).
+      // Antes o save usava fipe_inicial/fipe_final/fator/taxa_adm/valor_cota/valor_rateio/descricao
+      // — nomes de coluna inexistentes que causavam erro 42703 silencioso.
       const { error } = await (supabase as any).from("faixas_fipe").update({
-        fipe_inicial: Number(form.fipe_inicial),
-        fipe_final: Number(form.fipe_final),
-        fator: Number(form.fator),
-        taxa_adm: Number(form.taxa_adm),
-        valor_cota: Number(form.valor_cota),
-        valor_rateio: Number(form.valor_rateio),
+        fipe_min: Number(form.fipe_inicial),
+        fipe_max: Number(form.fipe_final),
+        cota_fator: Number(form.fator),
+        taxa_administrativa: Number(form.taxa_adm),
+        rateio: Number(form.valor_rateio),
         tipo_veiculo: form.tipo_veiculo || null,
-        descricao: form.descricao || null,
       }).eq("id", showEdit.id);
       if (error) throw error;
-      toast.success("Cota atualizada");
+      toast.success("Faixa atualizada");
       setShowEdit(null);
       onSaved();
     } catch (e: any) {
@@ -985,7 +1034,12 @@ function EditCotaDialog({ showEdit, setShowEdit, onSaved }: { showEdit: any; set
   return (
     <Dialog open={!!showEdit} onOpenChange={() => setShowEdit(null)}>
       <DialogContent>
-        <DialogHeader><DialogTitle className="text-primary">Editar Cota FIP</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle className="text-primary">Editar Faixa FIPE</DialogTitle>
+          {showEdit?.regional_nome && (
+            <p className="text-xs text-muted-foreground">Regional: <strong>{showEdit.regional_nome}</strong></p>
+          )}
+        </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div><Label className="text-xs">Fipe Inicial (R$) *</Label>
             <Input type="number" step="0.01" value={form.fipe_inicial} onChange={e => setForm((p: any) => ({ ...p, fipe_inicial: e.target.value }))} /></div>
@@ -995,9 +1049,7 @@ function EditCotaDialog({ showEdit, setShowEdit, onSaved }: { showEdit: any; set
             <Input type="number" step="0.01" value={form.fator} onChange={e => setForm((p: any) => ({ ...p, fator: e.target.value }))} /></div>
           <div><Label className="text-xs">Taxa Administrativa (R$)</Label>
             <Input type="number" step="0.01" value={form.taxa_adm} onChange={e => setForm((p: any) => ({ ...p, taxa_adm: e.target.value }))} /></div>
-          <div><Label className="text-xs">Valor Cota (R$)</Label>
-            <Input type="number" step="0.01" value={form.valor_cota} onChange={e => setForm((p: any) => ({ ...p, valor_cota: e.target.value }))} /></div>
-          <div><Label className="text-xs">Valor Rateio (R$)</Label>
+          <div className="col-span-2"><Label className="text-xs">Valor Rateio (R$)</Label>
             <Input type="number" step="0.01" value={form.valor_rateio} onChange={e => setForm((p: any) => ({ ...p, valor_rateio: e.target.value }))} /></div>
           <div className="col-span-2"><Label className="text-xs">Tipo Veículo</Label>
             <Select value={form.tipo_veiculo} onValueChange={v => setForm((p: any) => ({ ...p, tipo_veiculo: v }))}>
@@ -1011,8 +1063,6 @@ function EditCotaDialog({ showEdit, setShowEdit, onSaved }: { showEdit: any; set
               </SelectContent>
             </Select>
           </div>
-          <div className="col-span-2"><Label className="text-xs">Descrição</Label>
-            <Input value={form.descricao} onChange={e => setForm((p: any) => ({ ...p, descricao: e.target.value }))} /></div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setShowEdit(null)}>Cancelar</Button>
