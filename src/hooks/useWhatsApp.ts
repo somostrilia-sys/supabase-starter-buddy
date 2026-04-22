@@ -25,13 +25,14 @@ async function callHubEdge(path: string, body?: any) {
 }
 
 // ─── Instâncias ──────────────────────────────────────────────────────
+// Lê da view pública `whatsapp_instances_public` (sem tokens, acessível via anon).
 export function useWhatsAppInstances() {
   return useQuery<WhatsAppInstance[]>({
     queryKey: ["hub-whatsapp-instances"],
     queryFn: async () => {
       const { data, error } = await (supabaseHub as any)
-        .from("whatsapp_instances")
-        .select("*")
+        .from("whatsapp_instances_public")
+        .select("id, nome, tipo, status, telefone, is_default_central")
         .order("is_default_central", { ascending: false });
       if (error) throw error;
       return (data || []) as WhatsAppInstance[];
