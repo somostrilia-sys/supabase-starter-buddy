@@ -1,15 +1,14 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Search, User, Car, Link2, Check, CheckCircle2 } from "lucide-react";
+import { Search, User, Car, Link2, Check, CheckCircle2, Package, ExternalLink } from "lucide-react";
 
 interface MockAssoc {
   id: string; nome: string; cpf: string; situacao: string; regional: string;
@@ -40,13 +39,11 @@ const statusColor = (s: string) => {
 };
 
 export default function VincularAssociado() {
+  const navigate = useNavigate();
   const [searchA, setSearchA] = useState("");
   const [searchV, setSearchV] = useState("");
   const [selA, setSelA] = useState<MockAssoc | null>(null);
   const [selV, setSelV] = useState<MockVeic | null>(null);
-  const [plano, setPlano] = useState("");
-  const [tabela, setTabela] = useState("");
-  const [rastreadorObrig, setRastreadorObrig] = useState(false);
   const [obs, setObs] = useState("");
   const [resultsA, setResultsA] = useState<MockAssoc[]>([]);
   const [resultsV, setResultsV] = useState<MockVeic[]>([]);
@@ -90,9 +87,9 @@ export default function VincularAssociado() {
 
   const handleVincular = async () => {
     if (!selA || !selV) return;
-    if (!plano) return toast.error("Selecione um plano");
-    // Troca de titular: UPDATE real em veiculos.associado_id
-    // (antes era apenas toast simulado — vínculo não acontecia no banco)
+    // Troca de titular: UPDATE real em veiculos.associado_id.
+    // Plano/tabela/rastreador foram removidos desta tela — esses ajustes são
+    // feitos na aba LAPS de Consultar/Alterar Veículo (botão "Abrir LAPS").
     const { error } = await supabase.from("veiculos")
       .update({ associado_id: selA.id })
       .eq("id", selV.id);
@@ -104,8 +101,7 @@ export default function VincularAssociado() {
       description: `${selA.nome} → ${selV.placa} (${selV.modelo})`,
     });
     setSelA(null); setSelV(null); setSearchA(""); setSearchV("");
-    setResultsA([]); setResultsV([]); setPlano(""); setTabela("");
-    setRastreadorObrig(false); setObs("");
+    setResultsA([]); setResultsV([]); setObs("");
   };
 
   return (
@@ -242,50 +238,34 @@ export default function VincularAssociado() {
         </Card>
       </div>
 
-      {/* SEÇÃO INFERIOR - PRODUTO/PLANO */}
+      {/* SEÇÃO INFERIOR — VINCULAÇÃO + LAPS */}
       {selA && selV && (
         <Card className="mt-6 border-primary/30">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Link2 className="h-4 w-4 text-primary" /> Produto / Plano
+              <Link2 className="h-4 w-4 text-primary" /> Vinculação
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <Label>Plano *</Label>
-                <Select value={plano} onValueChange={setPlano}>
-                  <SelectTrigger><SelectValue placeholder="Selecione o plano" /></SelectTrigger>
-                  <SelectContent>
-                    {["Básico - R$ 89,90","Intermediário - R$ 139,90","Completo - R$ 189,90","Premium - R$ 249,90","Executivo - R$ 349,90"].map(p => (
-                      <SelectItem key={p} value={p}>{p}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Tabela de Preço</Label>
-                <Select value={tabela} onValueChange={setTabela}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    {["Tabela SP Capital","Tabela Interior SP","Tabela RJ Metro","Tabela Nacional"].map(t => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-muted-foreground text-xs">Valores (auto-preenchidos)</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  <div><Label className="text-xs">Mensalidade</Label><Input value={plano ? "189,90" : ""} readOnly className="h-8 text-xs bg-muted/50" /></div>
-                  <div><Label className="text-xs">Adesão</Label><Input value={plano ? "350,00" : ""} readOnly className="h-8 text-xs bg-muted/50" /></div>
-                  <div><Label className="text-xs">Cota</Label><Input value={plano ? "2.500,00" : ""} readOnly className="h-8 text-xs bg-muted/50" /></div>
+            <div className="p-3 rounded-lg border border-primary/30 bg-primary/5 flex items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <Package className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold">Produtos do veículo (LAPS)</p>
+                  <p className="text-xs text-muted-foreground">
+                    Plano, taxa administrativa, rateio e produtos opcionais são geridos na tela <strong>Consultar/Alterar Veículo → aba LAPS</strong>. Abra depois de vincular para configurar.
+                  </p>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Switch checked={rastreadorObrig} onCheckedChange={setRastreadorObrig} />
-              <Label>Rastreador Obrigatório</Label>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 shrink-0"
+                onClick={() => navigate(`/gestao?tab=veiculo&placa=${selV.placa}&vtab=laps`)}
+                title="Abrir LAPS deste veículo"
+              >
+                <ExternalLink className="h-3.5 w-3.5" /> Abrir LAPS
+              </Button>
             </div>
             <div>
               <Label>Observações</Label>
