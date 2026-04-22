@@ -679,9 +679,16 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       if (!modelo) return base;
       const permitidos = (modelo.planos || "").split(",").map((p: string) => p.trim()).filter(Boolean);
       if (permitidos.length === 0) return base;
+      // Match exato por palavras iniciais — evita "PESADOS" casar com "vans e pesados".
+      const normalize = (s: string) => s.toLowerCase().replace(/[().,]/g, "").replace(/\s+/g, " ").trim();
+      const permNorm = permitidos.map(normalize);
       const filtered = base.filter((t: any) => {
-        const plano = (t.plano_normalizado || t.plano || "").toLowerCase();
-        return permitidos.some((pp: string) => plano.includes(pp.toLowerCase()) || pp.toLowerCase().includes(plano));
+        const plano = normalize(t.plano_normalizado || t.plano || "");
+        return permNorm.some((pp: string) =>
+          plano === pp ||
+          plano.startsWith(pp + " ") ||
+          pp.startsWith(plano + " ")
+        );
       });
       return filtered.length > 0 ? filtered : base;
     };
