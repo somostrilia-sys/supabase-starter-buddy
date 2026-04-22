@@ -586,9 +586,20 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       let resultado = todos;
       // Filtrar por planos que o veículo aceita (se temos cod_fipe)
       if (planosPermitidos && planosPermitidos.length > 0) {
+        // Normaliza removendo parênteses/pontos e case, para alinhar formatos
+        // diferentes entre modelos_veiculo.planos ("PESADOS (Completo)") e
+        // tabela_precos.plano_normalizado ("pesados completo").
+        const normalize = (s: string) => s.toLowerCase().replace(/[().,]/g, "").replace(/\s+/g, " ").trim();
+        const planosPermNorm = planosPermitidos.map(normalize);
         const filtered = resultado.filter((t: any) => {
-          const plano = (t.plano_normalizado || t.plano || "").toLowerCase();
-          return planosPermitidos!.some(pp => plano.includes(pp.toLowerCase()) || pp.toLowerCase().includes(plano));
+          const plano = normalize(t.plano_normalizado || t.plano || "");
+          // Match por palavras iniciais (evita "PESADOS" casar com "vans e pesados"):
+          // aceita se o plano começa com um permitido OU se o permitido começa com o plano.
+          return planosPermNorm.some(pp =>
+            plano === pp ||
+            plano.startsWith(pp + " ") ||
+            pp.startsWith(plano + " ")
+          );
         });
         if (filtered.length > 0) resultado = filtered;
       }
