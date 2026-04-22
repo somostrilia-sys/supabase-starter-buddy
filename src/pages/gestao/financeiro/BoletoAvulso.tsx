@@ -33,7 +33,7 @@ export default function BoletoAvulso({ onBack }: { onBack: () => void }) {
     setVeiculo(null);
     setBoletoGerado(null);
     try {
-      // 1) veículo (sem embed para evitar ambiguidade de relacionamento)
+      // 1) veículo por placa (sem embed para evitar ambiguidade)
       const { data: vdata, error: verr } = await supabase
         .from("veiculos")
         .select("*")
@@ -43,62 +43,104 @@ export default function BoletoAvulso({ onBack }: { onBack: () => void }) {
       if (verr) throw verr;
       if (!vdata) { toast.error("Placa não encontrada no cadastro."); return; }
 
-      // 2) associado
-      let associado: any = null;
-      if ((vdata as any).associado_id) {
-        const { data: adata } = await supabase
-          .from("associados")
-          .select("id, nome, cpf, regional_id, cooperativa_id")
-          .eq("id", (vdata as any).associado_id)
-          .maybeSingle();
-        associado = adata;
-      }
+      const v: any = vdata;
+      const valorFipe = Number(v.valor_fipe) || 0;
 
-      // 3) contrato do veículo (filtro direto por FK, sem embed)
-      const { data: cdata } = await (supabase as any)
-        .from("contratos")
-        .select("id, plano_id, valor_mensalidade, valor_mensal, status")
-        .eq("veiculo_id", (vdata as any).id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // 2) Réplica da lógica do LAPS (ConsultarVeiculo.tsx carregarLaps):
+      //    queries paralelas iniciais — associado, produtos_gia, veiculo_produtos, ajuste
+      const [assocRes, produtosRes, veicProdRes, ajusteRes] = await Promise.all([
+        v.associado_id
+          ? supabase.from("associados")
+              .select("id, nome, cpf, regional_id, endereco_cidade, endereco_uf")
+              .eq("id", v.associado_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        (supabase as any).from("produtos_gia").select("*").eq("ativo", true).order("nome"),
+        (supabase as any).from("veiculo_produtos").select("*").eq("veiculo_id", v.id),
+        (supabase as any).from("veiculos")
+          .select("ajuste_avulso_valor, ajuste_avulso_desc, desconto_valor, desconto_desc, acrescimo_valor, acrescimo_desc")
+          .eq("id", v.id).maybeSingle(),
+      ]);
 
-      // 4) plano
-      let planoNome = "Sem plano";
-      if (cdata?.plano_id) {
-        const { data: pdata } = await supabase
-          .from("planos").select("nome").eq("id", cdata.plano_id).maybeSingle();
-        planoNome = (pdata as any)?.nome || "Sem plano";
-      }
+      const assocData: any = assocRes.data;
+      const todosProdutos: any[] = produtosRes.data || [];
+      const veicProd: any[] = veicProdRes.data || [];
+      const ajusteData: any = ajusteRes.data;
 
-      // 5) Buscar faixa FIPE para taxa adm e rateio
-      let taxaAdm = 0;
-      let rateio = 0;
-      if ((vdata as any).valor_fipe) {
-        const { data: faixa } = await (supabase as any)
-          .from("faixas_fipe")
-          .select("taxa_adm, fator")
-          .lte("fipe_inicial", (vdata as any).valor_fipe)
-          .gte("fipe_final", (vdata as any).valor_fipe)
-          .limit(1)
-          .maybeSingle();
-        if (faixa) {
-          taxaAdm = faixa.taxa_adm || 0;
-          rateio = ((vdata as any).valor_fipe * (faixa.fator || 0)) / 100;
+      // 3) Resolver regional: associado.regional_id → cidade/UF → municipios → regional_cidades (mesma ordem do LAPS)
+      let regId: string | null = assocData?.regional_id || null;
+      const cidade = assocData?.endereco_cidade || "";
+      const uf = assocData?.endereco_uf || "";
+      if (cidade && uf && !regId) {
+        const { data: mun } = await (supabase as any).from("municipios")
+          .select("id").eq("uf", uf).ilike("nome", cidade).limit(1).maybeSingle();
+        if (mun) {
+          const { data: rc } = await (supabase as any).from("regional_cidades")
+            .select("regional_id").eq("municipio_id", mun.id).limit(1).maybeSingle();
+          if (rc) regId = rc.regional_id;
+        }
+        if (!regId) {
+          const { data: fb } = await (supabase as any).from("regional_cidades")
+            .select("regional_id, municipios!inner(uf)").eq("municipios.uf", uf).limit(1).maybeSingle();
+          if (fb) regId = fb.regional_id;
         }
       }
 
-      const valorProdutos = cdata?.valor_mensalidade ?? cdata?.valor_mensal ?? 0;
+      // 4) Tipo SGA derivado do modelo (mesmo regex do LAPS)
+      let tipoSga = "AUTOMOVEL";
+      const modelo = (v.modelo || "").toLowerCase();
+      if (/moto|cg |cb |honda cg/i.test(modelo)) tipoSga = "MOTOCICLETA";
+      else if (/scania|volvo fh|iveco|cargo|constellation/i.test(modelo)) tipoSga = "PESADOS";
+      else if (/sprinter|daily|ducato|master/i.test(modelo)) tipoSga = "VANS E PESADOS P.P";
+      else if (/fiorino|kangoo|doblo|strada|saveiro/i.test(modelo)) tipoSga = "UTILITARIOS";
+
+      // 5) Regras de produto por regional + faixa FIPE — paralelo
+      const [regrasRes, faixaRes] = await Promise.all([
+        regId ? (supabase as any).from("produto_regras").select("produto_id").eq("regional_id", regId) : Promise.resolve({ data: null }),
+        regId && valorFipe > 0
+          ? (supabase as any).from("faixas_fipe").select("taxa_administrativa, rateio")
+              .eq("regional_id", regId).eq("tipo_veiculo", tipoSga)
+              .lte("fipe_min", valorFipe).gte("fipe_max", valorFipe)
+              .limit(1).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+
+      // 6) Filtrar produtos pela regional (se houver regras)
+      let produtosRegional = todosProdutos;
+      if (regrasRes.data && regrasRes.data.length > 0) {
+        const idsPermitidos = new Set(regrasRes.data.map((r: any) => r.produto_id));
+        produtosRegional = todosProdutos.filter((p: any) => idsPermitidos.has(p.id));
+      }
+
+      // 7) Subtotal dos produtos vinculados ao veículo (intersecção com produtosRegional)
+      const idsVinculados = new Set(veicProd.map((vp: any) => vp.produto_id));
+      const produtosDoVeiculo = produtosRegional.filter((p: any) => idsVinculados.has(p.id));
+      const subtotalProdutos = produtosDoVeiculo.reduce((s: number, p: any) => s + (Number(p.valor) || 0), 0);
+
+      // 8) Taxa administrativa e rateio (fonte: faixas_fipe)
+      const faixa: any = faixaRes.data;
+      const taxaAdm = faixa ? Number(faixa.taxa_administrativa) || 0 : 0;
+      const rateio = faixa ? Number(faixa.rateio) || 0 : 0;
+
+      // 9) Ajuste avulso legado (única parcela que LAPS soma à mensalidade)
+      const ajusteAvulso = ajusteData?.ajuste_avulso_valor != null
+        ? parseFloat(String(ajusteData.ajuste_avulso_valor)) || 0
+        : 0;
+
+      // 10) Fórmula idêntica ao LAPS: subtotal + taxa + rateio + ajuste_avulso
+      const valorTotal = subtotalProdutos + taxaAdm + rateio + ajusteAvulso;
 
       setVeiculo({
-        ...vdata,
-        associados: associado,
-        plano: planoNome,
-        valorProdutos,
+        ...v,
+        associados: assocData,
+        produtosVinculados: produtosDoVeiculo,
+        qtdProdutos: produtosDoVeiculo.length,
+        valorProdutos: subtotalProdutos,
         taxaAdm,
         rateio,
-        valorTotal: valorProdutos + taxaAdm + rateio,
-        situacao: (vdata as any).status || "Ativo",
+        ajusteAvulso,
+        ajusteAvulsoDesc: ajusteData?.ajuste_avulso_desc || "",
+        valorTotal,
+        situacao: v.status || "Ativo",
       });
     } catch (e: any) {
       toast.error(e.message || "Erro ao buscar veículo");
@@ -212,11 +254,25 @@ export default function BoletoAvulso({ onBack }: { onBack: () => void }) {
               <Separator />
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div><Label className="text-xs text-muted-foreground">Plano</Label><p className="text-sm font-medium">{veiculo.plano}</p></div>
-                <div><Label className="text-xs text-muted-foreground">Produtos</Label><p className="text-sm font-medium">{fmtBRL(veiculo.valorProdutos)}</p></div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Produtos</Label>
+                  <p className="text-sm font-medium">{veiculo.qtdProdutos || 0} produto(s)</p>
+                </div>
+                <div><Label className="text-xs text-muted-foreground">Subtotal Produtos</Label><p className="text-sm font-medium">{fmtBRL(veiculo.valorProdutos)}</p></div>
                 <div><Label className="text-xs text-muted-foreground">Taxa Administrativa</Label><p className="text-sm font-medium">{fmtBRL(veiculo.taxaAdm)}</p></div>
                 <div><Label className="text-xs text-muted-foreground">Rateio</Label><p className="text-sm font-medium">{fmtBRL(veiculo.rateio)}</p></div>
               </div>
+
+              {veiculo.ajusteAvulso !== 0 && (
+                <div className="bg-muted/20 rounded-lg p-2 flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">
+                    Ajuste avulso{veiculo.ajusteAvulsoDesc ? ` — ${veiculo.ajusteAvulsoDesc}` : ""}
+                  </span>
+                  <span className={`font-medium ${veiculo.ajusteAvulso < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                    {veiculo.ajusteAvulso > 0 ? "+" : ""}{fmtBRL(veiculo.ajusteAvulso)}
+                  </span>
+                </div>
+              )}
 
               <div className="bg-muted/30 rounded-lg p-3 flex items-center justify-between">
                 <span className="text-sm font-semibold">Valor Total (sem desconto)</span>
