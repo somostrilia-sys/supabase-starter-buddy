@@ -133,32 +133,62 @@ const TIPO_VEICULO_MAP: Record<string, string[]> = {
   "Ônibus": ["Pesados e Vans"],
 };
 
-// Filtro pós-SELECT que distingue subcategorias colapsadas no banco:
-//   - "Carros e Utilitários Pequenos" precisa separar Automóvel × Utilitários
-//     (Premium vem em duas variantes: "(Leves Comum)" = Auto, "(Leves)" = Util)
-//   - "Pesados e Vans" precisa separar Pesados × Vans e Pesados Pequenos
-//     (PESADOS (…) = pesado; "Vans e Pesados" = van/pequeno)
+// Filtro pós-SELECT que distingue subcategorias colapsadas no banco.
+// CHAVE: só descarta uma variante quando existe o PAR no mesmo conjunto.
+// Sem par (ex: Completo/Objetivo só têm "(Leves)"), mantém intacto.
 const filtrarPlanosPorTipoVeiculo = (precos: any[], tipoVeiculo: string): any[] => {
   if (!tipoVeiculo || !precos || precos.length === 0) return precos;
+
+  // --- Carros: detectar bases Premium-like com par (Leves) + (Leves Comum) ---
+  const basesComum = new Set<string>();
+  const basesLeves = new Set<string>();
+  for (const p of precos) {
+    const nome = String(p.plano || "").trim();
+    const m = nome.match(/^(.+?)\s*\((leves\s+comum|leves)\)\s*$/i);
+    if (!m) continue;
+    const base = m[1].trim().toLowerCase();
+    const variante = m[2].toLowerCase().replace(/\s+/g, " ");
+    if (variante === "leves comum") basesComum.add(base);
+    else basesLeves.add(base);
+  }
+  const basesComConflito = new Set<string>();
+  for (const b of basesLeves) if (basesComum.has(b)) basesComConflito.add(b);
+
+  // --- Pesados: detectar se há PESADOS (*) e "Vans e Pesados" coexistindo ---
+  const temPesadosGrandes = precos.some((p: any) => String(p.plano || "").startsWith("PESADOS "));
+  const temVansPequenos = precos.some((p: any) => /^vans\s+e\s+pesados\s*$/i.test(String(p.plano || "").trim()));
+  const pesadosEmConflito = temPesadosGrandes && temVansPequenos;
+
   const isPesadosPequenos = ["Vans e Pesados Pequenos", "Van", "Van/Utilitário", "Caminhão"].includes(tipoVeiculo);
+
   return precos.filter((p: any) => {
     const nome = String(p.plano || "").trim();
-    if (tipoVeiculo === "Automóvel" || tipoVeiculo === "Utilitário") {
-      // Automóvel: descartar "(Leves)" puro; manter "(Leves Comum)" e sem sufixo
-      return !/\(leves\)\s*$/i.test(nome);
+
+    // Regra Leves × Leves Comum (só quando o par existe)
+    const m = nome.match(/^(.+?)\s*\((leves\s+comum|leves)\)\s*$/i);
+    if (m) {
+      const base = m[1].trim().toLowerCase();
+      if (basesComConflito.has(base)) {
+        const variante = m[2].toLowerCase().replace(/\s+/g, " ");
+        if (tipoVeiculo === "Automóvel" || tipoVeiculo === "Utilitário") {
+          return variante === "leves comum";
+        }
+        if (tipoVeiculo === "Utilitários") {
+          return variante === "leves";
+        }
+      }
     }
-    if (tipoVeiculo === "Utilitários") {
-      // Utilitários: descartar "(Leves Comum)"; manter "(Leves)" e sem sufixo
-      return !/\(leves\s+comum\)\s*$/i.test(nome);
+
+    // Regra Pesados × Vans e Pesados Pequenos (só quando o par existe)
+    if (pesadosEmConflito) {
+      if (tipoVeiculo === "Pesados" || tipoVeiculo === "Ônibus") {
+        if (/^vans\s+e\s+pesados\s*$/i.test(nome)) return false;
+      }
+      if (isPesadosPequenos) {
+        if (nome.startsWith("PESADOS ")) return false;
+      }
     }
-    if (tipoVeiculo === "Pesados" || tipoVeiculo === "Ônibus") {
-      // Pesados: descartar "Vans e Pesados" puro
-      return !/^vans\s+e\s+pesados\s*$/i.test(nome);
-    }
-    if (isPesadosPequenos) {
-      // Vans/pequenos: descartar nomes que começam com "PESADOS " (caixa alta no banco)
-      return !nome.startsWith("PESADOS ");
-    }
+
     return true;
   });
 };
