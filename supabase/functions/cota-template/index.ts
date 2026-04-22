@@ -7,30 +7,39 @@ serve(async (req) => {
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   try {
     if (req.method === "GET") {
-      // Retorna estrutura de colunas do template
-      return new Response(JSON.stringify({
-        success: true,
-        colunas: [
-          { campo: "plano", tipo: "string", descricao: "Nome do plano (basico/intermediario/premium)" },
-          { campo: "faixa_fipe_min", tipo: "number", descricao: "Valor mínimo FIPE para esta faixa" },
-          { campo: "faixa_fipe_max", tipo: "number", descricao: "Valor máximo FIPE para esta faixa" },
-          { campo: "valor_basico", tipo: "number", descricao: "Valor da mensalidade plano básico" },
-          { campo: "valor_intermediario", tipo: "number", descricao: "Valor da mensalidade plano intermediário" },
-          { campo: "valor_premium", tipo: "number", descricao: "Valor da mensalidade plano premium" },
-          { campo: "taxa_adesao", tipo: "number", descricao: "Taxa de adesão" },
-          { campo: "regiao", tipo: "string", descricao: "Região: sul/norte/nordeste/centro-oeste/sudeste" }
-        ],
-        exemplo: {
-          plano: "intermediario",
-          faixa_fipe_min: 20000,
-          faixa_fipe_max: 50000,
-          valor_basico: 149.90,
-          valor_intermediario: 199.90,
-          valor_premium: 289.90,
-          taxa_adesao: 350.00,
-          regiao: "sudeste"
+      // Retorna CSV pronto pra download (cliente espera text/csv, não JSON).
+      // Query param ?format=json mantém retrocompat para docs.
+      const url = new URL(req.url);
+      if (url.searchParams.get("format") === "json") {
+        return new Response(JSON.stringify({
+          success: true,
+          colunas: [
+            { campo: "plano", tipo: "string", descricao: "Nome do plano (basico/intermediario/premium)" },
+            { campo: "faixa_fipe_min", tipo: "number", descricao: "Valor mínimo FIPE para esta faixa" },
+            { campo: "faixa_fipe_max", tipo: "number", descricao: "Valor máximo FIPE para esta faixa" },
+            { campo: "valor_basico", tipo: "number", descricao: "Valor da mensalidade plano básico" },
+            { campo: "valor_intermediario", tipo: "number", descricao: "Valor da mensalidade plano intermediário" },
+            { campo: "valor_premium", tipo: "number", descricao: "Valor da mensalidade plano premium" },
+            { campo: "taxa_adesao", tipo: "number", descricao: "Taxa de adesão" },
+            { campo: "regiao", tipo: "string", descricao: "Região: sul/norte/nordeste/centro-oeste/sudeste" }
+          ],
+        }), { headers: { ...cors, "Content-Type": "application/json" } });
+      }
+      const csv = [
+        "categoria;valor_inicial;valor_final;regional;fator;ativo",
+        "Automóvel;0;20000;Todas;1,00;true",
+        "Motocicleta;0;10000;Todas;0,60;true",
+        "Pesados;0;50000;Todas;1,80;true",
+        "Vans;0;30000;Todas;1,20;true",
+        "Pesados Porte Pequeno;0;40000;Todas;1,50;true",
+      ].join("\n");
+      return new Response(csv, {
+        headers: {
+          ...cors,
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": "attachment; filename=\"template-cotas.csv\"",
         }
-      }), { headers: { ...cors, "Content-Type": "application/json" } });
+      });
     }
 
     if (req.method === "POST") {

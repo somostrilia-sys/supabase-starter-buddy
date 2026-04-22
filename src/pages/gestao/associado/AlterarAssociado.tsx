@@ -714,7 +714,6 @@ export default function AlterarAssociado() {
           <TabsTrigger value="historico" className="gap-1 text-xs"><Clock className="h-3.5 w-3.5" />Histórico</TabsTrigger>
           <TabsTrigger value="ocorrencias" className="gap-1 text-xs"><AlertTriangle className="h-3.5 w-3.5" />Ocorrências</TabsTrigger>
           <TabsTrigger value="historico-eventos" className="gap-1 text-xs"><Clock className="h-3.5 w-3.5" />Histórico Eventos</TabsTrigger>
-          <TabsTrigger value="venda" className="gap-1 text-xs"><Eye className="h-3.5 w-3.5" />Processo de Venda</TabsTrigger>
         </TabsList>
 
         {/* TAB 1 - DADOS PESSOAIS */}
@@ -1175,19 +1174,6 @@ export default function AlterarAssociado() {
         {/* Histórico de Eventos GIA (vinculado a este associado) */}
         <TabsContent value="historico-eventos" className="mt-4">
           <HistoricoEventosList associadoId={(selected as any).id} />
-        </TabsContent>
-
-        {/* Aba Processo de Venda — docs da negociação de origem */}
-        <TabsContent value="venda" className="mt-4">
-          {(selected as any).negociacao_origem_id ? (
-            <DocumentosVendaTab negociacaoId={(selected as any).negociacao_origem_id} />
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <FileText className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Associado sem negociação de origem vinculada.</p>
-              <p className="text-xs mt-1">Associados cadastrados manualmente ou migrados do sistema antigo não possuem documentos de venda.</p>
-            </div>
-          )}
         </TabsContent>
       </Tabs>
 
