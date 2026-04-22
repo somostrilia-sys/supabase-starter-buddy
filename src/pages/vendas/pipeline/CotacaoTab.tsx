@@ -264,16 +264,18 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
   // Buscar cota do agregado quando valor declarado muda
   const calcularCotaAgregado = async (valorDeclarado: number) => {
     if (valorDeclarado <= 0) { setImplementoCotaAdicional(0); return; }
-    const regionalPrecos = await buscarRegionalPrecos(form.estadoCirc || "", form.cidadeCirc || "");
+    const regionalInfo = await buscarRegionalPrecos(form.estadoCirc || "", form.cidadeCirc || "");
+    const regionalNome = regionalInfo?.nome || "";
     const { data } = await supabase.from("tabela_precos" as any)
-      .select("cota, regional_normalizado")
+      .select("cota, regional, regional_normalizado")
       .ilike("plano_normalizado", "%agregado%")
       .lte("valor_menor", valorDeclarado)
       .gte("valor_maior", valorDeclarado);
     if (data && data.length > 0) {
-      // Prioridade: regional específica, senão qualquer
-      const match = regionalPrecos
-        ? (data as any[]).find((d: any) => (d.regional_normalizado || "").toUpperCase() === regionalPrecos.toUpperCase())
+      // Prioridade: regional específica (por nome texto), senão qualquer
+      const norm = regionalNome.replace(/^regional\s+/i, "").trim().toUpperCase();
+      const match = norm
+        ? (data as any[]).find((d: any) => (d.regional || "").toUpperCase().includes(norm))
         : null;
       setImplementoCotaAdicional(Number((match || data[0] as any).cota) || 0);
     } else {
@@ -509,7 +511,9 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
   };
 
   // Buscar regional de preços pela cidade/UF de circulação (via regional_cidades)
-  const buscarRegionalPrecos = async (uf: string, cidade: string): Promise<string> => {
+  // Retorna {id, nome} — o nome é usado para filtrar tabela_precos via campo texto
+  // (workaround: 637 rows têm regional_id corrompido, mas o campo texto `regional` está correto)
+  const buscarRegionalPrecos = async (uf: string, cidade: string): Promise<{ id: string; nome: string } | null> => {
     // Buscar o municipio_id pela cidade + UF
     if (cidade) {
       const { data: mun } = await (supabase as any).from("municipios")
@@ -519,28 +523,29 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
         .limit(1)
         .maybeSingle();
       if (mun) {
-        // Buscar a regional vinculada a essa cidade
+        // Buscar a regional vinculada a essa cidade + nome
         const { data: rc } = await (supabase as any).from("regional_cidades")
-          .select("regional_id")
+          .select("regional_id, regionais(nome)")
           .eq("municipio_id", mun.id)
           .limit(1)
           .maybeSingle();
-        if (rc) return rc.regional_id;
+        if (rc) return { id: rc.regional_id, nome: rc.regionais?.nome || "" };
       }
     }
     // Fallback: buscar qualquer cidade da UF para pegar a regional padrão do estado
     const { data: fallback } = await (supabase as any).from("regional_cidades")
-      .select("regional_id, municipios!inner(uf)")
+      .select("regional_id, regionais(nome), municipios!inner(uf)")
       .eq("municipios.uf", uf)
       .limit(1)
       .maybeSingle();
-    return fallback ? fallback.regional_id : "";
+    return fallback ? { id: fallback.regional_id, nome: (fallback as any).regionais?.nome || "" } : null;
   };
 
   // Buscar preços reais por valor FIPE + cod_fipe + cidade/UF circulação
   const carregarPrecos = async (vFipe: number, tipoVeiculo?: string, ufOverride?: string, cidadeOverride?: string) => {
     // Buscar regional pela cidade/UF de circulação
-    const regionalId = await buscarRegionalPrecos(ufOverride || form.estadoCirc || "", cidadeOverride || form.cidadeCirc || "");
+    const regionalInfo = await buscarRegionalPrecos(ufOverride || form.estadoCirc || "", cidadeOverride || form.cidadeCirc || "");
+    const regionalNome = regionalInfo?.nome || "";
 
     // Se temos cod_fipe, consultar modelos_veiculo pra saber quais planos esse veículo aceita
     let planosPermitidos: string[] | null = null;
@@ -565,8 +570,12 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
     if (tipoReal && TIPO_VEICULO_MAP[tipoReal]) {
       query = query.in("tipo_veiculo", TIPO_VEICULO_MAP[tipoReal]);
     }
-    if (regionalId) {
-      query = query.eq("regional_id", regionalId);
+    // Filtrar por regional usando o campo TEXTO `regional` (consistente com import)
+    // e não por regional_id — 637 rows têm regional_id corrompido no banco.
+    // Normaliza o nome removendo prefixo "Regional "/"REGIONAL " para o ilike match.
+    if (regionalNome) {
+      const norm = regionalNome.replace(/^regional\s+/i, "").trim();
+      query = query.ilike("regional", `%${norm}%`);
     }
     // Errata 3: planos "agregado" nunca devem aparecer na seleção do veículo principal
     // (são exclusivos para agregados — card separado com cálculo próprio)
@@ -1013,8 +1022,9 @@ export default function CotacaoTab({ deal, onUpdate }: Props) {
       toast.error("Preencha Estado e Cidade de Circulação antes de enviar a cotação.");
       return;
     }
-    // Buscar regional pela cidade/estado de circulação (retorna regional_id)
-    const regionalCot = await buscarRegionalPrecos(form.estadoCirc || "", form.cidadeCirc || "");
+    // Buscar regional pela cidade/estado de circulação (retorna {id, nome})
+    const regionalCotInfo = await buscarRegionalPrecos(form.estadoCirc || "", form.cidadeCirc || "");
+    const regionalCot = regionalCotInfo?.id || "";
 
     // Criar cotação com planos filtrados pela regional
     const planosFiltrados = precosReais.length > 0
