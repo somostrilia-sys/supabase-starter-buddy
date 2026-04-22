@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
   ArrowLeft, Calculator, CalendarIcon, DollarSign, Info, Loader2, Save, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const categoriasOpcao = ["Automóvel", "Pesados", "Motocicleta", "Vans", "Pesados Porte Pequeno"];
 const regionaisOpcao = ["Sul", "Norte", "Sudeste", "Nordeste", "Centro-Oeste"];
@@ -34,10 +35,20 @@ const multiplicadores: { cota: string; mult: number }[] = [
   { cota: "5ª", mult: 3.0 },
 ];
 
-export default function DistribuicaoRateioFerramenta({ onBack }: { onBack: () => void }) {
+interface Props {
+  onBack?: () => void;  // Opcional. Quando não passado, não mostra botão voltar (uso em aba).
+}
+
+export default function DistribuicaoRateioFerramenta({ onBack }: Props) {
   const [mesRef, setMesRef] = useState("");
   const [categoria, setCategoria] = useState("");
   const [regional, setRegional] = useState("");
+  // Regionais carregadas do banco (antes era hardcoded Sul/Norte/Sudeste/Nordeste/Centro-Oeste)
+  const [regionaisList, setRegionaisList] = useState<string[]>([]);
+  useEffect(() => {
+    (supabase as any).from("regionais").select("nome").eq("ativo", true).order("nome")
+      .then(({ data }: any) => setRegionaisList((data || []).map((r: any) => r.nome)));
+  }, []);
   const [valoresPorCategoria, setValoresPorCategoria] = useState<Record<string, string>>(
     Object.fromEntries(categoriasOpcao.map(c => [c, ""]))
   );
@@ -79,18 +90,52 @@ export default function DistribuicaoRateioFerramenta({ onBack }: { onBack: () =>
   const total = resultado?.reduce((s, r) => s + r.valor, 0) || 0;
   const pctTotal = resultado ? 100 : 0;
 
-  const salvar = () => {
-    toast.success(`Rateio ${mesRef} gravado — Total: R$ ${total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`);
-    setResultado(null);
-    setValoresPorCategoria(Object.fromEntries(categoriasOpcao.map(c => [c, ""])));
+  const [salvando, setSalvando] = useState(false);
+  const salvar = async () => {
+    if (!resultado || !mesRef || !categoria || !regional) {
+      toast.error("Calcule o rateio antes de salvar");
+      return;
+    }
+    setSalvando(true);
+    try {
+      // Resolver regional_id e categoria_id via texto (match por nome)
+      const [regRes, catRes] = await Promise.all([
+        (supabase as any).from("regionais").select("id").ilike("nome", `%${regional}%`).limit(1).maybeSingle(),
+        (supabase as any).from("categorias_veiculo").select("id").ilike("nome", `%${categoria}%`).limit(1).maybeSingle(),
+      ]);
+      const regional_id = regRes?.data?.id || null;
+      const categoria_id = catRes?.data?.id || null;
+
+      const vb = parseFloat(valorBase.replace(",", ".")) || 0;
+      const rows = resultado.map(r => ({
+        mes_referencia: mesRef,
+        categoria_id,
+        regional_id,
+        valor_base: vb,
+        multiplicador: r.multiplicador,
+        valor_calculado: r.valor,
+      }));
+      const { error } = await (supabase as any).from("rateio_config").insert(rows);
+      if (error) {
+        toast.error(`Erro ao gravar rateio: ${error.message}`);
+        return;
+      }
+      toast.success(`Rateio ${mesRef} gravado — ${rows.length} linhas · Total R$ ${total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`);
+      setResultado(null);
+      setValoresPorCategoria(Object.fromEntries(categoriasOpcao.map(c => [c, ""])));
+    } finally {
+      setSalvando(false);
+    }
   };
 
   return (
     <div className="p-6 lg:px-8 space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+        {onBack && (
+          <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        )}
         <Calculator className="h-5 w-5 text-primary" />
         <h1 className="text-lg font-semibold">Distribuição de Rateio</h1>
       </div>
@@ -140,7 +185,7 @@ export default function DistribuicaoRateioFerramenta({ onBack }: { onBack: () =>
               <Select value={regional} onValueChange={setRegional}>
                 <SelectTrigger><SelectValue placeholder="Selecione a regional" /></SelectTrigger>
                 <SelectContent>
-                  {regionaisOpcao.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  {(regionaisList.length > 0 ? regionaisList : regionaisOpcao).map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -279,8 +324,9 @@ export default function DistribuicaoRateioFerramenta({ onBack }: { onBack: () =>
               <Button variant="outline" onClick={() => setResultado(null)} className="gap-2">
                 <Trash2 className="h-4 w-4" />Limpar
               </Button>
-              <Button onClick={salvar} className="gap-2">
-                <Save className="h-4 w-4" />Gravar Rateio
+              <Button onClick={salvar} className="gap-2" disabled={salvando}>
+                {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Gravar Rateio
               </Button>
             </div>
           </CardContent>

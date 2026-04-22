@@ -68,20 +68,38 @@ export default function VincularAssociado() {
 
   const buscarVeiculo = async () => {
     if (!searchV.trim()) return;
-    let query = supabase.from("veiculos").select("id, placa, modelo, marca, ano_modelo, cor, chassi, status").limit(20);
-    query = query.or(`placa.ilike.%${searchV.replace("-","")}%,chassi.ilike.%${searchV}%`);
-    const { data } = await query;
+    // Colunas reais de `veiculos`: ano (não ano_modelo), situacao (não status).
+    // Query anterior selecionava `ano_modelo` e `status` inexistentes → PostgREST
+    // retornava erro 42703 e veiculos vinha [], escondendo todos os veículos.
+    const { data, error } = await supabase.from("veiculos")
+      .select("id, placa, modelo, marca, ano, cor, chassi, situacao, associado_id")
+      .or(`placa.ilike.%${searchV.replace("-","")}%,chassi.ilike.%${searchV}%`)
+      .limit(20);
+    if (error) {
+      toast.error(`Erro ao buscar veículo: ${error.message}`);
+      setResultsV([]);
+      return;
+    }
     const r: MockVeic[] = (data ?? []).map((v: any) => ({
       id: v.id, placa: v.placa ?? "", modelo: v.modelo ?? "", marca: v.marca ?? "",
-      ano: v.ano_modelo ?? 0, cor: v.cor ?? "", chassi: v.chassi ?? "", situacao: v.status ?? "Disponível",
+      ano: v.ano ?? 0, cor: v.cor ?? "", chassi: v.chassi ?? "", situacao: v.situacao ?? "Disponível",
     }));
     setResultsV(r);
     if (r.length === 0) toast.info("Nenhum veículo encontrado");
   };
 
-  const handleVincular = () => {
+  const handleVincular = async () => {
     if (!selA || !selV) return;
     if (!plano) return toast.error("Selecione um plano");
+    // Troca de titular: UPDATE real em veiculos.associado_id
+    // (antes era apenas toast simulado — vínculo não acontecia no banco)
+    const { error } = await supabase.from("veiculos")
+      .update({ associado_id: selA.id })
+      .eq("id", selV.id);
+    if (error) {
+      toast.error(`Erro ao vincular: ${error.message}`);
+      return;
+    }
     toast.success("Associado vinculado ao veículo com sucesso!", {
       description: `${selA.nome} → ${selV.placa} (${selV.modelo})`,
     });

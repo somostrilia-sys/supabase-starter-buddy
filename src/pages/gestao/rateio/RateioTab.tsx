@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ImportExportCotas from "./ImportExportCotas";
+import DistribuicaoRateioFerramenta from "@/pages/gestao/ferramentas/DistribuicaoRateioFerramenta";
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -80,31 +81,33 @@ function useFaixasFipe() {
   useEffect(() => {
     async function fetch() {
       setLoading(true);
-      // Fetch faixas with categoria name via join
+      // Schema real de faixas_fipe: id, regional_id, fipe_min, fipe_max,
+      // taxa_administrativa, rateio, cota_fator, tipo_veiculo, created_at.
+      // Antes o código tentava selecionar fipe_inicial/fipe_final/categoria_id/ativo
+      // que NÃO existem — resultava em erro 42703 e toast "Erro ao carregar faixas FIPE".
       const { data: faixas, error } = await supabase
         .from("faixas_fipe")
-        .select("*, categorias_veiculo:categoria_id(id, nome)")
-        .eq("ativo", true)
-        .order("fipe_inicial", { ascending: true });
+        .select("id, regional_id, fipe_min, fipe_max, taxa_administrativa, rateio, cota_fator, tipo_veiculo, created_at")
+        .order("fipe_min", { ascending: true });
 
       if (error) {
         console.error("Erro ao buscar faixas_fipe:", error);
-        toast.error("Erro ao carregar faixas FIPE");
+        toast.error(`Erro ao carregar faixas FIPE: ${error.message}`);
         setLoading(false);
         return;
       }
 
       const mapped: FaixaFipe[] = (faixas || []).map((f: any) => ({
         id: f.id,
-        categoria_id: f.categoria_id,
-        fator: f.fator ?? 1,
-        fipe_inicial: f.fipe_inicial ?? 0,
-        fipe_final: f.fipe_final ?? 0,
-        descricao: f.descricao,
-        taxa_adm: f.taxa_adm,
-        ativo: f.ativo,
+        categoria_id: null,
+        fator: f.cota_fator ?? 1,
+        fipe_inicial: Number(f.fipe_min) ?? 0,
+        fipe_final: Number(f.fipe_max) ?? 0,
+        descricao: f.tipo_veiculo ?? "",
+        taxa_adm: Number(f.taxa_administrativa) ?? 0,
+        ativo: true, // coluna não existe; assume todos ativos
         created_at: f.created_at,
-        categoria_nome: f.categorias_veiculo?.nome ?? "Sem categoria",
+        categoria_nome: f.tipo_veiculo ?? "Sem categoria",
       }));
       setData(mapped);
       setLoading(false);
@@ -626,324 +629,10 @@ function EstruturaCotas() {
 // ═══════════════════════════════════════════════════════════
 
 function DistribuicaoRateio() {
-  const { faixas, loading: loadingFaixas } = useFaixasFipe();
-  const { regionais, loading: loadingRegionais } = useRegionais();
-  const categorias = useCategorias();
-  const [step, setStep] = useState(0);
-  const [mesRef, setMesRef] = useState("12/2025");
-  const [dataLimite, setDataLimite] = useState("2025-12-15");
-  const [valorBase, setValorBase] = useState("532.35");
-  const [valoresBase, setValoresBase] = useState<Record<string, string>>({});
-  const [salvando, setSalvando] = useState(false);
-
-  // Initialize valoresBase when categorias load
-  useEffect(() => {
-    if (categorias.length > 0 && Object.keys(valoresBase).length === 0) {
-      const initial: Record<string, string> = {};
-      categorias.forEach(c => {
-        initial[c.id] = valorBase;
-      });
-      setValoresBase(initial);
-    }
-  }, [categorias]);
-
-  const steps = [
-    "Mês Referência", "Data Limite", "Categorias e Regionais",
-    "Valor Base", "Cálculo Automático", "Tabela Completa",
-    "Validação", "Gravar Rateio",
-  ];
-
-  const totalVeiculos = regionais.reduce((s, r) => s + (r.veiculos ?? 0), 0);
-  const vb = parseFloat(valorBase) || 0;
-
-  // Build distribution table
-  const distribuicao = regionais.map(r => ({
-    regional: r.nome,
-    categoria: "Automóvel",
-    qtdeVeiculos: r.veiculos ?? 0,
-    qtdeCotas: Math.floor((r.veiculos ?? 0) * 1.1),
-    valorCota: vb,
-    valorCotaAlterado: vb,
-    valorRateado: (r.veiculos ?? 0) * vb,
-  }));
-
-  const totalRateado = distribuicao.reduce((s, d) => s + d.valorRateado, 0);
-
-  const salvarRateio = async () => {
-    if (regionais.length === 0) {
-      toast.error("Nenhuma regional encontrada. Cadastre regionais antes de distribuir rateio.");
-      return;
-    }
-    setSalvando(true);
-    try {
-      const records = regionais.map(r => ({
-        mes_referencia: mesRef,
-        regional_id: r.id,
-        categoria_id: null,
-        valor_base: vb,
-        multiplicador: 1.0,
-        valor_calculado: (r.veiculos ?? 0) * vb,
-      }));
-
-      const { error } = await supabase.from("rateio_config").insert(records);
-      if (error) throw error;
-
-      toast.success(`Rateio gravado com sucesso para ${mesRef} — Total: R$ ${totalRateado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`);
-      setStep(0);
-    } catch (e: any) {
-      toast.error(e.message || "Erro ao gravar rateio");
-    } finally {
-      setSalvando(false);
-    }
-  };
-
-  const isLoading = loadingFaixas || loadingRegionais;
-
-  return (
-    <div className="space-y-5">
-      {/* Card explicativo */}
-      <Card className="border-border bg-muted/50">
-        <CardContent className="p-4 flex items-start gap-3">
-          <Info className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-primary">Conceito Mutualista</p>
-            <p className="text-xs text-muted-foreground mt-1">O rateio distribui o custo total dos eventos entre todos os associados ativos, conforme a categoria do veículo e o fator multiplicador da cota. O valor base (primeira cota) é definido manualmente e as demais são calculadas automaticamente: <strong>Valor Cota N = Valor Base × Fator Multiplicador</strong>.</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Stepper */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-2">
-        {steps.map((s, i) => (
-          <div key={i} className="flex items-center">
-            <button
-              onClick={() => setStep(i)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                i === step ? "bg-primary text-white" :
-                i < step ? "bg-secondary text-foreground" :
-                "bg-muted text-muted-foreground"
-              }`}
-            >
-              <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border border-current/20">
-                {i < step ? "✓" : i + 1}
-              </span>
-              <span className="hidden lg:inline">{s}</span>
-            </button>
-            {i < steps.length - 1 && <ChevronRight className="h-3 w-3 text-muted-foreground mx-0.5 shrink-0" />}
-          </div>
-        ))}
-      </div>
-
-      <Card className="border-border shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base text-primary">Passo {step + 1}: {steps[step]}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Step 0 - Mês Referência */}
-          {step === 0 && (
-            <div>
-              <Label className="text-xs">Mês/Ano de Referência</Label>
-              <Input value={mesRef} onChange={e => setMesRef(e.target.value)} placeholder="MM/AAAA" className="w-40" />
-              <p className="text-xs text-muted-foreground mt-2">Selecione o período para cálculo da distribuição de rateio.</p>
-            </div>
-          )}
-
-          {/* Step 1 - Data Limite */}
-          {step === 1 && (
-            <div>
-              <Label className="text-xs">Data Limite de Participação</Label>
-              <Input type="date" value={dataLimite} onChange={e => setDataLimite(e.target.value)} className="w-48" />
-              <p className="text-xs text-muted-foreground mt-2">Veículos ativados após esta data não participam do rateio deste mês.</p>
-            </div>
-          )}
-
-          {/* Step 2 - Categorias e Regionais */}
-          {step === 2 && (
-            <div className="space-y-4">
-              {isLoading ? (
-                <div className="flex items-center justify-center py-8 gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span className="text-sm text-muted-foreground">Carregando dados...</span>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{totalVeiculos.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Total Veículos</p></CardContent></Card>
-                    <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{regionais.length}</p><p className="text-xs text-muted-foreground">Regionais</p></CardContent></Card>
-                    <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{categorias.length}</p><p className="text-xs text-muted-foreground">Categorias</p></CardContent></Card>
-                    <Card className="border-border"><CardContent className="p-3 text-center"><p className="text-xl font-bold text-primary">{faixas.length}</p><p className="text-xs text-muted-foreground">Intervalos FIPE</p></CardContent></Card>
-                  </div>
-                  <div className="border rounded-lg border-border overflow-hidden">
-                    <Table>
-                      <TableHeader><TableRow className="bg-muted"><TableHead className="text-xs">Regional</TableHead><TableHead className="text-xs text-right">Veículos</TableHead><TableHead className="text-xs text-right">% do Total</TableHead></TableRow></TableHeader>
-                      <TableBody>
-                        {regionais.map((r) => (
-                          <TableRow key={r.id}>
-                            <TableCell className="text-sm font-medium">{r.nome}</TableCell>
-                            <TableCell className="text-sm text-right">{(r.veiculos ?? 0).toLocaleString("pt-BR")}</TableCell>
-                            <TableCell className="text-sm text-right">{totalVeiculos > 0 ? (((r.veiculos ?? 0) / totalVeiculos) * 100).toFixed(1) : "0.0"}%</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Step 3 - Valor Base */}
-          {step === 3 && (
-            <div className="space-y-4">
-              <div>
-                <Label className="text-xs font-semibold">Valor Base Padrão — Primeira Cota (R$)</Label>
-                <Input value={valorBase} onChange={e => {
-                  setValorBase(e.target.value);
-                  // Update all categories that still have the old default
-                  const updated = { ...valoresBase };
-                  Object.keys(updated).forEach(k => { updated[k] = e.target.value; });
-                  setValoresBase(updated);
-                }} className="w-48" />
-                <p className="text-xs text-muted-foreground mt-1">Este valor sera aplicado como padrao. Ajuste por categoria abaixo se necessario.</p>
-              </div>
-              <div className="border rounded-lg border-border p-4 space-y-3">
-                <p className="text-xs font-semibold text-primary">Valor Base por Categoria</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {categorias.map(cat => (
-                    <div key={cat.id} className="flex items-center gap-3">
-                      <Label className="text-xs w-44 shrink-0">{cat.nome}</Label>
-                      <Input
-                        value={valoresBase[cat.id] ?? valorBase}
-                        onChange={e => setValoresBase(prev => ({ ...prev, [cat.id]: e.target.value }))}
-                        className="w-32"
-                        type="number"
-                        step="0.01"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">As demais cotas serao calculadas multiplicando o valor base pelo fator da categoria: <strong>Valor Cota = Valor Base x Fator</strong>.</p>
-            </div>
-          )}
-
-          {/* Step 4 - Cálculo Automático */}
-          {step === 4 && (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Valores calculados automaticamente: <strong>Valor Cota = R$ {vb.toFixed(2)} × Fator</strong></p>
-              {loadingFaixas ? (
-                <div className="flex items-center justify-center py-8 gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span className="text-sm text-muted-foreground">Carregando faixas...</span>
-                </div>
-              ) : (
-                <div className="border rounded-lg border-border overflow-hidden">
-                  <Table>
-                    <TableHeader><TableRow className="bg-muted"><TableHead className="text-xs">Categoria</TableHead><TableHead className="text-xs">Intervalo FIPE</TableHead><TableHead className="text-xs text-right">Fator</TableHead><TableHead className="text-xs text-right">Valor Cota Calculado</TableHead></TableRow></TableHeader>
-                    <TableBody>
-                      {faixas.map(c => (
-                        <TableRow key={c.id}>
-                          <TableCell className="text-sm">{c.categoria_nome}</TableCell>
-                          <TableCell className="text-sm font-mono">R$ {c.fipe_inicial.toLocaleString("pt-BR")} — R$ {c.fipe_final.toLocaleString("pt-BR")}</TableCell>
-                          <TableCell className="text-sm text-right font-mono">{c.fator.toFixed(1)}x</TableCell>
-                          <TableCell className="text-sm text-right font-bold">R$ {(vb * c.fator).toFixed(2)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Step 5 - Tabela Completa */}
-          {step === 5 && (
-            <div className="border rounded-lg border-border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted">
-                    <TableHead className="text-xs">Regional</TableHead>
-                    <TableHead className="text-xs">Categoria</TableHead>
-                    <TableHead className="text-xs text-right">Qtde Veículos</TableHead>
-                    <TableHead className="text-xs text-right">Qtde Cotas</TableHead>
-                    <TableHead className="text-xs text-right">Valor Cota</TableHead>
-                    <TableHead className="text-xs text-right">Valor Alterado</TableHead>
-                    <TableHead className="text-xs text-right">Valor Rateado</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {distribuicao.map((d, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="text-sm font-medium">{d.regional}</TableCell>
-                      <TableCell className="text-sm">{d.categoria}</TableCell>
-                      <TableCell className="text-sm text-right">{d.qtdeVeiculos.toLocaleString("pt-BR")}</TableCell>
-                      <TableCell className="text-sm text-right">{d.qtdeCotas.toLocaleString("pt-BR")}</TableCell>
-                      <TableCell className="text-sm text-right font-mono">R$ {d.valorCota.toFixed(2)}</TableCell>
-                      <TableCell className="text-sm text-right font-mono">R$ {d.valorCotaAlterado.toFixed(2)}</TableCell>
-                      <TableCell className="text-sm text-right font-bold">R$ {d.valorRateado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow className="bg-muted font-bold">
-                    <TableCell colSpan={2} className="text-sm">TOTAL</TableCell>
-                    <TableCell className="text-sm text-right">{totalVeiculos.toLocaleString("pt-BR")}</TableCell>
-                    <TableCell className="text-sm text-right">{Math.floor(totalVeiculos * 1.1).toLocaleString("pt-BR")}</TableCell>
-                    <TableCell className="text-sm text-right">—</TableCell>
-                    <TableCell className="text-sm text-right">—</TableCell>
-                    <TableCell className="text-sm text-right">R$ {totalRateado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-          )}
-
-          {/* Step 6 - Validação */}
-          {step === 6 && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-success mb-1" /><p className="text-xs font-medium text-success">Mês: {mesRef}</p></CardContent></Card>
-                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-success mb-1" /><p className="text-xs font-medium text-success">{totalVeiculos.toLocaleString("pt-BR")} veículos</p></CardContent></Card>
-                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-success mb-1" /><p className="text-xs font-medium text-success">{regionais.length} regionais</p></CardContent></Card>
-                <Card className="border-green-200 bg-success/8"><CardContent className="p-3 text-center"><CheckCircle2 className="h-5 w-5 mx-auto text-success mb-1" /><p className="text-xs font-medium text-success">R$ {totalRateado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p></CardContent></Card>
-              </div>
-              <div className="p-3 bg-warning/8 border border-yellow-200 rounded-lg text-sm text-warning flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-                <span>Confirme os valores antes de gravar. Esta ação gerará os boletos com os valores de rateio para o período {mesRef}.</span>
-              </div>
-            </div>
-          )}
-
-          {/* Step 7 - Gravar */}
-          {step === 7 && (
-            <div className="text-center py-6 space-y-4">
-              <Calculator className="h-12 w-12 mx-auto text-primary" />
-              <div>
-                <p className="text-lg font-bold text-primary">Rateio pronto para gravação</p>
-                <p className="text-sm text-muted-foreground mt-1">Mês: {mesRef} · Veículos: {totalVeiculos.toLocaleString("pt-BR")} · Total: R$ {totalRateado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Navigation buttons inside card */}
-          <div className="flex justify-between pt-4">
-            {step > 0 && (
-              <Button variant="outline" onClick={() => setStep(s => s - 1)} className="gap-2">
-                <ChevronLeft className="h-4 w-4" /> Anterior
-              </Button>
-            )}
-            {step < steps.length - 1 ? (
-              <Button onClick={() => setStep(s => s + 1)} className="gap-2 ml-auto">
-                Próximo <ChevronRight className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button onClick={salvarRateio} disabled={salvando} className="gap-2 ml-auto bg-success hover:bg-success/90">
-                {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Gravar Rateio
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  // Reusa a logica de Ferramentas > Distribuicao de Rateio.
+  // Antes era um wizard de 8 passos com simulacao sem persistencia;
+  // agora usa o componente DistribuicaoRateioFerramenta (persistencia real em rateio_config).
+  return <DistribuicaoRateioFerramenta />;
 }
 
 // ═══════════════════════════════════════════════════════════
