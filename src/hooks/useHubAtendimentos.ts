@@ -52,7 +52,8 @@ export function statusToStage(s: AttendanceStatus, ai_runs_count?: number | null
 }
 
 function subscribeRealtime(qc: ReturnType<typeof useQueryClient>, channelKey: string) {
-  const ch = supabaseHub.channel(channelKey)
+  const uniqueName = `${channelKey}-${Math.random().toString(36).slice(2, 10)}`;
+  const ch = supabaseHub.channel(uniqueName)
     .on("postgres_changes" as any,
       { event: "*", schema: "public", table: "whatsapp_atendimentos", filter: `setor=eq.${SETOR}` },
       () => qc.invalidateQueries({ queryKey: ["atendimentos"] }),

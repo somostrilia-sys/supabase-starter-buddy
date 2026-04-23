@@ -11,6 +11,10 @@ import {
   type Atendimento,
 } from "@/hooks/useHubAtendimentos";
 import { AttendanceList, type ProviderFilter } from "@/components/whatsapp/AttendanceList";
+import { SectorAutomacoesTab } from "@/components/whatsapp/SectorAutomacoesTab";
+import { SectorIAEditorTab } from "@/components/whatsapp/SectorIAEditorTab";
+import { SectorTemplatesTab } from "@/components/whatsapp/SectorTemplatesTab";
+import { SectorMetricsTab } from "@/components/whatsapp/SectorMetricsTab";
 import { AttendanceContext } from "@/components/whatsapp/AttendanceContext";
 import { ChatWindow } from "@/components/whatsapp/ChatWindow";
 import { ChatList } from "@/components/whatsapp/ChatList";
@@ -59,7 +63,7 @@ export default function Conversas() {
   const userId = user?.id ?? null;
 
   const [selectedAtend, setSelectedAtend] = useState<Atendimento | null>(null);
-  const [tabPage, setTabPage] = useState<"atendimentos" | "conversas">("atendimentos");
+  const [tabPage, setTabPage] = useState<"atendimentos" | "conversas" | "templates" | "automacoes" | "ia" | "metricas">("atendimentos");
   const [providerFilter, setProviderFilter] = useState<ProviderFilter>("meta");
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   const [selectedConv, setSelectedConv] = useState<WhatsAppConversation | null>(null);
@@ -116,21 +120,33 @@ export default function Conversas() {
           </div>
         </div>
 
-        {/* Tab top: Atendimentos (Hub) | Conversas brutas (por instância) */}
+        {/* Tabs top */}
         <Tabs value={tabPage} onValueChange={(v) => setTabPage(v as any)} className="mt-3">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="atendimentos" className="gap-1.5">
               <Inbox className="h-3.5 w-3.5" /> Atendimentos
             </TabsTrigger>
             <TabsTrigger value="conversas" className="gap-1.5">
               <MessageSquare className="h-3.5 w-3.5" /> Conversas por instância
             </TabsTrigger>
+            <TabsTrigger value="templates" className="gap-1.5">📄 Templates</TabsTrigger>
+            <TabsTrigger value="automacoes" className="gap-1.5">⚡ Automações</TabsTrigger>
+            <TabsTrigger value="ia" className="gap-1.5">🧠 IA</TabsTrigger>
+            <TabsTrigger value="metricas" className="gap-1.5">📊 Métricas</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
       {/* Conteúdo */}
-      {tabPage === "atendimentos" ? (
+      {tabPage === "templates" ? (
+        <div className="flex-1 overflow-auto"><SectorTemplatesTab setor="gestao" /></div>
+      ) : tabPage === "automacoes" ? (
+        <div className="flex-1 overflow-auto"><SectorAutomacoesTab setor="gestao" isAdmin={isAdmin} /></div>
+      ) : tabPage === "ia" ? (
+        <div className="flex-1 overflow-auto"><SectorIAEditorTab setor="gestao" isAdmin={isAdmin} /></div>
+      ) : tabPage === "metricas" ? (
+        <div className="flex-1 overflow-auto"><SectorMetricsTab setor="gestao" /></div>
+      ) : tabPage === "atendimentos" ? (
         <div className="flex-1 flex overflow-hidden">
           {/* Coluna 1: Lista de atendimentos (Minhas/Fila/Todas) */}
           <div className="w-[340px] shrink-0">
