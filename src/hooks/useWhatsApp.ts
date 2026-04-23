@@ -164,7 +164,8 @@ export function useMessages(instanceId: string | null, telefone: string | null) 
 export function useInstancesRealtime() {
   const qc = useQueryClient();
   useEffect(() => {
-    const ch = supabaseHub.channel("hub-wa-instances")
+    const uniq = `hub-wa-instances-${Math.random().toString(36).slice(2, 10)}`;
+    const ch = supabaseHub.channel(uniq)
       .on("postgres_changes" as any,
         { event: "*", schema: "public", table: "whatsapp_instances" },
         () => qc.invalidateQueries({ queryKey: ["hub-whatsapp-instances"] }),
