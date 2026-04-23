@@ -461,7 +461,7 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
               )}
             </div>
 
-            {/* Substituição de Placa (VEN-001) */}
+            {/* Substituição de Veículo (VEN-001) */}
             <div className="border-t pt-3">
               {substituicaoAtiva && (
                 <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded p-2 mb-2">
@@ -498,7 +498,7 @@ export default function DealDetailModal({ deal, open, onOpenChange, onUpdate }: 
                 </div>
               ) : (
                 <Button size="sm" variant="ghost" className="rounded-none text-[10px] h-6 text-muted-foreground hover:text-foreground w-full gap-1" onClick={() => { setShowSubstituicao(true); buscarPlacasAssociado(); }}>
-                  <ArrowLeftRight className="h-3 w-3" /> Substituição de Placa
+                  <ArrowLeftRight className="h-3 w-3" /> Substituição de Veículo
                 </Button>
               )}
             </div>

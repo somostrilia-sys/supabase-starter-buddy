@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, callEdge } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2, CheckCircle2, ChevronRight, User, Car, FileText, ClipboardCheck } from "lucide-react";
 
@@ -128,8 +128,10 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
           cidade: assocData.cidade || null,
           estado: assocData.estado || null,
           cep: assocData.cep || null,
-          status: "ativo",
-        })
+          status: "pendente",
+          origem: "pipeline",
+          negociacao_origem_id: leadId && !leadId.startsWith("p") ? leadId : null,
+        } as any)
         .select()
         .single();
 
@@ -153,6 +155,7 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
           valor_fipe: veicData.valor_fipe ? parseFloat(veicData.valor_fipe.replace(/[^0-9.,]/g, "").replace(",", ".")) : null,
           categoria_uso: veicData.categoria_uso,
           classificacao_uso: veicData.classificacao_uso,
+          status: "Pendente",
         } as any)
         .select()
         .single();
@@ -250,10 +253,25 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
         const { data: negStage } = await supabase.from("negociacoes").select("stage").eq("id", leadId).maybeSingle();
         const stageAnterior = (negStage as any)?.stage || "em_negociacao";
 
+        const fipeNumNeg = veicData.valor_fipe ? parseFloat(veicData.valor_fipe.replace(/[^0-9.,]/g, "").replace(",", ".")) : 0;
+        const valorPlanoNeg = parseFloat(contratoData.valor_mensal.replace(/[^0-9.,]/g, "").replace(",", "."));
         const { error: errNeg } = await supabase.from("negociacoes").update({
           stage: "concluido",
           contrato_id: contrato.id,
           venda_concluida_em: new Date().toISOString(),
+          // Campos lidos por gia-concluir-venda para enriquecer associado/veículo na gestão
+          cpf_cnpj: assocData.cpf.replace(/\D/g, ""),
+          lead_nome: assocData.nome,
+          telefone: assocData.telefone,
+          email: assocData.email || null,
+          cidade_circulacao: assocData.cidade || null,
+          estado_circulacao: assocData.estado || null,
+          veiculo_placa: veicData.placa.toUpperCase().replace(/[^A-Z0-9]/g, ""),
+          veiculo_modelo: `${veicData.marca} ${veicData.modelo}`.trim(),
+          ano_fabricacao: veicData.ano ? parseInt(veicData.ano) : null,
+          chassi: veicData.chassi || null,
+          valor_plano: valorPlanoNeg,
+          cache_fipe: fipeNumNeg > 0 ? { valorFipe: fipeNumNeg } : null,
         } as any).eq("id", leadId);
         if (errNeg) throw new Error(`Erro ao atualizar negociação: ${errNeg.message}`);
         // Registrar transição
@@ -289,6 +307,17 @@ export default function ConcretizarVendaModal({ open, onOpenChange, leadNome = "
             campo_alterado: "status", valor_antigo: "ativo",
             valor_novo: "inativo", origem_modulo: "vendas",
           }).catch(e => console.warn("Erro auditoria substituição:", e));
+        }
+      }
+
+      // Sincronizar com módulo Gestão: vincula produtos da regional + calcula ajuste avulso.
+      // Associado/veículo permanecem com status 'pendente' para conferência humana.
+      if (leadId && !leadId.startsWith("p")) {
+        try {
+          await callEdge("gia-concluir-venda", { negociacao_id: leadId });
+        } catch (errSync) {
+          console.error("Erro ao sincronizar com gestão:", errSync);
+          toast.warning("Venda concretizada, mas sincronismo com gestão falhou. Admin deverá revisar manualmente.");
         }
       }
 
