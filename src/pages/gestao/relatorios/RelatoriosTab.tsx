@@ -266,6 +266,31 @@ export default function RelatoriosTab() {
   });
   const realAssociados: any[] = associadosData || [];
 
+  // Fetch veiculos-por-associado (apenas placa+associado_id) para compor relatório
+  // Regra de negócio: relatórios de associado SEMPRE mostram placa, e vice-versa.
+  const { data: veiculosLookup = [] } = useQuery({
+    queryKey: ["veiculos-lookup-relatorio"],
+    queryFn: async () => {
+      const all: any[] = [];
+      let from = 0;
+      const PAGE = 1000;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await (supabase as any)
+          .from("veiculos")
+          .select("placa, associado_id")
+          .not("associado_id", "is", null)
+          .range(from, from + PAGE - 1);
+        if (error) break;
+        const rows = data || [];
+        all.push(...rows);
+        if (rows.length < PAGE) break;
+        from += PAGE;
+      }
+      return all;
+    },
+  });
+
   // Fetch veiculos from Supabase with pagination
   const [veicPageDb, setVeicPageDb] = useState(1);
   const VEIC_PAGE_SIZE = 50;
@@ -293,7 +318,8 @@ export default function RelatoriosTab() {
   const veicAllColumns = [
     { key: "placa", label: "Placa" }, { key: "modelo", label: "Modelo" }, { key: "marca", label: "Marca" },
     { key: "ano", label: "Ano Fab." }, { key: "cor", label: "Cor" }, { key: "chassi", label: "Chassi" },
-    { key: "status", label: "Status" }, { key: "associado_nome", label: "Associado" },
+    { key: "status", label: "Status" },
+    { key: "associado_nome", label: "Associado" }, { key: "associado_cpf", label: "CPF Associado" },
     { key: "tipo", label: "Tipo" }, { key: "categoria", label: "Categoria" },
     { key: "cota", label: "Cota" }, { key: "regional", label: "Regional" }, { key: "cooperativa", label: "Cooperativa" },
   ];
@@ -394,6 +420,21 @@ export default function RelatoriosTab() {
   const selectedCooperativaIds = new Set(
     cooperativasFullList.filter(c => selCooperativa.has(c.nome)).map(c => c.id)
   );
+
+  // Map associado_id -> lista de placas (regra: associado e placa andam juntos em qualquer relatório)
+  const placasPorAssociado = useMemo(() => {
+    const m: Record<string, string[]> = {};
+    (veiculosLookup as any[]).forEach((v: any) => {
+      const aid = v.associado_id;
+      if (!aid) return;
+      if (!m[aid]) m[aid] = [];
+      if (v.placa) m[aid].push(v.placa);
+    });
+    return m;
+  }, [veiculosLookup]);
+
+  const placasDoAssociado = (associadoId?: string) =>
+    (associadoId && placasPorAssociado[associadoId] ? placasPorAssociado[associadoId] : []).join("; ");
 
   const filteredAssoc = realAssociados.filter((a: any) => {
     const nome = (a.nome || "").toLowerCase();
@@ -499,7 +540,8 @@ export default function RelatoriosTab() {
 
   const bolColumns: ExportColumn[] = [
     { key: "nosso_numero", label: "N Boleto" }, { key: "associado_nome", label: "Associado" },
-    { key: "cpf", label: "CPF" }, { key: "valor", label: "Valor" },
+    { key: "cpf", label: "CPF" }, { key: "placa", label: "Placa" },
+    { key: "valor", label: "Valor" },
     { key: "created_at", label: "Emissao" }, { key: "vencimento", label: "Vencimento" },
     { key: "data_pagamento", label: "Pagamento" }, { key: "status", label: "Status" },
     { key: "unidade", label: "Unidade" }, { key: "consultor", label: "Consultor" },
@@ -509,15 +551,41 @@ export default function RelatoriosTab() {
     { key: "linha_digitavel", label: "Linha Digitavel" },
   ];
 
-  const handleExportAssocCSV = () => exportCSV(filteredAssoc as Record<string, unknown>[], "associados", assocColumns);
-  const handleExportAssocExcel = () => exportExcel(filteredAssoc as Record<string, unknown>[], "associados", assocColumns);
-  const handleExportAssocPDF = () => exportPDF(filteredAssoc as Record<string, unknown>[], "associados", assocColumns, "Relatorio de Associados");
-  const handlePrintAssoc = () => printData(filteredAssoc as Record<string, unknown>[], assocColumns, "Relatorio de Associados");
+  // Mapper: traduz linha do banco para objeto com as mesmas chaves de `allColumns`.
+  // Resolve placa (via veículos), cooperativa/regional (via maps id→nome) e situação (enum→label).
+  const mapAssocExportRow = (a: any) => ({
+    nome: a.nome || "",
+    cpf: a.cpf || "",
+    endereco: a.endereco || "",
+    telefone: a.telefone || "",
+    email: a.email || "",
+    placa: placasDoAssociado(a.id),
+    modelo: a.modelo || "",
+    ano: a.ano ?? "",
+    tipo: a.tipo || "",
+    categoria: a.categoria || "",
+    cota: a.cota || "",
+    cooperativa: cooperativaIdToName[a.cooperativa_id] || "",
+    regional: regionalIdToName[a.regional_id] || "",
+    dataCadastro: a.created_at ? new Date(a.created_at).toLocaleDateString("pt-BR") : "",
+    situacao: statusEnumToLabel[a.status as string] || a.status || "",
+    consultor: a.consultor_responsavel || "",
+    posVenda: a.pos_venda_status || "Não Realizado",
+  });
+
+  const assocExportRows = () => filteredAssoc.map(mapAssocExportRow);
+
+  const handleExportAssocCSV = () => exportCSV(assocExportRows(), "associados", assocColumns);
+  const handleExportAssocExcel = () => exportExcel(assocExportRows(), "associados", assocColumns);
+  const handleExportAssocPDF = () => exportPDF(assocExportRows(), "associados", assocColumns, "Relatorio de Associados");
+  const handlePrintAssoc = () => printData(assocExportRows(), assocColumns, "Relatorio de Associados");
 
   const veicData = () => filteredVeiculos.map((v: any) => ({
     placa: v.placa, modelo: v.modelo, marca: v.marca, ano: v.ano_fabricacao || v.ano,
     cor: v.cor, chassi: v.chassi, status: v.status,
-    associado_nome: v.associados?.nome || "", tipo: v.tipo, categoria: v.categoria,
+    associado_nome: v.associados?.nome || "",
+    associado_cpf: v.associados?.cpf || "",
+    tipo: v.tipo, categoria: v.categoria,
     cota: v.cota, regional: regionalIdToName[v.regional_id || v.associados?.regional_id] || "",
     cooperativa: cooperativaIdToName[v.cooperativa_id || v.associados?.cooperativa_id] || "",
   }));
@@ -526,10 +594,17 @@ export default function RelatoriosTab() {
   const handleExportVeicPDF = () => exportPDF(veicData(), "veiculos", veicColumns, "Relatorio de Veiculos");
   const handlePrintVeic = () => printData(veicData(), veicColumns, "Relatorio de Veiculos");
 
-  const handleExportBolCSV = () => exportCSV(filteredBoletos as Record<string, unknown>[], "boletos", bolColumns);
-  const handleExportBolExcel = () => exportExcel(filteredBoletos as Record<string, unknown>[], "boletos", bolColumns);
-  const handleExportBolPDF = () => exportPDF(filteredBoletos as Record<string, unknown>[], "boletos", bolColumns, "Relatorio de Boletos", `Total: R$ ${somaBoletosTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`);
-  const handlePrintBol = () => printData(filteredBoletos as Record<string, unknown>[], bolColumns, "Relatorio de Boletos");
+  // Mapper para boletos: adiciona placa (resolvida via associado_id) para manter regra associado+placa juntos.
+  const mapBolExportRow = (b: any) => ({
+    ...b,
+    placa: placasDoAssociado(b.associado_id),
+  });
+  const bolExportRows = () => filteredBoletos.map(mapBolExportRow);
+
+  const handleExportBolCSV = () => exportCSV(bolExportRows(), "boletos", bolColumns);
+  const handleExportBolExcel = () => exportExcel(bolExportRows(), "boletos", bolColumns);
+  const handleExportBolPDF = () => exportPDF(bolExportRows(), "boletos", bolColumns, "Relatorio de Boletos", `Total: R$ ${somaBoletosTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`);
+  const handlePrintBol = () => printData(bolExportRows(), bolColumns, "Relatorio de Boletos");
 
   const toggleCol = (key: string) => setSelectedCols(prev => prev.includes(key) ? prev.filter(c => c !== key) : [...prev, key]);
 
@@ -625,20 +700,20 @@ export default function RelatoriosTab() {
                   <Table>
                     <TableHeader><TableRow>{selectedCols.map(k => <TableHead key={k} className="font-bold text-xs uppercase">{allColumns.find(c => c.key === k)?.label}</TableHead>)}<TableHead></TableHead></TableRow></TableHeader>
                     <TableBody>
-                      {pagedAssoc.map(a => (
+                      {pagedAssoc.map(a => {
+                        const row = mapAssocExportRow(a);
+                        return (
                         <TableRow key={a.id} className="cursor-pointer" onClick={() => setDetalhe(a)}>
                           {selectedCols.map(k => (
                             <TableCell key={k} className="">
-                              {k === "situacao" ? <Badge className={situacaoColor[a.situacao]}>{a.situacao}</Badge>
-                               : k === "dataCadastro" ? new Date(a.dataCadastro).toLocaleDateString("pt-BR")
-                               : k === "consultor" ? String(a.consultor_responsavel || "Não Identificado")
-                               : k === "posVenda" ? String(a.pos_venda_status || "Não Realizado")
-                               : String((a as Record<string, unknown>)[k] ?? "")}
+                              {k === "situacao" ? <Badge className={situacaoColor[row.situacao]}>{row.situacao}</Badge>
+                               : String((row as Record<string, unknown>)[k] ?? "")}
                             </TableCell>
                           ))}
                           <TableCell><Button variant="ghost" size="icon" className="h-7 w-7"><Eye className="h-3.5 w-3.5" /></Button></TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                   <Pagination page={pageAssoc} totalPages={totalPagesAssoc} onPageChange={setPageAssoc} />
