@@ -65,7 +65,7 @@ export default function ArquivosSGA({ placa, protocolo }: Props) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
 
-  const table = placa ? "sga_arquivo_veiculo" : "sga_arquivo_evento";
+  const table = placa ? "documentos_gia_veiculo" : "documentos_gia_evento";
   const col = placa ? "placa" : "protocolo";
   const val = placa || protocolo;
 

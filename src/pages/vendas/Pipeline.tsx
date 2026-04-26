@@ -335,6 +335,11 @@ export default function Pipeline() {
     desconto_percentual: (n as any).desconto_percentual || 0,
     auto_cotacao_gerada: (n as any).auto_cotacao_gerada || false,
     tipo_veiculo: (n as any).tipo_veiculo || "",
+    tags: Array.isArray((n as any).negociacao_tags)
+      ? ((n as any).negociacao_tags as any[])
+          .map((nt) => nt?.tags)
+          .filter((t) => t && t.id)
+      : [],
     created_at: n.created_at,
     updated_at: n.updated_at,
   } as any)), [negociacoes]);
@@ -706,6 +711,15 @@ export default function Pipeline() {
 
                           {/* Aux badges */}
                           <div className="mb-2.5 flex flex-wrap gap-1 empty:hidden">
+                            {(deal.tags ?? []).map((t) => (
+                              <span
+                                key={t.id}
+                                className="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold text-white"
+                                style={{ backgroundColor: t.cor ?? "#6B7280" }}
+                              >
+                                {t.nome}
+                              </span>
+                            ))}
                             {isLuxSales && !deal.cidade_circulacao && (
                               <span className="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-900">
                                 <MapPin className="mr-0.5 h-2.5 w-2.5" />Pendente: cidade

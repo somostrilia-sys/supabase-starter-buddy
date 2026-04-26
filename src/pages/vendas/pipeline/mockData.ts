@@ -34,6 +34,7 @@ export interface PipelineDeal {
   estado_circulacao: string;
   auto_cotacao_gerada?: boolean;
   lead_externo_id?: string;
+  tags?: Array<{ id: string; nome: string; cor: string | null }>;
   created_at: string;
   updated_at: string;
 }

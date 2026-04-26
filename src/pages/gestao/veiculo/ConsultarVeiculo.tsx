@@ -413,7 +413,7 @@ export default function ConsultarVeiculo() {
         ? (supabase as any).from("documentos_associado").select("*").or(`associado_id.eq.${v.associado_id},veiculo_id.eq.${v.id}`).order("created_at", { ascending: false })
         : (supabase as any).from("documentos_associado").select("*").eq("veiculo_id", v.id).order("created_at", { ascending: false }),
       v.placa
-        ? (supabase as any).from("sga_arquivo_veiculo").select("id,arquivo_nome,arquivo_tipo,arquivo_data,storage_path,size_bytes,content_type,created_at").eq("placa", v.placa).not("downloaded_at", "is", null).order("arquivo_data", { ascending: false })
+        ? (supabase as any).from("documentos_gia_veiculo").select("id,arquivo_nome,arquivo_tipo,arquivo_data,storage_path,size_bytes,content_type,created_at").eq("placa", v.placa).not("downloaded_at", "is", null).order("arquivo_data", { ascending: false })
         : Promise.resolve({ data: [] }),
     ]);
     const hoje = new Date().toISOString().slice(0,10);
