@@ -633,7 +633,7 @@ export default function Pipeline() {
             return (
               <section
                 key={col.key}
-                className={`flex flex-col rounded-xl w-[240px] shrink-0 overflow-hidden transition-all bg-secondary/40 border border-border/60 ${isOver ? "ring-2 ring-primary shadow-lg" : "shadow-sm"}`}
+                className={`flex flex-col rounded-xl w-[280px] shrink-0 overflow-hidden transition-all bg-secondary/40 border border-border/60 ${isOver ? "ring-2 ring-primary shadow-lg" : "shadow-sm"}`}
                 onDragOver={e => handleDragOver(e, col.key)}
                 onDragLeave={() => setDragOverStage(null)}
                 onDrop={e => { e.preventDefault(); handleDrop(col.key); }}
@@ -642,8 +642,8 @@ export default function Pipeline() {
                   <h2 className="text-[13px] font-semibold uppercase tracking-wide text-white">{col.label}</h2>
                   <span className="inline-flex min-w-[28px] items-center justify-center rounded-md bg-white/20 px-1.5 py-0.5 text-[12px] font-bold tabular-nums text-white backdrop-blur-sm">{allColDeals.length}</span>
                 </header>
-                <ScrollArea className="flex-1 px-2 pt-2 pb-2" style={{ maxHeight: "calc(100vh - 300px)", minHeight: "200px" }}>
-                  <div className="flex flex-col gap-2.5" style={{ minHeight: "180px" }}>
+                <ScrollArea className="flex-1 px-2.5 pt-2.5 pb-2.5" style={{ maxHeight: "calc(100vh - 300px)", minHeight: "200px" }}>
+                  <div className="flex flex-col gap-3" style={{ minHeight: "180px" }}>
                     {colDeals.map(deal => {
                       const days = daysStalled(deal.updated_at);
                       const si = deal.status_icons;
@@ -669,7 +669,7 @@ export default function Pipeline() {
                           draggable={deal.stage !== "concluido" && deal.stage !== "perdido"}
                           onDragStart={e => { if (deal.stage === "concluido" || deal.stage === "perdido") { e.preventDefault(); return; } handleDragStart(e, deal.id); }}
                           onClick={() => setDetailDeal(deal)}
-                          className={`kanban-card group w-full overflow-hidden rounded-lg border-2 border-border bg-card p-2.5 shadow-md ring-1 ring-foreground/5 cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""} ${deal.stage === "concluido" ? "opacity-70" : ""}`}
+                          className={`kanban-card group w-full overflow-hidden rounded-lg border-2 border-border bg-card p-3 shadow-md ring-1 ring-foreground/5 cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""} ${deal.stage === "concluido" ? "opacity-70" : ""}`}
                         >
                           {/* Header: title + code + dropdown */}
                           <div className="mb-2.5 flex items-start justify-between gap-2">
