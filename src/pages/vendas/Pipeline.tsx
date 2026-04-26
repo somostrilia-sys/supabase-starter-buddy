@@ -619,7 +619,7 @@ export default function Pipeline() {
       {/* KANBAN VIEW */}
       {viewMode === "kanban" ? (
         <div className="relative w-full max-w-full">
-          <div className="flex gap-4 overflow-x-scroll overflow-y-hidden pb-5 scrollbar-thin" style={{ height: "calc(100vh - 280px)" }}>
+          <div className="flex gap-3 overflow-x-scroll overflow-y-hidden pb-5 scrollbar-thin" style={{ height: "calc(100vh - 280px)" }}>
           {stageColumns.filter(col => col.key !== "perdido").map(col => {
             const allColDeals = filtered.filter(d => d.stage === col.key);
             const colDeals = allColDeals.slice(0, 50);
@@ -628,7 +628,7 @@ export default function Pipeline() {
             return (
               <section
                 key={col.key}
-                className={`flex flex-col rounded-xl w-[320px] shrink-0 transition-all bg-secondary/40 border border-border/60 ${isOver ? "ring-2 ring-primary shadow-lg" : "shadow-sm"}`}
+                className={`flex flex-col rounded-xl w-[280px] shrink-0 overflow-hidden transition-all bg-secondary/40 border border-border/60 ${isOver ? "ring-2 ring-primary shadow-lg" : "shadow-sm"}`}
                 onDragOver={e => handleDragOver(e, col.key)}
                 onDragLeave={() => setDragOverStage(null)}
                 onDrop={e => { e.preventDefault(); handleDrop(col.key); }}
@@ -664,7 +664,7 @@ export default function Pipeline() {
                           draggable={deal.stage !== "concluido" && deal.stage !== "perdido"}
                           onDragStart={e => { if (deal.stage === "concluido" || deal.stage === "perdido") { e.preventDefault(); return; } handleDragStart(e, deal.id); }}
                           onClick={() => setDetailDeal(deal)}
-                          className={`kanban-card group rounded-lg border-2 border-border bg-card p-3.5 shadow-md ring-1 ring-foreground/5 cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""} ${deal.stage === "concluido" ? "opacity-70" : ""}`}
+                          className={`kanban-card group w-full overflow-hidden rounded-lg border-2 border-border bg-card p-3 shadow-md ring-1 ring-foreground/5 cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""} ${deal.stage === "concluido" ? "opacity-70" : ""}`}
                         >
                           {/* Header: title + code + dropdown */}
                           <div className="mb-2.5 flex items-start justify-between gap-2">
@@ -687,11 +687,11 @@ export default function Pipeline() {
 
                           {/* Vehicle */}
                           {deal.veiculo_modelo && (
-                            <p className="mb-2 flex items-center gap-1.5 text-[12px] font-medium text-foreground/80">
+                            <div className="mb-2 flex items-center gap-1.5 text-[12px] font-medium text-foreground/80">
                               <Car className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                              <span className="truncate flex-1">{deal.veiculo_modelo}</span>
-                              {deal.veiculo_placa && <span className="rounded bg-muted px-1.5 py-0 font-mono text-[9px] font-bold text-foreground/80">{deal.veiculo_placa}</span>}
-                            </p>
+                              <span className="min-w-0 flex-1 truncate">{deal.veiculo_modelo}</span>
+                              {deal.veiculo_placa && <span className="shrink-0 rounded bg-muted px-1.5 py-0 font-mono text-[9px] font-bold text-foreground/80">{deal.veiculo_placa}</span>}
+                            </div>
                           )}
 
                           {/* Tag row */}
@@ -750,11 +750,11 @@ export default function Pipeline() {
                             ) : (
                               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-muted-foreground">?</div>
                             )}
-                            <span className="flex-1 truncate text-[12px] font-medium text-foreground/85">
+                            <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-foreground/85">
                               {deal.consultor || "Sem consultor"}
                             </span>
                             {deal.valor_plano > 0 && (
-                              <span className="text-[11px] font-bold text-foreground tabular-nums">R$ {deal.valor_plano.toFixed(0)}</span>
+                              <span className="shrink-0 text-[11px] font-bold text-foreground tabular-nums">R$ {deal.valor_plano.toFixed(0)}</span>
                             )}
                           </footer>
                         </article>
