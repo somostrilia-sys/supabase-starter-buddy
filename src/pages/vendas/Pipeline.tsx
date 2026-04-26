@@ -44,9 +44,9 @@ function stallLabel(days: number) {
 
 function StalledBadge({ days }: { days: number }) {
   const label = stallLabel(days);
-  if (days < 1) return <Badge className="bg-success/15 text-success border-green-300 text-[9px] px-1.5 py-0">{label}</Badge>;
-  if (days <= 3) return <Badge className="bg-warning/10 text-warning border-warning/30 text-[9px] px-1.5 py-0">{label}</Badge>;
-  return <Badge className="bg-destructive/15 text-destructive border-red-300 text-[9px] px-1.5 py-0">{label}</Badge>;
+  if (days < 1) return <span className="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">{label}</span>;
+  if (days <= 3) return <span className="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">{label}</span>;
+  return <span className="inline-flex items-center rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700">{label}</span>;
 }
 
 type SortKey = "id" | "lead_nome" | "veiculo_modelo" | "plano" | "stage" | "consultor" | "cooperativa" | "regional" | "created_at" | "updated_at";
@@ -619,129 +619,145 @@ export default function Pipeline() {
       {/* KANBAN VIEW */}
       {viewMode === "kanban" ? (
         <div className="relative w-full max-w-full">
-          <div className="flex gap-3 overflow-x-scroll overflow-y-hidden pb-5 scrollbar-thin" style={{ height: "calc(100vh - 280px)" }}>
+          <div className="flex gap-4 overflow-x-scroll overflow-y-hidden pb-5 scrollbar-thin" style={{ height: "calc(100vh - 280px)" }}>
           {stageColumns.filter(col => col.key !== "perdido").map(col => {
             const allColDeals = filtered.filter(d => d.stage === col.key);
             const colDeals = allColDeals.slice(0, 50);
             const hasMore = allColDeals.length > 50;
             const isOver = dragOverStage === col.key;
             return (
-              <div
+              <section
                 key={col.key}
-                className={`flex flex-col rounded-xl overflow-hidden min-w-[300px] w-[300px] shrink-0 transition-all bg-muted/40 border border-border/50 ${isOver ? "ring-2 shadow-lg" : "shadow-sm"}`}
+                className={`flex flex-col rounded-xl w-[320px] shrink-0 transition-all bg-secondary/40 border border-border/60 ${isOver ? "ring-2 ring-primary shadow-lg" : "shadow-sm"}`}
                 onDragOver={e => handleDragOver(e, col.key)}
                 onDragLeave={() => setDragOverStage(null)}
                 onDrop={e => { e.preventDefault(); handleDrop(col.key); }}
               >
-                <div className="px-0 pt-0 pb-2">
-                  <div className="flex items-center justify-between rounded-t-xl px-4 py-2.5" style={{ backgroundColor: col.color }}>
-                    <span className="text-sm font-bold text-white tracking-wide">{col.label}</span>
-                    <Badge className="text-[10px] h-5 px-1.5 bg-white/20 text-white border-white/30">{allColDeals.length}</Badge>
-                  </div>
-                </div>
-                <ScrollArea className="flex-1 px-2 pb-2" style={{ maxHeight: "calc(100vh - 300px)", minHeight: "200px" }}>
-                  <div className="space-y-2" style={{ minHeight: "180px" }}>
+                <header className="flex items-center justify-between rounded-t-xl px-4 py-2.5" style={{ backgroundColor: col.color }}>
+                  <h2 className="text-[13px] font-semibold uppercase tracking-wide text-white">{col.label}</h2>
+                  <span className="inline-flex min-w-[28px] items-center justify-center rounded-md bg-white/20 px-1.5 py-0.5 text-[12px] font-bold tabular-nums text-white backdrop-blur-sm">{allColDeals.length}</span>
+                </header>
+                <ScrollArea className="flex-1 px-3 pt-3 pb-3" style={{ maxHeight: "calc(100vh - 300px)", minHeight: "200px" }}>
+                  <div className="flex flex-col gap-4" style={{ minHeight: "180px" }}>
                     {colDeals.map(deal => {
                       const days = daysStalled(deal.updated_at);
                       const si = deal.status_icons;
+                      const origem = (deal.origem || "").toLowerCase();
+                      const planoLower = (deal.plano || "").toLowerCase();
+                      const isApp = /app|indica/.test(origem);
+                      const isLuxSales = /luxsales/.test(origem);
+                      const isCompleto = planoLower.includes("completo");
+                      const isObjetivo = planoLower.includes("objetivo") || planoLower.includes("leves");
+                      const tagLabel = isApp ? "Indicação App Associado"
+                        : isLuxSales ? "LuxSales"
+                        : isCompleto ? "Completo"
+                        : isObjetivo ? (deal.plano || "Objetivo (Leves)")
+                        : "";
+                      const tagStyle = (isApp || isLuxSales) ? "bg-violet-600 text-white"
+                        : isCompleto ? "bg-blue-600 text-white"
+                        : isObjetivo ? "bg-amber-100 text-amber-900"
+                        : "";
+                      const consultorInicial = deal.consultor?.trim()?.charAt(0)?.toUpperCase() || "";
                       return (
-                        <div
+                        <article
                           key={deal.id}
                           draggable={deal.stage !== "concluido" && deal.stage !== "perdido"}
                           onDragStart={e => { if (deal.stage === "concluido" || deal.stage === "perdido") { e.preventDefault(); return; } handleDragStart(e, deal.id); }}
                           onClick={() => setDetailDeal(deal)}
-                          className={`kanban-card group bg-card border border-border/50 border-l-[3px] rounded-lg cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-150 ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""} ${deal.stage === "concluido" ? "opacity-70" : ""}`}
-                          style={{ borderLeftColor: col.color }}
+                          className={`kanban-card group rounded-lg border-2 border-border bg-card p-3.5 shadow-md ring-1 ring-foreground/5 cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""} ${deal.stage === "concluido" ? "opacity-70" : ""}`}
                         >
-                          <div className="p-2.5 space-y-1">
-                            {/* Header: nome + código + menu */}
-                            <div className="flex items-start justify-between">
-                              <div className="min-w-0 flex-1">
-                                <p className="text-[13px] font-semibold leading-tight text-black dark:text-white truncate">{deal.lead_nome}</p>
-                                <span className="text-[9px] font-mono text-black/40 dark:text-white/40">{deal.codigo}</span>
-                              </div>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 shrink-0" onClick={e => e.stopPropagation()}><MoreVertical className="h-3 w-3" /></Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => setDetailDeal(deal)}><Eye className="h-3.5 w-3.5 mr-2" />Detalhes</DropdownMenuItem>
-                                  <DropdownMenuItem><Archive className="h-3.5 w-3.5 mr-2" />Arquivar</DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                          {/* Header: title + code + dropdown */}
+                          <div className="mb-2.5 flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1 space-y-0.5">
+                              <h3 className="text-[13.5px] font-semibold leading-tight text-card-foreground line-clamp-2">{deal.lead_nome}</h3>
+                              <p className="font-mono text-[10.5px] uppercase tracking-wider text-muted-foreground">{deal.codigo}</p>
                             </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
+                                  <MoreVertical className="h-3.5 w-3.5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setDetailDeal(deal)}><Eye className="mr-2 h-3.5 w-3.5" />Detalhes</DropdownMenuItem>
+                                <DropdownMenuItem><Archive className="mr-2 h-3.5 w-3.5" />Arquivar</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
 
-                            {/* LuxSales badge + cidade pendente */}
-                            {deal.origem === "LuxSales VoIP" && (
-                              <div className="flex items-center gap-1 flex-wrap">
-                                <Badge className="text-[9px] px-1.5 py-0 rounded-none bg-violet-600 text-white border-violet-700">
-                                  <PhoneCall className="h-2.5 w-2.5 mr-0.5" />LuxSales
-                                </Badge>
-                                {!deal.cidade_circulacao && (
-                                  <Badge className="text-[9px] px-1.5 py-0 rounded-none bg-amber-100 text-amber-800 border-amber-300">
-                                    <MapPin className="h-2.5 w-2.5 mr-0.5" />Pendente: cidade
-                                  </Badge>
-                                )}
-                                {deal.auto_cotacao_gerada && (
-                                  <Badge className="text-[9px] px-1.5 py-0 rounded-none bg-emerald-100 text-emerald-800 border-emerald-300">
-                                    Cotacao auto
-                                  </Badge>
-                                )}
-                              </div>
-                            )}
+                          {/* Vehicle */}
+                          {deal.veiculo_modelo && (
+                            <p className="mb-2 flex items-center gap-1.5 text-[12px] font-medium text-foreground/80">
+                              <Car className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                              <span className="truncate flex-1">{deal.veiculo_modelo}</span>
+                              {deal.veiculo_placa && <span className="rounded bg-muted px-1.5 py-0 font-mono text-[9px] font-bold text-foreground/80">{deal.veiculo_placa}</span>}
+                            </p>
+                          )}
 
-                            {/* Veículo + Placa */}
-                            <div className="flex items-center gap-1.5">
-                              <Car className="h-3 w-3 shrink-0 text-muted-foreground/60" />
-                              <span className="text-[11px] font-medium text-black/70 dark:text-white/70 truncate flex-1">{deal.veiculo_modelo}</span>
-                              {deal.veiculo_placa && <span className="text-[9px] font-mono font-bold bg-muted text-black/80 dark:text-white/80 px-1.5 py-0 rounded">{deal.veiculo_placa}</span>}
+                          {/* Tag row */}
+                          {tagLabel && (
+                            <div className="mb-2.5">
+                              <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold tracking-wide ${tagStyle}`}>
+                                {isLuxSales && <PhoneCall className="mr-1 h-2.5 w-2.5" />}
+                                {tagLabel}
+                              </span>
                             </div>
+                          )}
 
-                            {/* Plano + Valor */}
-                            {(deal.plano || deal.valor_plano > 0) && (
-                              <div className="flex items-center justify-between">
-                                {deal.plano && <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded">{deal.plano}</span>}
-                                {deal.valor_plano > 0 && <span className="text-[11px] font-bold text-black dark:text-white">R$ {deal.valor_plano.toFixed(0)}</span>}
-                              </div>
+                          {/* Aux badges */}
+                          <div className="mb-2.5 flex flex-wrap gap-1 empty:hidden">
+                            {isLuxSales && !deal.cidade_circulacao && (
+                              <span className="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-900">
+                                <MapPin className="mr-0.5 h-2.5 w-2.5" />Pendente: cidade
+                              </span>
                             )}
-
-                            {/* Vistoria status — só mostra em Liberado p/ Cadastro */}
-                            {deal.stage === "liberado_cadastro" && (deal as any).vistoria_status === "reprovada" && (
-                              <div className="bg-red-500/10 border border-red-500/30 rounded px-2 py-1">
-                                <span className="text-[9px] font-bold text-red-500">⚠ Vistoria Reprovada</span>
-                              </div>
+                            {deal.auto_cotacao_gerada && (
+                              <span className="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-900">Cotação auto</span>
                             )}
                             {deal.stage === "liberado_cadastro" && (deal as any).vistoria_status === "aprovada" && (
-                              <div className="bg-green-500/10 border border-green-500/30 rounded px-2 py-0.5">
-                                <span className="text-[9px] font-bold text-green-500">✓ Vistoria OK</span>
-                              </div>
+                              <span className="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-900">✓ Vistoria OK</span>
                             )}
-
-                            {/* Status icons */}
-                            <div className="flex items-center gap-1 pt-0.5">
-                              <CheckCircle className={`h-3 w-3 ${si.aceita ? "text-success" : "text-muted-foreground/20"}`} />
-                              <AlertCircle className={`h-3 w-3 ${si.pendente ? "text-amber-500" : "text-muted-foreground/20"}`} />
-                              <Shield className={`h-3 w-3 ${si.aprovada ? "text-blue-600" : "text-muted-foreground/20"}`} />
-                              <Send className={`h-3 w-3 ${si.sga ? "text-success" : "text-muted-foreground/20"}`} />
-                              <Radio className={`h-3 w-3 ${si.rastreador ? "text-blue-600" : "text-muted-foreground/20"}`} />
-                              <AlertTriangle className={`h-3 w-3 ${si.inadimplencia ? "text-destructive" : "text-muted-foreground/20"}`} />
-                            </div>
-
-                            {/* Data + Stalled */}
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] text-black/50 dark:text-white/50">{new Date(deal.created_at).toLocaleDateString("pt-BR")}</span>
-                              <StalledBadge days={days} />
-                            </div>
-
-                            {/* Footer: Consultor */}
-                            <div className="flex items-center gap-1.5 pt-1.5 border-t border-border/30 mt-1">
-                              <div className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-                                <span className="text-[9px] font-bold text-primary">{deal.consultor?.charAt(0) || "?"}</span>
-                              </div>
-                              <span className="text-[10px] font-medium text-black/60 dark:text-white/60 truncate">{deal.consultor}</span>
-                            </div>
+                            {deal.stage === "liberado_cadastro" && (deal as any).vistoria_status === "reprovada" && (
+                              <span className="inline-flex items-center rounded-md bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">⚠ Vistoria Reprovada</span>
+                            )}
                           </div>
-                        </div>
+
+                          {/* Status icons */}
+                          <div className="mb-2.5 flex items-center gap-1.5 text-muted-foreground/70">
+                            <CheckCircle className={`h-3.5 w-3.5 ${si.aceita ? "text-success" : ""}`} aria-label="aceita" />
+                            <AlertCircle className={`h-3.5 w-3.5 ${si.pendente ? "text-amber-500" : ""}`} aria-label="pendente" />
+                            <Shield className={`h-3.5 w-3.5 ${si.aprovada ? "text-blue-600" : ""}`} aria-label="aprovada" />
+                            <Send className={`h-3.5 w-3.5 ${si.sga ? "text-success" : ""}`} aria-label="sga" />
+                            <Radio className={`h-3.5 w-3.5 ${si.rastreador ? "text-blue-600" : ""}`} aria-label="rastreador" />
+                            <AlertTriangle className={`h-3.5 w-3.5 ${si.inadimplencia ? "text-destructive" : ""}`} aria-label="inadimplência" />
+                          </div>
+
+                          {/* Date row */}
+                          <div className="mb-3 flex items-center justify-between">
+                            <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-foreground/80">
+                              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                              {new Date(deal.created_at).toLocaleDateString("pt-BR")}
+                            </span>
+                            <StalledBadge days={days} />
+                          </div>
+
+                          {/* Footer: consultor + valor */}
+                          <footer className="flex items-center gap-2 border-t border-border pt-2.5">
+                            {consultorInicial ? (
+                              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
+                                {consultorInicial}
+                              </div>
+                            ) : (
+                              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-muted-foreground">?</div>
+                            )}
+                            <span className="flex-1 truncate text-[12px] font-medium text-foreground/85">
+                              {deal.consultor || "Sem consultor"}
+                            </span>
+                            {deal.valor_plano > 0 && (
+                              <span className="text-[11px] font-bold text-foreground tabular-nums">R$ {deal.valor_plano.toFixed(0)}</span>
+                            )}
+                          </footer>
+                        </article>
                       );
                     })}
                     {hasMore && (
@@ -758,7 +774,7 @@ export default function Pipeline() {
                     )}
                   </div>
                 </ScrollArea>
-              </div>
+              </section>
             );
           })}
           </div>
