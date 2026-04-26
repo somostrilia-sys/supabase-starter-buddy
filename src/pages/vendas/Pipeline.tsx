@@ -624,7 +624,7 @@ export default function Pipeline() {
       {/* KANBAN VIEW */}
       {viewMode === "kanban" ? (
         <div className="relative w-full max-w-full">
-          <div className="flex gap-3 overflow-x-scroll overflow-y-hidden pb-5 scrollbar-thin" style={{ height: "calc(100vh - 280px)" }}>
+          <div className="flex gap-4 overflow-x-scroll overflow-y-hidden pb-5 scrollbar-thin" style={{ height: "calc(100vh - 280px)" }}>
           {stageColumns.filter(col => col.key !== "perdido").map(col => {
             const allColDeals = filtered.filter(d => d.stage === col.key);
             const colDeals = allColDeals.slice(0, 50);
@@ -633,7 +633,7 @@ export default function Pipeline() {
             return (
               <section
                 key={col.key}
-                className={`flex flex-col rounded-xl w-[280px] shrink-0 overflow-hidden transition-all bg-secondary/40 border border-border/60 ${isOver ? "ring-2 ring-primary shadow-lg" : "shadow-sm"}`}
+                className={`flex flex-col rounded-xl w-[320px] shrink-0 overflow-hidden transition-all bg-secondary/40 border border-border/60 ${isOver ? "ring-2 ring-primary shadow-lg" : "shadow-sm"}`}
                 onDragOver={e => handleDragOver(e, col.key)}
                 onDragLeave={() => setDragOverStage(null)}
                 onDrop={e => { e.preventDefault(); handleDrop(col.key); }}
@@ -669,7 +669,7 @@ export default function Pipeline() {
                           draggable={deal.stage !== "concluido" && deal.stage !== "perdido"}
                           onDragStart={e => { if (deal.stage === "concluido" || deal.stage === "perdido") { e.preventDefault(); return; } handleDragStart(e, deal.id); }}
                           onClick={() => setDetailDeal(deal)}
-                          className={`kanban-card group w-full overflow-hidden rounded-lg border-2 border-border bg-card p-3 shadow-md ring-1 ring-foreground/5 cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""} ${deal.stage === "concluido" ? "opacity-70" : ""}`}
+                          className={`kanban-card group w-full overflow-hidden rounded-lg border-2 border-border bg-card p-3.5 shadow-md ring-1 ring-foreground/5 cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""} ${deal.stage === "concluido" ? "opacity-70" : ""}`}
                         >
                           {/* Header: title + code + dropdown */}
                           <div className="mb-2.5 flex items-start justify-between gap-2">
