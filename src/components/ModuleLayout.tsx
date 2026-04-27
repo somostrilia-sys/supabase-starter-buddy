@@ -95,7 +95,7 @@ export function ModuleLayout({ children }: { children: ReactNode }) {
   if (!activeMod) return <>{children}</>;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen w-full min-w-0 flex flex-col overflow-x-hidden bg-background">
       {/* Top header bar */}
       <header className="shrink-0 gradient-hero border-b border-white/10">
         <div className="flex items-center h-14 px-4 gap-3">
@@ -163,7 +163,7 @@ export function ModuleLayout({ children }: { children: ReactNode }) {
       </nav>
 
       {/* Content */}
-      <main className="flex-1 overflow-auto p-6">
+      <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-6">
         {children}
       </main>
     </div>
