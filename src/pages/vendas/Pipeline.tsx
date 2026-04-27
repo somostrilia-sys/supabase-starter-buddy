@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Plus, LayoutGrid, List, Search, Filter, X, Eye, MoreVertical,
   ArrowUpDown, GripVertical, Car, User, Calendar, Clock, Download,
@@ -642,7 +641,14 @@ export default function Pipeline() {
                   <h2 className="text-[13px] font-semibold uppercase tracking-wide text-white">{col.label}</h2>
                   <span className="inline-flex min-w-[28px] items-center justify-center rounded-md bg-white/20 px-1.5 py-0.5 text-[12px] font-bold tabular-nums text-white backdrop-blur-sm">{allColDeals.length}</span>
                 </header>
-                <ScrollArea className="flex-1 px-2.5 pt-2.5 pb-2.5" style={{ maxHeight: "calc(100vh - 300px)", minHeight: "200px" }}>
+                <div
+                  className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3"
+                  style={{
+                    maxHeight: "calc(100vh - 300px)",
+                    minHeight: "200px",
+                    scrollbarGutter: "stable",
+                  }}
+                >
                   <div className="flex flex-col gap-3" style={{ minHeight: "180px" }}>
                     {colDeals.map(deal => {
                       const days = daysStalled(deal.updated_at);
@@ -787,7 +793,7 @@ export default function Pipeline() {
                       </div>
                     )}
                   </div>
-                </ScrollArea>
+                </div>
               </section>
             );
           })}
