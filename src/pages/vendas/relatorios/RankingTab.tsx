@@ -45,7 +45,7 @@ export default function RankingTab({ filters }: { filters?: { cooperativa: strin
           valor: d.valor,
           taxa: d.total > 0 ? (d.concluido / d.total) * 100 : 0,
         }))
-        .sort((a, b) => b.vendas - a.vendas)
+        .sort((a, b) => b.vendas - a.vendas || b.valor - a.valor || b.taxa - a.taxa)
         .map((r, i) => ({ ...r, pos: i + 1 }));
 
       return rows;
