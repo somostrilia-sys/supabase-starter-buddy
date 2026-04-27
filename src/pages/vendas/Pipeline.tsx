@@ -513,7 +513,7 @@ export default function Pipeline() {
   const stageColor = (s: PipelineStage) => stageColumns.find(c => c.key === s)?.color || "#888";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0 max-w-full">
       {/* Header — barra com fundo azul escuro */}
       <div className="flex items-center justify-between flex-wrap gap-3 bg-[#1A3A5C] rounded-xl px-5 py-4">
         <div>
@@ -623,8 +623,8 @@ export default function Pipeline() {
 
       {/* KANBAN VIEW */}
       {viewMode === "kanban" ? (
-        <div className="relative w-full max-w-full">
-          <div className="flex gap-3 overflow-x-scroll overflow-y-hidden pb-5 scrollbar-thin" style={{ height: "calc(100vh - 280px)" }}>
+        <div className="relative w-full max-w-full min-w-0 overflow-hidden">
+          <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-5 scrollbar-thin" style={{ height: "calc(100vh - 280px)" }}>
           {stageColumns.filter(col => col.key !== "perdido").map(col => {
             const allColDeals = filtered.filter(d => d.stage === col.key);
             const colDeals = allColDeals.slice(0, 50);
