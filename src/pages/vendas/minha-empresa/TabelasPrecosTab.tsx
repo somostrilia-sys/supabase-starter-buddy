@@ -62,10 +62,18 @@ function formatCurrency(value: number | null | undefined): string {
 
 const TIPOS_VEICULO = ["leves", "motos", "pesados", "utilitarios", "vans"];
 
+// tabela_ids identificadas como "Importados Leves" no PowerCRM (mesmo plano que Completo (Leves)
+// regular, mas com valor_franquia 12% e mensalidades próprias). Não há sinal no nome do plano —
+// a única forma de distinguir é pelo tabela_id.
+const IMPORTADOS_LEVES_TABELA_IDS = new Set<string>([
+  "45366",
+]);
+
 // Mapeia (tipo_veiculo + plano_normalizado) do banco → categoria de negócio visível ao admin.
 // Mesma taxonomia que o fluxo de Negociação usa implicitamente via modelos_veiculo.planos.
 // NÃO altera dados — só agrupa/exibe.
-function getCategoriaNegocio(tipoVeiculo: string, planoNormalizado: string): string {
+function getCategoriaNegocio(tipoVeiculo: string, planoNormalizado: string, tabelaId?: string): string {
+  if (tabelaId && IMPORTADOS_LEVES_TABELA_IDS.has(String(tabelaId))) return "Importados Leves";
   const plano = (planoNormalizado || "").toLowerCase();
   if (plano.includes("agregado")) return "Agregado";
   if (tipoVeiculo === "Motos" || plano.includes("motos")) return "Motocicleta";
@@ -166,7 +174,7 @@ export default function TabelasPrecosTab() {
     // Cada linha de Pesados/Vans Pequenos/Agregado vira grupo próprio mesmo que
     // compartilhem tipo_veiculo "Pesados e Vans" no banco.
     for (const r of rows) {
-      const categoria = getCategoriaNegocio(r.tipo_veiculo, r.plano_normalizado || r.plano);
+      const categoria = getCategoriaNegocio(r.tipo_veiculo, r.plano_normalizado || r.plano, (r as any).tabela_id);
       const key = `${r.regional_nome || r.regional}||${categoria}`;
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(r);
@@ -177,7 +185,7 @@ export default function TabelasPrecosTab() {
       return {
         regional: items[0].regional_nome || items[0].regional,
         tipo_veiculo: items[0].tipo_veiculo,
-        categoria_negocio: getCategoriaNegocio(items[0].tipo_veiculo, items[0].plano_normalizado || items[0].plano),
+        categoria_negocio: getCategoriaNegocio(items[0].tipo_veiculo, items[0].plano_normalizado || items[0].plano, (items[0] as any).tabela_id),
         planos,
         faixas,
         rows: items,
