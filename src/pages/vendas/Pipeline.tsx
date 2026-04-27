@@ -675,7 +675,7 @@ export default function Pipeline() {
                           draggable={deal.stage !== "concluido" && deal.stage !== "perdido"}
                           onDragStart={e => { if (deal.stage === "concluido" || deal.stage === "perdido") { e.preventDefault(); return; } handleDragStart(e, deal.id); }}
                           onClick={() => setDetailDeal(deal)}
-                          className={`kanban-card group w-full overflow-hidden rounded-lg border-2 border-border bg-card p-3 shadow-md ring-1 ring-foreground/5 cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""} ${deal.stage === "concluido" ? "opacity-70" : ""}`}
+                          className={`kanban-card group flex h-[220px] w-full flex-col overflow-hidden rounded-lg border-2 border-border bg-card p-3 shadow-md ring-1 ring-foreground/5 cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""} ${deal.stage === "concluido" ? "opacity-70" : ""}`}
                         >
                           {/* Header: title + code + dropdown */}
                           <div className="mb-2.5 flex items-start justify-between gap-2">
@@ -707,7 +707,7 @@ export default function Pipeline() {
 
                           {/* Tag row */}
                           {tagLabel && (
-                            <div className="mb-2.5">
+                            <div className="mb-2.5 h-5 overflow-hidden">
                               <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold tracking-wide ${tagStyle}`}>
                                 {isLuxSales && <PhoneCall className="mr-1 h-2.5 w-2.5" />}
                                 {tagLabel}
@@ -716,7 +716,7 @@ export default function Pipeline() {
                           )}
 
                           {/* Aux badges */}
-                          <div className="mb-2.5 flex flex-wrap gap-1 empty:hidden">
+                          <div className="mb-2.5 flex max-h-5 flex-wrap gap-1 overflow-hidden empty:hidden">
                             {(deal.tags ?? []).map((t) => (
                               <span
                                 key={t.id}
@@ -762,7 +762,7 @@ export default function Pipeline() {
                           </div>
 
                           {/* Footer: consultor + valor */}
-                          <footer className="flex items-center gap-2 border-t border-border pt-2.5">
+                          <footer className="mt-auto flex items-center gap-2 border-t border-border pt-2.5">
                             {consultorInicial ? (
                               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
                                 {consultorInicial}
