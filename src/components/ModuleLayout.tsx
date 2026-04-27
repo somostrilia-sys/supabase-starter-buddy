@@ -1,4 +1,4 @@
-import { ReactNode, useMemo } from "react";
+import { ReactNode, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
@@ -92,10 +92,16 @@ export function ModuleLayout({ children }: { children: ReactNode }) {
     return null;
   })();
 
+  useEffect(() => {
+    document.documentElement.scrollLeft = 0;
+    document.body.scrollLeft = 0;
+    window.scrollTo({ left: 0, top: window.scrollY });
+  }, [location.pathname]);
+
   if (!activeMod) return <>{children}</>;
 
   return (
-    <div className="min-h-screen w-full min-w-0 flex flex-col overflow-x-hidden bg-background">
+    <div className="min-h-screen w-full max-w-[100dvw] min-w-0 flex flex-col overflow-x-hidden bg-background">
       {/* Top header bar */}
       <header className="shrink-0 gradient-hero border-b border-white/10">
         <div className="flex items-center h-14 px-4 gap-3">
@@ -163,7 +169,7 @@ export function ModuleLayout({ children }: { children: ReactNode }) {
       </nav>
 
       {/* Content */}
-      <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-6">
+      <main className="flex-1 w-full max-w-[100dvw] min-w-0 overflow-y-auto overflow-x-hidden p-6">
         {children}
       </main>
     </div>
