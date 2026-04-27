@@ -35,6 +35,16 @@ function daysStalled(updated: string) {
   return Math.floor((Date.now() - new Date(updated).getTime()) / 86400000);
 }
 
+function getAdesaoFromPrecos(precos: unknown, plano: string): number {
+  if (!Array.isArray(precos) || precos.length === 0) return 0;
+  const planoNome = (plano || "").toLowerCase();
+  const match = precos.find((p: any) => {
+    const nome = String(p?.plano_normalizado || p?.plano || "").toLowerCase();
+    return nome === planoNome || planoNome.startsWith(nome) || nome.startsWith(planoNome);
+  }) || precos[0];
+  return Number((match as any)?.adesao || 0);
+}
+
 function stallLabel(days: number) {
   if (days < 1) return "Hoje";
   if (days === 1) return "1 dia";
@@ -304,6 +314,7 @@ export default function Pipeline() {
     veiculo_placa: n.veiculo_placa || "",
     plano: n.plano || "",
     valor_plano: n.valor_plano || 0,
+    valor_adesao: getAdesaoFromPrecos((n as any).cache_precos, n.plano || ""),
     stage: (n.stage as PipelineStage) || "novo_lead",
     consultor: n.consultor || "",
     cooperativa: n.cooperativa || "",
@@ -669,14 +680,20 @@ export default function Pipeline() {
                         : isObjetivo ? "bg-amber-100 text-amber-900"
                         : "";
                       const consultorInicial = deal.consultor?.trim()?.charAt(0)?.toUpperCase() || "";
+                      const valorAdesao = Number((deal as any).valor_adesao || 0);
                       return (
-                        <article
-                          key={deal.id}
-                          draggable={deal.stage !== "concluido" && deal.stage !== "perdido"}
-                          onDragStart={e => { if (deal.stage === "concluido" || deal.stage === "perdido") { e.preventDefault(); return; } handleDragStart(e, deal.id); }}
-                          onClick={() => setDetailDeal(deal)}
-                          className={`kanban-card group flex h-[220px] w-full flex-col overflow-hidden rounded-lg border-2 border-border bg-card p-3 shadow-md ring-1 ring-foreground/5 cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""} ${deal.stage === "concluido" ? "opacity-70" : ""}`}
-                        >
+                        <div key={deal.id} className="relative pt-2">
+                          {valorAdesao > 0 && (
+                            <span className="absolute right-2 top-0 z-10 rounded-md bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
+                              Adesão R$ {valorAdesao.toFixed(0)}
+                            </span>
+                          )}
+                          <article
+                            draggable={deal.stage !== "concluido" && deal.stage !== "perdido"}
+                            onDragStart={e => { if (deal.stage === "concluido" || deal.stage === "perdido") { e.preventDefault(); return; } handleDragStart(e, deal.id); }}
+                            onClick={() => setDetailDeal(deal)}
+                            className={`kanban-card group flex h-[220px] w-full flex-col overflow-hidden rounded-lg border-2 border-border bg-card p-3 shadow-md ring-1 ring-foreground/5 cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg ${draggedId === deal.id ? "opacity-80 ring-2 ring-primary" : ""} ${deal.stage === "concluido" ? "opacity-70" : ""}`}
+                          >
                           {/* Header: title + code + dropdown */}
                           <div className="mb-2.5 flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1 space-y-0.5">
@@ -761,7 +778,7 @@ export default function Pipeline() {
                             <StalledBadge days={days} />
                           </div>
 
-                          {/* Footer: consultor + valor */}
+                          {/* Footer: consultor */}
                           <footer className="mt-auto flex items-center gap-2 border-t border-border pt-2.5">
                             {consultorInicial ? (
                               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
@@ -773,11 +790,9 @@ export default function Pipeline() {
                             <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-foreground/85">
                               {deal.consultor || "Sem consultor"}
                             </span>
-                            {deal.valor_plano > 0 && (
-                              <span className="shrink-0 text-[11px] font-bold text-foreground tabular-nums">R$ {deal.valor_plano.toFixed(0)}</span>
-                            )}
                           </footer>
-                        </article>
+                          </article>
+                        </div>
                       );
                     })}
                     {hasMore && (

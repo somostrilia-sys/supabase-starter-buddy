@@ -20,6 +20,7 @@ export interface PipelineDeal {
   veiculo_placa: string;
   plano: string;
   valor_plano: number;
+  valor_adesao?: number;
   stage: PipelineStage;
   consultor: string;
   cooperativa: string;
