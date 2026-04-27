@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -214,6 +215,7 @@ const coberturasMock = [
 export default function CadastrarAssociado() {
   const [form, setForm] = useState(initialForm);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [situacoes, setSituacoes] = useState<{ descricao: string }[]>([]);
   const [regionaisLista, setRegionaisLista] = useState<{id: string; nome: string}[]>([]);
   const [cooperativasLista, setCooperativasLista] = useState<{id: string; nome: string; regional_id: string | null}[]>([]);
@@ -260,20 +262,36 @@ export default function CadastrarAssociado() {
 
   const set = (f: string, v: string | boolean) => setForm(p => ({ ...p, [f]: v }));
 
-  const buscarCep = () => {
-    if (form.cep.replace(/\D/g, "").length !== 8) return toast.error("CEP inválido");
-    set("logradouro", "Av. Paulista");
-    set("bairro", "Bela Vista");
-    set("cidade", "São Paulo");
-    set("estado", "SP");
-    toast.success("Endereço encontrado!");
+  const buscarCep = async () => {
+    const cepClean = form.cep.replace(/\D/g, "");
+    if (cepClean.length !== 8) return toast.error("CEP inválido");
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cepClean}/json/`);
+      const data = await res.json();
+      if (data.erro) return toast.error("CEP não encontrado");
+      setForm(p => ({
+        ...p,
+        logradouro: data.logradouro || p.logradouro,
+        bairro: data.bairro || p.bairro,
+        cidade: data.localidade || p.cidade,
+        estado: data.uf || p.estado,
+      }));
+      toast.success("Endereço encontrado!");
+    } catch (e) {
+      console.error("Erro ao buscar CEP:", e);
+      toast.error("Falha ao buscar CEP");
+    }
+  };
+
+  const handleCepBlur = () => {
+    if (form.cep.replace(/\D/g, "").length === 8) buscarCep();
   };
 
   const tipoFromFipe = (t: string) => {
     const x = (t || "").toLowerCase();
-    if (x === "motos") return "Motocicleta";
-    if (x === "caminhoes") return "Caminhão";
-    return "Automovel";
+    if (x === "motos" || x === "moto") return "Motocicleta";
+    if (x === "caminhoes" || x === "caminhao" || x === "caminhão") return "Caminhão";
+    return "Automóvel";
   };
   const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
   const fmtBr = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -372,7 +390,7 @@ export default function CadastrarAssociado() {
         if (coopData) cooperativaId = (coopData as any).id;
       }
 
-      const { error } = await supabase.from("associados").insert({
+      const { data: assocData, error } = await supabase.from("associados").insert({
         nome: form.nome.trim(),
         cpf: cpfLimpo,
         data_nascimento: form.dataNasc || null,
@@ -388,12 +406,38 @@ export default function CadastrarAssociado() {
         status: dbStatus as any,
         regional_id: regionalId,
         cooperativa_id: cooperativaId,
-      });
+      }).select("id").single();
 
       if (error) throw error;
 
+      const placaLimpa = (form.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (assocData?.id && placaLimpa.length === 7) {
+        const valorFipeNum = form.valorFipe ? parseFloat(form.valorFipe.replace(/\./g, "").replace(",", ".")) : null;
+        const anoFabNum = form.anoFab ? parseInt(form.anoFab) : null;
+        const anoModNum = form.anoModelo ? parseInt(form.anoModelo) : null;
+        const { error: veicErr } = await supabase.from("veiculos").insert({
+          associado_id: assocData.id,
+          placa: placaLimpa,
+          chassi: form.chassi || null,
+          renavam: form.renavam || null,
+          marca: form.marca || null,
+          modelo: form.modelo || null,
+          ano_fabricacao: anoFabNum,
+          ano_modelo: anoModNum,
+          cor: form.cor || null,
+          valor_fipe: valorFipeNum,
+        } as any);
+        if (veicErr) {
+          console.error("Erro ao vincular veículo:", veicErr);
+          toast.warning("Associado criado, mas veículo não vinculado", { description: veicErr.message });
+        } else {
+          toast.success(`Veículo ${form.placa} vinculado ao associado`);
+        }
+      }
+
       toast.success("Associado cadastrado com sucesso!", { description: `${form.nome} - ${form.cpfCnpj}` });
       queryClient.invalidateQueries({ queryKey: ["associados"] });
+      queryClient.invalidateQueries({ queryKey: ["veiculos"] });
       handleLimpar();
     } catch (err: any) {
       console.error("Erro ao salvar associado:", err);
@@ -533,7 +577,7 @@ export default function CadastrarAssociado() {
               <div>
                 <Label>CEP</Label>
                 <div className="flex gap-1">
-                  <Input value={form.cep} onChange={e => set("cep", maskCep(e.target.value))} placeholder="00000-000" />
+                  <Input value={form.cep} onChange={e => set("cep", maskCep(e.target.value))} onBlur={handleCepBlur} placeholder="00000-000" />
                   <Button type="button" variant="outline" size="sm" onClick={buscarCep}>Buscar</Button>
                 </div>
               </div>
@@ -674,6 +718,18 @@ export default function CadastrarAssociado() {
                 <div className="flex gap-1">
                   <Input value={form.placa} onChange={e => set("placa", maskPlaca(e.target.value))} placeholder="ABC-1234" />
                   <Button type="button" variant="outline" size="sm" onClick={consultarPlaca}><Search className="h-3.5 w-3.5 mr-1" />Consultar</Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    title="Abrir LAPS / Produtos do veículo (após salvar)"
+                    disabled={!form.placa || form.placa.replace(/\D/g, "").length < 4}
+                    onClick={() => {
+                      const placaLimpa = (form.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+                      if (!placaLimpa) return toast.error("Informe a placa primeiro");
+                      navigate(`/gestao?tab=veiculo&placa=${placaLimpa}&vtab=laps`);
+                    }}
+                  >LAPS</Button>
                 </div>
               </div>
               <div>
@@ -700,31 +756,31 @@ export default function CadastrarAssociado() {
               </div>
               <div>
                 <Label>Marca</Label>
-                <Select value={form.marca} onValueChange={v => set("marca", v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{["Chevrolet","Fiat","Ford","Honda","Hyundai","Jeep","Nissan","Renault","Toyota","Volkswagen"].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-                </Select>
+                <Input value={form.marca} onChange={e => set("marca", e.target.value)} placeholder="Ex: Honda" />
               </div>
               <div>
                 <Label>Modelo</Label>
-                <Select value={form.modelo} onValueChange={v => set("modelo", v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{["Onix","HB20","Civic","Corolla","T-Cross 200 TSI","Compass","Tracker","Creta","Kicks","Argo","Polo"].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-                </Select>
+                <Input value={form.modelo} onChange={e => set("modelo", e.target.value)} placeholder="Ex: Civic Sedan LXS 1.8" />
               </div>
               <div>
                 <Label>Ano Fabricação</Label>
-                <Select value={form.anoFab} onValueChange={v => set("anoFab", v)}>
-                  <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
-                  <SelectContent>{Array.from({ length: 15 }, (_, i) => String(2025 - i)).map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
-                </Select>
+                <Input
+                  inputMode="numeric"
+                  value={form.anoFab}
+                  onChange={e => set("anoFab", e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  placeholder="Ex: 2020"
+                  maxLength={4}
+                />
               </div>
               <div>
                 <Label>Ano Modelo</Label>
-                <Select value={form.anoModelo} onValueChange={v => set("anoModelo", v)}>
-                  <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
-                  <SelectContent>{Array.from({ length: 15 }, (_, i) => String(2026 - i)).map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
-                </Select>
+                <Input
+                  inputMode="numeric"
+                  value={form.anoModelo}
+                  onChange={e => set("anoModelo", e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  placeholder="Ex: 2021"
+                  maxLength={4}
+                />
               </div>
               <SelectWithAdd label="Cor" value={form.cor} onValueChange={v => set("cor", v)} options={["Branco","Prata","Preto","Cinza","Vermelho","Azul","Marrom"]} />
               <div>
